@@ -16823,6 +16823,9 @@ function setAllDrillCols(on){
     }
     return txt || 'Nao identificado';
   }
+  function ruHasAvatar(nome){
+    return typeof premAtendimentoAvatar === 'function' && !!premAtendimentoAvatar(nome);
+  }
   function ruAvatar(nome){
     var initials = String(nome||'?').split(/\s+/).filter(Boolean).slice(0,2).map(function(x){return x.charAt(0);}).join('');
     if(typeof premAtendimentoAvatar === 'function'){
@@ -16975,6 +16978,8 @@ function setAllDrillCols(on){
       x.ticket = x.ups ? x.rec_b / x.ups : 0;
       x.comissao = x.ups_liq * RU_COMISSAO;
       return x;
+    }).filter(function(x){
+      return ruHasAvatar(x.nome);
     }).sort(function(a,b){ return (b.rec_liq - a.rec_liq) || (b.ups_liq - a.ups_liq) || a.nome.localeCompare(b.nome); });
   }
 
@@ -17031,8 +17036,8 @@ function setAllDrillCols(on){
     if(!ranking.length){
       elVazio.style.display = 'block';
       elVazio.innerHTML = '<div style="padding:36px;text-align:center;color:#7f93ad;font-size:12px;line-height:1.6">'
-        + '<b style="display:block;color:#ddefff;font-size:13px;margin-bottom:6px">Nenhum upgrade encontrado no relatório carregado.</b>'
-        + '<span>Fonte esperada: relatório de Alterações Contratuais carregado no módulo Carregar Relatórios.</span>'
+        + '<b style="display:block;color:#ddefff;font-size:13px;margin-bottom:6px">Nenhum upgrade encontrado para pessoas com avatar cadastrado.</b>'
+        + '<span>Fonte esperada: relatório de Alterações Contratuais carregado no módulo Carregar Relatórios. O ranking exibe apenas nomes com avatar.</span>'
         + '<div style="margin-top:8px;color:#5f7898">Fonte detectada: '+ruEsc(_ruSourceInfo.source || 'nenhuma')+' · linhas brutas: '+_ruSourceInfo.rawCount+' · reconhecidas: '+_ruSourceInfo.recognized+'</div>'
         + '</div>';
       elPodio.style.display = 'none'; elWrap.style.display = 'none';
