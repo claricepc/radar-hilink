@@ -5985,12 +5985,12 @@ h2.section-title .info-btn{margin-left:6px}
               <div class="ru-summary-card">
                 <div>Total atendimento</div>
                 <strong id="ru-txt-atendimento"></strong>
-                <small>atendentes com avatar</small>
+                <small>upgrades válidos das atendentes</small>
               </div>
               <div class="ru-summary-card">
                 <div>Total geral</div>
                 <strong id="ru-txt-geral"></strong>
-                <small>empresa · Contas a Receber</small>
+                <small>todos os upgrades válidos</small>
               </div>
             </div>
           </div>
@@ -6020,7 +6020,7 @@ h2.section-title .info-btn{margin-left:6px}
         </div>
         <!-- Legenda -->
         <div id="ru-legenda" style="display:none;margin-top:12px;padding:8px 12px;border-left:3px solid #38a8ff;font-size:10px;color:#9fb8d7;line-height:1.6;background:rgba(56,168,255,.06);border-radius:8px">
-          Ranking considera receita líquida gerada em diferença de ticket · Downgrade (DW) descontado da vendedora autora do upgrade original · Comissão: R$10/upgrade líquido · PGTO acompanha o relatório de Contas a Receber sem alterar o valor nesta tela.
+          Ranking considera upgrades com aumento mínimo de R$ 9,90 · Downgrade (DW) descontado da vendedora autora do upgrade original · Comissão: R$10/upgrade líquido · PGTO acompanha o relatório de Contas a Receber sem alterar o valor nesta tela.
         </div>
         <div id="ru-vazio" style="padding:40px;text-align:center;color:#556677;font-size:13px">Nenhum dado encontrado. Carregue o relatório de Alterações Contratuais.</div>
       </div>
@@ -16795,6 +16795,7 @@ function setAllDrillCols(on){
    Carregar Relatorios. Nao cria upload proprio nesta aba. */
 (function(){
   var RU_COMISSAO = 10;
+  var RU_MIN_UPGRADE = 9.90;
   var _ruRowsAll = [];
   var _ruSourceInfo = {source:'',rawCount:0,recognized:0,filteredOut:false};
   var _ruPayDrill = {};
@@ -16919,16 +16920,6 @@ function setAllDrillCols(on){
   }
   function ruReceiptDate(r){
     return ruDate(ruCol(r, [/data.*(pag|receb|baixa)/i,/baixado em/i,/pagamento/i,/recebimento/i,/vencimento/i,/data venc/i], null));
-  }
-  function ruCompanyRevenue(){
-    var rows = ruReceiptRows();
-    var comp = ruCurrentCompetencia();
-    return rows.reduce(function(sum,r){
-      if(!ruReceiptPaid(r)) return sum;
-      var dt = ruReceiptDate(r);
-      if(comp && dt && ruMonthKey(dt) !== comp) return sum;
-      return sum + ruReceiptAmount(r);
-    },0);
   }
   function ruReceiptsByContract(){
     var rows = ruReceiptRows();
@@ -17099,7 +17090,11 @@ function setAllDrillCols(on){
   function ruBuild(rows, ignoreCompetencia, includeWithoutAvatar){
     var withType = (rows || []).filter(function(r){
       var t = String(r['Tipo alteração'] || r['Tipo alteracao'] || '');
-      return t === 'Upgrade' || t === 'Downgrade';
+      if(t === 'Upgrade'){
+        var dif = Number(r['Diferença'] != null ? r['Diferença'] : r['Diferenca']);
+        return isFinite(dif) && dif >= RU_MIN_UPGRADE;
+      }
+      return t === 'Downgrade';
     });
     var valid = withType.filter(function(r){ return ignoreCompetencia || ruCompetenciaOk(r); });
     _ruSourceInfo.filteredOut = !!(withType.length && !valid.length && !ignoreCompetencia && ruCurrentCompetencia());
@@ -17123,7 +17118,7 @@ function setAllDrillCols(on){
       var item = ensure(r['Vendedor Nome'] || r['Vendedor']);
       var dif = Number(r['Diferença'] != null ? r['Diferença'] : r['Diferenca']);
       item.ups += 1;
-      if(isFinite(dif) && dif > 0) item.rec_b += dif;
+      if(isFinite(dif) && dif >= RU_MIN_UPGRADE) item.rec_b += dif;
       item.linhas.push(r);
     });
     dws.forEach(function(r){
@@ -17219,7 +17214,6 @@ function setAllDrillCols(on){
     var totalRec = ranking.reduce(function(s,x){return s+x.rec_liq;},0);
     var totalRecAll = allRanking.reduce(function(s,x){return s+x.rec_liq;},0);
     var totalComissao = ranking.reduce(function(s,x){return s+x.comissao;},0);
-    var totalGeralEmpresa = ruCompanyRevenue();
     var totalPay = ranking.reduce(function(s,x){
       var p = ruPaymentSummary(x);
       s.total += p.total; s.paid += p.paid; s.pending += p.pending; s.unknown += p.unknown;
@@ -17245,13 +17239,13 @@ function setAllDrillCols(on){
     elWrap.style.display = 'block';
     if(elLegenda) elLegenda.style.display = 'block';
     if(elTotal) elTotal.style.display = 'block';
-    if(elTxtTotal) elTxtTotal.textContent = ruBRL(totalRecAll);
+    if(elTxtTotal) elTxtTotal.textContent = ruBRL(totalRec);
     if(elTxtAtendimento) elTxtAtendimento.textContent = ruBRL(totalRec);
-    if(elTxtGeral) elTxtGeral.textContent = totalGeralEmpresa ? ruBRL(totalGeralEmpresa) : '—';
+    if(elTxtGeral) elTxtGeral.textContent = ruBRL(totalRecAll);
     if(elTxtAlts) elTxtAlts.textContent = totalUps + ' ups · ' + totalDowns + ' downs · ' + ruBRL(totalComissao) + ' comissão';
     if(elPeriodo){
       var comp = ruCurrentCompetencia();
-      elPeriodo.textContent = 'Fonte: '+(_ruSourceInfo.source || 'Alterações Contratuais') + (comp ? ' · competência ' + comp : '') + (_ruSourceInfo.filteredOut ? ' · sem linhas na competência; exibindo relatório carregado' : '') + ' · ' + ranking.length + ' vendedoras';
+      elPeriodo.textContent = 'RADAR HILINK - ' + (monthLabelFromKey(comp) || comp || 'mês/ano');
     }
 
     _ruPayDrill = {};
