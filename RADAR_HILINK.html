@@ -4756,15 +4756,27 @@ h2.section-title .info-btn{margin-left:6px}
 
     /* Campo de trabalho da supervisão: área densa para leitura e tratativa */
     #mod-premiacoes #prem-tab-auditoria .prem-audit-work-cards{
-      gap:12px!important;
-      padding:10px!important;
+      gap:10px!important;
+      padding:12px!important;
       overflow:auto!important;
+      align-items:stretch!important;
     }
     #mod-premiacoes #prem-tab-auditoria .prem-audit-work-card{
-      padding:10px 12px!important;
+      display:flex!important;
+      flex-direction:column!important;
+      gap:10px!important;
+      padding:12px 14px!important;
       height:auto!important;
-      min-height:0!important;
+      min-height:78px!important;
       box-sizing:border-box!important;
+      overflow:visible!important;
+    }
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-card-compact{
+      display:grid!important;
+      grid-template-columns:minmax(280px,1fr) 118px minmax(250px,auto)!important;
+      gap:14px!important;
+      align-items:center!important;
+      min-width:0!important;
     }
     #mod-premiacoes #prem-tab-auditoria .prem-audit-card-top{
       gap:8px!important;
@@ -4778,6 +4790,9 @@ h2.section-title .info-btn{margin-left:6px}
       line-height:1.15!important;
       letter-spacing:0!important;
       max-width:100%;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
     }
     #mod-premiacoes #prem-tab-auditoria .prem-audit-card-title span{
       font-size:9px!important;
@@ -4796,6 +4811,8 @@ h2.section-title .info-btn{margin-left:6px}
     }
     #mod-premiacoes #prem-tab-auditoria .prem-audit-card-info{
       align-items:flex-end!important;
+      justify-content:center!important;
+      min-width:0!important;
     }
     #mod-premiacoes #prem-tab-auditoria .prem-audit-card-meta{
       gap:6px!important;
@@ -4879,23 +4896,54 @@ h2.section-title .info-btn{margin-left:6px}
       flex-wrap:wrap!important;
       align-items:center!important;
     }
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-card-actions-inline{
+      display:flex!important;
+      flex-wrap:wrap!important;
+      gap:6px!important;
+      justify-content:flex-end!important;
+      align-items:center!important;
+      min-width:0!important;
+    }
     #mod-premiacoes #prem-tab-auditoria .prem-audit-btn{
       font-size:9px!important;
       padding:5px 7px!important;
       border-radius:6px!important;
+      min-height:24px!important;
+      line-height:1!important;
+      white-space:nowrap!important;
+    }
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-toggle{
+      min-height:24px!important;
+      white-space:nowrap!important;
+    }
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-detail{
+      margin-top:2px!important;
+      padding-top:10px!important;
+      overflow:visible!important;
     }
     @media(max-width:1200px){
       #mod-premiacoes #prem-tab-auditoria .prem-audit-work-card{
-        grid-template-columns:1fr 1fr!important;
-        min-height:0!important;
+        min-height:88px!important;
+      }
+      #mod-premiacoes #prem-tab-auditoria .prem-audit-card-compact{
+        grid-template-columns:minmax(240px,1fr) 110px!important;
+      }
+      #mod-premiacoes #prem-tab-auditoria .prem-audit-card-actions-inline{
+        grid-column:1/-1;
+        justify-content:flex-start!important;
       }
       #mod-premiacoes #prem-tab-auditoria .prem-audit-just-box{
         grid-column:1/-1;
       }
     }
     @media(max-width:860px){
-      #mod-premiacoes #prem-tab-auditoria .prem-audit-work-card{
+      #mod-premiacoes #prem-tab-auditoria .prem-audit-card-compact{
         grid-template-columns:1fr!important;
+      }
+      #mod-premiacoes #prem-tab-auditoria .prem-audit-card-info,
+      #mod-premiacoes #prem-tab-auditoria .prem-audit-card-actions-inline{
+        justify-content:flex-start!important;
+        align-items:flex-start!important;
       }
     }
 
@@ -14098,7 +14146,7 @@ function renderPremiacoesAuditoria(){
     rulesBox.innerHTML=`<div class="prem-rules-section">
 
       <!-- BLOCO: VENDAS -->
-      <div class="prem-rules-block">
+      <div class="prem-rules-block collapsed">
         <div class="prem-rules-block-header vendas" onclick="this.closest('.prem-rules-block').classList.toggle('collapsed')">
           <div class="prem-rules-icon">💼</div>
           <div>
@@ -14160,8 +14208,8 @@ function renderPremiacoesAuditoria(){
       </div>
 
       <!-- BLOCO: ATENDIMENTO OPA -->
-      <div class="prem-rules-block">
-        <div class="prem-rules-block-header opa" onclick="this.closest('\.prem-rules-block').classList.toggle('collapsed')">
+      <div class="prem-rules-block collapsed">
+        <div class="prem-rules-block-header opa" onclick="this.closest('.prem-rules-block').classList.toggle('collapsed')">
           <div class="prem-rules-icon">🎧</div>
           <div>
             <div class="prem-rules-block-title">Premiação de Atendimento — OPA</div>
