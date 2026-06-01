@@ -16565,15 +16565,60 @@ function setAllDrillCols(on){
 /* ══ RANKING UPGRADE ══════════════════════════════════════════════════ */
 var _ruRowsAll=[];
 
+function _ruHasUpgradeRows(rows){
+  return Array.isArray(rows)&&rows.some(function(r){
+    var t=String(r&&r['Tipo alteração']||'').trim();
+    return t==='Upgrade'||t==='Downgrade';
+  });
+}
+
+function _ruRawAlteracoesLoose(){
+  if(typeof STATE==='undefined'||!STATE.raw||!Array.isArray(STATE.raw.alteracoes)||!STATE.raw.alteracoes.length)return [];
+  return STATE.raw.alteracoes.map(function(r){
+    var keys=Object.keys(r||{});
+    var vals=keys.map(function(k){return r[k];});
+    var val=function(patterns,pos){
+      var key=(typeof findCol==='function')?findCol(r,patterns):'';
+      if(key&&r[key]!=null&&String(r[key]).trim()!=='')return r[key];
+      return vals[pos]??'';
+    };
+    var tipoRaw=String(val([/tipo de altera/i,/tipo altera/i,/tipo$/i],3)||'').replace(/"/g,'').trim();
+    var tipoNorm=typeof norm==='function'?norm(tipoRaw):tipoRaw.toUpperCase();
+    var tipo=tipoNorm==='UP'||tipoNorm.includes('UPGRADE')?'Upgrade':(tipoNorm==='DW'||tipoNorm.includes('DOWNGRADE')?'Downgrade':'');
+    if(!tipo)return null;
+    var dataRaw=val([/data hora altera/i,/data altera/i],2);
+    var anterior=typeof toFloat==='function'?toFloat(val([/valor anterior/i],4)):parseFloat(String(val([/valor anterior/i],4)).replace(',','.'));
+    var novo=typeof toFloat==='function'?toFloat(val([/valor novo/i],5)):parseFloat(String(val([/valor novo/i],5)).replace(',','.'));
+    var vendedorRaw=String(val([/^vendedor$/i],12)||'').trim();
+    var vendedorId=typeof onlyId==='function'?onlyId(vendedorRaw):String(vendedorRaw).replace(/\D/g,'');
+    var vendedorLabel=vendedorId&&typeof vendedorNome==='function'?vendedorNome(vendedorId):(vendedorRaw||'Não identificado');
+    return {
+      'ID alteração':typeof limpaId==='function'?limpaId(val([/^id$/i],0)):String(val([/^id$/i],0)).replace(/\D/g,''),
+      'ID Contrato':typeof limpaId==='function'?limpaId(val([/id contrato/i,/contrato/i],1)):String(val([/id contrato/i,/contrato/i],1)).replace(/\D/g,''),
+      'Data alteração':dataRaw,
+      _date:(typeof parseDateTime==='function'?parseDateTime(dataRaw):null)||(typeof parseDate==='function'?parseDate(dataRaw):null),
+      'Tipo alteração':tipo,
+      'Tipo alteração raw':tipoRaw,
+      'Valor anterior':isNaN(anterior)?null:anterior,
+      'Valor novo':isNaN(novo)?null:novo,
+      'Diferença':(!isNaN(anterior)&&!isNaN(novo))?novo-anterior:null,
+      'Vendedor ID':vendedorId,
+      'Vendedor Nome':vendedorLabel,
+      'Vendedor':vendedorLabel
+    };
+  }).filter(function(r){return r&&r['ID Contrato'];});
+}
+
 function _ruSourceRows(){
   if(typeof STATE==='undefined')return [];
   if(STATE.processed&&Array.isArray(STATE.processed.alteracoes)&&STATE.processed.alteracoes.length){
-    return STATE.processed.alteracoes;
+    if(_ruHasUpgradeRows(STATE.processed.alteracoes))return STATE.processed.alteracoes;
   }
   if(typeof processAlteracoesRows==='function'&&STATE.raw&&Array.isArray(STATE.raw.alteracoes)&&STATE.raw.alteracoes.length){
-    return processAlteracoesRows(STATE.raw.alteracoes);
+    var parsed=processAlteracoesRows(STATE.raw.alteracoes);
+    if(_ruHasUpgradeRows(parsed))return parsed;
   }
-  return [];
+  return _ruRawAlteracoesLoose();
 }
 
 function ruFiltrar(){
