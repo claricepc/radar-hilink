@@ -5974,16 +5974,11 @@ h2.section-title .info-btn{margin-left:6px}
           <div>
             <div style="font-size:13px;font-weight:800;color:#e0eaf5;text-transform:uppercase;letter-spacing:1.5px">Ranking de Upgrade</div>
             <div id="ru-periodo" style="font-size:11px;color:#556677;margin-top:2px">Carregue o relatório de Alterações Contratuais</div>
+            <button class="btn outline" id="btn-ru-download" onclick="downloadRankingUpgradeImage()" style="display:none;margin-top:10px;font-size:12px;padding:8px 16px">Baixar imagem</button>
           </div>
           <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap">
-            <button class="btn outline" id="btn-ru-download" onclick="downloadRankingUpgradeImage()" style="display:none;font-size:12px;padding:8px 16px">Baixar imagem</button>
             <div id="ru-box-total" style="display:none">
               <div class="ru-summary-grid">
-                <div class="ru-summary-card">
-                  <div>Receita upgrade</div>
-                  <strong id="ru-txt-total"></strong>
-                  <small id="ru-txt-alts"></small>
-                </div>
                 <div class="ru-summary-card">
                   <div>Total atendimento</div>
                   <strong id="ru-txt-atendimento"></strong>
@@ -17172,7 +17167,7 @@ function setAllDrillCols(on){
     var css = document.createElement('style');
     css.id = 'ru-fixed-css';
     css.textContent = [
-      '#mod-premiacoes .ru-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:10px;align-items:stretch}',
+      '#mod-premiacoes .ru-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;align-items:stretch}',
       '#mod-premiacoes .ru-summary-card{background:#0a192f;border:1px solid rgba(56,168,255,.45);border-radius:10px;padding:8px 16px;text-align:center;min-width:0}',
       '#mod-premiacoes .ru-summary-card div{font-size:9px;color:#8fb8e8;text-transform:uppercase;letter-spacing:.08em;font-weight:800;white-space:nowrap}',
       '#mod-premiacoes .ru-summary-card strong{display:block;font-size:20px;font-weight:800;color:#38a8ff;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums}',
@@ -17227,10 +17222,8 @@ function setAllDrillCols(on){
     var elBody = document.getElementById('ru-tabela-body');
     var elLegenda = document.getElementById('ru-legenda');
     var elTotal = document.getElementById('ru-box-total');
-    var elTxtTotal = document.getElementById('ru-txt-total');
     var elTxtAtendimento = document.getElementById('ru-txt-atendimento');
     var elTxtGeral = document.getElementById('ru-txt-geral');
-    var elTxtAlts = document.getElementById('ru-txt-alts');
     var elPeriodo = document.getElementById('ru-periodo');
     var elDownload = document.getElementById('btn-ru-download');
     if(!elVazio || !elPodio || !elWrap || !elBody) return;
@@ -17267,10 +17260,8 @@ function setAllDrillCols(on){
     if(elLegenda) elLegenda.style.display = 'block';
     if(elTotal) elTotal.style.display = 'block';
     if(elDownload) elDownload.style.display = 'inline-flex';
-    if(elTxtTotal) elTxtTotal.textContent = ruBRL(totalRec);
     if(elTxtAtendimento) elTxtAtendimento.textContent = ruBRL(totalRec);
     if(elTxtGeral) elTxtGeral.textContent = ruBRL(totalRecAll);
-    if(elTxtAlts) elTxtAlts.textContent = totalUps + ' ups · ' + totalDowns + ' downs · ' + ruBRL(totalComissao) + ' comissão';
     if(elPeriodo){
       var comp = ruCurrentCompetencia();
       elPeriodo.textContent = 'RADAR HILINK - ' + (monthLabelFromKey(comp) || comp || 'mês/ano');
