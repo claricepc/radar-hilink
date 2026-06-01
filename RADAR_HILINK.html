@@ -14848,6 +14848,88 @@ function currentPremiacoesFilter(){
     return true;
   });
 }
+
+// ====================================================================
+// ============== RENDER ESTRATEGIA DE ATUACAO ========================
+// ====================================================================
+function renderAcao(){
+  const rows=currentRows();
+  const fin=buildFinancialSummary(rows);
+  const clusters=STATE.processed.clustersProblema||[];
+  const medPlano=calcMedianaPorPlano(rows);
+  const bloqAuto=fin.bloqAutoDebt||[];
+  const bloqMan=rows.filter(r=>r._stAc==='Bloqueio Manual');
+  const sinalCrit=rows.filter(r=>r._rx!==null&&r._rx<-27);
+  const sinalReg=rows.filter(r=>r._rx!==null&&r._rx>=-27&&r._rx<-25);
+  const onuDesaut=rows.filter(r=>r._stOnu==='Desautorizada');
+  const stPotIrr=rows.filter(r=>r._stPot==='Irregular');
+  const bootloop=rows.filter(r=>(r._qtdQuedas||0)>=30);
+  const instavel=rows.filter(r=>(r._qtdQuedas||0)>=11&&(r._qtdQuedas||0)<30);
+  const semOnu=rows.filter(r=>!r._onuMac&&!isWifiHotspotPlan(r));
+  const defasados=rows.filter(r=>isDefasado(r,medPlano));
+  const semSinal=rows.filter(r=>r._rx===null);
+  const losDetected=rows.filter(r=>r._isLOS);
+  const opaRisco=rows.filter(r=>r['Risco Atendimento OPA']==='SIM');
+  const opaRecorrente=rows.filter(r=>(r['Atendimentos OPA']||0)>=3);
+  const osTecnica=rows.filter(r=>(r._osTecnicas||0)>0);
+  const osVencida=rows.filter(r=>(r._osVencidas||0)>0||(r._osIdadeMax||0)>=8);
+  const osRecorrente=rows.filter(r=>(r._osAbertas||0)>=2);
+  const clusterRows=rows.filter(r=>r._clusterMassivo);
+  const totalUrgent=bloqAuto.length+bootloop.length+clusterRows.length+osTecnica.length+osVencida.length;
+  const totalHigh=sinalCrit.length+onuDesaut.length+instavel.length+losDetected.length+opaRisco.length+osRecorrente.length;
+  const totalMed=bloqMan.length+sinalReg.length+stPotIrr.length+defasados.length+opaRecorrente.length+semOnu.length+semSinal.length;
+  const insights=document.getElementById('acao-insights');
+  if(insights){
+    insights.innerHTML=`
+      <div class="insight risk"><h4>Urgente</h4><div class="big">${totalUrgent.toLocaleString('pt-BR')}</div><p>Casos para tratar hoje: bloqueio, instabilidade grave, OS aberta ou concentração coletiva.</p></div>
+      <div class="insight attention"><h4>Alta prioridade</h4><div class="big">${totalHigh.toLocaleString('pt-BR')}</div><p>Sinal crítico, LOS, ONU desautorizada, recorrência operacional ou experiência ruim.</p></div>
+      <div class="insight win"><h4>Backlog tratável</h4><div class="big">${totalMed.toLocaleString('pt-BR')}</div><p>Ajustes cadastrais, financeiros e técnicos para organizar a base sem urgência imediata.</p></div>
+    `;
+  }
+  const actions=[
+    {prio:'urgent',label:'Bloqueio automático por inadimplência',qty:bloqAuto.length,unit:'clientes',desc:'Clientes bloqueados automaticamente por pendência financeira.',act:'Acionar régua de cobrança e recuperação ativa.',rows:bloqAuto,action:'Validar inadimplência, acionar cobrança e acompanhar desbloqueio após pagamento.'},
+    {prio:'urgent',label:'Bootloop suspeito',qty:bootloop.length,unit:'clientes',desc:'Clientes com 30+ quedas no dia, indicando instabilidade grave.',act:'Abrir tratativa preventiva antes de nova reclamação.',rows:bootloop,action:'Verificar fonte, ONU, roteador e estabilidade por 48h. Se persistir, abrir OS.'},
+    {prio:'urgent',label:'Problema coletivo / cluster',qty:clusterRows.length,unit:'clientes',desc:`${clusters.length.toLocaleString('pt-BR')} concentração(ões) com indício coletivo no recorte.`,act:'Escalar NOC antes de tratar casos isolados.',rows:clusterRows,action:'Validar POP/OLT/bairro e tratar causa raiz de rede externa.'},
+    {prio:'urgent',label:'OS técnica aberta',qty:osTecnica.length,unit:'clientes',desc:'Clientes com ordem de serviço técnica em aberto.',act:'Priorizar fechamento da OS antes de qualquer ação comercial.',rows:osTecnica,action:'Resolver a OS técnica e só depois reavaliar contato comercial.'},
+    {prio:'urgent',label:'OS vencida ou antiga',qty:osVencida.length,unit:'clientes',desc:'OS vencida ou aberta há 8+ dias.',act:'Repriorizar fila de campo e cobrar responsável.',rows:osVencida,action:'Reorganizar fila operacional e cobrar fechamento com evidência.'},
+    {prio:'high',label:'Sinal crítico',qty:sinalCrit.length,unit:'clientes',desc:'RX abaixo de -27 dBm.',act:'Agendar correção de sinal antes de campanha.',rows:sinalCrit,action:'Verificar conector, splitter, rota e nível óptico antes de ofertar upgrade.'},
+    {prio:'high',label:'LOS detectado',qty:losDetected.length,unit:'clientes',desc:'Indício de perda de sinal ou fibra rompida.',act:'Abrir OS de campo.',rows:losDetected,action:'Tratar como falha física até prova em contrário.'},
+    {prio:'high',label:'ONU desautorizada',qty:onuDesaut.length,unit:'clientes',desc:'Equipamento sem autorização/autenticação adequada.',act:'Regularizar cadastro/autorização da ONU.',rows:onuDesaut,action:'Conferir vínculo no IXC/OLT e regularizar o equipamento.'},
+    {prio:'high',label:'Instabilidade recorrente',qty:instavel.length,unit:'clientes',desc:'Entre 11 e 29 quedas no dia.',act:'Monitorar e abrir OS se repetir.',rows:instavel,action:'Investigar padrão de quedas, energia local, roteador e sinal.'},
+    {prio:'high',label:'Experiência OPA em risco',qty:opaRisco.length,unit:'clientes',desc:'Atendimentos com sinais de reclamação, sem acesso ou cancelamento.',act:'Contato humano e resolução antes de nova oferta.',rows:opaRisco,action:'Validar histórico OPA e resolver a causa de atrito.'},
+    {prio:'high',label:'OS recorrente',qty:osRecorrente.length,unit:'clientes',desc:'Clientes com duas ou mais OS no período.',act:'Auditar causa raiz.',rows:osRecorrente,action:'Revisar reincidência por cliente e fechar problema estrutural.'},
+    {prio:'med',label:'Bloqueio manual',qty:bloqMan.length,unit:'clientes',desc:'Bloqueio operacional/manual que exige validação.',act:'Separar do fluxo de saúde de rede e revisar motivo.',rows:bloqMan,action:'Validar motivo do bloqueio manual e definir se mantém, desbloqueia ou cancela.'},
+    {prio:'med',label:'Potência irregular',qty:stPotIrr.length,unit:'clientes',desc:'Status de potência fora do ideal.',act:'Incluir em manutenção preventiva.',rows:stPotIrr,action:'Programar ajuste preventivo de sinal.'},
+    {prio:'med',label:'Recorrência alta no OPA',qty:opaRecorrente.length,unit:'clientes',desc:'Três ou mais atendimentos no período.',act:'Identificar motivo dominante e tratar causa raiz.',rows:opaRecorrente,action:'Auditar motivo recorrente antes de campanha ou nova abordagem.'},
+    {prio:'med',label:'Mensalidade defasada',qty:defasados.length,unit:'clientes',desc:'Mensalidade abaixo da mediana do plano.',act:'Avaliar oportunidade comercial após validar saúde técnica.',rows:defasados,action:'Priorizar apenas clientes com rede saudável e sem pendência operacional.'},
+    {prio:'low',label:'Sem ONU MAC cadastrado',qty:semOnu.length,unit:'contratos',desc:'Contrato sem vínculo de equipamento no cadastro.',act:'Corrigir cadastro.',rows:semOnu,action:'Atualizar vínculo de equipamento para melhorar monitoramento.'},
+    {prio:'low',label:'Sem leitura de sinal',qty:semSinal.length,unit:'contratos',desc:'Sem leitura técnica de RX no recorte.',act:'Verificar tecnologia/cadastro.',rows:semSinal,action:'Conferir se é tecnologia fora da fibra ou falha cadastral.'}
+  ];
+  const prioOrder={urgent:0,high:1,med:2,low:3};
+  const prioLabels={urgent:'URGENTE - TRATAR HOJE',high:'ALTA PRIORIDADE - ESTA SEMANA',med:'MÉDIA PRIORIDADE - BACKLOG',low:'BAIXA PRIORIDADE'};
+  const list=actions.filter(a=>a.qty>0).sort((a,b)=>prioOrder[a.prio]-prioOrder[b.prio]||b.qty-a.qty);
+  const target=document.getElementById('acao-list');
+  if(!target)return;
+  let html='',last='';
+  list.forEach(a=>{
+    if(a.prio!==last){html+=`<div class="acao-prio-head">${prioLabels[a.prio]}</div>`;last=a.prio;}
+    html+=`<div class="acao-card ${a.prio}" data-acao="${escHtml(a.label)}">
+      <div class="qty-box"><div class="qty">${a.qty.toLocaleString('pt-BR')}</div><div class="qty-lbl">${escHtml(a.unit)}</div></div>
+      <div><h4>${escHtml(a.label)}</h4><div class="desc">${escHtml(a.desc)}</div><div class="act">${escHtml(a.act)}</div></div>
+      <div class="arrow">›</div>
+    </div>`;
+  });
+  if(!list.length)html='<div class="empty" style="padding:34px;text-align:center;color:#7f93ad">Nenhuma ação pendente identificada neste recorte.</div>';
+  target.innerHTML=html;
+  target.querySelectorAll('.acao-card').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const a=list.find(x=>x.label===el.dataset.acao);
+      if(!a)return;
+      openDrill(a.label,a.rows,null,{sub:`${a.qty.toLocaleString('pt-BR')} ${a.unit} · ${prioLabels[a.prio].toLowerCase()}`,action:a.action});
+    });
+  });
+}
+
 function renderPremiacoes(){
   // Carrega decisões salvas no Supabase em background (não bloqueia render)
   loadPremOverridesFromSupabase().catch(()=>{});
