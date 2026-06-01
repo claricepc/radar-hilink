@@ -4761,6 +4761,58 @@ h2.section-title .info-btn{margin-left:6px}
       overflow:auto!important;
       align-items:stretch!important;
     }
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-triage{
+      display:grid!important;
+      grid-template-columns:repeat(5,minmax(0,1fr))!important;
+      gap:10px!important;
+      margin:0 0 12px!important;
+    }
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-triage-card{
+      border:1px solid var(--border-default)!important;
+      border-radius:10px!important;
+      background:#0b1728!important;
+      padding:10px 12px!important;
+      min-width:0!important;
+      cursor:pointer!important;
+      display:grid!important;
+      grid-template-columns:minmax(0,1fr) auto!important;
+      gap:6px 10px!important;
+      align-items:center!important;
+    }
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-triage-card:hover{
+      border-color:rgba(56,168,255,.65)!important;
+      background:#0d2035!important;
+    }
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-triage-card strong{
+      color:#DDEBFF!important;
+      font-size:10px!important;
+      font-weight:800!important;
+      letter-spacing:.05em!important;
+      text-transform:uppercase!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+    }
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-triage-card b{
+      color:#38a8ff!important;
+      font-size:18px!important;
+      line-height:1!important;
+      font-weight:800!important;
+      white-space:nowrap!important;
+      font-variant-numeric:tabular-nums!important;
+    }
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-triage-card span{
+      grid-column:1/-1;
+      color:#7f93ad!important;
+      font-size:10px!important;
+      line-height:1.25!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+    }
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-triage-card.warn{border-color:rgba(255,168,0,.5)!important}
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-triage-card.danger{border-color:rgba(255,77,94,.55)!important}
+    #mod-premiacoes #prem-tab-auditoria .prem-audit-triage-card.ok{border-color:rgba(32,217,145,.45)!important}
     #mod-premiacoes #prem-tab-auditoria .prem-audit-work-card{
       display:flex!important;
       flex-direction:column!important;
@@ -4928,6 +4980,9 @@ h2.section-title .info-btn{margin-left:6px}
       #mod-premiacoes #prem-tab-auditoria .prem-audit-card-compact{
         grid-template-columns:minmax(240px,1fr) 110px!important;
       }
+      #mod-premiacoes #prem-tab-auditoria .prem-audit-triage{
+        grid-template-columns:repeat(2,minmax(0,1fr))!important;
+      }
       #mod-premiacoes #prem-tab-auditoria .prem-audit-card-actions-inline{
         grid-column:1/-1;
         justify-content:flex-start!important;
@@ -4938,6 +4993,9 @@ h2.section-title .info-btn{margin-left:6px}
     }
     @media(max-width:860px){
       #mod-premiacoes #prem-tab-auditoria .prem-audit-card-compact{
+        grid-template-columns:1fr!important;
+      }
+      #mod-premiacoes #prem-tab-auditoria .prem-audit-triage{
         grid-template-columns:1fr!important;
       }
       #mod-premiacoes #prem-tab-auditoria .prem-audit-card-info,
@@ -5850,7 +5908,7 @@ h2.section-title .info-btn{margin-left:6px}
               <div class="prem-audit-work-controls">
                 <input type="text" id="prem-audit-work-search" placeholder="Buscar cliente, contrato, vendedor ou motivo...">
                 <select id="prem-audit-work-status">
-                  <option value="pendentes">Pendentes de decisão</option>
+                  <option value="pendentes">Pendentes de decisão humana</option>
                   <option value="aprovados">Aprovados</option>
                   <option value="reprovados">Reprovados</option>
                   <option value="ajustados">Ajustados pela supervisão</option>
@@ -14362,6 +14420,18 @@ function premAuditWorkReasonLines(r){
 function premAuditWorkReasonHtml(r){
   return premAuditWorkReasonLines(r).map(x=>`<span class="prem-audit-reason-line"><b>${escHtml(x.label)}:</b> ${escHtml(x.value)}</span>`).join('');
 }
+function premAuditIsFinancePending(r){
+  return ['1ª parcela não localizada','Pendente de pagamento'].includes(String(r?.['Status premiação']||''));
+}
+function premAuditWorkGroupRows(rows,key){
+  const arr=Array.isArray(rows)?rows:[];
+  if(key==='financeiro')return arr.filter(premAuditIsFinancePending);
+  if(key==='historico')return arr.filter(r=>String(r['Validação histórico premiação']||'').trim()||String(r['Motivo sugerido pelo histórico']||'').trim()||String(r['Evidência histórico premiação']||'').trim());
+  if(key==='downgrade')return arr.filter(r=>['Upgrade anulado','Downgrade registrado','Auditoria pós-pagamento'].includes(String(r['Status premiação']||''))||String(r['Data downgrade vinculada']||'').trim());
+  if(key==='reativacao')return arr.filter(r=>['Negociação normal','Reativação não comprovada','Reativação sem histórico'].includes(String(r['Status premiação']||'')));
+  if(key==='excecao')return arr.filter(r=>String(r['Motivo validação manual']||'').trim()||String(r['Risco auditoria premiação']||'')==='Alto'||String(r['Status premiação']||'')==='Fora da janela');
+  return [];
+}
 function renderPremAuditWorkTable(inputRows){
   const box=document.getElementById('prem-audit-work');
   if(!box)return;
@@ -14370,11 +14440,18 @@ function renderPremAuditWorkTable(inputRows){
   const status=document.getElementById('prem-audit-work-status')?.value||'pendentes';
   const sort=document.getElementById('prem-audit-work-sort')?.value||'risco';
   const ov=getPremOverrides();
-  const risky=r=>r['Decisão premiação']==='VALIDAR'||String(r['Motivo validação manual']||'').trim()||r['Risco auditoria premiação']==='Alto'||['1ª parcela não localizada','Pendente de pagamento','Upgrade anulado','Fora da janela','Negociação normal','Reativação não comprovada','Reativação sem histórico'].includes(r['Status premiação']);
+  const risky=r=>r['Decisão premiação']==='VALIDAR'||String(r['Motivo validação manual']||'').trim()||r['Risco auditoria premiação']==='Alto'||['Upgrade anulado','Fora da janela','Negociação normal','Reativação não comprovada','Reativação sem histórico'].includes(r['Status premiação']);
+  const groups=[
+    {key:'financeiro',tone:'warn',title:'Pendência financeira',sub:'1ª parcela ainda não localizada; acompanhamento automático'},
+    {key:'historico',tone:'danger',title:'Conflito histórico',sub:'Divergência com histórico, contrato anterior ou evidência'},
+    {key:'downgrade',tone:'danger',title:'Downgrade/anulação',sub:'Upgrade anulado, downgrade ou auditoria pós-pagamento'},
+    {key:'reativacao',tone:'warn',title:'Reativação duvidosa',sub:'Churn não comprovado ou negociação normal'},
+    {key:'excecao',tone:'ok',title:'Exceções manuais',sub:'Fora da janela, risco alto ou motivo de validação'}
+  ].map(g=>({...g,rows:premAuditWorkGroupRows(rows,g.key)}));
   let out=rows.filter(r=>{
     const id=premOverrideIdFromRow(r);
     const adj=normalizePremOverride(ov[id]);
-    if(status==='pendentes'&&!risky(r))return false;
+    if(status==='pendentes'&&(premAuditIsFinancePending(r)||!risky(r)))return false;
     if(status==='aprovados'&&r['Decisão premiação']!=='APROVADO')return false;
     if(status==='reprovados'&&r['Decisão premiação']!=='REPROVADO')return false;
     if(status==='ajustados'&&!adj)return false;
@@ -14386,7 +14463,7 @@ function renderPremAuditWorkTable(inputRows){
     if(r['Risco auditoria premiação']==='Alto')s+=50;
     if(r['Decisão premiação']==='VALIDAR')s+=30;
     if(String(r['Motivo validação manual']||'').trim())s+=20;
-    if(r['Status premiação']==='1ª parcela não localizada')s+=15;
+    if(r['Status premiação']==='Fora da janela')s+=15;
     if(r['_override'])s-=10;
     return s;
   };
@@ -14395,8 +14472,23 @@ function renderPremAuditWorkTable(inputRows){
     if(sort==='cliente')return String(a.Cliente||'').localeCompare(String(b.Cliente||''),'pt-BR');
     return riskScore(b)-riskScore(a)||Number(b['Valor premiação']||0)-Number(a['Valor premiação']||0);
   });
-  if(!out.length){box.innerHTML='<div class="drop-empty">Nenhum caso encontrado neste filtro.</div>';return}
-  box.innerHTML=`<div class="prem-audit-work-cards">${out.slice(0,250).map(r=>{
+  const triageHtml=`<div class="prem-audit-triage">${groups.map(g=>{
+    const valor=g.rows.reduce((s,r)=>s+Number(r['Valor premiação']||r['Valor em validação']||0),0);
+    return `<div class="prem-audit-triage-card ${g.tone}" data-prem-work-group="${escAttr(g.key)}">
+      <strong>${escHtml(g.title)}</strong>
+      <b>${g.rows.length.toLocaleString('pt-BR')}</b>
+      <span>${escHtml(g.sub)} · ${brl(valor)}</span>
+    </div>`;
+  }).join('')}</div>`;
+  if(!out.length){
+    box.innerHTML=triageHtml+'<div class="drop-empty">Nenhum caso de decisão humana encontrado neste filtro. Use os blocos acima para acompanhar pendências por tipo.</div>';
+    document.querySelectorAll('#prem-audit-work [data-prem-work-group]').forEach(el=>el.onclick=()=>{
+      const item=groups.find(g=>g.key===el.dataset.premWorkGroup);if(!item)return;
+      openDrill(item.title,item.rows,premiacoesDrillCols(),{sub:`${item.rows.length.toLocaleString('pt-BR')} registros`,action:item.sub});
+    });
+    return;
+  }
+  box.innerHTML=triageHtml+`<div class="prem-audit-work-cards">${out.slice(0,250).map(r=>{
       const id=premOverrideIdFromRow(r);
       const idAttr=escAttr(id);
       const idJs=String(id).replace(/'/g,"\\'");
@@ -14439,6 +14531,10 @@ function renderPremAuditWorkTable(inputRows){
         </div>
       </div>`;
     }).join('')}</div>${out.length>250?`<div class="drop-empty" style="margin-top:8px">Mostrando 250 de ${out.length.toLocaleString('pt-BR')} casos. Use busca/filtros para refinar.</div>`:''}`;
+  document.querySelectorAll('#prem-audit-work [data-prem-work-group]').forEach(el=>el.onclick=()=>{
+    const item=groups.find(g=>g.key===el.dataset.premWorkGroup);if(!item)return;
+    openDrill(item.title,item.rows,premiacoesDrillCols(),{sub:`${item.rows.length.toLocaleString('pt-BR')} registros`,action:item.sub});
+  });
 }
 function renderOpaMapaAtendentes(meta){
   const box=document.getElementById('prem-opa-mapa');
