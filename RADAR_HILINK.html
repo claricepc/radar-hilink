@@ -16729,276 +16729,392 @@ function setAllDrillCols(on){
 </body>
 
 <script>
-/* ══ RANKING UPGRADE ══════════════════════════════════════════════════ */
-var _ruRowsAll=[];
+/* == RANKING UPGRADE REPARADO v2 =====================================
+   Usa somente o relatorio Alteracoes Contratuais ja carregado no modulo
+   Carregar Relatorios. Nao cria upload proprio nesta aba. */
+(function(){
+  var RU_COMISSAO = 10;
+  var _ruRowsAll = [];
+  var _ruSourceInfo = {source:'',rawCount:0,recognized:0,filteredOut:false};
 
-function _ruHasUpgradeRows(rows){
-  return Array.isArray(rows)&&rows.some(function(r){
-    var t=String(r&&r['Tipo alteração']||'').trim();
-    return t==='Upgrade'||t==='Downgrade';
-  });
-}
-
-function _ruRawAlteracoesLoose(){
-  if(typeof STATE==='undefined'||!STATE.raw||!Array.isArray(STATE.raw.alteracoes)||!STATE.raw.alteracoes.length)return [];
-  return STATE.raw.alteracoes.map(function(r){
-    var keys=Object.keys(r||{});
-    var vals=keys.map(function(k){return r[k];});
-    var val=function(patterns,pos){
-      var key=(typeof findCol==='function')?findCol(r,patterns):'';
-      if(key&&r[key]!=null&&String(r[key]).trim()!=='')return r[key];
-      return vals[pos]??'';
-    };
-    var tipoRaw=String(val([/tipo de altera/i,/tipo altera/i,/tipo$/i],3)||'').replace(/"/g,'').trim();
-    var tipoNorm=typeof norm==='function'?norm(tipoRaw):tipoRaw.toUpperCase();
-    var tipo=tipoNorm==='UP'||tipoNorm.includes('UPGRADE')?'Upgrade':(tipoNorm==='DW'||tipoNorm.includes('DOWNGRADE')?'Downgrade':'');
-    if(!tipo)return null;
-    var dataRaw=val([/data hora altera/i,/data altera/i],2);
-    var anterior=typeof toFloat==='function'?toFloat(val([/valor anterior/i],4)):parseFloat(String(val([/valor anterior/i],4)).replace(',','.'));
-    var novo=typeof toFloat==='function'?toFloat(val([/valor novo/i],5)):parseFloat(String(val([/valor novo/i],5)).replace(',','.'));
-    var vendedorRaw=String(val([/^vendedor$/i],12)||'').trim();
-    var vendedorId=typeof onlyId==='function'?onlyId(vendedorRaw):String(vendedorRaw).replace(/\D/g,'');
-    var vendedorLabel=vendedorId&&typeof vendedorNome==='function'?vendedorNome(vendedorId):(vendedorRaw||'Não identificado');
-    return {
-      'ID alteração':typeof limpaId==='function'?limpaId(val([/^id$/i],0)):String(val([/^id$/i],0)).replace(/\D/g,''),
-      'ID Contrato':typeof limpaId==='function'?limpaId(val([/id contrato/i,/contrato/i],1)):String(val([/id contrato/i,/contrato/i],1)).replace(/\D/g,''),
-      'Data alteração':dataRaw,
-      _date:(typeof parseDateTime==='function'?parseDateTime(dataRaw):null)||(typeof parseDate==='function'?parseDate(dataRaw):null),
-      'Tipo alteração':tipo,
-      'Tipo alteração raw':tipoRaw,
-      'Valor anterior':isNaN(anterior)?null:anterior,
-      'Valor novo':isNaN(novo)?null:novo,
-      'Diferença':(!isNaN(anterior)&&!isNaN(novo))?novo-anterior:null,
-      'Vendedor ID':vendedorId,
-      'Vendedor Nome':vendedorLabel,
-      'Vendedor':vendedorLabel
-    };
-  }).filter(function(r){return r&&r['ID Contrato'];});
-}
-
-function _ruSourceRows(){
-  if(typeof STATE==='undefined')return [];
-  if(STATE.processed&&Array.isArray(STATE.processed.alteracoes)&&STATE.processed.alteracoes.length){
-    if(_ruHasUpgradeRows(STATE.processed.alteracoes))return STATE.processed.alteracoes;
+  function ruNorm(v){
+    if(typeof norm === 'function') return norm(v);
+    return String(v == null ? '' : v).normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
   }
-  if(typeof processAlteracoesRows==='function'&&STATE.raw&&Array.isArray(STATE.raw.alteracoes)&&STATE.raw.alteracoes.length){
-    var parsed=processAlteracoesRows(STATE.raw.alteracoes);
-    if(_ruHasUpgradeRows(parsed))return parsed;
+  function ruId(v){
+    if(typeof limpaId === 'function') return limpaId(v);
+    if(typeof onlyId === 'function') return onlyId(v);
+    return String(v == null ? '' : v).replace(/\D/g,'');
   }
-  if(typeof getCachedAlteracoesRows==='function'){
-    var cached=getCachedAlteracoesRows();
-    if(cached.length&&typeof processAlteracoesRows==='function'){
-      if(STATE.raw&&!Array.isArray(STATE.raw.alteracoes))STATE.raw.alteracoes=cached;
-      var parsedCache=processAlteracoesRows(cached);
-      if(_ruHasUpgradeRows(parsedCache))return parsedCache;
+  function ruFloat(v){
+    if(typeof toFloat === 'function') return toFloat(v);
+    if(v == null || v === '') return 0;
+    var s = String(v).replace(/R\$/g,'').replace(/\s/g,'');
+    if(s.indexOf(',') >= 0) s = s.replace(/\./g,'').replace(',','.');
+    var n = Number(s);
+    return isFinite(n) ? n : 0;
+  }
+  function ruDate(v){
+    if(!v) return null;
+    if(typeof parseDateTime === 'function'){
+      var d = parseDateTime(v);
+      if(d && !isNaN(d)) return d;
     }
-  }
-  return _ruRawAlteracoesLoose();
-}
-
-function ruFiltrar(){
-  var di=document.getElementById('ru-dt-ini');
-  var df=document.getElementById('ru-dt-fim');
-  var diV=di?di.value:'';var dfV=df?df.value:'';
-  var rows=_ruRowsAll.filter(function(r){
-    if(!r._date)return true;
-    if(diV&&r._date<new Date(diV))return false;
-    if(dfV&&r._date>new Date(dfV+'T23:59:59'))return false;
-    return true;
-  });
-  _ruRender(rows);
-}
-
-function ruVerTudo(){
-  _ruRender(_ruRowsAll);
-}
-
-function renderRankingUpgrade(){
-  var RU_NOMES=['MILLENA CAMELO','THAISY FERREIRA','MIRELLY BEZERRA','VIRGINIA VANESSA','KARINE PRISCILA','EVILLYN OLIVEIRA'];
-  var RU_COMISSAO=10;
-  var fmtBRL=function(v){return'R$ '+Math.abs(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});};
-
-  var raw=_ruSourceRows();
-
-  _ruRowsAll=raw;
-  _ruRender(raw);
-}
-
-window.ruFromProcessed=function(){
-  var tab=document.getElementById('prem-tab-ranking-upgrade');
-  var raw=_ruSourceRows();
-  _ruRowsAll=raw;
-  if(tab&&tab.classList.contains('active'))_ruRender(raw);
-};
-
-function _ruRender(raw){
-  var RU_NOMES=['MILLENA CAMELO','THAISY FERREIRA','MIRELLY BEZERRA','VIRGINIA VANESSA','KARINE PRISCILA','EVILLYN OLIVEIRA'];
-  var RU_COMISSAO=10;
-  var fmtBRL=function(v){return'R$ '+Math.abs(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});};
-
-  var ups=raw.filter(function(r){var t=String(r['Tipo alteração']||'');return t==='Upgrade';});
-  var dws=raw.filter(function(r){var t=String(r['Tipo alteração']||'');return t==='Downgrade';});
-
-  if(!ups.length&&!dws.length){
-    var altLen=(STATE&&STATE.raw&&STATE.raw.alteracoes)?STATE.raw.alteracoes.length:0;
-    var rawLen=raw.length;
-    var tipos=raw.slice(0,5).map(function(r){return r['Tipo alteração'];}).join(', ');
-    var keys=STATE&&STATE.raw?Object.keys(STATE.raw).filter(function(k){return STATE.raw[k]&&STATE.raw[k].length;}).join(', '):'nenhum';
-    document.getElementById('ru-vazio').innerHTML='<div style="padding:32px;text-align:center;color:#94a3b8;font-size:12px">'
-      +'<div style="font-size:14px;margin-bottom:12px">Nenhum dado de upgrade encontrado</div>'
-      +'<div style="font-family:monospace;font-size:11px;color:#64748b;line-height:1.8">'
-      +'<div>STATE.raw.alteracoes: <b>'+altLen+'</b> registros</div>'
-      +'<div>processAlteracoesRows retornou: <b>'+rawLen+'</b> linhas</div>'
-      +'<div>Tipos encontrados: <b>'+(tipos||'nenhum')+'</b></div>'
-      +'<div>Keys carregadas no STATE.raw: <b>'+keys+'</b></div>'
-      +'</div>'
-      +'<div style="margin-top:12px;color:#556677">Carregue o relatório de <b>Alterações Contratuais</b> no módulo Carregar Relatórios</div>'
-      +'</div>';
-    document.getElementById('ru-vazio').style.display='block';
-    document.getElementById('ru-podio').style.display='none';
-    document.getElementById('ru-tabela-wrap').style.display='none';
-    document.getElementById('ru-legenda').style.display='none';
-    document.getElementById('ru-box-total').style.display='none';
-    document.getElementById('ru-periodo').textContent='Carregue o relatório de Alterações Contratuais';
-    return;
-  }
-
-  // Mapear ups por contrato → vendedor (para rastrear quem fez o up original)
-  var upMap={};
-  ups.forEach(function(r){if(r['ID Contrato'])upMap[r['ID Contrato']]=String(r['Vendedor Nome']||'').toUpperCase().trim();});
-
-  // Inicializar dados para TODOS os vendedores das campanhas
-  var d={};
-  RU_NOMES.forEach(function(n){d[n]={ups:0,downs:0,rec_b:0,desc:0,nome:n};});
-
-  ups.forEach(function(r){
-    var vn=String(r['Vendedor Nome']||'').toUpperCase().trim();
-    if(!d[vn])d[vn]={ups:0,downs:0,rec_b:0,desc:0,nome:r['Vendedor Nome']||vn};
-    d[vn].ups++;
-    var dif=r['Diferença'];
-    if(dif!=null&&!isNaN(dif)&&dif>0)d[vn].rec_b=Math.round((d[vn].rec_b+dif)*100)/100;
-  });
-  dws.forEach(function(r){
-    var cid=r['ID Contrato'];
-    var a=cid?upMap[cid]:null;
-    if(a){
-      if(!d[a])d[a]={ups:0,downs:0,rec_b:0,desc:0,nome:a};
-      d[a].downs++;
-      var dif=r['Diferença'];
-      if(dif!=null&&!isNaN(dif))d[a].desc=Math.round((d[a].desc+Math.abs(dif))*100)/100;
+    if(typeof parseDate === 'function'){
+      var d2 = parseDate(v);
+      if(d2 && !isNaN(d2)) return d2;
     }
+    var s = String(v).trim();
+    var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+    if(m) return new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0));
+    var dt = new Date(s);
+    return isNaN(dt) ? null : dt;
+  }
+  function ruMonthKey(d){
+    if(!d || isNaN(d)) return '';
+    if(typeof monthKeyFromDate === 'function') return monthKeyFromDate(d);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  }
+  function ruBRL(v){
+    var n = Number(v || 0);
+    return 'R$ ' + n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function ruEsc(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
+  }
+  function ruCol(row, patterns, pos){
+    row = row || {};
+    var keys = Object.keys(row);
+    if(typeof findCol === 'function'){
+      var k = findCol(row, patterns || []);
+      if(k && row[k] != null && String(row[k]).trim() !== '') return row[k];
+    }
+    for(var i=0;i<keys.length;i++){
+      var nk = ruNorm(keys[i]);
+      for(var p=0;p<(patterns||[]).length;p++){
+        if(patterns[p].test(keys[i]) || patterns[p].test(nk)){
+          if(row[keys[i]] != null && String(row[keys[i]]).trim() !== '') return row[keys[i]];
+        }
+      }
+    }
+    if(pos != null && keys[pos]) return row[keys[pos]];
+    return '';
+  }
+  function ruLooksLikeAlteracoes(rows){
+    if(!Array.isArray(rows) || !rows.length) return false;
+    var sample = rows[0] || {};
+    var keys = Object.keys(sample).map(ruNorm).join(' | ');
+    return /CONTRATO/.test(keys) && (/ALTERA/.test(keys) || /VALOR ANTERIOR/.test(keys) || /VALOR NOVO/.test(keys) || /VENDEDOR/.test(keys));
+  }
+  function ruTipo(tipoRaw, dif){
+    var t = ruNorm(tipoRaw);
+    if(t === 'UP' || t.indexOf('UPGRADE') >= 0) return 'Upgrade';
+    if(t === 'DW' || t === 'DOWN' || t.indexOf('DOWNGRADE') >= 0) return 'Downgrade';
+    if((t.indexOf('ALTERACAO') >= 0 || t.indexOf('PLANO') >= 0) && dif > 0) return 'Upgrade';
+    if((t.indexOf('ALTERACAO') >= 0 || t.indexOf('PLANO') >= 0) && dif < 0) return 'Downgrade';
+    return '';
+  }
+  function ruSellerName(raw){
+    var txt = String(raw == null ? '' : raw).trim();
+    var id = ruId(txt);
+    if(id && typeof vendedorNome === 'function'){
+      var n = vendedorNome(id);
+      if(n && n !== 'Nao identificado' && n !== 'Não identificado') return n;
+    }
+    return txt || 'Nao identificado';
+  }
+  function ruAvatar(nome){
+    var initials = String(nome||'?').split(/\s+/).filter(Boolean).slice(0,2).map(function(x){return x.charAt(0);}).join('');
+    if(typeof premAtendimentoAvatar === 'function'){
+      var img = premAtendimentoAvatar(nome);
+      if(img) return '<img src="'+img+'" alt="'+ruEsc(nome)+'">';
+    }
+    return '<span>'+ruEsc(initials || '?')+'</span>';
+  }
+  function ruCurrentCompetencia(){
+    return (typeof STATE !== 'undefined' && STATE.filtros) ? String(STATE.filtros.competencia || '') : '';
+  }
+  function ruCompetenciaOk(row){
+    var comp = ruCurrentCompetencia();
+    if(!comp || !row._date) return true;
+    return ruMonthKey(row._date) === comp;
+  }
+  function ruProcessedRows(rawRows){
+    rawRows = Array.isArray(rawRows) ? rawRows : [];
+    if(!rawRows.length) return [];
+    if(typeof processAlteracoesRows === 'function'){
+      try{
+        var p = processAlteracoesRows(rawRows);
+        if(ruHasRows(p)) return p;
+      }catch(e){ console.warn('[RU] processAlteracoesRows falhou, usando parser local', e); }
+    }
+    return ruParseRawRows(rawRows);
+  }
+  function ruParseRawRows(rawRows){
+    rawRows = Array.isArray(rawRows) ? rawRows : [];
+    return rawRows.map(function(r){
+      var anterior = ruFloat(ruCol(r,[/valor anterior/i,/valor antigo/i],4));
+      var novo = ruFloat(ruCol(r,[/valor novo/i,/novo valor/i],5));
+      var dif = novo - anterior;
+      var tipoRaw = ruCol(r,[/tipo de altera/i,/tipo altera/i,/tipo$/i],3);
+      var tipo = ruTipo(tipoRaw, dif);
+      if(!tipo) return null;
+      var vendedorRaw = ruCol(r,[/^vendedor$/i,/vendedor/i],12);
+      var nome = ruSellerName(vendedorRaw);
+      var dataRaw = ruCol(r,[/data hora altera/i,/data altera/i,/alterado em/i,/data/i],2);
+      return {
+        'ID alteracao': ruCol(r,[/^id$/i],0),
+        'ID Contrato': ruId(ruCol(r,[/id contrato/i,/contrato/i],1)),
+        'Data alteracao': dataRaw,
+        _date: ruDate(dataRaw),
+        'Tipo alteracao': tipo,
+        'Tipo alteração': tipo,
+        'Tipo raw': tipoRaw,
+        'Valor anterior': anterior,
+        'Valor novo': novo,
+        'Diferenca': dif,
+        'Diferença': dif,
+        'Vendedor Nome': nome,
+        'Vendedor': nome
+      };
+    }).filter(function(r){ return r && r['ID Contrato']; });
+  }
+  function ruHasRows(rows){
+    return Array.isArray(rows) && rows.some(function(r){
+      var t = String(r['Tipo alteração'] || r['Tipo alteracao'] || '');
+      return t === 'Upgrade' || t === 'Downgrade';
+    });
+  }
+  function ruKnownSources(){
+    var sources = [];
+    try{
+      if(typeof STATE !== 'undefined'){
+        if(STATE.processed && Array.isArray(STATE.processed.alteracoes) && STATE.processed.alteracoes.length){
+          sources.push({name:'STATE.processed.alteracoes',rows:STATE.processed.alteracoes,processed:true});
+        }
+        if(STATE.raw && Array.isArray(STATE.raw.alteracoes) && STATE.raw.alteracoes.length){
+          sources.push({name:'STATE.raw.alteracoes',rows:STATE.raw.alteracoes,processed:false});
+        }
+        ['raw','processed'].forEach(function(scope){
+          var obj = STATE[scope] || {};
+          Object.keys(obj).forEach(function(k){
+            if(k === 'alteracoes') return;
+            if(Array.isArray(obj[k]) && ruLooksLikeAlteracoes(obj[k])) sources.push({name:'STATE.'+scope+'.'+k,rows:obj[k],processed:scope==='processed'});
+          });
+        });
+      }
+      if(typeof getCachedAlteracoesRows === 'function'){
+        var cached = getCachedAlteracoesRows();
+        if(cached && cached.length) sources.push({name:'localStorage.radar_raw_alteracoes',rows:cached,processed:false});
+      }
+    }catch(e){ console.warn('[RU] falha ao mapear fontes', e); }
+    return sources;
+  }
+  function ruSourceRows(){
+    var sources = ruKnownSources();
+    for(var i=0;i<sources.length;i++){
+      var src = sources[i];
+      var out = src.processed ? src.rows : ruProcessedRows(src.rows);
+      if(ruHasRows(out)){
+        _ruSourceInfo = {source:src.name,rawCount:src.rows.length,recognized:out.length,filteredOut:false};
+        if(typeof STATE !== 'undefined'){
+          STATE.processed = STATE.processed || {};
+          STATE.raw = STATE.raw || {};
+          STATE.processed.alteracoes = out;
+          if(!src.processed && (!Array.isArray(STATE.raw.alteracoes) || !STATE.raw.alteracoes.length)) STATE.raw.alteracoes = src.rows;
+        }
+        return out;
+      }
+    }
+    _ruSourceInfo = {source:sources.map(function(s){return s.name+': '+s.rows.length;}).join(' | '),rawCount:sources.reduce(function(a,s){return a+s.rows.length;},0),recognized:0,filteredOut:false};
+    return [];
+  }
+  function ruBuild(rows, ignoreCompetencia){
+    var withType = (rows || []).filter(function(r){
+      var t = String(r['Tipo alteração'] || r['Tipo alteracao'] || '');
+      return t === 'Upgrade' || t === 'Downgrade';
+    });
+    var valid = withType.filter(function(r){ return ignoreCompetencia || ruCompetenciaOk(r); });
+    _ruSourceInfo.filteredOut = !!(withType.length && !valid.length && !ignoreCompetencia && ruCurrentCompetencia());
+    if(_ruSourceInfo.filteredOut) valid = withType;
+    var ups = valid.filter(function(r){return String(r['Tipo alteração'] || r['Tipo alteracao']) === 'Upgrade';});
+    var dws = valid.filter(function(r){return String(r['Tipo alteração'] || r['Tipo alteracao']) === 'Downgrade';});
+    var upMap = {};
+    ups.forEach(function(r){
+      var c = ruId(r['ID Contrato']);
+      var n = String(r['Vendedor Nome'] || r['Vendedor'] || 'Nao identificado').toUpperCase().trim();
+      if(c) upMap[c] = n;
+    });
+    var d = {};
+    function ensure(nome){
+      var clean = String(nome || 'Nao identificado').trim() || 'Nao identificado';
+      var k = clean.toUpperCase();
+      if(!d[k]) d[k] = {nome:clean, ups:0, downs:0, rec_b:0, desc:0, linhas:[]};
+      return d[k];
+    }
+    ups.forEach(function(r){
+      var item = ensure(r['Vendedor Nome'] || r['Vendedor']);
+      var dif = Number(r['Diferença'] != null ? r['Diferença'] : r['Diferenca']);
+      item.ups += 1;
+      if(isFinite(dif) && dif > 0) item.rec_b += dif;
+      item.linhas.push(r);
+    });
+    dws.forEach(function(r){
+      var contrato = ruId(r['ID Contrato']);
+      var nome = upMap[contrato] || String(r['Vendedor Nome'] || r['Vendedor'] || 'Nao identificado').trim();
+      var item = ensure(nome);
+      var dif = Number(r['Diferença'] != null ? r['Diferença'] : r['Diferenca']);
+      item.downs += 1;
+      if(isFinite(dif) && dif < 0) item.desc += Math.abs(dif);
+      item.linhas.push(r);
+    });
+    return Object.keys(d).map(function(k){
+      var x = d[k];
+      x.ups_liq = Math.max(0, x.ups - x.downs);
+      x.rec_liq = Math.max(0, x.rec_b - x.desc);
+      x.ticket = x.ups ? x.rec_b / x.ups : 0;
+      x.comissao = x.ups_liq * RU_COMISSAO;
+      return x;
+    }).sort(function(a,b){ return (b.rec_liq - a.rec_liq) || (b.ups_liq - a.ups_liq) || a.nome.localeCompare(b.nome); });
+  }
+
+  function ruApplyCss(){
+    if(document.getElementById('ru-fixed-css')) return;
+    var css = document.createElement('style');
+    css.id = 'ru-fixed-css';
+    css.textContent = [
+      '#mod-premiacoes #ru-podio{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;align-items:stretch}',
+      '#mod-premiacoes .ru-card{background:#0f2438;border:1px solid rgba(56,168,255,.35);border-radius:12px;padding:14px;min-width:0;display:flex;flex-direction:column;gap:8px;overflow:hidden}',
+      '#mod-premiacoes .ru-card.pos1{border-color:rgba(255,168,0,.75);box-shadow:inset 0 0 0 1px rgba(255,168,0,.18)}',
+      '#mod-premiacoes .ru-card.pos2{border-color:rgba(148,163,184,.75)}',
+      '#mod-premiacoes .ru-card.pos3{border-color:rgba(180,115,51,.85)}',
+      '#mod-premiacoes .ru-top{display:flex;align-items:center;gap:10px;min-width:0}',
+      '#mod-premiacoes .ru-avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;border:2px solid #2b4362;background:#081523;display:flex;align-items:center;justify-content:center;color:#8fb8e8;font-weight:900;flex:0 0 auto}',
+      '#mod-premiacoes .ru-avatar img{width:100%;height:100%;object-fit:cover;display:block}',
+      '#mod-premiacoes .ru-pos{margin-left:auto;border:1px solid rgba(56,168,255,.45);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;color:#ddefff;white-space:nowrap}',
+      '#mod-premiacoes .ru-name{font-size:12px;font-weight:800;color:#fff;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '#mod-premiacoes .ru-sub{font-size:10px;color:#86a3c7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '#mod-premiacoes .ru-money{font-size:20px;font-weight:800;line-height:1;color:#38a8ff;white-space:nowrap;font-variant-numeric:tabular-nums}',
+      '#mod-premiacoes .ru-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:auto}',
+      '#mod-premiacoes .ru-mini{background:#091522;border:1px solid #1e3552;border-radius:8px;padding:7px 8px;min-width:0;overflow:hidden}',
+      '#mod-premiacoes .ru-mini small{display:block;font-size:9px;font-weight:800;color:#8fb8e8;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '#mod-premiacoes .ru-mini b{display:block;margin-top:2px;font-size:12px;color:#fff;white-space:nowrap;font-variant-numeric:tabular-nums}',
+      '#mod-premiacoes .ru-bar{height:4px;background:#25364b;border-radius:999px;overflow:hidden}',
+      '#mod-premiacoes .ru-fill{height:100%;border-radius:999px;background:#38a8ff}',
+      '#mod-premiacoes .ru-table-total td{background:#091522;color:#fff;font-weight:800}',
+      '@media(max-width:1300px){#mod-premiacoes #ru-podio{grid-template-columns:repeat(3,minmax(0,1fr))}}',
+      '@media(max-width:760px){#mod-premiacoes #ru-podio{grid-template-columns:1fr}}'
+    ].join('\n');
+    document.head.appendChild(css);
+  }
+
+  function ruRender(rows){
+    ruApplyCss();
+    rows = rows || _ruRowsAll || [];
+    var ranking = ruBuild(rows, false);
+    var elVazio = document.getElementById('ru-vazio');
+    var elPodio = document.getElementById('ru-podio');
+    var elWrap = document.getElementById('ru-tabela-wrap');
+    var elBody = document.getElementById('ru-tabela-body');
+    var elLegenda = document.getElementById('ru-legenda');
+    var elTotal = document.getElementById('ru-box-total');
+    var elTxtTotal = document.getElementById('ru-txt-total');
+    var elTxtAlts = document.getElementById('ru-txt-alts');
+    var elPeriodo = document.getElementById('ru-periodo');
+    if(!elVazio || !elPodio || !elWrap || !elBody) return;
+
+    var totalUps = ranking.reduce(function(s,x){return s+x.ups;},0);
+    var totalDowns = ranking.reduce(function(s,x){return s+x.downs;},0);
+    var totalRec = ranking.reduce(function(s,x){return s+x.rec_liq;},0);
+    var totalComissao = ranking.reduce(function(s,x){return s+x.comissao;},0);
+
+    if(!ranking.length){
+      elVazio.style.display = 'block';
+      elVazio.innerHTML = '<div style="padding:36px;text-align:center;color:#7f93ad;font-size:12px;line-height:1.6">'
+        + '<b style="display:block;color:#ddefff;font-size:13px;margin-bottom:6px">Nenhum upgrade encontrado no relatório carregado.</b>'
+        + '<span>Fonte esperada: relatório de Alterações Contratuais carregado no módulo Carregar Relatórios.</span>'
+        + '<div style="margin-top:8px;color:#5f7898">Fonte detectada: '+ruEsc(_ruSourceInfo.source || 'nenhuma')+' · linhas brutas: '+_ruSourceInfo.rawCount+' · reconhecidas: '+_ruSourceInfo.recognized+'</div>'
+        + '</div>';
+      elPodio.style.display = 'none'; elWrap.style.display = 'none';
+      if(elLegenda) elLegenda.style.display = 'none';
+      if(elTotal) elTotal.style.display = 'none';
+      if(elPeriodo) elPeriodo.textContent = 'Sem dados reconhecidos em Alterações Contratuais';
+      return;
+    }
+
+    elVazio.style.display = 'none';
+    elPodio.style.display = 'grid';
+    elWrap.style.display = 'block';
+    if(elLegenda) elLegenda.style.display = 'block';
+    if(elTotal) elTotal.style.display = 'block';
+    if(elTxtTotal) elTxtTotal.textContent = ruBRL(totalRec);
+    if(elTxtAlts) elTxtAlts.textContent = totalUps + ' ups · ' + totalDowns + ' downs · ' + ruBRL(totalComissao) + ' comissão';
+    if(elPeriodo){
+      var comp = ruCurrentCompetencia();
+      elPeriodo.textContent = 'Fonte: '+(_ruSourceInfo.source || 'Alterações Contratuais') + (comp ? ' · competência ' + comp : '') + (_ruSourceInfo.filteredOut ? ' · sem linhas na competência; exibindo relatório carregado' : '') + ' · ' + ranking.length + ' vendedoras';
+    }
+
+    var maxRec = Math.max.apply(null, ranking.map(function(x){return x.rec_liq;}));
+    elPodio.innerHTML = ranking.slice(0,6).map(function(x,i){
+      var pos = i + 1;
+      var pct = maxRec ? Math.max(5, Math.round((x.rec_liq / maxRec) * 100)) : 0;
+      return '<div class="ru-card pos'+pos+'">'
+        + '<div class="ru-top"><div class="ru-avatar">'+ruAvatar(x.nome)+'</div><div style="min-width:0"><div class="ru-name">'+ruEsc(x.nome)+'</div><div class="ru-sub">'+x.ups+' ups · '+x.downs+' downs</div></div><div class="ru-pos">'+pos+'º</div></div>'
+        + '<div class="ru-money">'+ruBRL(x.rec_liq)+'</div>'
+        + '<div class="ru-bar"><div class="ru-fill" style="width:'+pct+'%"></div></div>'
+        + '<div class="ru-stats">'
+        + '<div class="ru-mini"><small>Ups líquido</small><b>'+x.ups_liq+'</b></div>'
+        + '<div class="ru-mini"><small>Ticket médio</small><b>'+ruBRL(x.ticket)+'</b></div>'
+        + '<div class="ru-mini"><small>Receita bruta</small><b>'+ruBRL(x.rec_b)+'</b></div>'
+        + '<div class="ru-mini"><small>Comissão</small><b>'+ruBRL(x.comissao)+'</b></div>'
+        + '</div></div>';
+    }).join('');
+
+    elBody.innerHTML = ranking.map(function(x,i){
+      return '<tr>'
+        + '<td style="padding:10px 8px;color:#8fb8e8;font-weight:800">'+(i+1)+'</td>'
+        + '<td style="padding:10px 8px;color:#fff;font-weight:800">'+ruEsc(x.nome)+'</td>'
+        + '<td style="padding:10px 8px;text-align:right">'+x.ups+'</td>'
+        + '<td style="padding:10px 8px;text-align:right;color:#ffb4bb">'+x.downs+'</td>'
+        + '<td style="padding:10px 8px;text-align:right;color:#20d991;font-weight:800">'+x.ups_liq+'</td>'
+        + '<td style="padding:10px 8px;text-align:right">'+ruBRL(x.rec_b)+'</td>'
+        + '<td style="padding:10px 8px;text-align:right;color:#ffa800">'+(x.desc ? ruBRL(x.desc) : '-')+'</td>'
+        + '<td style="padding:10px 8px;text-align:right;color:#38a8ff;font-weight:800">'+ruBRL(x.rec_liq)+'</td>'
+        + '<td style="padding:10px 8px;text-align:right">'+ruBRL(x.ticket)+'</td>'
+        + '<td style="padding:10px 8px;text-align:right;color:#20d991;font-weight:800">'+ruBRL(x.comissao)+'</td>'
+        + '</tr>';
+    }).join('') + '<tr class="ru-table-total">'
+      + '<td style="padding:10px 8px" colspan="2">TOTAL GERAL</td>'
+      + '<td style="padding:10px 8px;text-align:right">'+totalUps+'</td>'
+      + '<td style="padding:10px 8px;text-align:right">'+totalDowns+'</td>'
+      + '<td style="padding:10px 8px;text-align:right">'+Math.max(0,totalUps-totalDowns)+'</td>'
+      + '<td style="padding:10px 8px;text-align:right">'+ruBRL(ranking.reduce(function(s,x){return s+x.rec_b;},0))+'</td>'
+      + '<td style="padding:10px 8px;text-align:right">'+ruBRL(ranking.reduce(function(s,x){return s+x.desc;},0))+'</td>'
+      + '<td style="padding:10px 8px;text-align:right">'+ruBRL(totalRec)+'</td>'
+      + '<td style="padding:10px 8px;text-align:right">-</td>'
+      + '<td style="padding:10px 8px;text-align:right">'+ruBRL(totalComissao)+'</td>'
+      + '</tr>';
+  }
+
+  window.renderRankingUpgrade = function(){
+    _ruRowsAll = ruSourceRows();
+    ruRender(_ruRowsAll);
+  };
+  window.ruFromProcessed = function(){
+    _ruRowsAll = ruSourceRows();
+    var tab = document.getElementById('prem-tab-ranking-upgrade');
+    if(tab && tab.classList.contains('active')) ruRender(_ruRowsAll);
+  };
+  window.ruFiltrar = function(){ ruRender(_ruRowsAll); };
+  window.ruVerTudo = function(){ ruRender(_ruRowsAll); };
+  window.ruDebug = function(){ return {sourceInfo:_ruSourceInfo, rows:_ruRowsAll, sources:ruKnownSources().map(function(s){return {name:s.name,count:s.rows.length,looks:ruLooksLikeAlteracoes(s.rows)}})}; };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    try{
+      var tab = document.getElementById('prem-tab-ranking-upgrade');
+      if(tab && tab.classList.contains('active')) window.renderRankingUpgrade();
+    }catch(e){ console.warn('[RU] render inicial falhou', e); }
   });
-
-  // Calcular métricas
-  Object.keys(d).forEach(function(v){
-    d[v].ups_liq=d[v].ups-d[v].downs;
-    d[v].rec_liq=Math.round((d[v].rec_b-d[v].desc)*100)/100;
-    d[v].comissao=Math.max(0,d[v].ups_liq)*RU_COMISSAO;
-    d[v].ticket=d[v].ups_liq>0?Math.round(d[v].rec_liq/d[v].ups_liq*100)/100:0;
-  });
-
-  // Ranking das 6 campanhas ordenado por rec_liq
-  var rank6=RU_NOMES.slice().sort(function(a,b){return(d[b]?d[b].rec_liq:0)-(d[a]?d[a].rec_liq:0);});
-
-  // Total geral (todos os vendedores)
-  var allVends=Object.keys(d);
-  var totalUps=ups.length;
-  var totalRec=Math.round(allVends.reduce(function(s,v){return s+d[v].rec_b;},0)*100)/100;
-
-  // Período
-  var datas=raw.map(function(r){return r._date;}).filter(Boolean).sort(function(a,b){return a-b;});
-  var fmt=function(dt){return dt?dt.toLocaleDateString('pt-BR'):'-';};
-  document.getElementById('ru-periodo').textContent=datas.length?fmt(datas[0])+' a '+fmt(datas[datas.length-1]):'Período completo';
-  document.getElementById('ru-txt-total').textContent=fmtBRL(totalRec);
-  document.getElementById('ru-txt-alts').textContent=totalUps+' upgrades processados';
-  document.getElementById('ru-box-total').style.display='block';
-
-  // ── Pódio ──────────────────────────────────────────────────────────────────
-  var posClass=['pos1','pos2','pos3','pos4','pos5','pos6'];
-  var posLabel=['🥇 1º lugar','🥈 2º lugar','🥉 3º lugar','4º lugar','5º lugar','6º lugar'];
-  var barColors=['#C9A84C','#8A9BA8','#8B5E3C','#1a3a5c','#152238','#101820'];
-  var cardBg=['#1a1000','#0d1520','#120800','#0a1524','#070f1a','#050c14'];
-  var borderTop=['#C9A84C','#2E3192','#8B5E3C','#1a3a5c','#1a3a5c','#1a3a5c'];
-  var maxR=Math.max.apply(null,rank6.map(function(v){return d[v]?d[v].rec_liq:0;}).concat([1]));
-
-  document.getElementById('ru-podio').innerHTML=rank6.map(function(v,i){
-    var row=d[v]||{ups:0,downs:0,ups_liq:0,rec_liq:0,comissao:0,nome:v};
-    var av=typeof premAtendimentoAvatar==='function'?premAtendimentoAvatar(v):'';
-    var nms=row.nome.split(' ');
-    var firstName=nms[0];var lastName=nms.slice(1).join(' ');
-    var pct=Math.round((row.rec_liq||0)/maxR*100);
-    return '<div style="background:'+cardBg[i]+';border:1px solid '+barColors[i]+';border-top:3px solid '+borderTop[i]+';border-radius:14px;padding:16px 12px;text-align:center;position:relative">'
-      +'<div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.5);border:1px solid '+barColors[i]+';border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700;color:'+barColors[i]+';white-space:nowrap">'+posLabel[i]+'</div>'
-      +'<div style="margin-top:22px">'+(av?'<img src="'+av+'" style="width:70px;height:70px;border-radius:50%;border:2px solid '+barColors[i]+';object-fit:cover;margin:0 auto 8px;display:block" onerror="this.style.display='none'">':'')+'</div>'
-      +'<div style="font-size:13px;font-weight:800;color:'+barColors[i]+';text-transform:uppercase;letter-spacing:.5px">'+firstName+'</div>'
-      +'<div style="font-size:10px;color:#556677;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">'+lastName+'</div>'
-      +'<div style="height:1px;background:#1a3a5c;margin:8px 0"></div>'
-      +'<div style="font-size:10px;color:#556677;text-transform:uppercase;letter-spacing:.5px;margin-top:6px">Ups líquidos</div>'
-      +'<div style="font-size:22px;font-weight:900;color:#e0eaf5">'+row.ups_liq+'</div>'
-      +'<div style="font-size:10px;color:#556677;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Receita gerada</div>'
-      +'<div style="font-size:14px;font-weight:800;color:#0071BC">'+fmtBRL(row.rec_liq)+'</div>'
-      +'<div style="font-size:10px;color:#556677;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Comissão</div>'
-      +'<div style="font-size:13px;font-weight:700;color:#C9A84C">'+fmtBRL(row.comissao)+'</div>'
-      +'<div style="height:4px;background:#0a1524;border-radius:2px;margin-top:10px"><div style="height:4px;border-radius:2px;background:'+barColors[i]+';width:'+pct+'%"></div></div>'
-      +'</div>';
-  }).join('');
-  document.getElementById('ru-podio').style.display='grid';
-
-  // ── Tabela ─────────────────────────────────────────────────────────────────
-  var pillColors=['#C9A84C','#8A9BA8','#8B5E3C','#334155','#334155','#334155'];
-  var tRows=rank6.map(function(v,i){
-    var row=d[v]||{ups:0,downs:0,ups_liq:0,rec_b:0,desc:0,rec_liq:0,ticket:0,comissao:0};
-    var dim=i>=3?'opacity:.55;':'';
-    var nomeDisp=row.nome.split(' ').map(function(w){return w[0]+(w.slice(1).toLowerCase());}).join(' ');
-    return '<tr style="'+dim+'border-bottom:1px solid #0d1f35">'
-      +'<td style="padding:9px 8px"><span style="background:'+pillColors[i]+';color:#fff;border-radius:12px;padding:2px 8px;font-size:10px;font-weight:700">'+(i+1)+'º</span></td>'
-      +'<td style="padding:9px 8px;color:#e0eaf5;font-weight:700">'+nomeDisp+(row.downs>0?'<div style="font-size:9px;color:#f59e0b;margin-top:1px">'+row.downs+' downgrade(s) descontado(s)</div>':'')+'</td>'
-      +'<td style="padding:9px 8px;text-align:right"><span style="color:#22c55e;font-weight:700">+'+row.ups+'</span></td>'
-      +'<td style="padding:9px 8px;text-align:right">'+(row.downs>0?'<span style="color:#ef4444">−'+row.downs+'</span>':'<span style="color:#334455">—</span>')+'</td>'
-      +'<td style="padding:9px 8px;text-align:right;color:#e0eaf5;font-weight:700">'+row.ups_liq+'</td>'
-      +'<td style="padding:9px 8px;text-align:right;color:#94a3b8">'+fmtBRL(row.rec_b)+'</td>'
-      +'<td style="padding:9px 8px;text-align:right">'+(row.desc>0?'<span style="color:#ef4444">−'+fmtBRL(row.desc)+'</span>':'<span style="color:#334455">—</span>')+'</td>'
-      +'<td style="padding:9px 8px;text-align:right;color:#0071BC;font-weight:700">'+fmtBRL(row.rec_liq)+'</td>'
-      +'<td style="padding:9px 8px;text-align:right;color:#94a3b8">'+fmtBRL(row.ticket)+'</td>'
-      +'<td style="padding:9px 8px;text-align:right;color:#e0eaf5;font-weight:700">'+fmtBRL(row.comissao)+'</td>'
-      +'</tr>';
-  }).join('');
-
-  // Subtotais
-  var t6b=rank6.reduce(function(s,v){return s+(d[v]?d[v].ups:0);},0);
-  var t6dw=rank6.reduce(function(s,v){return s+(d[v]?d[v].downs:0);},0);
-  var t6l=rank6.reduce(function(s,v){return s+(d[v]?d[v].ups_liq:0);},0);
-  var t6rb=Math.round(rank6.reduce(function(s,v){return s+(d[v]?d[v].rec_b:0);},0)*100)/100;
-  var t6d=Math.round(rank6.reduce(function(s,v){return s+(d[v]?d[v].desc:0);},0)*100)/100;
-  var t6rl=Math.round(rank6.reduce(function(s,v){return s+(d[v]?d[v].rec_liq:0);},0)*100)/100;
-  var t6c=rank6.reduce(function(s,v){return s+(d[v]?d[v].comissao:0);},0);
-  var oUps=totalUps-t6b;
-  var oRec=Math.round((totalRec-t6rb)*100)/100;
-
-  tRows+='<tr style="border-bottom:1px solid #0d1f35;color:#556677;font-style:italic">'
-    +'<td style="padding:9px 8px">—</td><td style="padding:9px 8px">Outros vendedores</td>'
-    +'<td style="padding:9px 8px;text-align:right">'+oUps+'</td><td style="padding:9px 8px;text-align:right">—</td>'
-    +'<td style="padding:9px 8px;text-align:right">'+oUps+'</td>'
-    +'<td style="padding:9px 8px;text-align:right">'+fmtBRL(oRec)+'</td>'
-    +'<td style="padding:9px 8px;text-align:right">—</td><td style="padding:9px 8px;text-align:right">'+fmtBRL(oRec)+'</td>'
-    +'<td style="padding:9px 8px;text-align:right">—</td><td style="padding:9px 8px;text-align:right">—</td></tr>';
-
-  tRows+='<tr style="background:#0d1f35;font-weight:700;color:#e0eaf5">'
-    +'<td colspan="2" style="padding:10px 8px">Subtotal 6 vendedoras</td>'
-    +'<td style="padding:10px 8px;text-align:right">'+t6b+'</td>'
-    +'<td style="padding:10px 8px;text-align:right;color:#ef4444">'+(-t6dw)+'</td>'
-    +'<td style="padding:10px 8px;text-align:right">'+t6l+'</td>'
-    +'<td style="padding:10px 8px;text-align:right">'+fmtBRL(t6rb)+'</td>'
-    +'<td style="padding:10px 8px;text-align:right;color:#ef4444">'+(t6d>0?'−'+fmtBRL(t6d):'—')+'</td>'
-    +'<td style="padding:10px 8px;text-align:right;color:#0071BC">'+fmtBRL(t6rl)+'</td>'
-    +'<td style="padding:10px 8px;text-align:right">—</td>'
-    +'<td style="padding:10px 8px;text-align:right">'+fmtBRL(t6c)+'</td></tr>';
-
-  tRows+='<tr style="background:#0071BC;font-weight:700;color:#fff">'
-    +'<td colspan="2" style="padding:10px 8px">Total geral (IXC)</td>'
-    +'<td style="padding:10px 8px;text-align:right">'+totalUps+'</td>'
-    +'<td style="padding:10px 8px;text-align:right">'+(-t6dw)+'</td>'
-    +'<td style="padding:10px 8px;text-align:right">'+(totalUps-t6dw)+'</td>'
-    +'<td style="padding:10px 8px;text-align:right">'+fmtBRL(totalRec)+'</td>'
-    +'<td style="padding:10px 8px;text-align:right">'+(t6d>0?'−'+fmtBRL(t6d):'—')+'</td>'
-    +'<td style="padding:10px 8
+})();
+</script>
+</html>
