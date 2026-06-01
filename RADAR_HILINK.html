@@ -16565,6 +16565,17 @@ function setAllDrillCols(on){
 /* ══ RANKING UPGRADE ══════════════════════════════════════════════════ */
 var _ruRowsAll=[];
 
+function _ruSourceRows(){
+  if(typeof STATE==='undefined')return [];
+  if(STATE.processed&&Array.isArray(STATE.processed.alteracoes)&&STATE.processed.alteracoes.length){
+    return STATE.processed.alteracoes;
+  }
+  if(typeof processAlteracoesRows==='function'&&STATE.raw&&Array.isArray(STATE.raw.alteracoes)&&STATE.raw.alteracoes.length){
+    return processAlteracoesRows(STATE.raw.alteracoes);
+  }
+  return [];
+}
+
 function ruFiltrar(){
   var di=document.getElementById('ru-dt-ini');
   var df=document.getElementById('ru-dt-fim');
@@ -16587,12 +16598,18 @@ function renderRankingUpgrade(){
   var RU_COMISSAO=10;
   var fmtBRL=function(v){return'R$ '+Math.abs(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});};
 
-  var raw=(typeof processAlteracoesRows==='function'&&STATE&&STATE.raw&&STATE.raw.alteracoes)
-    ? processAlteracoesRows(STATE.raw.alteracoes) : [];
+  var raw=_ruSourceRows();
 
   _ruRowsAll=raw;
   _ruRender(raw);
 }
+
+window.ruFromProcessed=function(){
+  var tab=document.getElementById('prem-tab-ranking-upgrade');
+  var raw=_ruSourceRows();
+  _ruRowsAll=raw;
+  if(tab&&tab.classList.contains('active'))_ruRender(raw);
+};
 
 function _ruRender(raw){
   var RU_NOMES=['MILLENA CAMELO','THAISY FERREIRA','MIRELLY BEZERRA','VIRGINIA VANESSA','KARINE PRISCILA','EVILLYN OLIVEIRA'];
