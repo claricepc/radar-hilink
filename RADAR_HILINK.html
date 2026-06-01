@@ -7763,6 +7763,19 @@ function setUploadCardLoaded(key, count){
   renderUploadStatus();
 }
 
+function cacheAlteracoesRows(rows, fileName){
+  try{
+    if(!Array.isArray(rows)||!rows.length)return;
+    localStorage.setItem('radar_raw_alteracoes', JSON.stringify({fileName:fileName||'',savedAt:new Date().toISOString(),rows}));
+  }catch(e){console.warn('[Radar] Não foi possível manter cache local de Alterações Contratuais',e)}
+}
+function getCachedAlteracoesRows(){
+  try{
+    const cached=JSON.parse(localStorage.getItem('radar_raw_alteracoes')||'null');
+    return cached&&Array.isArray(cached.rows)?cached.rows:[];
+  }catch(e){return []}
+}
+
 function processUploadedFile(file, key){
   return new Promise((resolve,reject)=>{
     Papa.parse(file,{delimiter:'',header:true,skipEmptyLines:true,
@@ -7779,6 +7792,7 @@ function processUploadedFile(file, key){
       STATE.files[finalKey]=file.name;
       STATE.raw[finalKey]=rows;
       if(finalKey==='alteracoes'&&typeof processAlteracoesRows==='function'){
+        cacheAlteracoesRows(rows,file.name);
         if(STATE.processed)STATE.processed.alteracoes=processAlteracoesRows(rows);
         try{ if(typeof window.ruFromProcessed==='function')window.ruFromProcessed(); }catch(e){}
       }
@@ -7881,6 +7895,9 @@ function renderModuleUnlocks(){
 function removeUpload(key){
   delete STATE.raw[key];
   delete STATE.files[key];
+  if(key==='alteracoes'){
+    try{localStorage.removeItem('radar_raw_alteracoes')}catch(e){}
+  }
   const el=document.getElementById('step-'+key);
   if(el){
     el.classList.remove('loaded');
@@ -7896,6 +7913,7 @@ function removeUpload(key){
 
 function resetAll(){
   if(!confirm('Limpar todos os arquivos e configurações?'))return;
+  try{localStorage.removeItem('radar_raw_alteracoes')}catch(e){}
   STATE.files={logins:null,contratos:null,recebimentos:null,fibra:null,acs:null,comodato:null,opa:null,alteracoes:null,historicoPgto:null};STATE.raw={};STATE.processed=null;STATE.campaign=null;STATE.selected=new Set();
   REPORT_KEYS.forEach(k=>{
     const el=document.getElementById('step-'+k);
@@ -8739,20 +8757,22 @@ function attachOpaToOsRows(osRows,opaRows){
 function processAlteracoesRows(raw){
   if(!raw.length)return [];
   const sample=raw[0]||{};
-  const idCol=findCol(sample,[/^id$/i]);
-  const contratoCol=findCol(sample,[/^id contrato$/i,/contrato/i]);
-  const dataCol=findCol(sample,[/data hora alter/i,/data alteração/i,/data alteracao/i]);
-  const tipoCol=findCol(sample,[/tipo de alteração/i,/tipo de alteracao/i,/tipo alt/i]);
-  const valAntCol=findCol(sample,[/valor anterior/i]);
-  const valNovoCol=findCol(sample,[/valor novo/i]);
-  const cobrAntCol=findCol(sample,[/cobrança anterior/i,/cobranca anterior/i,/tipo de cobrança anterior/i,/tipo de cobranca anterior/i]);
-  const cobrNovoCol=findCol(sample,[/cobrança novo/i,/cobranca novo/i,/tipo de cobrança novo/i,/tipo de cobranca novo/i]);
-  const alteraCobCol=findCol(sample,[/altera cobrança/i,/altera cobranca/i]);
-  const alteraPlanoCol=findCol(sample,[/altera plano/i]);
-  const planoNovoCol=findCol(sample,[/plano novo/i]);
-  const planoAntCol=findCol(sample,[/plano anterior/i]);
-  const vendCol=findCol(sample,[/^vendedor$/i]);
-  const opCol=findCol(sample,[/^operador$/i]);
+  const keys=Object.keys(sample);
+  const byPos=i=>keys[i]||null;
+  const idCol=findCol(sample,[/^id$/i])||byPos(0);
+  const contratoCol=findCol(sample,[/^id contrato$/i,/contrato/i])||byPos(1);
+  const dataCol=findCol(sample,[/data hora alter/i,/data alteração/i,/data alteracao/i])||byPos(2);
+  const tipoCol=findCol(sample,[/tipo de alteração/i,/tipo de alteracao/i,/tipo alt/i,/tipo de altera/i])||byPos(3);
+  const valAntCol=findCol(sample,[/valor anterior/i])||byPos(4);
+  const valNovoCol=findCol(sample,[/valor novo/i])||byPos(5);
+  const cobrAntCol=findCol(sample,[/cobrança anterior/i,/cobranca anterior/i,/tipo de cobrança anterior/i,/tipo de cobranca anterior/i])||byPos(6);
+  const cobrNovoCol=findCol(sample,[/cobrança novo/i,/cobranca novo/i,/tipo de cobrança novo/i,/tipo de cobranca novo/i])||byPos(7);
+  const alteraCobCol=findCol(sample,[/altera cobrança/i,/altera cobranca/i])||byPos(8);
+  const alteraPlanoCol=findCol(sample,[/altera plano/i])||byPos(9);
+  const planoNovoCol=findCol(sample,[/plano novo/i])||byPos(10);
+  const planoAntCol=findCol(sample,[/plano anterior/i])||byPos(11);
+  const vendCol=findCol(sample,[/^vendedor$/i])||byPos(12);
+  const opCol=findCol(sample,[/^operador$/i])||byPos(13);
   const tipoNome=t=>{
     const s=norm(t);
     if(s==='UP'||s.includes('UPGRADE'))return 'Upgrade';
@@ -16624,6 +16644,14 @@ function _ruSourceRows(){
   if(typeof processAlteracoesRows==='function'&&STATE.raw&&Array.isArray(STATE.raw.alteracoes)&&STATE.raw.alteracoes.length){
     var parsed=processAlteracoesRows(STATE.raw.alteracoes);
     if(_ruHasUpgradeRows(parsed))return parsed;
+  }
+  if(typeof getCachedAlteracoesRows==='function'){
+    var cached=getCachedAlteracoesRows();
+    if(cached.length&&typeof processAlteracoesRows==='function'){
+      if(STATE.raw&&!Array.isArray(STATE.raw.alteracoes))STATE.raw.alteracoes=cached;
+      var parsedCache=processAlteracoesRows(cached);
+      if(_ruHasUpgradeRows(parsedCache))return parsedCache;
+    }
   }
   return _ruRawAlteracoesLoose();
 }
