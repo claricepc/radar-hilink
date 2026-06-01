@@ -5877,17 +5877,6 @@ h2.section-title .info-btn{margin-left:6px}
             <div id="ru-txt-alts" style="font-size:10px;color:#556677;margin-top:1px"></div>
           </div>
         </div>
-        <div id="ru-upload-zone" style="border:1px dashed rgba(56,168,255,.55);background:rgba(56,168,255,.07);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div>
-            <div style="font-size:12px;font-weight:800;color:#ddefff;text-transform:uppercase;letter-spacing:.06em">Carregar alterações contratuais</div>
-            <div style="font-size:10px;color:#86a3c7;margin-top:3px">Use o CSV do IXC quando o ranking não vier automaticamente dos relatórios processados.</div>
-            <div id="ru-upload-status" style="font-size:10px;color:#7fb7e8;margin-top:5px;min-height:14px"></div>
-          </div>
-          <label style="background:#12345a;border:1px solid rgba(56,168,255,.55);border-radius:9px;color:#e6f2ff;font-size:12px;font-weight:800;padding:9px 16px;cursor:pointer;white-space:nowrap">
-            Selecionar CSV
-            <input id="ru-csv-input" type="file" accept=".csv" style="display:none">
-          </label>
-        </div>
         <!-- Pódio -->
         <div id="ru-podio" style="display:none;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px"></div>
         <!-- Tabela -->
@@ -7742,6 +7731,9 @@ function detectReportKey(rows, fileName){
   // Detectar por: (a) nome do arquivo contém HISTORICO + PGTOS/PAGAMENTO, ou
   //               (b) primeira chave das linhas parsadas parece "mês - ano"
   const fn=norm(fileName||'');
+  if((fn.includes('ALTERACAO')||fn.includes('ALTERACOES'))&&(fn.includes('CONTRATO')||fn.includes('CONTRATUAL')||fn.includes('UPGRADE')||fn.includes('DOWNGRADE'))){
+    return {key:'alteracoes',points:20,margin:20,scores:{}};
+  }
   if(fn.includes('HISTORICO')&&(fn.includes('PGTOS')||fn.includes('PAGAMENTO')||fn.includes('PREMIACAO'))){
     return {key:'historicoPgto',points:15,margin:15,scores:{}};
   }
@@ -7786,6 +7778,10 @@ function processUploadedFile(file, key){
       const finalKey=key==='historicoPgto' ? key : (detected?.key||key);
       STATE.files[finalKey]=file.name;
       STATE.raw[finalKey]=rows;
+      if(finalKey==='alteracoes'&&typeof processAlteracoesRows==='function'){
+        if(STATE.processed)STATE.processed.alteracoes=processAlteracoesRows(rows);
+        try{ if(typeof window.ruFromProcessed==='function')window.ruFromProcessed(); }catch(e){}
+      }
       setUploadCardLoaded(finalKey, rows.length);
       document.getElementById('btn-process').disabled = !hasAnyRawReport();
       renderModuleUnlocks();
@@ -16649,51 +16645,6 @@ function ruVerTudo(){
   _ruRender(_ruRowsAll);
 }
 
-function ruLoadCsvText(text){
-  if(!text||!text.trim())return [];
-  var rows=[];
-  if(typeof Papa!=='undefined'){
-    rows=Papa.parse(text,{header:true,skipEmptyLines:true,delimiter:';'}).data||[];
-  }else{
-    var lines=text.trim().split(/\r?\n/);
-    var headers=(lines.shift()||'').split(';').map(function(h){return h.replace(/^"|"$/g,'').trim();});
-    rows=lines.map(function(line){
-      var cols=line.split(';');
-      var o={};
-      headers.forEach(function(h,i){o[h]=cols[i]||'';});
-      return o;
-    });
-  }
-  if(!STATE.raw)STATE.raw={};
-  STATE.raw.alteracoes=rows;
-  if(typeof processAlteracoesRows==='function'){
-    if(!STATE.processed)STATE.processed={};
-    STATE.processed.alteracoes=processAlteracoesRows(rows);
-  }
-  var parsed=_ruSourceRows();
-  _ruRowsAll=parsed;
-  _ruRender(parsed);
-  var st=document.getElementById('ru-upload-status');
-  if(st)st.textContent=parsed.length?('✓ '+parsed.length+' alterações lidas'):'Arquivo lido, mas nenhum UP/DW reconhecido';
-  return parsed;
-}
-
-function ruBindUpload(){
-  var input=document.getElementById('ru-csv-input');
-  if(!input||input.dataset.bound)return;
-  input.dataset.bound='1';
-  input.addEventListener('change',function(e){
-    var file=e.target.files&&e.target.files[0];
-    if(!file)return;
-    var st=document.getElementById('ru-upload-status');
-    if(st)st.textContent='Lendo '+file.name+'...';
-    var reader=new FileReader();
-    reader.onload=function(ev){ruLoadCsvText(ev.target.result||'');};
-    reader.onerror=function(){if(st)st.textContent='Erro ao ler arquivo.';};
-    reader.readAsText(file,'UTF-8');
-  });
-}
-
 function renderRankingUpgrade(){
   var RU_NOMES=['MILLENA CAMELO','THAISY FERREIRA','MIRELLY BEZERRA','VIRGINIA VANESSA','KARINE PRISCILA','EVILLYN OLIVEIRA'];
   var RU_COMISSAO=10;
@@ -16703,7 +16654,6 @@ function renderRankingUpgrade(){
 
   _ruRowsAll=raw;
   _ruRender(raw);
-  ruBindUpload();
 }
 
 window.ruFromProcessed=function(){
