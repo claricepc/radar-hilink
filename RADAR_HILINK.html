@@ -1432,7 +1432,7 @@ h2.section-title .info-btn{margin-left:6px}
 @keyframes pulse-green{0%,100%{opacity:1}50%{opacity:.4}}
 .prem-audit-stamp{display:block;color:#64748b;font-size:9.5px;line-height:1.25;margin-top:5px}
 /* === REGRAS DE PREMIAÇÃO — LAYOUT RICO === */
-.prem-rules-section{display:flex;flex-direction:column;gap:14px}
+.prem-rules-section{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .prem-rules-block{border:1px solid #e2e8f0;border-radius:12px;background:#fff;overflow:hidden}
 .prem-rules-block-header{display:flex;align-items:center;gap:9px;padding:10px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;cursor:pointer;user-select:none}
 .prem-rules-block-header:hover{background:#f1f5f9}
@@ -1440,9 +1440,7 @@ h2.section-title .info-btn{margin-left:6px}
 .prem-rules-block.collapsed .prem-rules-toggle{transform:rotate(-90deg)}
 .prem-rules-block.collapsed .prem-rules-cols{display:none}
 .prem-rules-block.collapsed .prem-rules-block-header{border-bottom:none}
-.prem-rules-block-header .prem-rules-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.prem-rules-block-header.vendas .prem-rules-icon{background:#e0f2fe}
-.prem-rules-block-header.opa .prem-rules-icon{background:#f0fdf4}
+.prem-rules-block-header .prem-rules-icon{display:none!important}
 .prem-rules-block-title{font-size:11px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:.04em}
 .prem-rules-block-sub{font-size:10px;color:#64748b;margin-top:1px}
 .prem-rules-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
@@ -1497,8 +1495,8 @@ h2.section-title .info-btn{margin-left:6px}
 .prem-audit-row.danger strong{color:#991b1b}
 .prem-audit-row.warn strong{color:#92400e}
 .prem-audit-row.ok strong{color:#166534}
-@media(max-width:1200px){.prem-audit-overview,.prem-audit-rules-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.prem-audit-columns{grid-template-columns:1fr}.prem-audit-work-card{grid-template-columns:1fr 1fr}.prem-audit-just-box{grid-column:1/-1}.prem-rules-cols{grid-template-columns:1fr}}
-@media(max-width:860px){.prem-audit-overview,.prem-audit-rules-grid{grid-template-columns:1fr}.prem-audit-work-controls{grid-template-columns:1fr}.prem-audit-work-card{grid-template-columns:1fr}.prem-audit-card-meta{grid-template-columns:1fr}.prem-rules-cols{grid-template-columns:1fr}}
+@media(max-width:1200px){.prem-audit-overview,.prem-audit-rules-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.prem-audit-columns{grid-template-columns:1fr}.prem-audit-work-card{grid-template-columns:1fr 1fr}.prem-audit-just-box{grid-column:1/-1}.prem-rules-section,.prem-rules-cols{grid-template-columns:1fr}}
+@media(max-width:860px){.prem-audit-overview,.prem-audit-rules-grid{grid-template-columns:1fr}.prem-audit-work-controls{grid-template-columns:1fr}.prem-audit-work-card{grid-template-columns:1fr}.prem-audit-card-meta{grid-template-columns:1fr}.prem-rules-section,.prem-rules-cols{grid-template-columns:1fr}}
 .prem-exec-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.34fr);gap:12px;align-items:start}
 .prem-exec-main{display:flex;flex-direction:column;gap:12px;min-width:0}
 .prem-exec-side{display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -14206,7 +14204,6 @@ function renderPremiacoesAuditoria(){
       <!-- BLOCO: VENDAS -->
       <div class="prem-rules-block collapsed">
         <div class="prem-rules-block-header vendas" onclick="this.closest('.prem-rules-block').classList.toggle('collapsed')">
-          <div class="prem-rules-icon">💼</div>
           <div>
             <div class="prem-rules-block-title">Premiação de Vendas</div>
             <div class="prem-rules-block-sub">Instalação · Reativação · Upgrade — prazo financeiro: ${janelaPrem} dias para 1ª parcela</div>
@@ -14268,7 +14265,6 @@ function renderPremiacoesAuditoria(){
       <!-- BLOCO: ATENDIMENTO OPA -->
       <div class="prem-rules-block collapsed">
         <div class="prem-rules-block-header opa" onclick="this.closest('.prem-rules-block').classList.toggle('collapsed')">
-          <div class="prem-rules-icon">🎧</div>
           <div>
             <div class="prem-rules-block-title">Premiação de Atendimento — OPA</div>
             <div class="prem-rules-block-sub">Elegibilidade mínima: 400 atendimentos humanos no mês · Volume · TME · Avaliação do cliente</div>
