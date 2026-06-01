@@ -15454,6 +15454,24 @@ function premCanvasLoadImage(src){
     img.src=src;
   });
 }
+function premCanvasLogoSrc(){
+  try{
+    const box=document.querySelector('.sidebar .logo-box');
+    const bg=box?getComputedStyle(box).backgroundImage:'';
+    const m=bg&&bg.match(/url\(["']?(.*?)["']?\)/);
+    if(m&&m[1])return m[1];
+    const img=document.querySelector('.sidebar .logo-box img');
+    if(img&&img.src)return img.src;
+  }catch(e){}
+  return '';
+}
+function premRankingPeriodText(){
+  const dates=(document.getElementById('prem-period-dates')?.textContent||'').trim();
+  if(dates)return dates;
+  const header=(document.getElementById('prem-period-label')?.textContent||'').trim();
+  const rank=(document.getElementById('prem-rank-periodo')?.textContent||'').trim();
+  return dates||rank||header||'período do recorte';
+}
 function premCanvasAvatar(ctx,img,initials,x,y,size,border){
   ctx.save();
   ctx.beginPath();
@@ -15485,7 +15503,8 @@ async function downloadPremRankingImage(){
     const rest=ranking.slice(3);
     const restCols=2;
     const restRows=Math.ceil(rest.length/restCols);
-    const H=pad+95+455+44+(rest.length?54+restRows*148:0)+pad;
+    const footerH=72;
+    const H=pad+95+455+44+(rest.length?54+restRows*148:0)+pad+footerH;
     const canvas=document.createElement('canvas');
     canvas.width=W;canvas.height=H;
     const ctx=canvas.getContext('2d');
@@ -15501,9 +15520,19 @@ async function downloadPremRankingImage(){
     ctx.fillStyle='#8fb8e8';
     const periodo=monthLabelFromKey(STATE.filtros?.competencia)||STATE.filtros?.competencia||'Competência';
     ctx.fillText(`${periodo} · Filial: ${STATE.filtros?.filial||'Todas'}`,pad,pad+58);
+    const logo=await premCanvasLoadImage(premCanvasLogoSrc());
     ctx.textAlign='right';
-    ctx.fillText('Radar Hilink',W-pad,pad+30);
-    ctx.fillText(new Date().toLocaleDateString('pt-BR'),W-pad,pad+58);
+    if(logo){
+      const logoW=168;
+      const logoH=Math.min(58, logoW*(logo.height/logo.width));
+      ctx.drawImage(logo,W-pad-logoW,pad-18,logoW,logoH);
+      ctx.font='500 15px Inter, Segoe UI, Arial';
+      ctx.fillStyle='#8fb8e8';
+      ctx.fillText(new Date().toLocaleDateString('pt-BR'),W-pad,pad+58);
+    }else{
+      ctx.fillText('Radar Hilink',W-pad,pad+30);
+      ctx.fillText(new Date().toLocaleDateString('pt-BR'),W-pad,pad+58);
+    }
     ctx.textAlign='left';
     const top=[ranking[1],ranking[0],ranking[2]].filter(Boolean);
     const topY=pad+105;
@@ -15567,6 +15596,23 @@ async function downloadPremRankingImage(){
         ctx.fillText(`Atendimento: volume ${Number(at.volume||0).toLocaleString('pt-BR')} · TME ${at.mediaEspera==null?'—':fmtDuration(at.mediaEspera)} · avaliação ${at.mediaCliente==null?'—':Number(at.mediaCliente).toFixed(2)}`,x+128,cy+116);
       }
     }
+    const footerY=H-footerH+18;
+    ctx.strokeStyle='rgba(80,130,180,.35)';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(pad,footerY-14);
+    ctx.lineTo(W-pad,footerY-14);
+    ctx.stroke();
+    const extractedAt=new Date();
+    const rodape='Este relatório considera o período analisado de '+premRankingPeriodText()
+      +' · Extraído via Radar Hilink em '+extractedAt.toLocaleDateString('pt-BR')
+      +' às '+extractedAt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    ctx.font='500 14px Inter, Segoe UI, Arial';
+    ctx.fillStyle='#9fb8d7';
+    premCanvasText(ctx,rodape,pad,footerY+8,W-pad*2,20,2);
+    ctx.font='500 12px Inter, Segoe UI, Arial';
+    ctx.fillStyle='#6f86a3';
+    ctx.fillText('Fonte: relatórios carregados no Radar Hilink. Valores sujeitos às regras de validação e pagamento da folha.',pad,footerY+48);
     canvas.toBlob(blob=>{
       const a=document.createElement('a');
       const comp=(STATE.filtros?.competencia||'ranking').replace(/[^\w-]+/g,'_');
