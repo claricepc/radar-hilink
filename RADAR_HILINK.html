@@ -15471,7 +15471,7 @@ async function downloadPremRankingImage(){
     const rest=ranking.slice(3);
     const restCols=2;
     const restRows=Math.ceil(rest.length/restCols);
-    const H=pad+95+390+44+(rest.length?54+restRows*148:0)+pad;
+    const H=pad+95+455+44+(rest.length?54+restRows*148:0)+pad;
     const canvas=document.createElement('canvas');
     canvas.width=W;canvas.height=H;
     const ctx=canvas.getContext('2d');
@@ -15494,7 +15494,7 @@ async function downloadPremRankingImage(){
     const top=[ranking[1],ranking[0],ranking[2]].filter(Boolean);
     const topY=pad+105;
     const cardW=(W-pad*2-gap*2)/3;
-    const topHeights=[315,360,315];
+    const topCardH=420;
     const medal={1:{c:'#f2b705',name:'OURO'},2:{c:'#b8c2cc',name:'PRATA'},3:{c:'#b87333',name:'BRONZE'}};
     const initials=nome=>{
       const p=String(nome||'').trim().split(/\s+/).filter(Boolean);
@@ -15508,33 +15508,33 @@ async function downloadPremRankingImage(){
     };
     for(let i=0;i<top.length;i++){
       const v=top[i], rank=v.rank, m=medal[rank]||medal[3];
-      const x=pad+i*(cardW+gap), h=topHeights[i], y=topY+(360-h);
+      const x=pad+i*(cardW+gap), h=topCardH, y=topY;
       ctx.fillStyle='#0b1b2b';premCanvasRoundRect(ctx,x,y,cardW,h,18);ctx.fill();
       ctx.strokeStyle=m.c;ctx.lineWidth=rank===1?3:2;ctx.stroke();
       if(rank===1){ctx.font='800 34px Inter, Segoe UI, Arial';ctx.textAlign='center';ctx.fillStyle=m.c;ctx.fillText('♛',x+cardW/2,y+38);ctx.textAlign='left';}
-      const avSize=rank===1?94:78;
-      const avX=x+26, avY=rank===1?y+48:y+34;
+      const avSize=rank===1?86:72;
+      const avX=x+26, avY=rank===1?y+54:y+48;
       const img=await premCanvasLoadImage(premAtendimentoAvatar(v.nome));
       premCanvasAvatar(ctx,img,initials(v.nome),avX,avY,avSize,{color:m.c,width:3});
       ctx.fillStyle=m.c;ctx.font='800 18px Inter, Segoe UI, Arial';ctx.textAlign='right';ctx.fillText(`${rank}º`,x+cardW-28,y+38);ctx.textAlign='left';
       ctx.fillStyle='#ffffff';ctx.font='800 19px Inter, Segoe UI, Arial';premCanvasText(ctx,v.nome,avX+avSize+18,avY+28,cardW-avSize-78,22,2);
       ctx.font='500 13px Inter, Segoe UI, Arial';ctx.fillStyle='#8fb8e8';ctx.fillText(`${(v.aprovadas||0).toLocaleString('pt-BR')} aprovados · ${(v.total||0).toLocaleString('pt-BR')} eventos`,avX+avSize+18,avY+70);
-      ctx.fillStyle=m.c;ctx.font='800 35px Inter, Segoe UI, Arial';ctx.fillText(brl(v.valorTotal||0),x+26,y+150);
-      ctx.fillStyle='#8fb8e8';ctx.font='500 13px Inter, Segoe UI, Arial';premCanvasText(ctx,`Total variável · ${v.mix||'Sem tipo'}`,x+26,y+178,cardW-52,16,2);
-      const barY=y+212, barW=cardW-52, pct=Math.max(5,(Number(v.valorTotal||0)/Math.max(1,ranking[0].valorTotal||0))*100);
+      ctx.fillStyle=m.c;ctx.font='800 34px Inter, Segoe UI, Arial';ctx.fillText(brl(v.valorTotal||0),x+26,y+176);
+      ctx.fillStyle='#8fb8e8';ctx.font='500 13px Inter, Segoe UI, Arial';premCanvasText(ctx,`Total variável · ${v.mix||'Sem tipo'}`,x+26,y+205,cardW-52,16,2);
+      const barY=y+224, barW=cardW-52, pct=Math.max(5,(Number(v.valorTotal||0)/Math.max(1,ranking[0].valorTotal||0))*100);
       ctx.fillStyle='#263447';premCanvasRoundRect(ctx,x+26,barY,barW,7,99);ctx.fill();
       ctx.fillStyle=m.c;premCanvasRoundRect(ctx,x+26,barY,barW*pct/100,7,99);ctx.fill();
-      const metricY=barY+24, mw=(barW-10)/2;
+      const metricY=barY+22, mw=(barW-10)/2;
       drawMetric('Comissão vendas',brl(v.valorComercial||0),x+26,metricY,mw);
       drawMetric('Prêmio atend.',brl(v.premioAtendimento||0),x+36+mw,metricY,mw);
       drawMetric('Receita gerada',brl(v.receita||0),x+26,metricY+58,mw);
       drawMetric('Aproveitamento',`${Number(v.aproveitamento||0).toFixed(0)}%`,x+36+mw,metricY+58,mw);
       const at=v.atendimento||{};
-      ctx.font='800 10px Inter, Segoe UI, Arial';ctx.fillStyle='#8fb8e8';ctx.fillText('ATENDIMENTO',x+26,h+y-42);
+      ctx.font='800 10px Inter, Segoe UI, Arial';ctx.fillStyle='#8fb8e8';ctx.fillText('ATENDIMENTO',x+26,h+y-50);
       ctx.font='800 14px Inter, Segoe UI, Arial';ctx.fillStyle='#ffffff';
-      ctx.fillText(`Vol. ${Number(at.volume||0).toLocaleString('pt-BR')}  ·  TME ${at.mediaEspera==null?'—':fmtDuration(at.mediaEspera)}  ·  Aval. ${at.mediaCliente==null?'—':Number(at.mediaCliente).toFixed(2)}`,x+26,h+y-20);
+      ctx.fillText(`Vol. ${Number(at.volume||0).toLocaleString('pt-BR')}  ·  TME ${at.mediaEspera==null?'—':fmtDuration(at.mediaEspera)}  ·  Aval. ${at.mediaCliente==null?'—':Number(at.mediaCliente).toFixed(2)}`,x+26,h+y-26);
     }
-    let y=topY+405;
+    let y=topY+455;
     if(rest.length){
       ctx.font='800 16px Inter, Segoe UI, Arial';ctx.fillStyle='#ddebff';ctx.fillText('DEMAIS POSIÇÕES',pad,y);y+=24;
       const rw=(W-pad*2-gap)/2, rh=130;
