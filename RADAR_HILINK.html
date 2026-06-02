@@ -17494,12 +17494,16 @@ function setAllDrillCols(on){
       var contrato = ruId(r['ID Contrato']);
       var receipts = map[contrato] || [];
       var paid = receipts.some(ruReceiptPaid);
+      var firstReceipt = receipts[0] || {};
+      var statusPgto = receipts.length ? (paid ? 'Pago localizado' : 'Pendente') : 'Sem vínculo em Contas a Receber';
       return {
         'Vendedora': item.nome,
+        'Cliente': r.Cliente || r['Nome Cliente'] || r['Nome do Cliente'] || firstReceipt.Cliente || firstReceipt.cliente || '',
         'ID Contrato': contrato,
-        'Status PGTO': receipts.length ? (paid ? 'Pago localizado' : 'Pendente') : 'Sem vínculo em Contas a Receber',
+        'Status PGTO': statusPgto,
         'Qtd. títulos': receipts.length,
         'Valor localizado': ruBRL(receipts.reduce(function(s,x){return s + ruReceiptAmount(x);},0)),
+        'Data PGTO localizada': receipts.map(ruReceiptDate).filter(Boolean).sort(function(a,b){return a-b}).map(dateIso)[0] || '',
         'Data alteração': r['Data alteracao'] || '',
         'Valor anterior': ruBRL(r['Valor anterior'] || 0),
         'Valor novo': ruBRL(r['Valor novo'] || 0),
@@ -17521,12 +17525,16 @@ function setAllDrillCols(on){
   function ruOpenPaymentDetail(key){
     var data = _ruPayDrill[key];
     if(!data) return;
+    var rows = data.rows || [];
+    var pagos = rows.filter(function(r){return r['Status PGTO'] === 'Pago localizado'}).length;
+    var pendentes = rows.filter(function(r){return r['Status PGTO'] === 'Pendente'}).length;
+    var semVinculo = rows.filter(function(r){return r['Status PGTO'] === 'Sem vínculo em Contas a Receber'}).length;
     if(typeof openDrill === 'function'){
-      var cols = ['Vendedora','ID Contrato','Status PGTO','Qtd. títulos','Valor localizado','Data alteração','Valor anterior','Valor novo','Diferença'].map(function(k){return {k:k,label:k};});
-      openDrill('PGTO - '+data.label, data.rows, cols, {sub:data.rows.length+' upgrades', action:'Conferir no relatório de Contas a Receber quais contratos já localizaram pagamento da primeira parcela.'});
+      var cols = ['Vendedora','Cliente','ID Contrato','Status PGTO','Qtd. títulos','Valor localizado','Data PGTO localizada','Data alteração','Valor anterior','Valor novo','Diferença'].map(function(k){return {k:k,label:k};});
+      openDrill('PGTO - '+data.label, rows, cols, {sub:rows.length+' upgrades · '+pagos+' pagos · '+pendentes+' pendentes · '+semVinculo+' sem vínculo', action:'Conferir quais contratos já localizaram pagamento da primeira parcela e quais ainda dependem do Contas a Receber.'});
       return;
     }
-    alert(data.label + ': ' + data.rows.length + ' contratos para conferir.');
+    alert(data.label + ': ' + rows.length + ' contratos para conferir.');
   }
   function ruCurrentCompetencia(){
     return (typeof STATE !== 'undefined' && STATE.filtros) ? String(STATE.filtros.competencia || '') : '';
@@ -17838,13 +17846,6 @@ function setAllDrillCols(on){
       + '<td style="padding:10px 8px;text-align:right">'+ruBRL(totalComissao)+'</td>'
       + '</tr>';
     _ruPayDrill.total = {label:'Total do ranking', rows:ranking.reduce(function(a,x){return a.concat(ruPaymentDetailRows(x));},[])};
-    elBody.querySelectorAll('[data-ru-pay]').forEach(function(btn){
-      btn.addEventListener('click', function(ev){
-        ev.preventDefault();
-        ev.stopPropagation();
-        ruOpenPaymentDetail(btn.getAttribute('data-ru-pay'));
-      });
-    });
   }
 
   window.downloadRankingUpgradeImage = async function(){
@@ -18078,6 +18079,17 @@ function setAllDrillCols(on){
   window.ruFiltrar = function(){ ruRender(_ruRowsAll); };
   window.ruVerTudo = function(){ ruRender(_ruRowsAll); };
   window.ruDebug = function(){ return {sourceInfo:_ruSourceInfo, rows:_ruRowsAll, sources:ruKnownSources().map(function(s){return {name:s.name,count:s.rows.length,looks:ruLooksLikeAlteracoes(s.rows)}})}; };
+
+  if(!window._ruPayClickDelegated){
+    window._ruPayClickDelegated = true;
+    document.addEventListener('click', function(ev){
+      var btn = ev.target && ev.target.closest ? ev.target.closest('[data-ru-pay]') : null;
+      if(!btn) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      ruOpenPaymentDetail(btn.getAttribute('data-ru-pay'));
+    }, true);
+  }
 
   document.addEventListener('DOMContentLoaded', function(){
     try{
