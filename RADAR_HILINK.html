@@ -6137,7 +6137,7 @@ h2.section-title .info-btn{margin-left:6px}
           <div>
             <div style="font-size:13px;font-weight:800;color:#e0eaf5;text-transform:uppercase;letter-spacing:1.5px">Ranking de Upgrade</div>
             <div id="ru-periodo" style="font-size:11px;color:#556677;margin-top:2px">Carregue o relatório de Alterações Contratuais</div>
-            <button class="btn outline" id="btn-ru-download" onclick="downloadRankingUpgradeImage()" style="display:none;margin-top:10px;font-size:12px;padding:8px 16px">Baixar imagem</button>
+            <button class="btn outline" id="btn-ru-download" onclick="downloadRankingUpgradeImageV2()" style="display:none;margin-top:10px;font-size:12px;padding:8px 16px">Baixar imagem</button>
           </div>
           <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap">
             <div id="ru-box-total" style="display:none">
@@ -17848,7 +17848,7 @@ function setAllDrillCols(on){
     _ruPayDrill.total = {label:'Total do ranking', rows:ranking.reduce(function(a,x){return a.concat(ruPaymentDetailRows(x));},[])};
   }
 
-  window.downloadRankingUpgradeImage = async function(){
+  window.downloadRankingUpgradeImageV2 = async function(){
     try{
       if(!_ruRowsAll || !_ruRowsAll.length) _ruRowsAll = ruSourceRows();
       var ranking = ruBuild(_ruRowsAll || [], false);
@@ -18105,6 +18105,7 @@ function setAllDrillCols(on){
       alert('Não consegui gerar a imagem do ranking de upgrade. Veja o console para detalhes.');
     }
   };
+  window.downloadRankingUpgradeImage = window.downloadRankingUpgradeImageV2;
 
   window.renderRankingUpgrade = function(){
     _ruRowsAll = ruSourceRows();
