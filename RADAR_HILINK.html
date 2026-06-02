@@ -5217,6 +5217,160 @@ h2.section-title .info-btn{margin-left:6px}
       #mod-acao .insight-grid{grid-template-columns:1fr!important}
       #mod-acao .acao-card{grid-template-columns:84px minmax(0,1fr) 14px!important}
     }
+    #mod-acao .acao-tabs{
+      display:flex!important;
+      gap:0!important;
+      margin:0 0 14px!important;
+      padding:0!important;
+      background:var(--bg-card)!important;
+      border:1px solid var(--border-default)!important;
+      border-radius:12px!important;
+      overflow:hidden!important;
+    }
+    #mod-acao .acao-tab{
+      min-width:170px!important;
+      padding:14px 18px!important;
+      border:0!important;
+      border-right:1px solid var(--border-default)!important;
+      background:transparent!important;
+      color:var(--text-muted)!important;
+      font-family:var(--radar-font)!important;
+      font-size:13px!important;
+      font-weight:800!important;
+      line-height:1!important;
+      cursor:pointer!important;
+    }
+    #mod-acao .acao-tab.active{
+      color:var(--color-info)!important;
+      background:rgba(56,168,255,.13)!important;
+      box-shadow:inset 0 -3px 0 var(--color-info)!important;
+    }
+    #mod-acao .acao-tab-panel{display:none!important}
+    #mod-acao .acao-tab-panel.active{display:block!important}
+    #mod-acao .cr-exec-grid{
+      display:grid!important;
+      grid-template-columns:repeat(4,minmax(0,1fr))!important;
+      gap:12px!important;
+    }
+    #mod-acao .cr-bucket-grid{
+      display:grid!important;
+      grid-template-columns:repeat(4,minmax(0,1fr))!important;
+      gap:12px!important;
+    }
+    #mod-acao .cr-work-grid{
+      display:grid!important;
+      grid-template-columns:1.25fr 1fr!important;
+      gap:12px!important;
+    }
+    #mod-acao .cr-card{
+      display:flex!important;
+      flex-direction:column!important;
+      min-width:0!important;
+      min-height:132px!important;
+      padding:14px!important;
+      border-radius:12px!important;
+      background:linear-gradient(135deg,#101f33 0%,#0c1829 100%)!important;
+      border:1px solid var(--border-default)!important;
+      overflow:hidden!important;
+      cursor:pointer!important;
+    }
+    #mod-acao .cr-card:hover{border-color:var(--border-strong)!important}
+    #mod-acao .cr-card.info{border-color:var(--color-info-border)!important}
+    #mod-acao .cr-card.danger{border-color:var(--color-danger-border)!important}
+    #mod-acao .cr-card.warn{border-color:var(--color-warn-border)!important}
+    #mod-acao .cr-card.success{border-color:var(--color-success-border)!important}
+    #mod-acao .cr-card.muted{border-color:var(--color-muted-border)!important}
+    #mod-acao .cr-label{
+      font-size:11px!important;
+      font-weight:800!important;
+      letter-spacing:.06em!important;
+      text-transform:uppercase!important;
+      color:var(--text-muted)!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+      margin:0 0 8px!important;
+    }
+    #mod-acao .cr-value{
+      font-size:26px!important;
+      font-weight:800!important;
+      line-height:1!important;
+      letter-spacing:-.03em!important;
+      color:var(--text-primary)!important;
+      font-variant-numeric:tabular-nums!important;
+      white-space:nowrap!important;
+      margin:0 0 8px!important;
+    }
+    #mod-acao .cr-card.info .cr-value{color:var(--color-info)!important}
+    #mod-acao .cr-card.danger .cr-value{color:var(--color-danger)!important}
+    #mod-acao .cr-card.warn .cr-value{color:var(--color-warn)!important}
+    #mod-acao .cr-card.success .cr-value{color:var(--color-success)!important}
+    #mod-acao .cr-card.muted .cr-value{color:var(--color-muted)!important}
+    #mod-acao .cr-sub,
+    #mod-acao .cr-note{
+      font-size:10px!important;
+      font-weight:400!important;
+      line-height:1.35!important;
+      color:var(--text-caption)!important;
+      margin:0!important;
+    }
+    #mod-acao .cr-note{margin-top:auto!important;padding-top:10px!important}
+    #mod-acao .cr-list{
+      display:flex!important;
+      flex-direction:column!important;
+      gap:8px!important;
+      min-width:0!important;
+    }
+    #mod-acao .cr-row{
+      display:grid!important;
+      grid-template-columns:minmax(0,1fr) auto auto!important;
+      gap:10px!important;
+      align-items:center!important;
+      min-width:0!important;
+      padding:10px 12px!important;
+      border:1px solid var(--border-default)!important;
+      border-radius:10px!important;
+      background:var(--bg-inner)!important;
+      cursor:pointer!important;
+    }
+    #mod-acao .cr-row strong{
+      display:block!important;
+      min-width:0!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+      white-space:nowrap!important;
+      font-size:11px!important;
+      color:var(--text-primary)!important;
+    }
+    #mod-acao .cr-row small{
+      display:block!important;
+      min-width:0!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+      white-space:nowrap!important;
+      font-size:10px!important;
+      color:var(--text-caption)!important;
+      margin-top:2px!important;
+    }
+    #mod-acao .cr-row .cr-money,
+    #mod-acao .cr-row .cr-count{
+      font-size:11px!important;
+      font-weight:800!important;
+      color:var(--color-info)!important;
+      white-space:nowrap!important;
+      font-variant-numeric:tabular-nums!important;
+    }
+    @media(max-width:1200px){
+      #mod-acao .cr-exec-grid,
+      #mod-acao .cr-bucket-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+      #mod-acao .cr-work-grid{grid-template-columns:1fr!important}
+    }
+    @media(max-width:760px){
+      #mod-acao .acao-tabs{flex-direction:column!important}
+      #mod-acao .acao-tab{width:100%!important;text-align:left!important}
+      #mod-acao .cr-exec-grid,
+      #mod-acao .cr-bucket-grid{grid-template-columns:1fr!important}
+    }
 
     /* Drill-down: tela de trabalho em paleta dark, com mais area util */
     .dd-overlay{
@@ -6551,6 +6705,11 @@ h2.section-title .info-btn{margin-left:6px}
 
   <!-- ====================== MÓDULO: PLANO DE AÇÃO ====================== -->
   <div class="module" id="mod-acao">
+    <div class="acao-tabs">
+      <button class="acao-tab active" data-acao-tab="plano" onclick="switchAcaoTab('plano')">Plano de Ação</button>
+      <button class="acao-tab" data-acao-tab="cobranca" onclick="switchAcaoTab('cobranca')">Cobrança Inteligente</button>
+    </div>
+    <div class="acao-tab-panel active" id="acao-tab-plano">
     <div class="section">
       <h2 class="section-title">Plano de Ação <span class="help">Recomendações priorizadas baseadas na análise dos relatórios</span></h2>
       <div class="insight-grid" id="acao-insights"></div>
@@ -6558,6 +6717,21 @@ h2.section-title .info-btn{margin-left:6px}
     <div class="section">
       <h2 class="section-title">Ações por prioridade</h2>
       <div id="acao-list"></div>
+    </div>
+    </div>
+    <div class="acao-tab-panel" id="acao-tab-cobranca">
+      <div class="section">
+        <h2 class="section-title">Cobrança Inteligente <span class="help">Triagem financeira, reativação e inconsistências antes do disparo</span></h2>
+        <div class="cr-exec-grid" id="cr-exec"></div>
+      </div>
+      <div class="section">
+        <h2 class="section-title">Carteiras de tratativa <span class="help">Clique nos cards para abrir a lista detalhada</span></h2>
+        <div class="cr-bucket-grid" id="cr-buckets"></div>
+      </div>
+      <div class="section">
+        <h2 class="section-title">Quebras lógicas do financeiro <span class="help">Pago Até, sequência, duplicidade e cruzamento por contrato recorrente</span></h2>
+        <div class="cr-work-grid" id="cr-work"></div>
+      </div>
     </div>
   </div>
 
@@ -14928,6 +15102,227 @@ function renderAcao(){
       openDrill(a.label,a.rows,null,{sub:`${a.qty.toLocaleString('pt-BR')} ${a.unit} · ${prioLabels[a.prio].toLowerCase()}`,action:a.action});
     });
   });
+  renderCobrancaInteligente();
+}
+
+function switchAcaoTab(tab){
+  const t=tab==='cobranca'?'cobranca':'plano';
+  document.querySelectorAll('#mod-acao .acao-tab').forEach(b=>b.classList.toggle('active',b.dataset.acaoTab===t));
+  document.querySelectorAll('#mod-acao .acao-tab-panel').forEach(p=>p.classList.toggle('active',p.id==='acao-tab-'+t));
+}
+
+function cobrancaInteligenteCols(){
+  const money=new Set(['Valor em aberto','Valor total em aberto']);
+  return ['Carteira','Cliente','ID Contrato','Filial','Bairro','Status Acesso','Isento','Dias sem navegação','Online','Pago Até','Valor em aberto','Valor total em aberto','Faturas em aberto','Vencimento mais antigo','Primeiro pagamento localizado','Problema financeiro','Leitura operacional','Ação sugerida'].map(k=>({k,label:k,fmt:money.has(k)?v=>brl(v||0):undefined}));
+}
+
+function buildCobrancaInteligente(rows){
+  rows=rows||[];
+  const raw=STATE.raw.recebimentos||[];
+  const today=new Date();today.setHours(0,0,0,0);
+  const byId=new Map(rows.map(r=>[limpaId(r['ID Contrato']),r]).filter(x=>x[0]));
+  const ids=new Set(byId.keys());
+  const out={
+    cobranca:[],recuperacao:[],reativacao:[],revisar:[],naoAcionar:[],semMatch:[],
+    seqIssues:buildFinancialSequenceIssues(rows),
+    totalAberto:0,valorCobranca:0,valorRecuperacao:0,valorReativacao:0,valorRevisar:0
+  };
+  if(!raw.length||!rows.length)return out;
+  const s=raw[0], col=p=>findCol(s,p);
+  const cols={
+    id:col([/^id$/i]),cli:col([/^cliente$/i]),status:col([/^status$/i]),
+    val:col([/^valor$/i]),aberto:col([/valor aberto/i]),recebido:col([/valor recebido/i,/valor baixado/i]),
+    venc:col([/^vencimento$/i,/vencimento/i]),pag:col([/data pagamento/i]),baixa:col([/data baixa/i]),cred:col([/data crédito/i,/data credito/i]),
+    parcela:col([/^parcela$/i,/parcela r/i]),idRec:col([/id contrato recorrente/i,/contrato recorrente/i]),
+    idPri:col([/id contrato principal/i,/contrato principal/i]),idAvul:col([/id contrato avulso/i,/contrato avulso/i]),idVinc:col([/id contratos vinculados/i,/contratos vinculados/i])
+  };
+  const byContract={}, fallbackReceipts=[];
+  raw.forEach(rec=>{
+    const idRec=limpaId(rec[cols.idRec]||'');
+    const fallbackIds=[cols.idPri,cols.idAvul,cols.idVinc].map(c=>limpaId(rec[c])).filter(v=>v&&v!=='0');
+    const st=norm(rec[cols.status]||'');
+    const venc=parseDateTime(rec[cols.venc]);
+    if(!venc)return;
+    const pay=parseDateTime(rec[cols.pag])||parseDateTime(rec[cols.baixa])||parseDateTime(rec[cols.cred]);
+    const valor=toFloat(rec[cols.aberto])||toFloat(rec[cols.val])||0;
+    const recebido=toFloat(rec[cols.recebido])||0;
+    const paid=!!(pay||/RECEBIDO|RECEBIMENTO/.test(st)||recebido>0);
+    const open=st==='A RECEBER'&&!paid;
+    const overdue=open&&venc<today;
+    const item={rec,idTitulo:limpaId(rec[cols.id]),cliente:rec[cols.cli]||'',status:rec[cols.status]||'',venc,pay,valor,paid,open,overdue,mes:ymKey(venc),parcela:rec[cols.parcela]||'',idRec,fallbackIds};
+    if(idRec&&ids.has(idRec))(byContract[idRec]||(byContract[idRec]=[])).push(item);
+    else if(fallbackIds.some(id=>ids.has(id)))fallbackReceipts.push(item);
+  });
+  fallbackReceipts.forEach(it=>{
+    const matched=it.fallbackIds.find(id=>ids.has(id));
+    const base=byId.get(matched)||{};
+    if(!it.overdue)return;
+    out.semMatch.push({
+      ...base,
+      'Carteira':'Revisar cruzamento',
+      'Cliente':base.Cliente||it.cliente,
+      'ID Contrato':matched||'',
+      'Valor em aberto':it.valor,
+      'Valor total em aberto':it.valor,
+      'Faturas em aberto':1,
+      'Vencimento mais antigo':dateIso(it.venc),
+      'Problema financeiro':'Título sem ID contrato recorrente válido no recorte',
+      'Leitura operacional':'Não usar fallback para cobrança automática. Validar vínculo do contrato recorrente no IXC.',
+      'Ação sugerida':'Corrigir vínculo financeiro antes de disparar cobrança.'
+    });
+  });
+  Object.entries(byContract).forEach(([id,titles])=>{
+    const row=byId.get(id);if(!row)return;
+    const overdue=titles.filter(t=>t.overdue);
+    if(!overdue.length)return;
+    const total=overdue.reduce((sum,t)=>sum+(t.valor||0),0);
+    if(total<=0)return;
+    const stAc=norm(row._stAc||row['Status Acesso']||'');
+    const dias=row._diasSemNavegacao;
+    const isManual=stAc==='BLOQUEIO MANUAL';
+    const isAuto=stAc==='BLOQUEIO AUTOMATICO';
+    const isAtivo=stAc==='ATIVO';
+    const isDesativado=stAc==='INATIVO'||stAc==='DESATIVADO'||norm(row['Status contrato'])==='DESATIVADO';
+    const isento=!isFaturableRow(row);
+    const paidCount=titles.filter(t=>t.paid).length;
+    const byMes={};overdue.forEach(t=>{byMes[t.mes]=(byMes[t.mes]||0)+1});
+    const duplicate=Object.values(byMes).some(v=>v>1);
+    const oldest=overdue.sort((a,b)=>a.venc-b.venc)[0];
+    const base={
+      ...row,
+      'ID Contrato':id,
+      'Isento':row.Isento||'',
+      'Dias sem navegação':dias==null?'':dias,
+      'Valor em aberto':total,
+      'Valor total em aberto':total,
+      'Faturas em aberto':overdue.length,
+      'Vencimento mais antigo':dateIso(oldest.venc),
+      'Primeiro pagamento localizado':paidCount?'SIM':'NÃO'
+    };
+    out.totalAberto+=total;
+    if(isDesativado){
+      out.naoAcionar.push({...base,'Carteira':'Não acionar','Problema financeiro':'Contrato desativado/inativo com dívida','Leitura operacional':'Não misturar com cobrança ativa. Tratar como carteira separada ou saneamento.','Ação sugerida':'Validar baixa, negociação residual ou régua específica de ex-cliente.'});
+      return;
+    }
+    if(isManual&&(dias==null||dias>90)){
+      out.reativacao.push({...base,'Carteira':'Reativação','Problema financeiro':'Bloqueio manual/isento com mais de 90 dias sem navegação','Leitura operacional':'Possível cancelamento silencioso. Não jogar em auditoria nem cobrança comum.','Ação sugerida':'Tratar como reativação/base fria antes de cobrar.'});
+      out.valorReativacao+=total;
+      return;
+    }
+    if(isento&&!isManual){
+      out.naoAcionar.push({...base,'Carteira':'Não acionar','Problema financeiro':'Contrato isento com fatura aberta','Leitura operacional':'Isento não deve ir para disparo automático sem validação cadastral.','Ação sugerida':'Validar isenção no IXC antes de qualquer cobrança.'});
+      return;
+    }
+    if(duplicate){
+      out.revisar.push({...base,'Carteira':'Revisar antes de cobrar','Problema financeiro':'Duas ou mais faturas vencidas no mesmo mês','Leitura operacional':'Pode ser duplicidade, proporcional de alteração ou emissão manual.','Ação sugerida':'Validar origem da duplicidade antes do disparo.'});
+      out.valorRevisar+=total;
+      return;
+    }
+    if(!paidCount){
+      out.cobranca.push({...base,'Carteira':'Cobrança ativa','Problema financeiro':'Nunca pagou','Leitura operacional':'Dívida clara sem primeiro pagamento localizado.','Ação sugerida':'Acionar cobrança ativa com validação do contato.'});
+      out.valorCobranca+=total;
+      return;
+    }
+    if(isAuto||isAtivo||(isManual&&dias!==null&&dias<=90)){
+      out.cobranca.push({...base,'Carteira':'Cobrança ativa','Problema financeiro':isAuto?'Bloqueio automático por inadimplência':isManual?'Bloqueio manual até 90 dias sem navegação':'Ativo com dívida vencida','Leitura operacional':'Cliente ainda entra na régua de recuperação/cobrança.','Ação sugerida':'Cobrar e acompanhar regularização antes de classificar como reativação.'});
+      out.valorCobranca+=total;
+      return;
+    }
+    out.recuperacao.push({...base,'Carteira':'Recuperação preventiva','Problema financeiro':'Dívida vencida com status operacional a validar','Leitura operacional':'Separar cobrança real de cadastro parado.','Ação sugerida':'Validar status e contato antes de acionar.'});
+    out.valorRecuperacao+=total;
+  });
+  if(out.seqIssues.length){
+    out.seqIssues.forEach(r=>{
+      const val=Number(r._valorAberto||r['Valor aberto']||0);
+      out.valorRevisar+=val;
+      out.revisar.push({
+        ...r,
+        'Carteira':'Revisar antes de cobrar',
+        'Valor em aberto':val,
+        'Valor total em aberto':val,
+        'Faturas em aberto':1,
+        'Problema financeiro':'Quebra de sequência / Pago Até',
+        'Leitura operacional':r['Diagnóstico Pago Até']||'Fatura antiga aberta com parcela posterior paga',
+        'Ação sugerida':r['Ação sugerida']||'Corrigir sequência e Pago Até antes de cobrar.'
+      });
+    });
+  }
+  return out;
+}
+
+function crCardHtml(label,value,sub,tone,key,note){
+  return `<div class="cr-card ${tone||'info'}" ${key?`data-cr="${escHtml(key)}"`:''}>
+    <div class="cr-label">${escHtml(label)}</div>
+    <div class="cr-value">${value}</div>
+    <p class="cr-sub">${escHtml(sub||'')}</p>
+    ${note?`<p class="cr-note">${escHtml(note)}</p>`:''}
+  </div>`;
+}
+
+function renderCobrancaInteligente(){
+  const rows=currentRows();
+  const data=buildCobrancaInteligente(rows);
+  const exec=document.getElementById('cr-exec');
+  const buckets=document.getElementById('cr-buckets');
+  const work=document.getElementById('cr-work');
+  if(!exec||!buckets||!work)return;
+  if(!(STATE.raw.recebimentos&&STATE.raw.recebimentos.length)){
+    exec.innerHTML=crCardHtml('Aguardando recebimentos','--','Envie Cobrança e Recebimentos no módulo Carregar Relatórios.','muted','','Sem esse relatório o Radar não calcula quebra lógica financeira.');
+    buckets.innerHTML='<div class="empty" style="padding:28px;color:#7f93ad">Sem dados financeiros para classificar cobrança.</div>';
+    work.innerHTML='';
+    return;
+  }
+  const cobrar=data.cobranca.length+data.recuperacao.length;
+  const reativar=data.reativacao.length;
+  const revisar=data.revisar.length+data.semMatch.length;
+  const nao=data.naoAcionar.length;
+  exec.innerHTML=[
+    crCardHtml('Cobrança / recuperação',cobrar.toLocaleString('pt-BR'),`${brl(data.valorCobranca+data.valorRecuperacao)} em aberto`,'danger','cobrarTodos','Bloqueio automático, ativo com dívida e manual até 90 dias.'),
+    crCardHtml('Reativação',reativar.toLocaleString('pt-BR'),`${brl(data.valorReativacao)} em carteira fria`,'warn','reativacao','Bloqueio manual/isento acima de 90 dias sem navegação.'),
+    crCardHtml('Revisar antes de cobrar',revisar.toLocaleString('pt-BR'),`${brl(data.valorRevisar)} com risco de erro`,'info','revisar','Quebra de sequência, Pago Até, duplicidade ou vínculo financeiro ruim.'),
+    crCardHtml('Não acionar',nao.toLocaleString('pt-BR'),'Isentos/desativados ou regra conhecida','muted','nao','Evita disparo indevido e ruído com cliente.')
+  ].join('');
+  buckets.innerHTML=[
+    crCardHtml('Cobrar agora',data.cobranca.length.toLocaleString('pt-BR'),'Dívida acionável no recorte','danger','cobranca'),
+    crCardHtml('Recuperação preventiva',data.recuperacao.length.toLocaleString('pt-BR'),'Validar status antes do contato','warn','recuperacao'),
+    crCardHtml('Base de reativação',data.reativacao.length.toLocaleString('pt-BR'),'Cliente frio, não é auditoria','info','reativacao'),
+    crCardHtml('Não acionar automático',data.naoAcionar.length.toLocaleString('pt-BR'),'Isento/desativado/cadastro especial','muted','nao')
+  ].join('');
+  const topRevisar=[...data.revisar].sort((a,b)=>Number(b['Valor em aberto']||0)-Number(a['Valor em aberto']||0)).slice(0,6);
+  const topSemMatch=[...data.semMatch].sort((a,b)=>Number(b['Valor em aberto']||0)-Number(a['Valor em aberto']||0)).slice(0,6);
+  const rowHtml=(list,key)=>list.length?list.map((r,i)=>`<div class="cr-row" data-cr-row="${key}:${i}">
+    <div><strong>${escHtml(r.Cliente||r['Cliente']||'Sem cliente')}</strong><small>${escHtml(r['Problema financeiro']||'Revisar')} · ${escHtml(r['ID Contrato']||'')}</small></div>
+    <span class="cr-money">${brl(r['Valor em aberto']||0)}</span><span class="cr-count">abrir</span>
+  </div>`).join(''):'<div class="empty" style="padding:22px;color:#7f93ad">Nada crítico neste recorte.</div>';
+  work.innerHTML=`
+    <div class="cr-card info" style="cursor:default">
+      <div class="cr-label">Pago Até e sequência</div>
+      <div class="cr-value">${data.seqIssues.length.toLocaleString('pt-BR')}</div>
+      <p class="cr-sub">Fatura antiga aberta, parcela posterior paga ou diagnóstico incompatível de Pago Até.</p>
+      <div class="cr-list" style="margin-top:12px">${rowHtml(topRevisar,'revisar')}</div>
+    </div>
+    <div class="cr-card warn" style="cursor:default">
+      <div class="cr-label">Sem contrato recorrente confiável</div>
+      <div class="cr-value">${data.semMatch.length.toLocaleString('pt-BR')}</div>
+      <p class="cr-sub">Título não cruza pelo ID contrato recorrente. Não entra em disparo automático.</p>
+      <div class="cr-list" style="margin-top:12px">${rowHtml(topSemMatch,'semMatch')}</div>
+    </div>
+  `;
+  const open=(title,items,cols,action)=>openDrill(title,items,cols||cobrancaInteligenteCols(),{sub:`${items.length.toLocaleString('pt-BR')} registros`,action});
+  const bucketMap={
+    cobrarTodos:()=>open('Cobrança / recuperação',data.cobranca.concat(data.recuperacao),cobrancaInteligenteCols(),'Acionar cobrança quando a dívida estiver clara; validar casos preventivos antes do disparo.'),
+    cobranca:()=>open('Cobrança ativa',data.cobranca,cobrancaInteligenteCols(),'Acionar cobrança para clientes com dívida clara. Bloqueio manual só entra aqui até 90 dias sem navegação.'),
+    recuperacao:()=>open('Recuperação preventiva',data.recuperacao,cobrancaInteligenteCols(),'Validar status, telefone e contexto antes de acionar.'),
+    reativacao:()=>open('Reativação / base fria',data.reativacao,cobrancaInteligenteCols(),'Cliente com mais de 90 dias sem navegação: tratar como reativação, não auditoria.'),
+    revisar:()=>open('Revisar antes de cobrar',data.revisar,cobrancaInteligenteCols(),'Corrigir quebra lógica, duplicidade ou Pago Até antes de qualquer disparo.'),
+    nao:()=>open('Não acionar automaticamente',data.naoAcionar,cobrancaInteligenteCols(),'Não enviar cobrança automática sem validação de isenção, desativação ou regra especial.'),
+    semMatch:()=>open('Sem contrato recorrente confiável',data.semMatch,cobrancaInteligenteCols(),'Corrigir vínculo financeiro pelo ID contrato recorrente antes de usar em régua.')
+  };
+  document.querySelectorAll('#mod-acao [data-cr]').forEach(el=>el.addEventListener('click',()=>{const fn=bucketMap[el.dataset.cr];fn&&fn()}));
+  document.querySelectorAll('#mod-acao [data-cr-row]').forEach(el=>el.addEventListener('click',()=>{
+    const [key,idx]=el.dataset.crRow.split(':');const list=key==='semMatch'?data.semMatch:data.revisar;const r=list[Number(idx)];
+    if(r)open(r.Cliente||r['Cliente']||'Detalhe financeiro',[r],cobrancaInteligenteCols(),r['Ação sugerida']||'Revisar antes da ação.');
+  }));
 }
 
 function renderPremiacoes(){
