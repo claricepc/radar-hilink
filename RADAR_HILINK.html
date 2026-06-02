@@ -15279,7 +15279,7 @@ function renderCobrancaInteligente(){
   exec.innerHTML=[
     crCardHtml('Cobrança / recuperação',cobrar.toLocaleString('pt-BR'),`${brl(data.valorCobranca+data.valorRecuperacao)} em aberto`,'danger','cobrarTodos','Bloqueio automático, ativo com dívida e manual até 90 dias.'),
     crCardHtml('Reativação',reativar.toLocaleString('pt-BR'),`${brl(data.valorReativacao)} em carteira fria`,'warn','reativacao','Bloqueio manual/isento acima de 90 dias sem navegação.'),
-    crCardHtml('Revisar antes de cobrar',revisar.toLocaleString('pt-BR'),`${brl(data.valorRevisar)} com risco de erro`,'info','revisar','Quebra de sequência, Pago Até, duplicidade ou vínculo financeiro ruim.'),
+    crCardHtml('Revisar antes de cobrar',revisar.toLocaleString('pt-BR'),`${brl(data.valorRevisar)} com risco de erro`,'info','revisarTodos','Quebra de sequência, Pago Até, duplicidade ou vínculo financeiro ruim.'),
     crCardHtml('Não acionar',nao.toLocaleString('pt-BR'),'Isentos/desativados ou regra conhecida','muted','nao','Evita disparo indevido e ruído com cliente.')
   ].join('');
   buckets.innerHTML=[
@@ -15295,13 +15295,13 @@ function renderCobrancaInteligente(){
     <span class="cr-money">${brl(r['Valor em aberto']||0)}</span><span class="cr-count">abrir</span>
   </div>`).join(''):'<div class="empty" style="padding:22px;color:#7f93ad">Nada crítico neste recorte.</div>';
   work.innerHTML=`
-    <div class="cr-card info" style="cursor:default">
+    <div class="cr-card info" data-cr="revisar">
       <div class="cr-label">Pago Até e sequência</div>
       <div class="cr-value">${data.seqIssues.length.toLocaleString('pt-BR')}</div>
       <p class="cr-sub">Fatura antiga aberta, parcela posterior paga ou diagnóstico incompatível de Pago Até.</p>
       <div class="cr-list" style="margin-top:12px">${rowHtml(topRevisar,'revisar')}</div>
     </div>
-    <div class="cr-card warn" style="cursor:default">
+    <div class="cr-card warn" data-cr="semMatch">
       <div class="cr-label">Sem contrato recorrente confiável</div>
       <div class="cr-value">${data.semMatch.length.toLocaleString('pt-BR')}</div>
       <p class="cr-sub">Título não cruza pelo ID contrato recorrente. Não entra em disparo automático.</p>
@@ -15314,12 +15314,14 @@ function renderCobrancaInteligente(){
     cobranca:()=>open('Cobrança ativa',data.cobranca,cobrancaInteligenteCols(),'Acionar cobrança para clientes com dívida clara. Bloqueio manual só entra aqui até 90 dias sem navegação.'),
     recuperacao:()=>open('Recuperação preventiva',data.recuperacao,cobrancaInteligenteCols(),'Validar status, telefone e contexto antes de acionar.'),
     reativacao:()=>open('Reativação / base fria',data.reativacao,cobrancaInteligenteCols(),'Cliente com mais de 90 dias sem navegação: tratar como reativação, não auditoria.'),
+    revisarTodos:()=>open('Revisar antes de cobrar',data.revisar.concat(data.semMatch),cobrancaInteligenteCols(),'Corrigir quebra lógica, duplicidade, Pago Até ou vínculo financeiro antes de qualquer disparo.'),
     revisar:()=>open('Revisar antes de cobrar',data.revisar,cobrancaInteligenteCols(),'Corrigir quebra lógica, duplicidade ou Pago Até antes de qualquer disparo.'),
     nao:()=>open('Não acionar automaticamente',data.naoAcionar,cobrancaInteligenteCols(),'Não enviar cobrança automática sem validação de isenção, desativação ou regra especial.'),
     semMatch:()=>open('Sem contrato recorrente confiável',data.semMatch,cobrancaInteligenteCols(),'Corrigir vínculo financeiro pelo ID contrato recorrente antes de usar em régua.')
   };
   document.querySelectorAll('#mod-acao [data-cr]').forEach(el=>el.addEventListener('click',()=>{const fn=bucketMap[el.dataset.cr];fn&&fn()}));
-  document.querySelectorAll('#mod-acao [data-cr-row]').forEach(el=>el.addEventListener('click',()=>{
+  document.querySelectorAll('#mod-acao [data-cr-row]').forEach(el=>el.addEventListener('click',e=>{
+    e.stopPropagation();
     const [key,idx]=el.dataset.crRow.split(':');const list=key==='semMatch'?data.semMatch:data.revisar;const r=list[Number(idx)];
     if(r)open(r.Cliente||r['Cliente']||'Detalhe financeiro',[r],cobrancaInteligenteCols(),r['Ação sugerida']||'Revisar antes da ação.');
   }));
