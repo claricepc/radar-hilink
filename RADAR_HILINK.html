@@ -17857,12 +17857,24 @@ function setAllDrillCols(on){
         return;
       }
       ranking.forEach(function(x,i){ x.rank = i + 1; });
+      var allRanking = ruBuild(_ruRowsAll || [], false, true);
+      var totalUps = ranking.reduce(function(s,x){return s+x.ups;},0);
+      var totalDowns = ranking.reduce(function(s,x){return s+x.downs;},0);
+      var totalLiq = Math.max(0,totalUps-totalDowns);
+      var totalAtendimento = ranking.reduce(function(s,x){return s+x.rec_liq;},0);
+      var totalGeral = allRanking.reduce(function(s,x){return s+x.rec_liq;},0);
+      var totalComissao = ranking.reduce(function(s,x){return s+x.comissao;},0);
+      var totalPay = ranking.reduce(function(s,x){
+        var p = ruPaymentSummary(x);
+        s.total += p.total; s.paid += p.paid; s.pending += p.pending; s.unknown += p.unknown;
+        return s;
+      }, {total:0,paid:0,pending:0,unknown:0});
 
       var W = 1600, pad = 48, gap = 22, footerH = 78;
       var rest = ranking.slice(3);
       var restCols = 2;
       var restRows = Math.ceil(rest.length / restCols);
-      var H = pad + 92 + 402 + (rest.length ? 54 + restRows * 128 : 0) + footerH + pad;
+      var H = pad + 176 + 402 + (rest.length ? 54 + restRows * 128 : 0) + footerH + pad;
       var canvas = document.createElement('canvas');
       canvas.width = W;
       canvas.height = H;
@@ -17904,6 +17916,33 @@ function setAllDrillCols(on){
         ctx.fillText(new Date().toLocaleDateString('pt-BR'), W - pad, pad + 58);
       }
       ctx.textAlign = 'left';
+
+      var drawSummary = function(label,value,sub,x,y,w,color){
+        ctx.fillStyle = '#0b1b2b';
+        premCanvasRoundRect(ctx,x,y,w,72,12);
+        ctx.fill();
+        ctx.strokeStyle = color || 'rgba(56,168,255,.45)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.font = '800 10px Inter, Segoe UI, Arial';
+        ctx.fillStyle = '#8fb8e8';
+        ctx.textAlign = 'center';
+        ctx.fillText(String(label||'').toUpperCase(), x + w/2, y + 20);
+        ctx.font = '800 22px Inter, Segoe UI, Arial';
+        ctx.fillStyle = color || '#38a8ff';
+        ctx.fillText(String(value||'—'), x + w/2, y + 45);
+        ctx.font = '500 10px Inter, Segoe UI, Arial';
+        ctx.fillStyle = '#7f93ad';
+        ctx.fillText(String(sub||''), x + w/2, y + 62);
+        ctx.textAlign = 'left';
+      };
+      var sumY = pad + 82;
+      var sumW = (W - pad * 2 - gap * 4) / 5;
+      drawSummary('Total atendimento',ruBRL(totalAtendimento),'upgrades válidos das atendentes',pad,sumY,sumW,'#38a8ff');
+      drawSummary('Total geral',ruBRL(totalGeral),'todos os upgrades válidos',pad + (sumW + gap),sumY,sumW,'#38a8ff');
+      drawSummary('Ups líquidos',String(totalLiq),totalUps+' ups · '+totalDowns+' downs',pad + (sumW + gap)*2,sumY,sumW,'#20d991');
+      drawSummary('Comissão',ruBRL(totalComissao),'R$ 10 por upgrade líquido',pad + (sumW + gap)*3,sumY,sumW,'#20d991');
+      drawSummary('PGTO',totalPay.paid+'/'+totalPay.total+' pagos',totalPay.pending+' pend. · '+totalPay.unknown+' sem vínculo',pad + (sumW + gap)*4,sumY,sumW,'#ffa800');
 
       var medals = {
         1:{color:'#f2b705',label:'OURO'},
@@ -17992,7 +18031,7 @@ function setAllDrillCols(on){
         drawMetric('Comissão', ruBRL(v.comissao), x + 36 + mw, metricY + 58, mw);
       };
       var top = [ranking[1], ranking[0], ranking[2]].filter(Boolean);
-      var topY = pad + 105;
+      var topY = pad + 189;
       var cardW = (W - pad * 2 - gap * 2) / 3;
       for(var i=0;i<top.length;i++){
         await drawTopCard(top[i], pad + i * (cardW + gap), topY, cardW, 370);
