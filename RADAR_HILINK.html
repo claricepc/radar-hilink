@@ -6137,7 +6137,7 @@ h2.section-title .info-btn{margin-left:6px}
           <div>
             <div style="font-size:13px;font-weight:800;color:#e0eaf5;text-transform:uppercase;letter-spacing:1.5px">Ranking de Upgrade</div>
             <div id="ru-periodo" style="font-size:11px;color:#556677;margin-top:2px">Carregue o relatório de Alterações Contratuais</div>
-            <button class="btn outline" id="btn-ru-download" onclick="downloadRankingUpgradeImageV2()" style="display:none;margin-top:10px;font-size:12px;padding:8px 16px">Baixar imagem</button>
+            <button class="btn outline" id="btn-ru-download" onclick="downloadRankingUpgradeImageV3()" style="display:none;margin-top:10px;font-size:12px;padding:8px 16px">Baixar imagem</button>
           </div>
           <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap">
             <div id="ru-box-total" style="display:none">
@@ -17848,7 +17848,7 @@ function setAllDrillCols(on){
     _ruPayDrill.total = {label:'Total do ranking', rows:ranking.reduce(function(a,x){return a.concat(ruPaymentDetailRows(x));},[])};
   }
 
-  window.downloadRankingUpgradeImageV2 = async function(){
+  window.downloadRankingUpgradeImageV3 = async function(){
     try{
       if(!_ruRowsAll || !_ruRowsAll.length) _ruRowsAll = ruSourceRows();
       var ranking = ruBuild(_ruRowsAll || [], false);
@@ -17874,7 +17874,7 @@ function setAllDrillCols(on){
       var rest = ranking.slice(3);
       var restCols = 2;
       var restRows = Math.ceil(rest.length / restCols);
-      var H = pad + 176 + 402 + (rest.length ? 54 + restRows * 128 : 0) + footerH + pad;
+      var H = pad + 230 + 402 + (rest.length ? 54 + restRows * 128 : 0) + footerH + pad;
       var canvas = document.createElement('canvas');
       canvas.width = W;
       canvas.height = H;
@@ -17936,13 +17936,15 @@ function setAllDrillCols(on){
         ctx.fillText(String(sub||''), x + w/2, y + 62);
         ctx.textAlign = 'left';
       };
-      var sumY = pad + 82;
-      var sumW = (W - pad * 2 - gap * 4) / 5;
+      var sumY = pad + 92;
+      var sumW = (W - pad * 2 - gap * 3) / 4;
       drawSummary('Total atendimento',ruBRL(totalAtendimento),'upgrades válidos das atendentes',pad,sumY,sumW,'#38a8ff');
       drawSummary('Total geral',ruBRL(totalGeral),'todos os upgrades válidos',pad + (sumW + gap),sumY,sumW,'#38a8ff');
       drawSummary('Ups líquidos',String(totalLiq),totalUps+' ups · '+totalDowns+' downs',pad + (sumW + gap)*2,sumY,sumW,'#20d991');
-      drawSummary('Comissão',ruBRL(totalComissao),'R$ 10 por upgrade líquido',pad + (sumW + gap)*3,sumY,sumW,'#20d991');
-      drawSummary('PGTO',totalPay.paid+'/'+totalPay.total+' pagos',totalPay.pending+' pend. · '+totalPay.unknown+' sem vínculo',pad + (sumW + gap)*4,sumY,sumW,'#ffa800');
+      drawSummary('PGTO',totalPay.paid+'/'+totalPay.total+' pagos',totalPay.pending+' pend. · '+totalPay.unknown+' sem vínculo',pad + (sumW + gap)*3,sumY,sumW,'#ffa800');
+      ctx.font = '500 13px Inter, Segoe UI, Arial';
+      ctx.fillStyle = '#7f93ad';
+      ctx.fillText('Comissão do ranking: ' + ruBRL(totalComissao) + ' · regra: R$ 10 por upgrade líquido validado', pad, sumY + 96);
 
       var medals = {
         1:{color:'#f2b705',label:'OURO'},
@@ -18031,7 +18033,7 @@ function setAllDrillCols(on){
         drawMetric('Comissão', ruBRL(v.comissao), x + 36 + mw, metricY + 58, mw);
       };
       var top = [ranking[1], ranking[0], ranking[2]].filter(Boolean);
-      var topY = pad + 189;
+      var topY = pad + 240;
       var cardW = (W - pad * 2 - gap * 2) / 3;
       for(var i=0;i<top.length;i++){
         await drawTopCard(top[i], pad + i * (cardW + gap), topY, cardW, 370);
@@ -18105,7 +18107,8 @@ function setAllDrillCols(on){
       alert('Não consegui gerar a imagem do ranking de upgrade. Veja o console para detalhes.');
     }
   };
-  window.downloadRankingUpgradeImage = window.downloadRankingUpgradeImageV2;
+  window.downloadRankingUpgradeImageV2 = window.downloadRankingUpgradeImageV3;
+  window.downloadRankingUpgradeImage = window.downloadRankingUpgradeImageV3;
 
   window.renderRankingUpgrade = function(){
     _ruRowsAll = ruSourceRows();
