@@ -5247,14 +5247,24 @@ h2.section-title .info-btn{margin-left:6px}
     }
     #mod-acao .acao-tab-panel{display:none!important}
     #mod-acao .acao-tab-panel.active{display:block!important}
+    #mod-acao .cr-top-row{
+      display:grid!important;
+      grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+      gap:16px!important;
+      align-items:stretch!important;
+    }
+    #mod-acao .cr-top-row .section{
+      margin:0!important;
+      min-width:0!important;
+    }
     #mod-acao .cr-exec-grid{
       display:grid!important;
-      grid-template-columns:repeat(4,minmax(0,1fr))!important;
+      grid-template-columns:repeat(2,minmax(0,1fr))!important;
       gap:12px!important;
     }
     #mod-acao .cr-bucket-grid{
       display:grid!important;
-      grid-template-columns:repeat(4,minmax(0,1fr))!important;
+      grid-template-columns:repeat(2,minmax(0,1fr))!important;
       gap:12px!important;
     }
     #mod-acao .cr-work-grid{
@@ -5266,7 +5276,7 @@ h2.section-title .info-btn{margin-left:6px}
       display:flex!important;
       flex-direction:column!important;
       min-width:0!important;
-      min-height:132px!important;
+      min-height:112px!important;
       padding:14px!important;
       border-radius:12px!important;
       background:linear-gradient(135deg,#101f33 0%,#0c1829 100%)!important;
@@ -5361,8 +5371,7 @@ h2.section-title .info-btn{margin-left:6px}
       font-variant-numeric:tabular-nums!important;
     }
     @media(max-width:1200px){
-      #mod-acao .cr-exec-grid,
-      #mod-acao .cr-bucket-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+      #mod-acao .cr-top-row{grid-template-columns:1fr!important}
       #mod-acao .cr-work-grid{grid-template-columns:1fr!important}
     }
     @media(max-width:760px){
@@ -6720,13 +6729,15 @@ h2.section-title .info-btn{margin-left:6px}
     </div>
     </div>
     <div class="acao-tab-panel" id="acao-tab-cobranca">
-      <div class="section">
-        <h2 class="section-title">Cobrança Inteligente <span class="help">Triagem financeira, reativação e inconsistências antes do disparo</span></h2>
-        <div class="cr-exec-grid" id="cr-exec"></div>
-      </div>
-      <div class="section">
-        <h2 class="section-title">Carteiras de tratativa <span class="help">Clique nos cards para abrir a lista detalhada</span></h2>
-        <div class="cr-bucket-grid" id="cr-buckets"></div>
+      <div class="cr-top-row">
+        <div class="section">
+          <h2 class="section-title">Cobrança Inteligente <span class="help">Triagem financeira, reativação e inconsistências antes do disparo</span></h2>
+          <div class="cr-exec-grid" id="cr-exec"></div>
+        </div>
+        <div class="section">
+          <h2 class="section-title">Carteiras de tratativa <span class="help">Clique nos cards para abrir a lista detalhada</span></h2>
+          <div class="cr-bucket-grid" id="cr-buckets"></div>
+        </div>
       </div>
       <div class="section">
         <h2 class="section-title">Quebras lógicas do financeiro <span class="help">Pago Até, sequência, duplicidade e cruzamento por contrato recorrente</span></h2>
