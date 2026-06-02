@@ -17529,12 +17529,46 @@ function setAllDrillCols(on){
     var pagos = rows.filter(function(r){return r['Status PGTO'] === 'Pago localizado'}).length;
     var pendentes = rows.filter(function(r){return r['Status PGTO'] === 'Pendente'}).length;
     var semVinculo = rows.filter(function(r){return r['Status PGTO'] === 'Sem vínculo em Contas a Receber'}).length;
-    if(typeof openDrill === 'function'){
-      var cols = ['Vendedora','Cliente','ID Contrato','Status PGTO','Qtd. títulos','Valor localizado','Data PGTO localizada','Data alteração','Valor anterior','Valor novo','Diferença'].map(function(k){return {k:k,label:k};});
-      openDrill('PGTO - '+data.label, rows, cols, {sub:rows.length+' upgrades · '+pagos+' pagos · '+pendentes+' pendentes · '+semVinculo+' sem vínculo', action:'Conferir quais contratos já localizaram pagamento da primeira parcela e quais ainda dependem do Contas a Receber.'});
-      return;
-    }
-    alert(data.label + ': ' + rows.length + ' contratos para conferir.');
+    ruShowPaymentModal('PGTO - '+data.label, rows, {
+      sub:rows.length+' upgrades · '+pagos+' pagos · '+pendentes+' pendentes · '+semVinculo+' sem vínculo',
+      action:'Conferir quais contratos já localizaram pagamento da primeira parcela e quais ainda dependem do Contas a Receber.'
+    });
+  }
+  function ruShowPaymentModal(title, rows, opts){
+    rows = rows || [];
+    opts = opts || {};
+    var old = document.getElementById('ru-pay-modal');
+    if(old) old.remove();
+    var cols = ['Vendedora','Cliente','ID Contrato','Status PGTO','Qtd. títulos','Valor localizado','Data PGTO localizada','Data alteração','Valor anterior','Valor novo','Diferença'];
+    var statusClass = function(s){
+      s = String(s || '');
+      if(s.indexOf('Pago') >= 0) return 'ok';
+      if(s.indexOf('Pendente') >= 0) return 'risk';
+      return 'neutro';
+    };
+    var table = rows.length
+      ? '<div class="ru-pay-modal-table"><table><thead><tr>'+cols.map(function(c){return '<th>'+ruEsc(c)+'</th>';}).join('')+'</tr></thead><tbody>'
+        + rows.map(function(r){
+          return '<tr>'+cols.map(function(c){
+            var val = r[c] == null ? '' : r[c];
+            if(c === 'Status PGTO') return '<td><span class="ru-pay '+statusClass(val)+'" style="cursor:default">'+ruEsc(val)+'</span></td>';
+            return '<td>'+ruEsc(val)+'</td>';
+          }).join('')+'</tr>';
+        }).join('')+'</tbody></table></div>'
+      : '<div class="ru-pay-modal-empty">Nenhum contrato encontrado para detalhar neste item.</div>';
+    var modal = document.createElement('div');
+    modal.id = 'ru-pay-modal';
+    modal.innerHTML =
+      '<div class="ru-pay-modal-backdrop" data-close="1"></div>'
+      + '<div class="ru-pay-modal-card">'
+      + '<div class="ru-pay-modal-head"><div><h3>'+ruEsc(title)+'</h3><p>'+ruEsc(opts.sub || '')+'</p></div><button type="button" data-close="1">×</button></div>'
+      + '<div class="ru-pay-modal-action">'+ruEsc(opts.action || '')+'</div>'
+      + table
+      + '</div>';
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(ev){
+      if(ev.target && ev.target.getAttribute('data-close') === '1') modal.remove();
+    });
   }
   function ruCurrentCompetencia(){
     return (typeof STATE !== 'undefined' && STATE.filtros) ? String(STATE.filtros.competencia || '') : '';
@@ -17729,6 +17763,20 @@ function setAllDrillCols(on){
       '#mod-premiacoes .ru-pay.warn{color:#ffa800;background:rgba(255,168,0,.10);border:1px solid rgba(255,168,0,.45)}',
       '#mod-premiacoes .ru-pay.risk{color:#ff6b78;background:rgba(255,77,94,.10);border:1px solid rgba(255,77,94,.50)}',
       '#mod-premiacoes .ru-pay.neutro{color:#94a3b8;background:rgba(148,163,184,.10);border:1px solid rgba(148,163,184,.35)}',
+      '#ru-pay-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:22px}',
+      '#ru-pay-modal .ru-pay-modal-backdrop{position:absolute;inset:0;background:rgba(2,8,18,.72);backdrop-filter:blur(2px)}',
+      '#ru-pay-modal .ru-pay-modal-card{position:relative;width:min(1320px,calc(100vw - 44px));max-height:calc(100vh - 44px);display:flex;flex-direction:column;background:#071522;border:1px solid rgba(80,130,180,.45);border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden}',
+      '#ru-pay-modal .ru-pay-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 18px;border-bottom:1px solid rgba(80,130,180,.35);background:#0b1b2b}',
+      '#ru-pay-modal .ru-pay-modal-head h3{margin:0;color:#fff;font-size:18px;font-weight:800;line-height:1.15;text-transform:uppercase}',
+      '#ru-pay-modal .ru-pay-modal-head p{margin:5px 0 0;color:#8fb8e8;font-size:12px;font-weight:500}',
+      '#ru-pay-modal .ru-pay-modal-head button{width:32px;height:32px;border-radius:9px;border:1px solid rgba(80,130,180,.45);background:#0f2438;color:#ddebff;font-size:18px;font-weight:800;cursor:pointer}',
+      '#ru-pay-modal .ru-pay-modal-action{margin:14px 18px 0;padding:10px 12px;border:1px solid rgba(56,168,255,.45);background:rgba(56,168,255,.10);border-radius:10px;color:#bcd8f5;font-size:12px;font-weight:600}',
+      '#ru-pay-modal .ru-pay-modal-table{margin:14px 18px 18px;overflow:auto;border:1px solid rgba(80,130,180,.35);border-radius:12px}',
+      '#ru-pay-modal table{width:max-content;min-width:100%;border-collapse:collapse;background:#071522}',
+      '#ru-pay-modal th{position:sticky;top:0;background:#12395f;color:#ddebff;text-align:left;padding:10px 12px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;border-bottom:1px solid #38a8ff}',
+      '#ru-pay-modal td{padding:10px 12px;color:#cfe4ff;font-size:11px;font-weight:600;border-bottom:1px solid rgba(80,130,180,.25);white-space:nowrap}',
+      '#ru-pay-modal tr:hover td{background:rgba(56,168,255,.08)}',
+      '#ru-pay-modal .ru-pay-modal-empty{margin:18px;padding:22px;border:1px solid rgba(80,130,180,.35);border-radius:12px;color:#8fb8e8;text-align:center;font-size:13px}',
       '#mod-premiacoes .ru-bar{height:4px;background:#25364b;border-radius:999px;overflow:hidden}',
       '#mod-premiacoes .ru-fill{height:100%;border-radius:999px;background:#38a8ff}',
       '#mod-premiacoes .ru-table-total td{background:#091522;color:#fff;font-weight:800}',
