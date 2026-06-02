@@ -15287,6 +15287,11 @@ function openCobrancaIntelBucket(key){
 }
 
 function openCobrancaIntelRow(spec){
+  const direct=window._CR_INTEL_ROWS&&window._CR_INTEL_ROWS[String(spec||'')];
+  if(direct){
+    openDrill(direct.Cliente||direct['Cliente']||'Detalhe financeiro',[direct],cobrancaInteligenteCols(),{sub:'1 registro',action:direct['Ação sugerida']||'Revisar antes da ação.'});
+    return;
+  }
   const data=window._CR_INTEL||{};
   const [key,idx]=String(spec||'').split(':');
   const list=key==='semMatch'?(data.semMatch||[]):(data.revisar||[]);
@@ -15295,10 +15300,11 @@ function openCobrancaIntelRow(spec){
 }
 
 function bindCobrancaInteligenteClicks(){
-  const root=document.getElementById('mod-acao');
-  if(!root||root._crClicksBound)return;
-  root._crClicksBound=true;
-  root.addEventListener('click',e=>{
+  if(window._crIntelClicksBound)return;
+  window._crIntelClicksBound=true;
+  document.addEventListener('click',e=>{
+    const root=document.getElementById('mod-acao');
+    if(!root)return;
     const row=e.target.closest('[data-cr-row]');
     if(row&&root.contains(row)){
       e.preventDefault();
@@ -15309,9 +15315,10 @@ function bindCobrancaInteligenteClicks(){
     const card=e.target.closest('[data-cr]');
     if(card&&root.contains(card)){
       e.preventDefault();
+      e.stopPropagation();
       openCobrancaIntelBucket(card.dataset.cr);
     }
-  });
+  },true);
 }
 
 function renderCobrancaInteligente(){
@@ -15346,10 +15353,15 @@ function renderCobrancaInteligente(){
   ].join('');
   const topRevisar=[...data.revisar].sort((a,b)=>Number(b['Valor em aberto']||0)-Number(a['Valor em aberto']||0)).slice(0,6);
   const topSemMatch=[...data.semMatch].sort((a,b)=>Number(b['Valor em aberto']||0)-Number(a['Valor em aberto']||0)).slice(0,6);
-  const rowHtml=(list,key)=>list.length?list.map((r,i)=>`<div class="cr-row" data-cr-row="${key}:${i}">
+  window._CR_INTEL_ROWS={};
+  const rowHtml=(list,key)=>list.length?list.map((r,i)=>{
+    const rowKey=`${key}:top:${i}`;
+    window._CR_INTEL_ROWS[rowKey]=r;
+    return `<div class="cr-row" data-cr-row="${rowKey}">
     <div><strong>${escHtml(r.Cliente||r['Cliente']||'Sem cliente')}</strong><small>${escHtml(r['Problema financeiro']||'Revisar')} · ${escHtml(r['ID Contrato']||'')}</small></div>
     <span class="cr-money">${brl(r['Valor em aberto']||0)}</span><span class="cr-count">abrir</span>
-  </div>`).join(''):'<div class="empty" style="padding:22px;color:#7f93ad">Nada crítico neste recorte.</div>';
+  </div>`;
+  }).join(''):'<div class="empty" style="padding:22px;color:#7f93ad">Nada crítico neste recorte.</div>';
   work.innerHTML=`
     <div class="cr-card info" data-cr="revisar">
       <div class="cr-label">Pago Até e sequência</div>
