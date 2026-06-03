@@ -15516,6 +15516,9 @@ function propLines(id,fallback){
   const raw=propVal(id)||fallback;
   return String(raw||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
 }
+function propTextHtml(text){
+  return escHtml(String(text||'')).replace(/\r?\n/g,'<br>');
+}
 let PROP_ASSINATURA_DATAURL = localStorage.getItem('radar_prop_assinatura_akassio') || '';
 function propDataUrlBytes(dataUrl){
   const b64=String(dataUrl||'').split(',')[1]||'';
@@ -15613,13 +15616,13 @@ function renderPropostaPreview(calc){
   const plano=propVal('prop-plano')||'HILINK - Serviço corporativo';
   const banda=propVal('prop-banda')||'A definir';
   const ref=propVal('prop-referencia')||'Cotação de serviço corporativo';
-  const objeto=propVal('prop-objeto')||'Apresentamos proposta para prestação de serviço de conectividade corporativa Hilink, conforme viabilidade técnica e comercial inicial do projeto.';
-  const caracteristicas=propLines('prop-caracteristicas','Atendimento técnico e suporte operacional Hilink.\nEntrega por infraestrutura de conectividade adequada à viabilidade técnica aprovada.\nMonitoramento e acompanhamento do serviço dentro das condições contratadas.\nEquipamentos em comodato quando aplicável ao projeto.');
+  const objeto=propVal('prop-objeto')||`Fornecimento de internet de alta qualidade para o cliente da empresa ${cliente}, conforme solicitação e viabilidade técnica apresentada.`;
+  const caracteristicas=propLines('prop-caracteristicas','SLA 08 Horas - Após notificação à central de atendimento. O serviço de manutenção será realizado em horário comercial, segunda à sexta, das 08h às 18h, e aos sábados, das 08h às 17h.\n4 IPs Público /30.\nFibra óptica.\nSuporte Nível 02.\nGarantia 100% da banda contratada de download e upload.\nSolução de monitoramento da banda.');
   const descPlano=propVal('prop-desc-plano')||`${plano} · ${banda}`;
   const descInstalacao=propVal('prop-desc-instalacao')||'Implantação inicial do serviço conforme viabilidade aprovada';
-  const prazo=propVal('prop-prazo')||'Prazo de execução a confirmar após aprovação técnica e comercial.';
-  const consideracoes=propVal('prop-consideracoes')||'A proposta está sujeita à validação técnica, disponibilidade de rede, confirmação cadastral e aprovação comercial.';
-  const validade=propVal('prop-validade-pagamento')||'Esta proposta tem validade de 30 dias. Forma de pagamento, ativação e condições contratuais serão confirmadas após validação técnica final.';
+  const prazo=propVal('prop-prazo')||'Prazo de execução a ser combinado com o cliente.\nOs serviços serão executados de segunda à sexta, no horário das 08h às 18h, e aos sábados, no horário das 08h às 17h.';
+  const consideracoes=propVal('prop-consideracoes')||'Equipamentos em comodato: 01 UND. - ONU';
+  const validade=propVal('prop-validade-pagamento')||'O prazo de validade da proposta é de 30 (trinta) dias, contados a partir da data de entrega da mesma.';
   const assinatura=PROP_ASSINATURA_DATAURL
     ? `<div class="prop-paper-signature"><img src="${PROP_ASSINATURA_DATAURL}" alt="Imagem da assinatura"></div>`
     : '';
@@ -15630,31 +15633,42 @@ function renderPropostaPreview(calc){
   const body=document.getElementById('prop-paper-body');
   if(!body)return;
   body.innerHTML=`
-    <p><strong>À empresa ${escHtml(cliente)}</strong></p>
-    <p><strong>Att.:</strong> ${escHtml(contato)}${tel?' · '+escHtml(tel):''}<br>
+    <p><strong>À EMPRESA ${escHtml(cliente).toUpperCase()}</strong><br>
+    <strong>Att.:</strong> ${escHtml(contato)}<br>
+    <strong>Tratar com:</strong> ${escHtml(resp)}${tel?`<br><strong>Telefone:</strong> ${escHtml(tel)}`:''}<br>
     <strong>Referência:</strong> ${escHtml(ref)}</p>
-    <h4>Objeto</h4>
-    <p>${escHtml(objeto)}</p>
-    <h4>Características do serviço</h4>
+    <h4>Ref.: Cotação de preços</h4>
+    <p>Atendendo solicitação de V.Sa., a HILINK tem a grata satisfação de submeter à vossa análise e apreciação, proposta para os serviços indicados a seguir:</p>
+    <h4>Objeto:</h4>
+    <p>${propTextHtml(objeto)}</p>
+    <h4>Link Dedicado - Característica do Serviço:</h4>
     <ul>
       ${caracteristicas.map(item=>`<li>${escHtml(item)}</li>`).join('')}
     </ul>
-    <h4>Condições comerciais</h4>
+    <h4>Observação:</h4>
+    <p>${propTextHtml(consideracoes)}</p>
+    <h4>Dados da empresa:</h4>
+    <p>Razão Social: HILINK SERVIÇOS DE COMUNICAÇÃO E MULTIMÍDIA SCM LTDA<br>
+    CNPJ: 15.165.435/0001-63<br>
+    Endereço: R. Domingos Antonio Jorge, 83 - Cohab - Recife/PE<br>
+    CEP: 51320-460<br>
+    Telefone/Fax: (81) 2011-3333</p>
+    <h4>Preço e pagamento:</h4>
     <table>
-      <thead><tr><th>Item</th><th>Descrição</th><th>Valor</th></tr></thead>
+      <thead><tr><th colspan="3">Plano Dedicado - Empresa</th></tr><tr><th>Descrição do Produto</th><th>Plano</th><th>Valor</th></tr></thead>
       <tbody>
-        <tr><td>Plano</td><td>${escHtml(descPlano)}</td><td>${propMoney(calc.mensalidade)}/mês</td></tr>
-        <tr><td>Instalação / infraestrutura</td><td>${escHtml(descInstalacao)}</td><td>${propMoney(calc.instalacao)}</td></tr>
+        <tr><td>${escHtml(plano)}</td><td>${escHtml(banda)}</td><td>${propMoney(calc.mensalidade)}</td></tr>
       </tbody>
     </table>
-    <h4>Prazo de execução</h4>
-    <p>${escHtml(prazo)}</p>
-    <h4>Considerações gerais</h4>
-    <p>${escHtml(consideracoes)}</p>
-    <h4>Validade e pagamento</h4>
-    <p>${escHtml(validade)}</p>
-    <h4>Responsável comercial</h4>
-    <p>${escHtml(resp)}</p>
+    <p>${escHtml(descInstalacao)}: ${propMoney(calc.instalacao)}.<br>Pagamento a ser realizado por boleto bancário.</p>
+    <h4>Validade da proposta:</h4>
+    <p>${propTextHtml(validade)}</p>
+    <h4>Prazo de execução:</h4>
+    <p>${propTextHtml(prazo)}</p>
+    <h4>Declarações:</h4>
+    <p>Declaramos que no preço ofertado estão inclusas todas as despesas necessárias ao fornecimento do objeto desta cotação de preços, sendo de nossa exclusiva responsabilidade todas as despesas, como transporte, alimentação, tributos, emolumentos, contribuições sociais, fiscais, parafiscais, seguros e outras não especificadas.</p>
+    <p>Atenciosamente,</p>
+    <p>Recife, ${escHtml(dateText)}.</p>
     ${assinatura}
   `;
 }
@@ -15722,36 +15736,32 @@ async function baixarPropostaPdfTimbrado(){
     const ref=propVal('prop-referencia')||'Cotacao de servico corporativo';
     const mensalidade=document.getElementById('prop-kpi-mensalidade')?.textContent||'R$ 0,00';
     const instalacao=document.getElementById('prop-kpi-instalacao')?.textContent||'R$ 0,00';
-    const objeto=propVal('prop-objeto')||'Apresentamos proposta para prestacao de servico de conectividade corporativa Hilink, conforme viabilidade tecnica e comercial inicial do projeto.';
-    const caracteristicas=propLines('prop-caracteristicas','Atendimento tecnico e suporte operacional Hilink.\nEntrega por infraestrutura de conectividade adequada a viabilidade tecnica aprovada.\nMonitoramento e acompanhamento do servico dentro das condicoes contratadas.\nEquipamentos em comodato quando aplicavel ao projeto.').join(' ');
-    const descPlano=propVal('prop-desc-plano')||`${plano} - ${banda}`;
+    const objeto=propVal('prop-objeto')||`Fornecimento de internet de alta qualidade para o cliente da empresa ${cliente}, conforme solicitacao e viabilidade tecnica apresentada.`;
+    const caracteristicas=propLines('prop-caracteristicas','SLA 08 Horas - Apos notificacao a central de atendimento. O servico de manutencao sera realizado em horario comercial, segunda a sexta, das 08h as 18h, e aos sabados, das 08h as 17h.\n4 IPs Publico /30.\nFibra optica.\nSuporte Nivel 02.\nGarantia 100% da banda contratada de download e upload.\nSolucao de monitoramento da banda.').join(' ');
     const descInstalacao=propVal('prop-desc-instalacao')||'Implantacao inicial do servico conforme viabilidade aprovada';
-    const prazo=propVal('prop-prazo')||'Prazo de execucao a confirmar apos aprovacao tecnica e comercial.';
-    const consideracoes=propVal('prop-consideracoes')||'A proposta esta sujeita a validacao tecnica, disponibilidade de rede, confirmacao cadastral e aprovacao comercial.';
-    const validade=propVal('prop-validade-pagamento')||'Esta proposta tem validade de 30 dias. Forma de pagamento, ativacao e condicoes contratuais serao confirmadas apos validacao tecnica final.';
+    const prazo=propVal('prop-prazo')||'Prazo de execucao a ser combinado com o cliente. Os servicos serao executados de segunda a sexta, no horario das 08h as 18h, e aos sabados, no horario das 08h as 17h.';
+    const consideracoes=propVal('prop-consideracoes')||'Equipamentos em comodato: 01 UND. - ONU';
+    const validade=propVal('prop-validade-pagamento')||'O prazo de validade da proposta e de 30 (trinta) dias, contados a partir da data de entrega da mesma.';
     const hoje=new Date().toLocaleDateString('pt-BR');
 
-    page.drawText('PROPOSTA COMERCIAL',{x,y,size:14,font:bold,color:blue});
-    y-=17;
-    page.drawText(`Recife, ${hoje}`,{x,y,size:9,font:helv,color:muted});
-    y-=26;
-    page.drawLine({start:{x,y},end:{x:width-x,y},thickness:0.7,color:lineColor});
-    y-=22;
-
-    page.drawText(`Cliente: ${cliente}`,{x,y,size:10,font:bold,color:dark});
-    page.drawText(`Responsavel: ${resp}`,{x:x+300,y,size:10,font:helv,color:dark});
-    y-=16;
-    y=propPdfDrawWrapped(page,`Att.: ${contato}${tel?' - '+tel:''}`,x,y,max,helv,9.5,12,dark);
-    y=propPdfDrawWrapped(page,`Referencia: ${ref}`,x,y,max,helv,9.5,12,dark);
+    page.drawText(`A EMPRESA ${cliente.toUpperCase()}`,{x,y,size:10,font:bold,color:dark});
+    y-=14;
+    y=propPdfDrawWrapped(page,`Att.: ${contato}`,x,y,max,helv,9.3,11.5,dark);
+    y=propPdfDrawWrapped(page,`Tratar com: ${resp}${tel?' | Telefone: '+tel:''}`,x,y,max,helv,9.3,11.5,dark);
+    y=propPdfDrawWrapped(page,`Referencia: ${ref} | Data: ${hoje}`,x,y,max,helv,9.3,11.5,dark);
     y-=8;
 
     const sections=[
-      ['OBJETO DA PROPOSTA',objeto],
-      ['CARACTERISTICAS DO SERVICO',caracteristicas],
-      ['CONDICOES COMERCIAIS',`Plano: ${descPlano}. Mensalidade: ${mensalidade}. Instalacao / infraestrutura: ${descInstalacao}. Valor: ${instalacao}.`],
-      ['PRAZO DE EXECUCAO',prazo],
-      ['CONSIDERACOES GERAIS',consideracoes],
-      ['VALIDADE E PAGAMENTO',validade]
+      ['REF.: COTACAO DE PRECOS','Atendendo solicitacao de V.Sa., a HILINK tem a grata satisfacao de submeter a vossa analise e apreciacao, proposta para os servicos indicados a seguir:'],
+      ['OBJETO:',objeto],
+      ['LINK DEDICADO - CARACTERISTICA DO SERVICO:',caracteristicas],
+      ['OBSERVACAO:',consideracoes],
+      ['DADOS DA EMPRESA:','Razao Social: HILINK SERVICOS DE COMUNICACAO E MULTIMIDIA SCM LTDA. CNPJ: 15.165.435/0001-63. Endereco: R. Domingos Antonio Jorge, 83 - Cohab - Recife/PE. CEP: 51320-460. Telefone/Fax: (81) 2011-3333.'],
+      ['PRECO E PAGAMENTO:',`Plano Dedicado - Empresa. Descricao do Produto: ${plano}. Plano: ${banda}. Valor: ${mensalidade}. ${descInstalacao}: ${instalacao}. Pagamento a ser realizado por boleto bancario.`],
+      ['VALIDADE DA PROPOSTA:',validade],
+      ['PRAZO DE EXECUCAO:',prazo],
+      ['DECLARACOES:','Declaramos que no preco ofertado estao inclusas todas as despesas necessarias ao fornecimento do objeto desta cotacao de precos, sendo de nossa exclusiva responsabilidade todas as despesas, como transporte, alimentacao, tributos, emolumentos, contribuicoes sociais, fiscais, parafiscais, seguros e outras nao especificadas.'],
+      ['ATENCIOSAMENTE,',`Recife, ${hoje}.`]
     ];
     sections.forEach(([title,body])=>{
       page.drawText(title,{x,y,size:9.5,font:bold,color:blue});
