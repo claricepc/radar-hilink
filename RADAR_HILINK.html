@@ -7140,7 +7140,6 @@ h2.section-title .info-btn{margin-left:6px}
             </label>
             <div class="prop-field-options">
               <label><input id="prop-show-observacao" type="checkbox" checked> Mostrar observação</label>
-              <label><input id="prop-show-dados" type="checkbox" checked> Mostrar dados da Hilink</label>
               <label><input id="prop-show-instalacao" type="checkbox" checked> Mostrar instalação</label>
               <label><input id="prop-show-prazo" type="checkbox" checked> Mostrar prazo</label>
               <label><input id="prop-show-declaracoes" type="checkbox" checked> Mostrar declarações</label>
@@ -15722,12 +15721,6 @@ function renderPropostaPreview(calc){
       ${caracteristicas.map(item=>`<li>${escHtml(item)}</li>`).join('')}
     </ul>
     ${propShow('prop-show-observacao')?`<h4>Observação:</h4><p>${propTextHtml(consideracoes)}</p>`:''}
-    ${propShow('prop-show-dados')?`<h4>Dados da empresa:</h4>
-    <p>Razão Social: HILINK SERVIÇOS DE COMUNICAÇÃO E MULTIMÍDIA SCM LTDA<br>
-    CNPJ: 15.165.435/0001-63<br>
-    Endereço: R. Domingos Antonio Jorge, 83 - Cohab - Recife/PE<br>
-    CEP: 51320-460<br>
-    Telefone/Fax: (81) 2011-3333</p>`:''}
     <h4>Preço e pagamento:</h4>
     <table>
       <thead><tr><th colspan="3">Plano Dedicado - Empresa</th></tr><tr><th>Descrição do Produto</th><th>Plano</th><th>Valor</th></tr></thead>
@@ -15750,7 +15743,7 @@ function renderPropostas(){
   refreshPropostaAssinaturaPreview();
   propFillDefaultFields();
   calcularPropostaCorporativa();
-  ['prop-cliente','prop-contato','prop-telefone','prop-responsavel','prop-plano-base','prop-plano','prop-banda','prop-referencia','prop-objeto','prop-caracteristicas','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-desc-plano','prop-desc-instalacao','prop-prazo','prop-assinante-nome','prop-assinante-cargo','prop-assinante-contato','prop-consideracoes','prop-validade-pagamento','prop-show-observacao','prop-show-dados','prop-show-instalacao','prop-show-prazo','prop-show-declaracoes','prop-show-assinatura'].forEach(id=>{
+  ['prop-cliente','prop-contato','prop-telefone','prop-responsavel','prop-plano-base','prop-plano','prop-banda','prop-referencia','prop-objeto','prop-caracteristicas','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-desc-plano','prop-desc-instalacao','prop-prazo','prop-assinante-nome','prop-assinante-cargo','prop-assinante-contato','prop-consideracoes','prop-validade-pagamento','prop-show-observacao','prop-show-instalacao','prop-show-prazo','prop-show-declaracoes','prop-show-assinatura'].forEach(id=>{
     const el=document.getElementById(id);
     if(el&&!el.dataset.propBound){
       el.dataset.propBound='1';
@@ -15833,7 +15826,6 @@ async function baixarPropostaPdfTimbrado(){
       ['OBJETO:',objeto],
       ['LINK DEDICADO - CARACTERISTICA DO SERVICO:',caracteristicas],
       propShow('prop-show-observacao')?['OBSERVACAO:',consideracoes]:null,
-      propShow('prop-show-dados')?['DADOS DA EMPRESA:','Razao Social: HILINK SERVICOS DE COMUNICACAO E MULTIMIDIA SCM LTDA. CNPJ: 15.165.435/0001-63. Endereco: R. Domingos Antonio Jorge, 83 - Cohab - Recife/PE. CEP: 51320-460. Telefone/Fax: (81) 2011-3333.']:null,
       ['PRECO E PAGAMENTO:',`Plano Dedicado - Empresa. Descricao do Produto: ${plano}. Plano: ${banda}. Valor: ${mensalidade}. ${propShow('prop-show-instalacao')?`${descInstalacao}: ${instalacao}. `:''}Pagamento a ser realizado por boleto bancario.`],
       ['VALIDADE DA PROPOSTA:',validade],
       propShow('prop-show-prazo')?['PRAZO DE EXECUCAO:',prazo]:null,
