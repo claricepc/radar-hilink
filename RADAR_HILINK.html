@@ -7093,7 +7093,6 @@ h2.section-title .info-btn{margin-left:6px}
           <div class="prop-actions">
             <button class="btn sm primary" onclick="calcularPropostaCorporativa()">Atualizar prévia</button>
             <button class="btn sm" onclick="baixarPropostaPdfTimbrado()">Baixar PDF timbrado</button>
-            <button class="btn sm" onclick="baixarPropostaHtml()">Baixar HTML</button>
             <button class="btn sm" onclick="baixarPropostaCsv()">Baixar CSV</button>
           </div>
         </div>
@@ -15758,17 +15757,6 @@ async function baixarPropostaPdfTimbrado(){
     console.error(err);
     toast(err.message||'Falha ao gerar PDF timbrado','error');
   }
-}
-function baixarPropostaHtml(){
-  calcularPropostaCorporativa();
-  const paper=document.getElementById('prop-paper');
-  const cliente=(propVal('prop-cliente')||'proposta').replace(/[^\w\-]+/g,'_');
-  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Proposta Hilink</title><style>body{margin:0;background:#e8eef5;font-family:Inter,Segoe UI,Arial,sans-serif}.paper{width:900px;min-height:1120px;margin:24px auto;background:#fff;padding:42px 48px;box-sizing:border-box;color:#102033}.prop-paper-head{display:flex;justify-content:space-between;border-bottom:2px solid #0d74bc;margin-bottom:24px;padding-bottom:20px}.prop-brand{font-size:38px;font-weight:900;color:#0d74bc}.prop-paper h4{margin:18px 0 7px;text-transform:uppercase;font-size:13px}.prop-paper p,.prop-paper li{font-size:12px;line-height:1.48}.prop-paper table{width:100%;border-collapse:collapse;font-size:12px}.prop-paper th,.prop-paper td{border:1px solid #d8e1ec;padding:9px}.prop-paper th{background:#eef6fc;color:#0d4f83}.prop-paper-foot{margin-top:28px;padding-top:14px;border-top:1px solid #d8e1ec;color:#66788d;font-size:10px;text-align:center}</style></head><body><div class="paper prop-paper">${paper.innerHTML}</div></body></html>`;
-  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`proposta_hilink_${cliente}.html`;
-  a.click();
 }
 function baixarPropostaCsv(){
   calcularPropostaCorporativa();
