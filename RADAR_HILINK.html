@@ -15645,6 +15645,37 @@ function propCaracteristicasHtml(items){
   }
   return `<ul>${items.map(item=>`<li>${escHtml(item)}</li>`).join('')}</ul>`;
 }
+function propBuildModel(calc={}){
+  const cliente=propVal('prop-cliente')||'Cliente corporativo';
+  const contato=propVal('prop-contato')||'Responsável pelo projeto';
+  const tel=propVal('prop-telefone')||'';
+  const resp=propVal('prop-responsavel')||'Equipe Comercial Hilink';
+  const plano=propVal('prop-plano')||'HILINK - Serviço corporativo';
+  const banda=propVal('prop-banda')||'A definir';
+  const ref=propVal('prop-referencia')||'Cotação de serviço corporativo';
+  const objeto=propVal('prop-objeto')||`Fornecimento de internet dedicada para ${cliente}, conforme solicitação e viabilidade técnica apresentada.`;
+  const caracteristicas=propLines('prop-caracteristicas','Modalidade: Link Dedicado Empresarial - banda 100% garantida em download e upload\nVelocidade: conforme plano contratado\nMeio físico: Fibra óptica ponto-a-ponto\nEndereçamento IP: bloco /30 com 4 endereços IPv4 públicos\nSLA: 8 horas após abertura de chamado, em horário comercial\nHorário de atendimento: segunda a sexta das 08h às 18h e sábado das 08h às 17h\nSuporte: Nível 2 - equipe técnica especializada\nMonitoramento: acompanhamento contínuo da banda\nComodato: 01 ONU fornecida pela HiLink durante a vigência do contrato');
+  const descInstalacao=propVal('prop-desc-instalacao')||'Implantação inicial do serviço conforme viabilidade aprovada';
+  const prazo=propVal('prop-prazo')||'Prazo de execução a ser combinado com o cliente.\nOs serviços serão executados de segunda à sexta, no horário das 08h às 18h, e aos sábados, no horário das 08h às 17h.';
+  const consideracoes=propVal('prop-consideracoes')||'Equipamentos em comodato: 01 UND. - ONU';
+  const validade=propVal('prop-validade-pagamento')||'O prazo de validade da proposta é de 30 (trinta) dias, contados a partir da data de entrega da mesma.';
+  const assinanteNome=propVal('prop-assinante-nome');
+  const assinanteCargo=propVal('prop-assinante-cargo');
+  const assinanteContato=propVal('prop-assinante-contato');
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  return {
+    cliente,contato,tel,resp,plano,banda,ref,objeto,caracteristicas,descInstalacao,prazo,consideracoes,validade,
+    mensalidade:Number(calc.mensalidade)||0,
+    instalacao:Number(calc.instalacao)||0,
+    assinanteNome,assinanteCargo,assinanteContato,
+    hoje,
+    showObservacao:propShow('prop-show-observacao'),
+    showInstalacao:propShow('prop-show-instalacao'),
+    showPrazo:propShow('prop-show-prazo'),
+    showDeclaracoes:propShow('prop-show-declaracoes'),
+    showAssinatura:propShow('prop-show-assinatura')
+  };
+}
 function propParceiroMarkup(custo){
   custo=Number(custo)||0;
   if(custo<=0)return {margem:0,preco:0,nota:'sem custo de parceiro informado'};
@@ -15708,60 +15739,43 @@ function calcularPropostaCorporativa(){
   document.getElementById('prop-kpi-tipo').textContent=({rede:'Rede Hilink',infra:'Infra adicional',transporte:'Transporte terceiro',mista:'Mista'}[tipo]||tipo);
   document.getElementById('prop-rule-note').innerHTML=`<strong>Memória interna:</strong> ${escHtml(nota)}`;
   renderPropostaPreview({tipo,dist,instalacao,mensalidade,nota});
+  return {tipo,dist,instalacao,mensalidade,nota};
 }
 function renderPropostaPreview(calc){
-  const cliente=propVal('prop-cliente')||'Cliente corporativo';
-  const contato=propVal('prop-contato')||'Responsável pelo projeto';
-  const tel=propVal('prop-telefone')||'';
-  const resp=propVal('prop-responsavel')||'Equipe Comercial Hilink';
-  const plano=propVal('prop-plano')||'HILINK - Serviço corporativo';
-  const banda=propVal('prop-banda')||'A definir';
-  const ref=propVal('prop-referencia')||'Cotação de serviço corporativo';
-  const objeto=propVal('prop-objeto')||`Fornecimento de internet dedicada para ${cliente}, conforme solicitação e viabilidade técnica apresentada.`;
-  const caracteristicas=propLines('prop-caracteristicas','Modalidade: Link Dedicado Empresarial - banda 100% garantida em download e upload\nVelocidade: conforme plano contratado\nMeio físico: Fibra óptica ponto-a-ponto\nEndereçamento IP: bloco /30 com 4 endereços IPv4 públicos\nSLA: 8 horas após abertura de chamado, em horário comercial\nHorário de atendimento: segunda a sexta das 08h às 18h e sábado das 08h às 17h\nSuporte: Nível 2 - equipe técnica especializada\nMonitoramento: acompanhamento contínuo da banda\nComodato: 01 ONU fornecida pela HiLink durante a vigência do contrato');
-  const descPlano=propVal('prop-desc-plano')||`${plano} · ${banda}`;
-  const descInstalacao=propVal('prop-desc-instalacao')||'Implantação inicial do serviço conforme viabilidade aprovada';
-  const prazo=propVal('prop-prazo')||'Prazo de execução a ser combinado com o cliente.\nOs serviços serão executados de segunda à sexta, no horário das 08h às 18h, e aos sábados, no horário das 08h às 17h.';
-  const consideracoes=propVal('prop-consideracoes')||'Equipamentos em comodato: 01 UND. - ONU';
-  const validade=propVal('prop-validade-pagamento')||'O prazo de validade da proposta é de 30 (trinta) dias, contados a partir da data de entrega da mesma.';
-  const assinanteNome=propVal('prop-assinante-nome');
-  const assinanteCargo=propVal('prop-assinante-cargo');
-  const assinanteContato=propVal('prop-assinante-contato');
-  const assinatura=propShow('prop-show-assinatura')&&(PROP_ASSINATURA_DATAURL||assinanteNome||assinanteCargo||assinanteContato)
-    ? `<div class="prop-paper-signature">${PROP_ASSINATURA_DATAURL?`<img src="${PROP_ASSINATURA_DATAURL}" alt="Imagem da assinatura">`:''}<div class="prop-signer">${[assinanteNome,assinanteCargo,assinanteContato].filter(Boolean).map(escHtml).join('<br>')}</div></div>`
+  const m=propBuildModel(calc);
+  const assinatura=m.showAssinatura&&(PROP_ASSINATURA_DATAURL||m.assinanteNome||m.assinanteCargo||m.assinanteContato)
+    ? `<div class="prop-paper-signature">${PROP_ASSINATURA_DATAURL?`<img src="${PROP_ASSINATURA_DATAURL}" alt="Imagem da assinatura">`:''}<div class="prop-signer">${[m.assinanteNome,m.assinanteCargo,m.assinanteContato].filter(Boolean).map(escHtml).join('<br>')}</div></div>`
     : '';
-  const today=new Date();
-  const dateText=today.toLocaleDateString('pt-BR');
   const dateEl=document.getElementById('prop-paper-date');
-  if(dateEl)dateEl.textContent='Recife, '+dateText;
+  if(dateEl)dateEl.textContent='Recife, '+m.hoje;
   const body=document.getElementById('prop-paper-body');
   if(!body)return;
   body.innerHTML=`
-    <p><strong>À EMPRESA ${escHtml(cliente).toUpperCase()}</strong><br>
-    <strong>Att.:</strong> ${escHtml(contato)}<br>
-    <strong>Tratar com:</strong> ${escHtml(resp)}${tel?`<br><strong>Telefone:</strong> ${escHtml(tel)}`:''}<br>
-    <strong>Referência:</strong> ${escHtml(ref)}</p>
+    <p><strong>À EMPRESA ${escHtml(m.cliente).toUpperCase()}</strong><br>
+    <strong>Att.:</strong> ${escHtml(m.contato)}<br>
+    <strong>Tratar com:</strong> ${escHtml(m.resp)}${m.tel?`<br><strong>Telefone:</strong> ${escHtml(m.tel)}`:''}<br>
+    <strong>Referência:</strong> ${escHtml(m.ref)}</p>
     <h4>Ref.: Cotação de preços</h4>
     <p>Atendendo solicitação de V.Sa., a HILINK tem a grata satisfação de submeter à vossa análise e apreciação, proposta para os serviços indicados a seguir:</p>
     <h4>Objeto:</h4>
-    <p>${propTextHtml(objeto)}</p>
+    <p>${propTextHtml(m.objeto)}</p>
     <h4>Link Dedicado - Característica do Serviço:</h4>
-    ${propCaracteristicasHtml(caracteristicas)}
-    ${propShow('prop-show-observacao')?`<h4>Observação:</h4><p>${propTextHtml(consideracoes)}</p>`:''}
+    ${propCaracteristicasHtml(m.caracteristicas)}
+    ${m.showObservacao?`<h4>Observação:</h4><p>${propTextHtml(m.consideracoes)}</p>`:''}
     <h4>Preço e pagamento:</h4>
     <table>
       <thead><tr><th colspan="3">Plano Dedicado - Empresa</th></tr><tr><th>Descrição do Produto</th><th>Plano</th><th>Valor</th></tr></thead>
       <tbody>
-        <tr><td>${escHtml(plano)}</td><td>${escHtml(banda)}</td><td>${propMoney(calc.mensalidade)}</td></tr>
+        <tr><td>${escHtml(m.plano)}</td><td>${escHtml(m.banda)}</td><td>${propMoney(m.mensalidade)}</td></tr>
       </tbody>
     </table>
-    <p>${propShow('prop-show-instalacao')?`${escHtml(descInstalacao)}: ${propMoney(calc.instalacao)}.<br>`:''}Pagamento a ser realizado por boleto bancário.</p>
+    <p>${m.showInstalacao?`${escHtml(m.descInstalacao)}: ${propMoney(m.instalacao)}.<br>`:''}Pagamento a ser realizado por boleto bancário.</p>
     <h4>Validade da proposta:</h4>
-    <p>${propTextHtml(validade)}</p>
-    ${propShow('prop-show-prazo')?`<h4>Prazo de execução:</h4><p>${propTextHtml(prazo)}</p>`:''}
-    ${propShow('prop-show-declaracoes')?`<h4>Declarações:</h4><p>Declaramos que no preço ofertado estão inclusas todas as despesas necessárias ao fornecimento do objeto desta cotação de preços, sendo de nossa exclusiva responsabilidade todas as despesas, como transporte, alimentação, tributos, emolumentos, contribuições sociais, fiscais, parafiscais, seguros e outras não especificadas.</p>`:''}
+    <p>${propTextHtml(m.validade)}</p>
+    ${m.showPrazo?`<h4>Prazo de execução:</h4><p>${propTextHtml(m.prazo)}</p>`:''}
+    ${m.showDeclaracoes?`<h4>Declarações:</h4><p>Declaramos que no preço ofertado estão inclusas todas as despesas necessárias ao fornecimento do objeto desta cotação de preços, sendo de nossa exclusiva responsabilidade todas as despesas, como transporte, alimentação, tributos, emolumentos, contribuições sociais, fiscais, parafiscais, seguros e outras não especificadas.</p>`:''}
     <p>Atenciosamente,</p>
-    <p>Recife, ${escHtml(dateText)}.</p>
+    <p>Recife, ${escHtml(m.hoje)}.</p>
     ${assinatura}
   `;
 }
@@ -15804,11 +15818,12 @@ function propPdfDrawWrapped(page,text,x,y,maxWidth,font,size,lineHeight,color){
 }
 async function baixarPropostaPdfTimbrado(){
   try{
-    calcularPropostaCorporativa();
-    if(!window.PDFLib)throw new Error('Biblioteca PDF ainda nao carregada. Recarregue a pagina e tente novamente.');
+    const calc=calcularPropostaCorporativa();
+    const m=propBuildModel(calc);
+    if(!window.PDFLib)throw new Error('Biblioteca PDF ainda não carregada. Recarregue a página e tente novamente.');
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
     const res=await fetch('Timbrado_A4_endereco_corrigido.pdf');
-    if(!res.ok)throw new Error('Timbrado nao encontrado no Radar publicado.');
+    if(!res.ok)throw new Error('Timbrado não encontrado no Radar publicado.');
     const pdfDoc=await PDFDocument.load(await res.arrayBuffer());
     const page=pdfDoc.getPage(0);
     const helv=await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -15816,48 +15831,27 @@ async function baixarPropostaPdfTimbrado(){
     const {width,height}=page.getSize();
     const blue=rgb(0.02,0.31,0.56);
     const dark=rgb(0.12,0.16,0.22);
-    const muted=rgb(0.34,0.43,0.53);
-    const lineColor=rgb(0.78,0.86,0.93);
     const x=62;
     const max=width-124;
     let y=height-126;
-    const cliente=propVal('prop-cliente')||'Cliente corporativo';
-    const contato=propVal('prop-contato')||'Responsavel pelo projeto';
-    const tel=propVal('prop-telefone')||'';
-    const resp=propVal('prop-responsavel')||'Equipe Comercial Hilink';
-    const plano=propVal('prop-plano')||'HILINK - Servico corporativo';
-    const banda=propVal('prop-banda')||'A definir';
-    const ref=propVal('prop-referencia')||'Cotacao de servico corporativo';
-    const mensalidade=document.getElementById('prop-kpi-mensalidade')?.textContent||'R$ 0,00';
-    const instalacao=document.getElementById('prop-kpi-instalacao')?.textContent||'R$ 0,00';
-    const objeto=propVal('prop-objeto')||`Fornecimento de internet dedicada para ${cliente}, conforme solicitacao e viabilidade tecnica apresentada.`;
-    const caracteristicas=propLines('prop-caracteristicas','Modalidade: Link Dedicado Empresarial - banda 100% garantida em download e upload\nVelocidade: conforme plano contratado\nMeio fisico: Fibra optica ponto-a-ponto\nEnderecamento IP: bloco /30 com 4 enderecos IPv4 publicos\nSLA: 8 horas apos abertura de chamado, em horario comercial\nHorario de atendimento: segunda a sexta das 08h as 18h e sabado das 08h as 17h\nSuporte: Nivel 2 - equipe tecnica especializada\nMonitoramento: acompanhamento continuo da banda\nComodato: 01 ONU fornecida pela HiLink durante a vigencia do contrato').join(' | ');
-    const descInstalacao=propVal('prop-desc-instalacao')||'Implantacao inicial do servico conforme viabilidade aprovada';
-    const prazo=propVal('prop-prazo')||'Prazo de execucao a ser combinado com o cliente. Os servicos serao executados de segunda a sexta, no horario das 08h as 18h, e aos sabados, no horario das 08h as 17h.';
-    const consideracoes=propVal('prop-consideracoes')||'Equipamentos em comodato: 01 UND. - ONU';
-    const validade=propVal('prop-validade-pagamento')||'O prazo de validade da proposta e de 30 (trinta) dias, contados a partir da data de entrega da mesma.';
-    const assinanteNome=propVal('prop-assinante-nome');
-    const assinanteCargo=propVal('prop-assinante-cargo');
-    const assinanteContato=propVal('prop-assinante-contato');
-    const hoje=new Date().toLocaleDateString('pt-BR');
 
-    page.drawText(`A EMPRESA ${cliente.toUpperCase()}`,{x,y,size:10,font:bold,color:dark});
+    page.drawText(`A EMPRESA ${m.cliente.toUpperCase()}`,{x,y,size:10,font:bold,color:dark});
     y-=14;
-    y=propPdfDrawWrapped(page,`Att.: ${contato}`,x,y,max,helv,9.3,11.5,dark);
-    y=propPdfDrawWrapped(page,`Tratar com: ${resp}${tel?' | Telefone: '+tel:''}`,x,y,max,helv,9.3,11.5,dark);
-    y=propPdfDrawWrapped(page,`Referencia: ${ref} | Data: ${hoje}`,x,y,max,helv,9.3,11.5,dark);
+    y=propPdfDrawWrapped(page,`Att.: ${m.contato}`,x,y,max,helv,9.3,11.5,dark);
+    y=propPdfDrawWrapped(page,`Tratar com: ${m.resp}${m.tel?' | Telefone: '+m.tel:''}`,x,y,max,helv,9.3,11.5,dark);
+    y=propPdfDrawWrapped(page,`Referência: ${m.ref} | Data: ${m.hoje}`,x,y,max,helv,9.3,11.5,dark);
     y-=8;
 
     const sections=[
-      ['REF.: COTACAO DE PRECOS','Atendendo solicitacao de V.Sa., a HILINK tem a grata satisfacao de submeter a vossa analise e apreciacao, proposta para os servicos indicados a seguir:'],
-      ['OBJETO:',objeto],
-      ['LINK DEDICADO - CARACTERISTICA DO SERVICO:',caracteristicas],
-      propShow('prop-show-observacao')?['OBSERVACAO:',consideracoes]:null,
-      ['PRECO E PAGAMENTO:',`Plano Dedicado - Empresa. Descricao do Produto: ${plano}. Plano: ${banda}. Valor: ${mensalidade}. ${propShow('prop-show-instalacao')?`${descInstalacao}: ${instalacao}. `:''}Pagamento a ser realizado por boleto bancario.`],
-      ['VALIDADE DA PROPOSTA:',validade],
-      propShow('prop-show-prazo')?['PRAZO DE EXECUCAO:',prazo]:null,
-      propShow('prop-show-declaracoes')?['DECLARACOES:','Declaramos que no preco ofertado estao inclusas todas as despesas necessarias ao fornecimento do objeto desta cotacao de precos, sendo de nossa exclusiva responsabilidade todas as despesas, como transporte, alimentacao, tributos, emolumentos, contribuicoes sociais, fiscais, parafiscais, seguros e outras nao especificadas.']:null,
-      ['ATENCIOSAMENTE,',`Recife, ${hoje}.`]
+      ['REF.: COTAÇÃO DE PREÇOS','Atendendo solicitação de V.Sa., a HILINK tem a grata satisfação de submeter à vossa análise e apreciação, proposta para os serviços indicados a seguir:'],
+      ['OBJETO:',m.objeto],
+      ['LINK DEDICADO - CARACTERÍSTICA DO SERVIÇO:',m.caracteristicas.join(' | ')],
+      m.showObservacao?['OBSERVAÇÃO:',m.consideracoes]:null,
+      ['PREÇO E PAGAMENTO:',`Plano Dedicado - Empresa. Descrição do Produto: ${m.plano}. Plano: ${m.banda}. Valor: ${propMoney(m.mensalidade)}. ${m.showInstalacao?`${m.descInstalacao}: ${propMoney(m.instalacao)}. `:''}Pagamento a ser realizado por boleto bancário.`],
+      ['VALIDADE DA PROPOSTA:',m.validade],
+      m.showPrazo?['PRAZO DE EXECUÇÃO:',m.prazo]:null,
+      m.showDeclaracoes?['DECLARAÇÕES:','Declaramos que no preço ofertado estão inclusas todas as despesas necessárias ao fornecimento do objeto desta cotação de preços, sendo de nossa exclusiva responsabilidade todas as despesas, como transporte, alimentação, tributos, emolumentos, contribuições sociais, fiscais, parafiscais, seguros e outras não especificadas.']:null,
+      ['ATENCIOSAMENTE,',`Recife, ${m.hoje}.`]
     ].filter(Boolean);
     sections.forEach(([title,body])=>{
       page.drawText(title,{x,y,size:9.5,font:bold,color:blue});
@@ -15865,7 +15859,7 @@ async function baixarPropostaPdfTimbrado(){
       y=propPdfDrawWrapped(page,body,x,y,max,helv,9.2,11.5,dark);
       y-=10;
     });
-    if(propShow('prop-show-assinatura')&&PROP_ASSINATURA_DATAURL){
+    if(m.showAssinatura&&PROP_ASSINATURA_DATAURL){
       try{
         const imgBytes=propDataUrlBytes(PROP_ASSINATURA_DATAURL);
         const img=PROP_ASSINATURA_DATAURL.startsWith('data:image/png')
@@ -15875,11 +15869,11 @@ async function baixarPropostaPdfTimbrado(){
         page.drawImage(img,{x,y:y-62,width:dims.width,height:dims.height});
         y-=70;
       }catch(e){
-        console.warn('Assinatura nao aplicada no PDF',e);
+        console.warn('Assinatura não aplicada no PDF',e);
       }
     }
-    if(propShow('prop-show-assinatura')&&(assinanteNome||assinanteCargo||assinanteContato)){
-      [assinanteNome,assinanteCargo,assinanteContato].filter(Boolean).forEach(text=>{
+    if(m.showAssinatura&&(m.assinanteNome||m.assinanteCargo||m.assinanteContato)){
+      [m.assinanteNome,m.assinanteCargo,m.assinanteContato].filter(Boolean).forEach(text=>{
         page.drawText(text,{x,y,size:8.8,font:bold,color:dark});
         y-=11;
       });
@@ -15887,7 +15881,7 @@ async function baixarPropostaPdfTimbrado(){
 
     const bytes=await pdfDoc.save();
     const blob=new Blob([bytes],{type:'application/pdf'});
-    const nome=(cliente||'proposta').replace(/[^\w\-]+/g,'_');
+    const nome=(m.cliente||'proposta').replace(/[^\w\-]+/g,'_');
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
     a.download=`proposta_hilink_${nome}.pdf`;
