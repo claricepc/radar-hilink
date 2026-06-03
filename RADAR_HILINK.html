@@ -1843,6 +1843,36 @@ h2.section-title .info-btn{margin-left:6px}
   letter-spacing:.04em;
   text-transform:uppercase;
 }
+.prop-help{
+  color:#7f93ad;
+  font-size:10px;
+  font-weight:400;
+  letter-spacing:0;
+  line-height:1.35;
+  text-transform:none;
+}
+.prop-field-options{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+  grid-column:1 / -1;
+  padding:10px 12px;
+  border:1px solid rgba(80,130,180,.35);
+  border-radius:10px;
+  background:rgba(56,168,255,.06);
+}
+.prop-field-options label{
+  flex-direction:row;
+  align-items:center;
+  gap:6px;
+  font-size:10px;
+  letter-spacing:.03em;
+}
+.prop-field-options input{
+  width:auto;
+  min-width:auto;
+}
 .prop-panel input,
 .prop-panel select,
 .prop-panel textarea{
@@ -1954,6 +1984,9 @@ h2.section-title .info-btn{margin-left:6px}
   box-shadow:0 18px 46px rgba(0,0,0,.35);
   font-family:"Inter","Segoe UI",Roboto,Arial,sans-serif;
 }
+.prop-paper.compact{
+  padding:58px 64px 70px;
+}
 .prop-paper-head{
   display:flex;
   justify-content:space-between;
@@ -2020,17 +2053,24 @@ h2.section-title .info-btn{margin-left:6px}
 }
 .prop-paper-signature{
   margin-top:28px;
-  width:240px;
-  text-align:center;
+  width:280px;
+  text-align:left;
 }
 .prop-paper-signature img{
   display:block;
   max-width:220px;
   max-height:80px;
   object-fit:contain;
-  margin:0 auto;
+  margin:0 0 8px;
+}
+.prop-signer{
+  color:#26394f;
+  font-size:11px;
+  line-height:1.35;
+  font-weight:600;
 }
 .prop-paper-foot{
+  display:none;
   margin-top:28px;
   padding-top:14px;
   border-top:1px solid #d8e1ec;
@@ -7030,10 +7070,10 @@ h2.section-title .info-btn{margin-left:6px}
             </select>
           </label>
           <div class="prop-form two">
-            <label>Cliente <input id="prop-cliente" placeholder="Empresa / cliente"></label>
-            <label>Contato <input id="prop-contato" placeholder="Responsável"></label>
-            <label>Telefone <input id="prop-telefone" placeholder="Telefone"></label>
-            <label>Responsável Hilink <input id="prop-responsavel" placeholder="Consultor(a)"></label>
+            <label>Cliente <input id="prop-cliente" placeholder="Empresa / cliente"><small class="prop-help">Nome da empresa/cliente que aparecerá no início da proposta.</small></label>
+            <label>Contato <input id="prop-contato" placeholder="Responsável"><small class="prop-help">Pessoa de contato do cliente ou responsável pela negociação.</small></label>
+            <label>Telefone <input id="prop-telefone" placeholder="Telefone"><small class="prop-help">Contato que será exibido nos dados iniciais, se preenchido.</small></label>
+            <label>Responsável Hilink <input id="prop-responsavel" placeholder="Consultor(a)"><small class="prop-help">Pessoa da Hilink que está tratando a proposta.</small></label>
             <label>Tabela Hilink
               <select id="prop-plano-base" onchange="propApplyPlanoBase()">
                 <option value="">Selecionar plano da rede</option>
@@ -7041,18 +7081,22 @@ h2.section-title .info-btn{margin-left:6px}
                 <option value="500">Link dedicado 500 MB · R$ 700,00</option>
                 <option value="800">Link dedicado 800 MB · R$ 950,00</option>
               </select>
+              <small class="prop-help">Atalho de preço para cliente dentro da nossa rede. O valor continua editável.</small>
             </label>
-            <label>Plano / produto <input id="prop-plano" placeholder="Ex.: Dedicado Empresarial Lite"></label>
-            <label>Banda <input id="prop-banda" placeholder="Ex.: 500MB"></label>
+            <label>Plano / produto <input id="prop-plano" placeholder="Ex.: Dedicado Empresarial Lite"><small class="prop-help">Descrição comercial do produto que aparecerá no quadro de preço.</small></label>
+            <label>Banda <input id="prop-banda" placeholder="Ex.: 500MB"><small class="prop-help">Banda contratada ou apresentada na proposta.</small></label>
           </div>
           <label>Referência / objeto
             <input id="prop-referencia" placeholder="Ex.: Cotação de internet corporativa">
+            <small class="prop-help">Resumo da negociação ou número/referência da proposta.</small>
           </label>
           <label>Objeto da proposta
             <textarea id="prop-objeto" placeholder="Texto de apresentação do objeto da proposta."></textarea>
+            <small class="prop-help">Texto do campo OBJETO. Pode ser editado ou apagado antes de baixar o PDF.</small>
           </label>
           <label>Características do serviço
             <textarea id="prop-caracteristicas" placeholder="Uma característica por linha."></textarea>
+            <small class="prop-help">Cada linha vira um item do bloco Link Dedicado - Característica do Serviço.</small>
           </label>
         </div>
 
@@ -7079,15 +7123,29 @@ h2.section-title .info-btn{margin-left:6px}
             <label>Descrição do plano <input id="prop-desc-plano" placeholder="Ex.: Link corporativo conforme plano contratado"></label>
             <label>Descrição da instalação <input id="prop-desc-instalacao" placeholder="Ex.: Implantação inicial conforme viabilidade aprovada"></label>
             <label>Prazo de execução <input id="prop-prazo" placeholder="Ex.: até 15 dias úteis após aprovação técnica"></label>
+            <label>Nome do assinante <input id="prop-assinante-nome" placeholder="Nome de quem assina"></label>
+            <label>Cargo / função <input id="prop-assinante-cargo" placeholder="Ex.: Engenheiro de Telecomunicações"></label>
+            <label>Contato do assinante <input id="prop-assinante-contato" placeholder="Telefone e/ou e-mail"></label>
             <label>Imagem da assinatura
               <input id="prop-assinatura" type="file" accept="image/*" onchange="loadPropostaAssinatura(event)">
+              <small class="prop-help">Imagem opcional da assinatura. Não cria linha nem texto automático.</small>
             </label>
             <label class="full">Considerações gerais
               <textarea id="prop-consideracoes" placeholder="Ex.: proposta sujeita à viabilidade técnica, disponibilidade de rede e confirmação cadastral."></textarea>
+              <small class="prop-help">Texto do bloco OBSERVAÇÃO. Se não quiser esse bloco, desmarque abaixo.</small>
             </label>
             <label class="full">Validade e pagamento
               <textarea id="prop-validade-pagamento" placeholder="Ex.: Esta proposta tem validade de 30 dias. Forma de pagamento e ativação serão confirmadas após validação técnica final."></textarea>
+              <small class="prop-help">Texto de validade da proposta e condições gerais de pagamento.</small>
             </label>
+            <div class="prop-field-options">
+              <label><input id="prop-show-observacao" type="checkbox" checked> Mostrar observação</label>
+              <label><input id="prop-show-dados" type="checkbox" checked> Mostrar dados da Hilink</label>
+              <label><input id="prop-show-instalacao" type="checkbox" checked> Mostrar instalação</label>
+              <label><input id="prop-show-prazo" type="checkbox" checked> Mostrar prazo</label>
+              <label><input id="prop-show-declaracoes" type="checkbox" checked> Mostrar declarações</label>
+              <label><input id="prop-show-assinatura" type="checkbox" checked> Mostrar assinatura</label>
+            </div>
           </div>
           <div class="prop-signature-preview" id="prop-signature-preview">Nenhuma assinatura carregada.</div>
           <div class="prop-kpis">
@@ -7111,7 +7169,7 @@ h2.section-title .info-btn{margin-left:6px}
           <h3>PRÉVIA DA PROPOSTA</h3>
           <span>Prévia visual; use Baixar PDF timbrado para gerar no papel da marca</span>
         </div>
-        <div class="prop-paper" id="prop-paper">
+        <div class="prop-paper compact" id="prop-paper">
           <div class="prop-paper-head">
             <div class="prop-brand">Hilink</div>
             <div>
@@ -7120,9 +7178,6 @@ h2.section-title .info-btn{margin-left:6px}
             </div>
           </div>
           <div id="prop-paper-body"></div>
-          <div class="prop-paper-foot">
-            HILINK SERVIÇOS DE COMUNICAÇÃO E MULTIMÍDIA SCM LTDA · CNPJ 15.165.435/0001-63 · (81) 2011-3333
-          </div>
         </div>
       </div>
     </div>
@@ -15507,6 +15562,7 @@ function propApplySelected(){
     }
   }
   propSet('prop-referencia',cleanIxcValue(r.Descrição||r.Descricao||'Cotação de serviço corporativo Hilink'));
+  propFillDefaultFields();
   calcularPropostaCorporativa();
 }
 function propVal(id){
@@ -15518,6 +15574,23 @@ function propLines(id,fallback){
 }
 function propTextHtml(text){
   return escHtml(String(text||'')).replace(/\r?\n/g,'<br>');
+}
+function propShow(id){
+  const el=document.getElementById(id);
+  return !el || el.checked;
+}
+function propDefaultSet(id,value){
+  const el=document.getElementById(id);
+  if(el&&!el.value)el.value=value;
+}
+function propFillDefaultFields(){
+  const cliente=propVal('prop-cliente')||'Cliente corporativo';
+  propDefaultSet('prop-objeto',`Fornecimento de internet de alta qualidade para o cliente da empresa ${cliente}, conforme solicitação e viabilidade técnica apresentada.`);
+  propDefaultSet('prop-caracteristicas','SLA 08 Horas - Após notificação à central de atendimento. O serviço de manutenção será realizado em horário comercial, segunda à sexta, das 08h às 18h, e aos sábados, das 08h às 17h.\n4 IPs Público /30.\nFibra óptica.\nSuporte Nível 02.\nGarantia 100% da banda contratada de download e upload.\nSolução de monitoramento da banda.');
+  propDefaultSet('prop-consideracoes','Equipamentos em comodato: 01 UND. - ONU');
+  propDefaultSet('prop-prazo','Prazo de execução a ser combinado com o cliente.\nOs serviços serão executados de segunda à sexta, no horário das 08h às 18h, e aos sábados, no horário das 08h às 17h.');
+  propDefaultSet('prop-validade-pagamento','O prazo de validade da proposta é de 30 (trinta) dias, contados a partir da data de entrega da mesma.');
+  propDefaultSet('prop-desc-instalacao','Taxa do lançamento da infraestrutura');
 }
 let PROP_ASSINATURA_DATAURL = localStorage.getItem('radar_prop_assinatura_akassio') || '';
 function propDataUrlBytes(dataUrl){
@@ -15623,8 +15696,11 @@ function renderPropostaPreview(calc){
   const prazo=propVal('prop-prazo')||'Prazo de execução a ser combinado com o cliente.\nOs serviços serão executados de segunda à sexta, no horário das 08h às 18h, e aos sábados, no horário das 08h às 17h.';
   const consideracoes=propVal('prop-consideracoes')||'Equipamentos em comodato: 01 UND. - ONU';
   const validade=propVal('prop-validade-pagamento')||'O prazo de validade da proposta é de 30 (trinta) dias, contados a partir da data de entrega da mesma.';
-  const assinatura=PROP_ASSINATURA_DATAURL
-    ? `<div class="prop-paper-signature"><img src="${PROP_ASSINATURA_DATAURL}" alt="Imagem da assinatura"></div>`
+  const assinanteNome=propVal('prop-assinante-nome');
+  const assinanteCargo=propVal('prop-assinante-cargo');
+  const assinanteContato=propVal('prop-assinante-contato');
+  const assinatura=propShow('prop-show-assinatura')&&(PROP_ASSINATURA_DATAURL||assinanteNome||assinanteCargo||assinanteContato)
+    ? `<div class="prop-paper-signature">${PROP_ASSINATURA_DATAURL?`<img src="${PROP_ASSINATURA_DATAURL}" alt="Imagem da assinatura">`:''}<div class="prop-signer">${[assinanteNome,assinanteCargo,assinanteContato].filter(Boolean).map(escHtml).join('<br>')}</div></div>`
     : '';
   const today=new Date();
   const dateText=today.toLocaleDateString('pt-BR');
@@ -15645,14 +15721,13 @@ function renderPropostaPreview(calc){
     <ul>
       ${caracteristicas.map(item=>`<li>${escHtml(item)}</li>`).join('')}
     </ul>
-    <h4>Observação:</h4>
-    <p>${propTextHtml(consideracoes)}</p>
-    <h4>Dados da empresa:</h4>
+    ${propShow('prop-show-observacao')?`<h4>Observação:</h4><p>${propTextHtml(consideracoes)}</p>`:''}
+    ${propShow('prop-show-dados')?`<h4>Dados da empresa:</h4>
     <p>Razão Social: HILINK SERVIÇOS DE COMUNICAÇÃO E MULTIMÍDIA SCM LTDA<br>
     CNPJ: 15.165.435/0001-63<br>
     Endereço: R. Domingos Antonio Jorge, 83 - Cohab - Recife/PE<br>
     CEP: 51320-460<br>
-    Telefone/Fax: (81) 2011-3333</p>
+    Telefone/Fax: (81) 2011-3333</p>`:''}
     <h4>Preço e pagamento:</h4>
     <table>
       <thead><tr><th colspan="3">Plano Dedicado - Empresa</th></tr><tr><th>Descrição do Produto</th><th>Plano</th><th>Valor</th></tr></thead>
@@ -15660,13 +15735,11 @@ function renderPropostaPreview(calc){
         <tr><td>${escHtml(plano)}</td><td>${escHtml(banda)}</td><td>${propMoney(calc.mensalidade)}</td></tr>
       </tbody>
     </table>
-    <p>${escHtml(descInstalacao)}: ${propMoney(calc.instalacao)}.<br>Pagamento a ser realizado por boleto bancário.</p>
+    <p>${propShow('prop-show-instalacao')?`${escHtml(descInstalacao)}: ${propMoney(calc.instalacao)}.<br>`:''}Pagamento a ser realizado por boleto bancário.</p>
     <h4>Validade da proposta:</h4>
     <p>${propTextHtml(validade)}</p>
-    <h4>Prazo de execução:</h4>
-    <p>${propTextHtml(prazo)}</p>
-    <h4>Declarações:</h4>
-    <p>Declaramos que no preço ofertado estão inclusas todas as despesas necessárias ao fornecimento do objeto desta cotação de preços, sendo de nossa exclusiva responsabilidade todas as despesas, como transporte, alimentação, tributos, emolumentos, contribuições sociais, fiscais, parafiscais, seguros e outras não especificadas.</p>
+    ${propShow('prop-show-prazo')?`<h4>Prazo de execução:</h4><p>${propTextHtml(prazo)}</p>`:''}
+    ${propShow('prop-show-declaracoes')?`<h4>Declarações:</h4><p>Declaramos que no preço ofertado estão inclusas todas as despesas necessárias ao fornecimento do objeto desta cotação de preços, sendo de nossa exclusiva responsabilidade todas as despesas, como transporte, alimentação, tributos, emolumentos, contribuições sociais, fiscais, parafiscais, seguros e outras não especificadas.</p>`:''}
     <p>Atenciosamente,</p>
     <p>Recife, ${escHtml(dateText)}.</p>
     ${assinatura}
@@ -15675,8 +15748,9 @@ function renderPropostaPreview(calc){
 function renderPropostas(){
   propostasPopulateCrm();
   refreshPropostaAssinaturaPreview();
+  propFillDefaultFields();
   calcularPropostaCorporativa();
-  ['prop-cliente','prop-contato','prop-telefone','prop-responsavel','prop-plano-base','prop-plano','prop-banda','prop-referencia','prop-objeto','prop-caracteristicas','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-desc-plano','prop-desc-instalacao','prop-prazo','prop-consideracoes','prop-validade-pagamento'].forEach(id=>{
+  ['prop-cliente','prop-contato','prop-telefone','prop-responsavel','prop-plano-base','prop-plano','prop-banda','prop-referencia','prop-objeto','prop-caracteristicas','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-desc-plano','prop-desc-instalacao','prop-prazo','prop-assinante-nome','prop-assinante-cargo','prop-assinante-contato','prop-consideracoes','prop-validade-pagamento','prop-show-observacao','prop-show-dados','prop-show-instalacao','prop-show-prazo','prop-show-declaracoes','prop-show-assinatura'].forEach(id=>{
     const el=document.getElementById(id);
     if(el&&!el.dataset.propBound){
       el.dataset.propBound='1';
@@ -15742,6 +15816,9 @@ async function baixarPropostaPdfTimbrado(){
     const prazo=propVal('prop-prazo')||'Prazo de execucao a ser combinado com o cliente. Os servicos serao executados de segunda a sexta, no horario das 08h as 18h, e aos sabados, no horario das 08h as 17h.';
     const consideracoes=propVal('prop-consideracoes')||'Equipamentos em comodato: 01 UND. - ONU';
     const validade=propVal('prop-validade-pagamento')||'O prazo de validade da proposta e de 30 (trinta) dias, contados a partir da data de entrega da mesma.';
+    const assinanteNome=propVal('prop-assinante-nome');
+    const assinanteCargo=propVal('prop-assinante-cargo');
+    const assinanteContato=propVal('prop-assinante-contato');
     const hoje=new Date().toLocaleDateString('pt-BR');
 
     page.drawText(`A EMPRESA ${cliente.toUpperCase()}`,{x,y,size:10,font:bold,color:dark});
@@ -15755,21 +15832,21 @@ async function baixarPropostaPdfTimbrado(){
       ['REF.: COTACAO DE PRECOS','Atendendo solicitacao de V.Sa., a HILINK tem a grata satisfacao de submeter a vossa analise e apreciacao, proposta para os servicos indicados a seguir:'],
       ['OBJETO:',objeto],
       ['LINK DEDICADO - CARACTERISTICA DO SERVICO:',caracteristicas],
-      ['OBSERVACAO:',consideracoes],
-      ['DADOS DA EMPRESA:','Razao Social: HILINK SERVICOS DE COMUNICACAO E MULTIMIDIA SCM LTDA. CNPJ: 15.165.435/0001-63. Endereco: R. Domingos Antonio Jorge, 83 - Cohab - Recife/PE. CEP: 51320-460. Telefone/Fax: (81) 2011-3333.'],
-      ['PRECO E PAGAMENTO:',`Plano Dedicado - Empresa. Descricao do Produto: ${plano}. Plano: ${banda}. Valor: ${mensalidade}. ${descInstalacao}: ${instalacao}. Pagamento a ser realizado por boleto bancario.`],
+      propShow('prop-show-observacao')?['OBSERVACAO:',consideracoes]:null,
+      propShow('prop-show-dados')?['DADOS DA EMPRESA:','Razao Social: HILINK SERVICOS DE COMUNICACAO E MULTIMIDIA SCM LTDA. CNPJ: 15.165.435/0001-63. Endereco: R. Domingos Antonio Jorge, 83 - Cohab - Recife/PE. CEP: 51320-460. Telefone/Fax: (81) 2011-3333.']:null,
+      ['PRECO E PAGAMENTO:',`Plano Dedicado - Empresa. Descricao do Produto: ${plano}. Plano: ${banda}. Valor: ${mensalidade}. ${propShow('prop-show-instalacao')?`${descInstalacao}: ${instalacao}. `:''}Pagamento a ser realizado por boleto bancario.`],
       ['VALIDADE DA PROPOSTA:',validade],
-      ['PRAZO DE EXECUCAO:',prazo],
-      ['DECLARACOES:','Declaramos que no preco ofertado estao inclusas todas as despesas necessarias ao fornecimento do objeto desta cotacao de precos, sendo de nossa exclusiva responsabilidade todas as despesas, como transporte, alimentacao, tributos, emolumentos, contribuicoes sociais, fiscais, parafiscais, seguros e outras nao especificadas.'],
+      propShow('prop-show-prazo')?['PRAZO DE EXECUCAO:',prazo]:null,
+      propShow('prop-show-declaracoes')?['DECLARACOES:','Declaramos que no preco ofertado estao inclusas todas as despesas necessarias ao fornecimento do objeto desta cotacao de precos, sendo de nossa exclusiva responsabilidade todas as despesas, como transporte, alimentacao, tributos, emolumentos, contribuicoes sociais, fiscais, parafiscais, seguros e outras nao especificadas.']:null,
       ['ATENCIOSAMENTE,',`Recife, ${hoje}.`]
-    ];
+    ].filter(Boolean);
     sections.forEach(([title,body])=>{
       page.drawText(title,{x,y,size:9.5,font:bold,color:blue});
       y-=13;
       y=propPdfDrawWrapped(page,body,x,y,max,helv,9.2,11.5,dark);
       y-=10;
     });
-    if(PROP_ASSINATURA_DATAURL){
+    if(propShow('prop-show-assinatura')&&PROP_ASSINATURA_DATAURL){
       try{
         const imgBytes=propDataUrlBytes(PROP_ASSINATURA_DATAURL);
         const img=PROP_ASSINATURA_DATAURL.startsWith('data:image/png')
@@ -15782,8 +15859,12 @@ async function baixarPropostaPdfTimbrado(){
         console.warn('Assinatura nao aplicada no PDF',e);
       }
     }
-    page.drawLine({start:{x,y:74},end:{x:width-x,y:74},thickness:0.5,color:lineColor});
-    page.drawText('Documento gerado automaticamente pelo Radar Hilink. Valores sujeitos a validacao tecnica e comercial.',{x,y:58,size:8.5,font:helv,color:muted});
+    if(propShow('prop-show-assinatura')&&(assinanteNome||assinanteCargo||assinanteContato)){
+      [assinanteNome,assinanteCargo,assinanteContato].filter(Boolean).forEach(text=>{
+        page.drawText(text,{x,y,size:8.8,font:bold,color:dark});
+        y-=11;
+      });
+    }
 
     const bytes=await pdfDoc.save();
     const blob=new Blob([bytes],{type:'application/pdf'});
