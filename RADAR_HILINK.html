@@ -7034,6 +7034,14 @@ h2.section-title .info-btn{margin-left:6px}
             <label>Contato <input id="prop-contato" placeholder="Responsável"></label>
             <label>Telefone <input id="prop-telefone" placeholder="Telefone"></label>
             <label>Responsável Hilink <input id="prop-responsavel" placeholder="Consultor(a)"></label>
+            <label>Tabela Hilink
+              <select id="prop-plano-base" onchange="propApplyPlanoBase()">
+                <option value="">Selecionar plano da rede</option>
+                <option value="300">Link dedicado 300 MB · R$ 600,00</option>
+                <option value="500">Link dedicado 500 MB · R$ 700,00</option>
+                <option value="800">Link dedicado 800 MB · R$ 950,00</option>
+              </select>
+            </label>
             <label>Plano / produto <input id="prop-plano" placeholder="Ex.: Dedicado Empresarial Lite"></label>
             <label>Banda <input id="prop-banda" placeholder="Ex.: 500MB"></label>
           </div>
@@ -15460,6 +15468,21 @@ function propSet(id,val){
   const el=document.getElementById(id);
   if(el)el.value=val||'';
 }
+const PROP_PLANOS_HILINK={
+  '300':{plano:'PLANO DE LINK DEDICADO 300 MB',banda:'300 MB',mensalidade:'600,00'},
+  '500':{plano:'PLANO DE LINK DEDICADO 500 MB',banda:'500 MB',mensalidade:'700,00'},
+  '800':{plano:'PLANO DE LINK DEDICADO 800 MB',banda:'800 MB',mensalidade:'950,00'}
+};
+function propApplyPlanoBase(){
+  const key=propVal('prop-plano-base');
+  const plano=PROP_PLANOS_HILINK[key];
+  if(!plano)return calcularPropostaCorporativa();
+  propSet('prop-plano',plano.plano);
+  propSet('prop-banda',plano.banda);
+  propSet('prop-mensalidade',plano.mensalidade);
+  propSet('prop-desc-plano',`${plano.plano}`);
+  calcularPropostaCorporativa();
+}
 function propApplySelected(){
   const sel=document.getElementById('prop-neg-select');
   const rows=propCrmRows();
@@ -15475,6 +15498,14 @@ function propApplySelected(){
   propSet('prop-plano',cleanIxcValue(r['Plano de venda']||r['Plano de negociação']||desc));
   propSet('prop-banda',banda);
   if(valor)propSet('prop-mensalidade',valor);
+  const mb=(banda.match(/\d+/)||[])[0]||'';
+  if(PROP_PLANOS_HILINK[mb]){
+    propSet('prop-plano-base',mb);
+    if(!valor){
+      propSet('prop-mensalidade',PROP_PLANOS_HILINK[mb].mensalidade);
+      propSet('prop-desc-plano',PROP_PLANOS_HILINK[mb].plano);
+    }
+  }
   propSet('prop-referencia',cleanIxcValue(r.Descrição||r.Descricao||'Cotação de serviço corporativo Hilink'));
   calcularPropostaCorporativa();
 }
@@ -15631,7 +15662,7 @@ function renderPropostas(){
   propostasPopulateCrm();
   refreshPropostaAssinaturaPreview();
   calcularPropostaCorporativa();
-  ['prop-cliente','prop-contato','prop-telefone','prop-responsavel','prop-plano','prop-banda','prop-referencia','prop-objeto','prop-caracteristicas','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-desc-plano','prop-desc-instalacao','prop-prazo','prop-consideracoes','prop-validade-pagamento'].forEach(id=>{
+  ['prop-cliente','prop-contato','prop-telefone','prop-responsavel','prop-plano-base','prop-plano','prop-banda','prop-referencia','prop-objeto','prop-caracteristicas','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-desc-plano','prop-desc-instalacao','prop-prazo','prop-consideracoes','prop-validade-pagamento'].forEach(id=>{
     const el=document.getElementById(id);
     if(el&&!el.dataset.propBound){
       el.dataset.propBound='1';
