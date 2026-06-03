@@ -1829,6 +1829,9 @@ h2.section-title .info-btn{margin-left:6px}
 .prop-form.two{
   grid-template-columns:repeat(2,minmax(0,1fr));
 }
+.prop-form .full{
+  grid-column:1 / -1;
+}
 .prop-panel label{
   min-width:0;
   display:flex;
@@ -1997,21 +2000,22 @@ h2.section-title .info-btn{margin-left:6px}
   border-collapse:collapse;
   margin:12px 0 18px;
   font-size:12px;
-  background:#fbfdff;
+  background:#fff !important;
   border-radius:8px;
   overflow:hidden;
   box-shadow:0 0 0 1px #d8e1ec;
 }
 .prop-paper th,
 .prop-paper td{
-  border:1px solid #d8e1ec;
+  background:#fff !important;
+  border:1px solid #d8e1ec !important;
   padding:9px 10px;
   text-align:left;
-  color:#14263a;
+  color:#14263a !important;
 }
 .prop-paper th{
-  background:#eaf4fb;
-  color:#0d4f83;
+  background:#f6f9fc !important;
+  color:#0b3558 !important;
   font-weight:800;
 }
 .prop-paper-signature{
@@ -2024,14 +2028,7 @@ h2.section-title .info-btn{margin-left:6px}
   max-width:220px;
   max-height:80px;
   object-fit:contain;
-  margin:0 auto 6px;
-}
-.prop-paper-signature .line{
-  border-top:1px solid #66788d;
-  padding-top:6px;
-  color:#26394f;
-  font-size:11px;
-  font-weight:700;
+  margin:0 auto;
 }
 .prop-paper-foot{
   margin-top:28px;
@@ -7043,6 +7040,12 @@ h2.section-title .info-btn{margin-left:6px}
           <label>Referência / objeto
             <input id="prop-referencia" placeholder="Ex.: Cotação de internet corporativa">
           </label>
+          <label>Objeto da proposta
+            <textarea id="prop-objeto" placeholder="Texto de apresentação do objeto da proposta."></textarea>
+          </label>
+          <label>Características do serviço
+            <textarea id="prop-caracteristicas" placeholder="Uma característica por linha."></textarea>
+          </label>
         </div>
 
         <div class="prop-panel">
@@ -7065,12 +7068,17 @@ h2.section-title .info-btn{margin-left:6px}
             <label>Custo parceiro mensal (R$) <input id="prop-parceiro-mensal" inputmode="decimal" placeholder="transporte"></label>
             <label>Custo parceiro infra (R$) <input id="prop-parceiro-infra" inputmode="decimal" placeholder="infra terceiro"></label>
             <label>Margem parceiro (interno) <input id="prop-fator" inputmode="decimal" value="auto"></label>
+            <label>Descrição do plano <input id="prop-desc-plano" placeholder="Ex.: Link corporativo conforme plano contratado"></label>
+            <label>Descrição da instalação <input id="prop-desc-instalacao" placeholder="Ex.: Implantação inicial conforme viabilidade aprovada"></label>
             <label>Prazo de execução <input id="prop-prazo" placeholder="Ex.: até 15 dias úteis após aprovação técnica"></label>
-            <label>Assinatura Akassio
+            <label>Imagem da assinatura
               <input id="prop-assinatura" type="file" accept="image/*" onchange="loadPropostaAssinatura(event)">
             </label>
-            <label>Considerações gerais
+            <label class="full">Considerações gerais
               <textarea id="prop-consideracoes" placeholder="Ex.: proposta sujeita à viabilidade técnica, disponibilidade de rede e confirmação cadastral."></textarea>
+            </label>
+            <label class="full">Validade e pagamento
+              <textarea id="prop-validade-pagamento" placeholder="Ex.: Esta proposta tem validade de 30 dias. Forma de pagamento e ativação serão confirmadas após validação técnica final."></textarea>
             </label>
           </div>
           <div class="prop-signature-preview" id="prop-signature-preview">Nenhuma assinatura carregada.</div>
@@ -7094,7 +7102,7 @@ h2.section-title .info-btn{margin-left:6px}
       <div class="prop-preview-wrap">
         <div class="prop-panel-head">
           <h3>PRÉVIA DA PROPOSTA</h3>
-          <span>Primeira versão visual; PDF timbrado será refinado depois</span>
+          <span>Prévia visual; use Baixar PDF timbrado para gerar no papel da marca</span>
         </div>
         <div class="prop-paper" id="prop-paper">
           <div class="prop-paper-head">
@@ -15474,6 +15482,10 @@ function propApplySelected(){
 function propVal(id){
   return (document.getElementById(id)?.value||'').trim();
 }
+function propLines(id,fallback){
+  const raw=propVal(id)||fallback;
+  return String(raw||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+}
 let PROP_ASSINATURA_DATAURL = localStorage.getItem('radar_prop_assinatura_akassio') || '';
 function propDataUrlBytes(dataUrl){
   const b64=String(dataUrl||'').split(',')[1]||'';
@@ -15483,7 +15495,7 @@ function refreshPropostaAssinaturaPreview(){
   const box=document.getElementById('prop-signature-preview');
   if(!box)return;
   box.innerHTML=PROP_ASSINATURA_DATAURL
-    ? `<img src="${PROP_ASSINATURA_DATAURL}" alt="Assinatura Akassio"><span>Assinatura carregada para a proposta.</span>`
+    ? `<img src="${PROP_ASSINATURA_DATAURL}" alt="Imagem da assinatura"><span>Imagem da assinatura carregada.</span>`
     : 'Nenhuma assinatura carregada.';
 }
 function loadPropostaAssinatura(ev){
@@ -15571,11 +15583,16 @@ function renderPropostaPreview(calc){
   const plano=propVal('prop-plano')||'HILINK - Serviço corporativo';
   const banda=propVal('prop-banda')||'A definir';
   const ref=propVal('prop-referencia')||'Cotação de serviço corporativo';
+  const objeto=propVal('prop-objeto')||'Apresentamos proposta para prestação de serviço de conectividade corporativa Hilink, conforme viabilidade técnica e comercial inicial do projeto.';
+  const caracteristicas=propLines('prop-caracteristicas','Atendimento técnico e suporte operacional Hilink.\nEntrega por infraestrutura de conectividade adequada à viabilidade técnica aprovada.\nMonitoramento e acompanhamento do serviço dentro das condições contratadas.\nEquipamentos em comodato quando aplicável ao projeto.');
+  const descPlano=propVal('prop-desc-plano')||`${plano} · ${banda}`;
+  const descInstalacao=propVal('prop-desc-instalacao')||'Implantação inicial do serviço conforme viabilidade aprovada';
   const prazo=propVal('prop-prazo')||'Prazo de execução a confirmar após aprovação técnica e comercial.';
   const consideracoes=propVal('prop-consideracoes')||'A proposta está sujeita à validação técnica, disponibilidade de rede, confirmação cadastral e aprovação comercial.';
+  const validade=propVal('prop-validade-pagamento')||'Esta proposta tem validade de 30 dias. Forma de pagamento, ativação e condições contratuais serão confirmadas após validação técnica final.';
   const assinatura=PROP_ASSINATURA_DATAURL
-    ? `<div class="prop-paper-signature"><img src="${PROP_ASSINATURA_DATAURL}" alt="Assinatura Akassio"><div class="line">Akassio<br>Hilink Tecnologia e Comunicação</div></div>`
-    : `<div class="prop-paper-signature"><div class="line">Akassio<br>Hilink Tecnologia e Comunicação</div></div>`;
+    ? `<div class="prop-paper-signature"><img src="${PROP_ASSINATURA_DATAURL}" alt="Imagem da assinatura"></div>`
+    : '';
   const today=new Date();
   const dateText=today.toLocaleDateString('pt-BR');
   const dateEl=document.getElementById('prop-paper-date');
@@ -15587,20 +15604,17 @@ function renderPropostaPreview(calc){
     <p><strong>Att.:</strong> ${escHtml(contato)}${tel?' · '+escHtml(tel):''}<br>
     <strong>Referência:</strong> ${escHtml(ref)}</p>
     <h4>Objeto</h4>
-    <p>Apresentamos proposta para prestação de serviço de conectividade corporativa Hilink, conforme viabilidade técnica e comercial inicial do projeto.</p>
+    <p>${escHtml(objeto)}</p>
     <h4>Características do serviço</h4>
     <ul>
-      <li>Atendimento técnico e suporte operacional Hilink.</li>
-      <li>Entrega por infraestrutura de conectividade adequada à viabilidade técnica aprovada.</li>
-      <li>Monitoramento e acompanhamento do serviço dentro das condições contratadas.</li>
-      <li>Equipamentos em comodato quando aplicável ao projeto.</li>
+      ${caracteristicas.map(item=>`<li>${escHtml(item)}</li>`).join('')}
     </ul>
     <h4>Condições comerciais</h4>
     <table>
       <thead><tr><th>Item</th><th>Descrição</th><th>Valor</th></tr></thead>
       <tbody>
-        <tr><td>Plano</td><td>${escHtml(plano)} · ${escHtml(banda)}</td><td>${propMoney(calc.mensalidade)}/mês</td></tr>
-        <tr><td>Instalação / infraestrutura</td><td>Implantação inicial do serviço conforme viabilidade aprovada</td><td>${propMoney(calc.instalacao)}</td></tr>
+        <tr><td>Plano</td><td>${escHtml(descPlano)}</td><td>${propMoney(calc.mensalidade)}/mês</td></tr>
+        <tr><td>Instalação / infraestrutura</td><td>${escHtml(descInstalacao)}</td><td>${propMoney(calc.instalacao)}</td></tr>
       </tbody>
     </table>
     <h4>Prazo de execução</h4>
@@ -15608,7 +15622,7 @@ function renderPropostaPreview(calc){
     <h4>Considerações gerais</h4>
     <p>${escHtml(consideracoes)}</p>
     <h4>Validade e pagamento</h4>
-    <p>Esta proposta tem validade de 30 dias. Forma de pagamento, ativação e condições contratuais serão confirmadas após validação técnica final.</p>
+    <p>${escHtml(validade)}</p>
     <h4>Responsável comercial</h4>
     <p>${escHtml(resp)}</p>
     ${assinatura}
@@ -15618,7 +15632,7 @@ function renderPropostas(){
   propostasPopulateCrm();
   refreshPropostaAssinaturaPreview();
   calcularPropostaCorporativa();
-  ['prop-cliente','prop-contato','prop-telefone','prop-responsavel','prop-plano','prop-banda','prop-referencia','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-prazo','prop-consideracoes'].forEach(id=>{
+  ['prop-cliente','prop-contato','prop-telefone','prop-responsavel','prop-plano','prop-banda','prop-referencia','prop-objeto','prop-caracteristicas','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-desc-plano','prop-desc-instalacao','prop-prazo','prop-consideracoes','prop-validade-pagamento'].forEach(id=>{
     const el=document.getElementById(id);
     if(el&&!el.dataset.propBound){
       el.dataset.propBound='1';
@@ -15676,11 +15690,15 @@ async function baixarPropostaPdfTimbrado(){
     const plano=propVal('prop-plano')||'HILINK - Servico corporativo';
     const banda=propVal('prop-banda')||'A definir';
     const ref=propVal('prop-referencia')||'Cotacao de servico corporativo';
-    const tipo=document.getElementById('prop-kpi-tipo')?.textContent||'Rede Hilink';
     const mensalidade=document.getElementById('prop-kpi-mensalidade')?.textContent||'R$ 0,00';
     const instalacao=document.getElementById('prop-kpi-instalacao')?.textContent||'R$ 0,00';
+    const objeto=propVal('prop-objeto')||'Apresentamos proposta para prestacao de servico de conectividade corporativa Hilink, conforme viabilidade tecnica e comercial inicial do projeto.';
+    const caracteristicas=propLines('prop-caracteristicas','Atendimento tecnico e suporte operacional Hilink.\nEntrega por infraestrutura de conectividade adequada a viabilidade tecnica aprovada.\nMonitoramento e acompanhamento do servico dentro das condicoes contratadas.\nEquipamentos em comodato quando aplicavel ao projeto.').join(' ');
+    const descPlano=propVal('prop-desc-plano')||`${plano} - ${banda}`;
+    const descInstalacao=propVal('prop-desc-instalacao')||'Implantacao inicial do servico conforme viabilidade aprovada';
     const prazo=propVal('prop-prazo')||'Prazo de execucao a confirmar apos aprovacao tecnica e comercial.';
     const consideracoes=propVal('prop-consideracoes')||'A proposta esta sujeita a validacao tecnica, disponibilidade de rede, confirmacao cadastral e aprovacao comercial.';
+    const validade=propVal('prop-validade-pagamento')||'Esta proposta tem validade de 30 dias. Forma de pagamento, ativacao e condicoes contratuais serao confirmadas apos validacao tecnica final.';
     const hoje=new Date().toLocaleDateString('pt-BR');
 
     page.drawText('PROPOSTA COMERCIAL',{x,y,size:14,font:bold,color:blue});
@@ -15698,12 +15716,12 @@ async function baixarPropostaPdfTimbrado(){
     y-=8;
 
     const sections=[
-      ['OBJETO DA PROPOSTA','Apresentamos proposta para prestacao de servico de conectividade corporativa Hilink, conforme viabilidade tecnica e comercial inicial do projeto.'],
-      ['CARACTERISTICAS DO SERVICO','Atendimento tecnico e suporte operacional Hilink. Entrega por infraestrutura de conectividade adequada a viabilidade tecnica aprovada. Equipamentos em comodato quando aplicavel ao projeto.'],
-      ['CONDICOES COMERCIAIS',`Plano: ${plano} - ${banda}. Mensalidade: ${mensalidade}. Instalacao / infraestrutura: ${instalacao}.`],
+      ['OBJETO DA PROPOSTA',objeto],
+      ['CARACTERISTICAS DO SERVICO',caracteristicas],
+      ['CONDICOES COMERCIAIS',`Plano: ${descPlano}. Mensalidade: ${mensalidade}. Instalacao / infraestrutura: ${descInstalacao}. Valor: ${instalacao}.`],
       ['PRAZO DE EXECUCAO',prazo],
       ['CONSIDERACOES GERAIS',consideracoes],
-      ['VALIDADE E PAGAMENTO','Esta proposta tem validade de 30 dias. Forma de pagamento, ativacao e condicoes contratuais serao confirmadas apos validacao tecnica final.']
+      ['VALIDADE E PAGAMENTO',validade]
     ];
     sections.forEach(([title,body])=>{
       page.drawText(title,{x,y,size:9.5,font:bold,color:blue});
@@ -15724,9 +15742,6 @@ async function baixarPropostaPdfTimbrado(){
         console.warn('Assinatura nao aplicada no PDF',e);
       }
     }
-    page.drawLine({start:{x,y},end:{x:x+220,y},thickness:0.5,color:muted});
-    y-=12;
-    page.drawText('Akassio - Hilink Tecnologia e Comunicacao',{x,y,size:8.5,font:bold,color:dark});
     page.drawLine({start:{x,y:74},end:{x:width-x,y:74},thickness:0.5,color:lineColor});
     page.drawText('Documento gerado automaticamente pelo Radar Hilink. Valores sujeitos a validacao tecnica e comercial.',{x,y:58,size:8.5,font:helv,color:muted});
 
