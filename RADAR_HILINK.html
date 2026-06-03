@@ -237,7 +237,6 @@ body[data-active-mod="setup"] .topbar .sub{color:#a9bad0;max-width:680px;line-he
 body[data-active-mod="setup"] .context-badge{background:#0d1c30;border-color:#29415f;color:#d7e6f8;border-radius:999px}
 body[data-active-mod="setup"] #page-meta{gap:8px;justify-content:flex-end}
 body[data-active-mod="setup"] #gf-filial-wrap,
-body[data-active-mod="setup"] #gf-categoria-wrap,
 body[data-active-mod="setup"] #analysis-help-btn,
 body[data-active-mod="setup"] #page-meta > .tag:not(.alt){display:none!important}
 body[data-active-mod="setup"] .global-filters label{color:#9bb0ca}
@@ -2188,10 +2187,9 @@ h2.section-title .info-btn{margin-left:6px}
       <div class="global-filters" id="global-filters">
         <label id="gf-competencia-wrap">Competência <select id="gf-competencia"></select></label>
         <label id="gf-filial-wrap">Filial <select id="gf-filial"><option>Todas</option></select></label>
-        <label id="gf-categoria-wrap">Categoria <select id="gf-categoria"><option value="PF+PJ">PF + PJ</option><option value="PF">Só PF</option><option value="PJ">Só PJ</option></select></label>
-        <button class="btn sm primary" onclick="refreshActiveModule()" title="Atualizar recorte">↻ Atualizar</button>
+        <button class="btn sm primary" onclick="refreshActiveModule()" title="Atualizar recorte">Atualizar</button>
       </div>
-      <button class="setup-help analysis-help-action" id="analysis-help-btn" onclick="openAnalysisHelp()" title="Entenda esta análise">? Entenda esta análise</button>
+      <button class="setup-help analysis-help-action" id="analysis-help-btn" onclick="openAnalysisHelp()" title="Entenda esta análise">Entenda esta análise</button>
       <span class="tag">Processamento local</span>
       <span class="tag alt">Multi-campanha</span>
     </div>
@@ -5936,16 +5934,9 @@ h2.section-title .info-btn{margin-left:6px}
               <option>Todas</option>
             </select>
           </label>
-          <label>Categoria
-            <select id="gf-categoria-prem" onchange="document.getElementById('gf-categoria').value=this.value;document.getElementById('gf-categoria').dispatchEvent(new Event('change'))">
-              <option value="PF+PJ">PF + PJ</option>
-              <option value="PF">Só PF</option>
-              <option value="PJ">Só PJ</option>
-            </select>
-          </label>
         </div>
-        <button class="prem-exec-btn-update" onclick="refreshActiveModule()" title="Atualizar recorte">↻ Atualizar</button>
-        <button class="prem-exec-btn-analysis" onclick="openAnalysisHelp()" title="Entenda esta análise">? Entenda esta análise</button>
+        <button class="prem-exec-btn-update" onclick="refreshActiveModule()" title="Atualizar recorte">Atualizar</button>
+        <button class="prem-exec-btn-analysis" onclick="openAnalysisHelp()" title="Entenda esta análise">Entenda esta análise</button>
         <div class="prem-exec-header-meta">
           <span class="prem-exec-header-dates" id="prem-period-dates"></span>
           <span class="prem-exec-header-status" id="prem-period-status">Aguardando dados</span>
@@ -8124,15 +8115,12 @@ function renderGlobalFilters(){
   gf.style.display=STATE.processed?'flex':'none';
   const comp=document.getElementById('gf-competencia');
   const filial=document.getElementById('gf-filial');
-  const cat=document.getElementById('gf-categoria');
   const compWrap=document.getElementById('gf-competencia-wrap');
   const filialWrap=document.getElementById('gf-filial-wrap');
-  const catWrap=document.getElementById('gf-categoria-wrap');
   const techSnapshotMods=new Set(['tecnica','acs','ativos']);
   const compApplies=!techSnapshotMods.has(STATE.activeMod);
   const simpleTechView=STATE.activeMod==='tecnica';
   if(compWrap)compWrap.style.display=simpleTechView?'none':'inline-flex';
-  if(catWrap)catWrap.style.display=simpleTechView?'none':'inline-flex';
   if(filialWrap)filialWrap.style.display='inline-flex';
   const comps=availableCompetencias();
   if(comp){
@@ -8148,19 +8136,17 @@ function renderGlobalFilters(){
     if(!vals.includes(STATE.filtros.filial))STATE.filtros.filial='Todas';
     filial.value=STATE.filtros.filial;
   }
-  if(cat)cat.value=STATE.filtros.categoria||'PF+PJ';
   renderContextBadge();
 }
 function syncGlobalFilterStateFromDom(){
   const comp=document.getElementById('gf-competencia');
   const filial=document.getElementById('gf-filial');
-  const cat=document.getElementById('gf-categoria');
   if(comp&&!comp.disabled&&comp.value)STATE.filtros.competencia=comp.value;
   if(filial&&filial.value)STATE.filtros.filial=filial.value;
-  if(cat&&cat.value)STATE.filtros.categoria=cat.value;
+  STATE.filtros.categoria='PF+PJ';
 }
 function bindGlobalFilters(){
-  ['gf-competencia','gf-filial','gf-categoria'].forEach(id=>{
+  ['gf-competencia','gf-filial'].forEach(id=>{
     const el=document.getElementById(id);
     if(!el||el.dataset.bound)return;
     el.dataset.bound='1';
@@ -8182,7 +8168,7 @@ function renderContextBadge(){
     el.textContent=`Base: ${periodo} · Filial: ${STATE.filtros.filial||'Todas'} · Última carga: ${loadTxt} · ${rows.length.toLocaleString('pt-BR')} clientes/contratos analisados`;
     return;
   }
-  el.textContent=`Período: ${periodo} · Filial: ${STATE.filtros.filial||'Todas'} · ${STATE.filtros.categoria||'PF+PJ'} · Última carga: ${loadTxt} · ${rows.length.toLocaleString('pt-BR')} contratos no recorte`;
+  el.textContent=`Período: ${periodo} · Filial: ${STATE.filtros.filial||'Todas'} · Última carga: ${loadTxt} · ${rows.length.toLocaleString('pt-BR')} contratos no recorte`;
 }
 function refreshActiveModule(){
   syncGlobalFilterStateFromDom();
@@ -8201,8 +8187,6 @@ function applyGlobalFilters(rows){
   if(['tecnica','acao'].includes(STATE.activeMod))out=out.filter(isOperacaoAtualRow);
   if(f.filial&&f.filial!=='Todas')out=out.filter(r=>String(r.Filial||'')===f.filial);
   if(STATE.activeMod==='tecnica')return out;
-  if(f.categoria==='PF')out=out.filter(r=>rowPersonTypeResolved(r)!=='PJ');
-  if(f.categoria==='PJ')out=out.filter(r=>rowPersonTypeResolved(r)==='PJ');
   return out;
 }
 function currentRows(){
@@ -14395,9 +14379,9 @@ function premAvg(arr,selector){
 function _syncPremFiltrosMirror(){
   // Espelha os selects globais nos selects do header de premiações
   try{
-    const src={comp:'gf-competencia',filial:'gf-filial',cat:'gf-categoria'};
-    const dst={comp:'gf-competencia-prem',filial:'gf-filial-prem',cat:'gf-categoria-prem'};
-    ['comp','filial','cat'].forEach(k=>{
+    const src={comp:'gf-competencia',filial:'gf-filial'};
+    const dst={comp:'gf-competencia-prem',filial:'gf-filial-prem'};
+    ['comp','filial'].forEach(k=>{
       const s=document.getElementById(src[k]);
       const d=document.getElementById(dst[k]);
       if(!s||!d)return;
