@@ -6,6 +6,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 <script>
 // ============================================================
 // RADAR HILINK — Configuração Supabase
@@ -7035,6 +7036,7 @@ h2.section-title .info-btn{margin-left:6px}
           </div>
           <div class="prop-actions">
             <button class="btn sm primary" onclick="calcularPropostaCorporativa()">Atualizar prévia</button>
+            <button class="btn sm" onclick="baixarPropostaPdfTimbrado()">Baixar PDF timbrado</button>
             <button class="btn sm" onclick="baixarPropostaHtml()">Baixar HTML</button>
             <button class="btn sm" onclick="baixarPropostaCsv()">Baixar CSV</button>
           </div>
@@ -15549,6 +15551,106 @@ function renderPropostas(){
       el.addEventListener('change',calcularPropostaCorporativa);
     }
   });
+}
+function propPdfWrap(text,font,size,maxWidth){
+  const words=String(text||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
+  const lines=[];
+  let line='';
+  words.forEach(word=>{
+    const next=line?`${line} ${word}`:word;
+    if(font.widthOfTextAtSize(next,size)<=maxWidth){
+      line=next;
+    }else{
+      if(line)lines.push(line);
+      line=word;
+    }
+  });
+  if(line)lines.push(line);
+  return lines.length?lines:[''];
+}
+function propPdfDrawWrapped(page,text,x,y,maxWidth,font,size,lineHeight,color){
+  propPdfWrap(text,font,size,maxWidth).forEach(line=>{
+    page.drawText(line,{x,y,size,font,color});
+    y-=lineHeight;
+  });
+  return y;
+}
+async function baixarPropostaPdfTimbrado(){
+  try{
+    calcularPropostaCorporativa();
+    if(!window.PDFLib)throw new Error('Biblioteca PDF ainda nao carregada. Recarregue a pagina e tente novamente.');
+    const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
+    const res=await fetch('Timbrado_A4_endereco_corrigido.pdf');
+    if(!res.ok)throw new Error('Timbrado nao encontrado no Radar publicado.');
+    const pdfDoc=await PDFDocument.load(await res.arrayBuffer());
+    const page=pdfDoc.getPage(0);
+    const helv=await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const bold=await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const {width,height}=page.getSize();
+    const blue=rgb(0.02,0.31,0.56);
+    const dark=rgb(0.12,0.16,0.22);
+    const muted=rgb(0.34,0.43,0.53);
+    const lineColor=rgb(0.78,0.86,0.93);
+    const x=62;
+    const max=width-124;
+    let y=height-126;
+    const cliente=propVal('prop-cliente')||'Cliente corporativo';
+    const contato=propVal('prop-contato')||'Responsavel pelo projeto';
+    const tel=propVal('prop-telefone')||'';
+    const resp=propVal('prop-responsavel')||'Equipe Comercial Hilink';
+    const plano=propVal('prop-plano')||'HILINK - Servico corporativo';
+    const banda=propVal('prop-banda')||'A definir';
+    const ref=propVal('prop-referencia')||'Cotacao de servico corporativo';
+    const tipo=document.getElementById('prop-kpi-tipo')?.textContent||'Rede Hilink';
+    const mensalidade=document.getElementById('prop-kpi-mensalidade')?.textContent||'R$ 0,00';
+    const instalacao=document.getElementById('prop-kpi-instalacao')?.textContent||'R$ 0,00';
+    const distancia=Number(propVal('prop-distancia')||0).toLocaleString('pt-BR');
+    const regra=document.getElementById('prop-rule-note')?.textContent||'Regra em validacao.';
+    const hoje=new Date().toLocaleDateString('pt-BR');
+
+    page.drawText('PROPOSTA COMERCIAL',{x,y,size:14,font:bold,color:blue});
+    y-=17;
+    page.drawText(`Recife, ${hoje}`,{x,y,size:9,font:helv,color:muted});
+    y-=26;
+    page.drawLine({start:{x,y},end:{x:width-x,y},thickness:0.7,color:lineColor});
+    y-=22;
+
+    page.drawText(`Cliente: ${cliente}`,{x,y,size:10,font:bold,color:dark});
+    page.drawText(`Responsavel: ${resp}`,{x:x+300,y,size:10,font:helv,color:dark});
+    y-=16;
+    y=propPdfDrawWrapped(page,`Att.: ${contato}${tel?' - '+tel:''}`,x,y,max,helv,9.5,12,dark);
+    y=propPdfDrawWrapped(page,`Referencia: ${ref}`,x,y,max,helv,9.5,12,dark);
+    y-=8;
+
+    const sections=[
+      ['OBJETO DA PROPOSTA','Apresentamos proposta para prestacao de servico de conectividade corporativa Hilink, conforme viabilidade tecnica e comercial inicial do projeto.'],
+      ['CARACTERISTICAS DO SERVICO','Atendimento tecnico e suporte operacional Hilink. Entrega por fibra optica, infraestrutura propria, transporte terceiro ou modelo misto conforme viabilidade. Equipamentos em comodato quando aplicavel ao projeto.'],
+      ['CONDICOES COMERCIAIS',`Plano: ${plano} - ${banda}. Mensalidade: ${mensalidade}. Instalacao / infraestrutura: ${instalacao}. Distancia considerada: ${distancia}m. Tipo de entrega: ${tipo}.`],
+      ['OBSERVACOES DE VIABILIDADE',regra],
+      ['VALIDADE E PAGAMENTO','Esta proposta tem validade de 30 dias. Forma de pagamento, prazo de execucao e ativacao serao confirmados apos validacao tecnica final.']
+    ];
+    sections.forEach(([title,body])=>{
+      page.drawText(title,{x,y,size:9.5,font:bold,color:blue});
+      y-=13;
+      y=propPdfDrawWrapped(page,body,x,y,max,helv,9.2,11.5,dark);
+      y-=10;
+    });
+    page.drawLine({start:{x,y:74},end:{x:width-x,y:74},thickness:0.5,color:lineColor});
+    page.drawText('Documento gerado automaticamente pelo Radar Hilink. Valores sujeitos a validacao tecnica e comercial.',{x,y:58,size:8.5,font:helv,color:muted});
+
+    const bytes=await pdfDoc.save();
+    const blob=new Blob([bytes],{type:'application/pdf'});
+    const nome=(cliente||'proposta').replace(/[^\w\-]+/g,'_');
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`proposta_hilink_${nome}.pdf`;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    toast('PDF timbrado gerado','success');
+  }catch(err){
+    console.error(err);
+    toast(err.message||'Falha ao gerar PDF timbrado','error');
+  }
 }
 function baixarPropostaHtml(){
   calcularPropostaCorporativa();
