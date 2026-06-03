@@ -1964,6 +1964,10 @@ h2.section-title .info-btn{margin-left:6px}
   border-radius:6px;
   padding:4px;
 }
+.prop-signature-preview .btn{
+  padding:6px 10px;
+  min-height:0;
+}
 .prop-actions{
   display:flex;
   gap:8px;
@@ -7147,6 +7151,9 @@ h2.section-title .info-btn{margin-left:6px}
             </div>
           </div>
           <div class="prop-signature-preview" id="prop-signature-preview">Nenhuma assinatura carregada.</div>
+          <div class="prop-actions">
+            <button class="btn sm" onclick="removerPropostaAssinatura()">Remover assinatura</button>
+          </div>
           <div class="prop-kpis">
             <div class="prop-kpi"><span>Instalação</span><strong id="prop-kpi-instalacao">R$ 0,00</strong></div>
             <div class="prop-kpi"><span>Mensalidade</span><strong id="prop-kpi-mensalidade">R$ 0,00</strong></div>
@@ -15584,12 +15591,12 @@ function propDefaultSet(id,value){
 }
 function propFillDefaultFields(){
   const cliente=propVal('prop-cliente')||'Cliente corporativo';
-  propDefaultSet('prop-objeto',`Fornecimento de internet de alta qualidade para o cliente da empresa ${cliente}, conforme solicitação e viabilidade técnica apresentada.`);
-  propDefaultSet('prop-caracteristicas','SLA 08 Horas - Após notificação à central de atendimento. O serviço de manutenção será realizado em horário comercial, segunda à sexta, das 08h às 18h, e aos sábados, das 08h às 17h.\n4 IPs Público /30.\nFibra óptica.\nSuporte Nível 02.\nGarantia 100% da banda contratada de download e upload.\nSolução de monitoramento da banda.');
+  propDefaultSet('prop-objeto',`Fornecimento de internet dedicada para ${cliente}, conforme solicitação e viabilidade técnica apresentada.`);
+  propDefaultSet('prop-caracteristicas','Modalidade: Link Dedicado Empresarial - banda 100% garantida em download e upload\nVelocidade: conforme plano contratado\nMeio físico: Fibra óptica ponto-a-ponto\nEndereçamento IP: bloco /30 com 4 endereços IPv4 públicos\nSLA: 8 horas após abertura de chamado, em horário comercial\nHorário de atendimento: segunda a sexta das 08h às 18h e sábado das 08h às 17h\nSuporte: Nível 2 - equipe técnica especializada\nMonitoramento: acompanhamento contínuo da banda\nComodato: 01 ONU fornecida pela HiLink durante a vigência do contrato');
   propDefaultSet('prop-consideracoes','Equipamentos em comodato: 01 UND. - ONU');
   propDefaultSet('prop-prazo','Prazo de execução a ser combinado com o cliente.\nOs serviços serão executados de segunda à sexta, no horário das 08h às 18h, e aos sábados, no horário das 08h às 17h.');
   propDefaultSet('prop-validade-pagamento','O prazo de validade da proposta é de 30 (trinta) dias, contados a partir da data de entrega da mesma.');
-  propDefaultSet('prop-desc-instalacao','Taxa do lançamento da infraestrutura');
+  propDefaultSet('prop-desc-instalacao','Implantação inicial do serviço conforme viabilidade aprovada');
 }
 let PROP_ASSINATURA_DATAURL = localStorage.getItem('radar_prop_assinatura_akassio') || '';
 function propDataUrlBytes(dataUrl){
@@ -15600,7 +15607,7 @@ function refreshPropostaAssinaturaPreview(){
   const box=document.getElementById('prop-signature-preview');
   if(!box)return;
   box.innerHTML=PROP_ASSINATURA_DATAURL
-    ? `<img src="${PROP_ASSINATURA_DATAURL}" alt="Imagem da assinatura"><span>Imagem da assinatura carregada.</span>`
+    ? `<img src="${PROP_ASSINATURA_DATAURL}" alt="Imagem da assinatura"><span>Imagem da assinatura carregada.</span><button type="button" class="btn sm" onclick="removePropostaAssinatura()">Remover assinatura</button>`
     : 'Nenhuma assinatura carregada.';
 }
 function loadPropostaAssinatura(ev){
@@ -15615,6 +15622,28 @@ function loadPropostaAssinatura(ev){
     toast('Assinatura carregada','success');
   };
   reader.readAsDataURL(file);
+}
+function removePropostaAssinatura(){
+  PROP_ASSINATURA_DATAURL='';
+  try{localStorage.removeItem('radar_prop_assinatura_akassio')}catch(e){}
+  const input=document.getElementById('prop-assinatura');
+  if(input)input.value='';
+  refreshPropostaAssinaturaPreview();
+  calcularPropostaCorporativa();
+  toast('Assinatura removida','success');
+}
+function propCaracteristicasHtml(items){
+  const rows=items.map(item=>{
+    const text=String(item||'').trim();
+    const idx=text.indexOf(':');
+    return idx>0
+      ? {k:text.slice(0,idx).trim(),v:text.slice(idx+1).trim()}
+      : null;
+  });
+  if(rows.length&&rows.every(Boolean)){
+    return `<table class="prop-tech-table"><tbody>${rows.map(row=>`<tr><th>${escHtml(row.k)}</th><td>${escHtml(row.v)}</td></tr>`).join('')}</tbody></table>`;
+  }
+  return `<ul>${items.map(item=>`<li>${escHtml(item)}</li>`).join('')}</ul>`;
 }
 function propParceiroMarkup(custo){
   custo=Number(custo)||0;
@@ -15688,8 +15717,8 @@ function renderPropostaPreview(calc){
   const plano=propVal('prop-plano')||'HILINK - Serviço corporativo';
   const banda=propVal('prop-banda')||'A definir';
   const ref=propVal('prop-referencia')||'Cotação de serviço corporativo';
-  const objeto=propVal('prop-objeto')||`Fornecimento de internet de alta qualidade para o cliente da empresa ${cliente}, conforme solicitação e viabilidade técnica apresentada.`;
-  const caracteristicas=propLines('prop-caracteristicas','SLA 08 Horas - Após notificação à central de atendimento. O serviço de manutenção será realizado em horário comercial, segunda à sexta, das 08h às 18h, e aos sábados, das 08h às 17h.\n4 IPs Público /30.\nFibra óptica.\nSuporte Nível 02.\nGarantia 100% da banda contratada de download e upload.\nSolução de monitoramento da banda.');
+  const objeto=propVal('prop-objeto')||`Fornecimento de internet dedicada para ${cliente}, conforme solicitação e viabilidade técnica apresentada.`;
+  const caracteristicas=propLines('prop-caracteristicas','Modalidade: Link Dedicado Empresarial - banda 100% garantida em download e upload\nVelocidade: conforme plano contratado\nMeio físico: Fibra óptica ponto-a-ponto\nEndereçamento IP: bloco /30 com 4 endereços IPv4 públicos\nSLA: 8 horas após abertura de chamado, em horário comercial\nHorário de atendimento: segunda a sexta das 08h às 18h e sábado das 08h às 17h\nSuporte: Nível 2 - equipe técnica especializada\nMonitoramento: acompanhamento contínuo da banda\nComodato: 01 ONU fornecida pela HiLink durante a vigência do contrato');
   const descPlano=propVal('prop-desc-plano')||`${plano} · ${banda}`;
   const descInstalacao=propVal('prop-desc-instalacao')||'Implantação inicial do serviço conforme viabilidade aprovada';
   const prazo=propVal('prop-prazo')||'Prazo de execução a ser combinado com o cliente.\nOs serviços serão executados de segunda à sexta, no horário das 08h às 18h, e aos sábados, no horário das 08h às 17h.';
@@ -15717,9 +15746,7 @@ function renderPropostaPreview(calc){
     <h4>Objeto:</h4>
     <p>${propTextHtml(objeto)}</p>
     <h4>Link Dedicado - Característica do Serviço:</h4>
-    <ul>
-      ${caracteristicas.map(item=>`<li>${escHtml(item)}</li>`).join('')}
-    </ul>
+    ${propCaracteristicasHtml(caracteristicas)}
     ${propShow('prop-show-observacao')?`<h4>Observação:</h4><p>${propTextHtml(consideracoes)}</p>`:''}
     <h4>Preço e pagamento:</h4>
     <table>
@@ -15803,8 +15830,8 @@ async function baixarPropostaPdfTimbrado(){
     const ref=propVal('prop-referencia')||'Cotacao de servico corporativo';
     const mensalidade=document.getElementById('prop-kpi-mensalidade')?.textContent||'R$ 0,00';
     const instalacao=document.getElementById('prop-kpi-instalacao')?.textContent||'R$ 0,00';
-    const objeto=propVal('prop-objeto')||`Fornecimento de internet de alta qualidade para o cliente da empresa ${cliente}, conforme solicitacao e viabilidade tecnica apresentada.`;
-    const caracteristicas=propLines('prop-caracteristicas','SLA 08 Horas - Apos notificacao a central de atendimento. O servico de manutencao sera realizado em horario comercial, segunda a sexta, das 08h as 18h, e aos sabados, das 08h as 17h.\n4 IPs Publico /30.\nFibra optica.\nSuporte Nivel 02.\nGarantia 100% da banda contratada de download e upload.\nSolucao de monitoramento da banda.').join(' ');
+    const objeto=propVal('prop-objeto')||`Fornecimento de internet dedicada para ${cliente}, conforme solicitacao e viabilidade tecnica apresentada.`;
+    const caracteristicas=propLines('prop-caracteristicas','Modalidade: Link Dedicado Empresarial - banda 100% garantida em download e upload\nVelocidade: conforme plano contratado\nMeio fisico: Fibra optica ponto-a-ponto\nEnderecamento IP: bloco /30 com 4 enderecos IPv4 publicos\nSLA: 8 horas apos abertura de chamado, em horario comercial\nHorario de atendimento: segunda a sexta das 08h as 18h e sabado das 08h as 17h\nSuporte: Nivel 2 - equipe tecnica especializada\nMonitoramento: acompanhamento continuo da banda\nComodato: 01 ONU fornecida pela HiLink durante a vigencia do contrato').join(' | ');
     const descInstalacao=propVal('prop-desc-instalacao')||'Implantacao inicial do servico conforme viabilidade aprovada';
     const prazo=propVal('prop-prazo')||'Prazo de execucao a ser combinado com o cliente. Os servicos serao executados de segunda a sexta, no horario das 08h as 18h, e aos sabados, no horario das 08h as 17h.';
     const consideracoes=propVal('prop-consideracoes')||'Equipamentos em comodato: 01 UND. - ONU';
