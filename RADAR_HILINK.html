@@ -1778,6 +1778,229 @@ h2.section-title .info-btn{margin-left:6px}
   font-size:11px;
   padding:6px 0;
 }
+.prop-section{
+  background:#0b1b2b;
+}
+.prop-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:16px;
+  margin-top:14px;
+}
+.prop-panel,
+.prop-preview-wrap{
+  min-width:0;
+  overflow:hidden;
+  border:1px solid rgba(80,130,180,.35);
+  border-radius:12px;
+  background:#0f2438;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.prop-panel-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  border-bottom:1px solid rgba(80,130,180,.32);
+  padding-bottom:10px;
+}
+.prop-panel-head h3{
+  margin:0;
+  color:#fff;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.prop-panel-head span{
+  color:#7f93ad;
+  font-size:10px;
+  font-weight:400;
+  line-height:1.35;
+  text-align:right;
+}
+.prop-form{
+  display:grid;
+  gap:10px;
+}
+.prop-form.two{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.prop-panel label{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  color:#8fb8e8;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.prop-panel input,
+.prop-panel select{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  background:#071522;
+  border:1px solid rgba(80,130,180,.45);
+  border-radius:8px;
+  color:#ddeeff;
+  padding:9px 10px;
+  font:600 12px var(--font-family);
+  outline:none;
+}
+.prop-file{
+  border:1px dashed rgba(56,168,255,.55);
+  border-radius:10px;
+  background:rgba(56,168,255,.08);
+  padding:12px;
+  cursor:pointer;
+}
+.prop-file input{
+  display:none;
+}
+.prop-file span{
+  color:#38a8ff;
+  font-size:12px;
+  font-weight:800;
+}
+.prop-kpis{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+.prop-kpi{
+  min-width:0;
+  border:1px solid rgba(80,130,180,.35);
+  border-radius:10px;
+  background:#071522;
+  padding:12px;
+}
+.prop-kpi span{
+  display:block;
+  color:#8fb8e8;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.prop-kpi strong{
+  display:block;
+  margin-top:5px;
+  color:#fff;
+  font-size:20px;
+  font-weight:800;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.prop-rule-note{
+  border-left:3px solid #ffa800;
+  border-radius:8px;
+  background:rgba(255,168,0,.08);
+  color:#c5d4e8;
+  padding:10px 12px;
+  font-size:11px;
+  line-height:1.4;
+}
+.prop-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.prop-preview-wrap{
+  margin-top:16px;
+}
+.prop-paper{
+  width:min(900px,100%);
+  margin:0 auto;
+  box-sizing:border-box;
+  min-height:780px;
+  background:#fff;
+  color:#102033;
+  border-radius:10px;
+  padding:42px 48px;
+  box-shadow:0 18px 46px rgba(0,0,0,.35);
+  font-family:"Inter","Segoe UI",Roboto,Arial,sans-serif;
+}
+.prop-paper-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:24px;
+  padding-bottom:20px;
+  border-bottom:2px solid #0d74bc;
+  margin-bottom:24px;
+}
+.prop-brand{
+  font-size:38px;
+  font-weight:900;
+  color:#0d74bc;
+  letter-spacing:-.04em;
+}
+.prop-paper-head strong{
+  display:block;
+  color:#0b1b2b;
+  font-size:22px;
+  text-align:right;
+}
+.prop-paper-head span{
+  display:block;
+  margin-top:5px;
+  color:#4d6178;
+  font-size:12px;
+  text-align:right;
+}
+.prop-paper h4{
+  margin:18px 0 7px;
+  color:#0b1b2b;
+  font-size:13px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.prop-paper p,
+.prop-paper li{
+  color:#26394f;
+  font-size:12px;
+  line-height:1.48;
+}
+.prop-paper table{
+  width:100%;
+  border-collapse:collapse;
+  margin:12px 0 18px;
+  font-size:12px;
+}
+.prop-paper th,
+.prop-paper td{
+  border:1px solid #d8e1ec;
+  padding:9px 10px;
+  text-align:left;
+}
+.prop-paper th{
+  background:#eef6fc;
+  color:#0d4f83;
+  font-weight:800;
+}
+.prop-paper-foot{
+  margin-top:28px;
+  padding-top:14px;
+  border-top:1px solid #d8e1ec;
+  color:#66788d;
+  font-size:10px;
+  text-align:center;
+}
+@media(max-width:1100px){
+  .prop-grid{grid-template-columns:1fr}
+  .prop-paper{padding:28px}
+}
+@media(max-width:720px){
+  .prop-form.two,.prop-kpis{grid-template-columns:1fr}
+  .prop-panel-head{flex-direction:column}
+  .prop-panel-head span{text-align:left}
+}
 @media(max-width:1200px){
   .main{padding:14px 16px}
   .rank-row{grid-template-columns:1fr auto}
@@ -1850,6 +2073,9 @@ h2.section-title .info-btn{margin-left:6px}
         </div>
         <div class="nav-item disabled" data-mod="acao" onclick="go('acao')">
           <span>Estratégia de Atuação<small>prioridades, campanhas e plano de ação</small></span>
+        </div>
+        <div class="nav-item" data-mod="propostas" onclick="go('propostas')">
+          <span>Propostas Corporativas<small>CRM, viabilidade e proposta comercial</small></span>
         </div>
       </div>
       <div class="nav-note">Os demais módulos permanecem preservados em stand by e serão integrados como seções internas.</div>
@@ -6746,6 +6972,97 @@ h2.section-title .info-btn{margin-left:6px}
     </div>
   </div>
 
+  <!-- ====================== MÓDULO: PROPOSTAS CORPORATIVAS ====================== -->
+  <div class="module" id="mod-propostas">
+    <div class="section prop-section">
+      <h2 class="section-title">Propostas Corporativas <span class="help">CRM IXC, viabilidade e prévia comercial</span></h2>
+      <div class="prop-grid">
+        <div class="prop-panel">
+          <div class="prop-panel-head">
+            <h3>CRM / NEGOCIAÇÃO</h3>
+            <span>Fonte: Sistemas &gt; CRM &gt; Negociações</span>
+          </div>
+          <label class="prop-file">
+            <input type="file" id="prop-crm-file" accept=".csv" onchange="loadPropostaCrmFile(this.files&&this.files[0])">
+            <span>Carregar CSV do CRM</span>
+          </label>
+          <label>Negociação
+            <select id="prop-neg-select" onchange="propApplySelected()">
+              <option value="">Carregue o CSV ou preencha manualmente</option>
+            </select>
+          </label>
+          <div class="prop-form two">
+            <label>Cliente <input id="prop-cliente" placeholder="Empresa / cliente"></label>
+            <label>Contato <input id="prop-contato" placeholder="Responsável"></label>
+            <label>Telefone <input id="prop-telefone" placeholder="Telefone"></label>
+            <label>Responsável Hilink <input id="prop-responsavel" placeholder="Consultor(a)"></label>
+            <label>Plano / produto <input id="prop-plano" placeholder="Ex.: Dedicado Empresarial Lite"></label>
+            <label>Banda <input id="prop-banda" placeholder="Ex.: 500MB"></label>
+          </div>
+          <label>Referência / objeto
+            <input id="prop-referencia" placeholder="Ex.: Cotação de internet corporativa">
+          </label>
+        </div>
+
+        <div class="prop-panel">
+          <div class="prop-panel-head">
+            <h3>VIABILIDADE / PREÇO</h3>
+            <span>Regras iniciais para validação</span>
+          </div>
+          <div class="prop-form two">
+            <label>Tipo
+              <select id="prop-tipo">
+                <option value="rede">Rede Hilink</option>
+                <option value="infra">Infraestrutura adicional</option>
+                <option value="transporte">Transporte terceiro</option>
+                <option value="mista">Mista</option>
+              </select>
+            </label>
+            <label>Distância da rede (m) <input id="prop-distancia" type="number" min="0" step="1" value="300"></label>
+            <label>Mensalidade Hilink (R$) <input id="prop-mensalidade" inputmode="decimal" placeholder="600,00"></label>
+            <label>Instalação manual (R$) <input id="prop-instalacao-manual" inputmode="decimal" placeholder="opcional"></label>
+            <label>Custo parceiro mensal (R$) <input id="prop-parceiro-mensal" inputmode="decimal" placeholder="transporte"></label>
+            <label>Custo parceiro infra (R$) <input id="prop-parceiro-infra" inputmode="decimal" placeholder="infra terceiro"></label>
+            <label>Fator parceiro <input id="prop-fator" inputmode="decimal" value="1,30"></label>
+          </div>
+          <div class="prop-kpis">
+            <div class="prop-kpi"><span>Instalação</span><strong id="prop-kpi-instalacao">R$ 0,00</strong></div>
+            <div class="prop-kpi"><span>Mensalidade</span><strong id="prop-kpi-mensalidade">R$ 0,00</strong></div>
+            <div class="prop-kpi"><span>Tipo</span><strong id="prop-kpi-tipo">Rede Hilink</strong></div>
+          </div>
+          <div class="prop-rule-note" id="prop-rule-note">
+            Regra inicial: até 300m sem cobrança de instalação; acima disso validar faixa e custo de infraestrutura.
+          </div>
+          <div class="prop-actions">
+            <button class="btn sm primary" onclick="calcularPropostaCorporativa()">Atualizar prévia</button>
+            <button class="btn sm" onclick="baixarPropostaHtml()">Baixar HTML</button>
+            <button class="btn sm" onclick="baixarPropostaCsv()">Baixar CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prop-preview-wrap">
+        <div class="prop-panel-head">
+          <h3>PRÉVIA DA PROPOSTA</h3>
+          <span>Primeira versão visual; PDF timbrado será refinado depois</span>
+        </div>
+        <div class="prop-paper" id="prop-paper">
+          <div class="prop-paper-head">
+            <div class="prop-brand">Hilink</div>
+            <div>
+              <strong>Proposta Comercial</strong>
+              <span id="prop-paper-date"></span>
+            </div>
+          </div>
+          <div id="prop-paper-body"></div>
+          <div class="prop-paper-foot">
+            HILINK SERVIÇOS DE COMUNICAÇÃO E MULTIMÍDIA SCM LTDA · CNPJ 15.165.435/0001-63 · (81) 2011-3333
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 </div>
 <div class="setup-modal" id="setup-help-modal" onclick="if(event.target===this)closeSetupHelp()">
@@ -7905,7 +8222,7 @@ function renderModuleError(mod,err){
   console.error('[Radar] Erro ao renderizar módulo',mod,err);
 }
 function go(mod){
-  if(mod!=='setup'&&mod!=='historico'&&!STATE.processed){toast('Processe a base primeiro','error');return}
+  if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&!STATE.processed){toast('Processe a base primeiro','error');return}
   if((mod==='segmentacao'||mod==='disparo')&&!STATE.campaign){toast('Mapeie uma campanha primeiro','error');mod='mapear'}
   if(!document.getElementById('mod-'+mod)){toast('Módulo não encontrado: '+mod,'error');return}
   document.querySelector(`.nav-item[data-mod="${mod}"]`)?.classList.remove('disabled');
@@ -7932,6 +8249,7 @@ function go(mod){
                 mapear:['Mapear Campanha','Parâmetros e filtros para o disparo OPA'],
                 segmentacao:['Segmentação','Detalhamento das categorias da campanha mapeada'],
                 disparo:['Disparo OPA','Geração da lista de disparo em massa da campanha'],
+                propostas:['Propostas Corporativas','Geração assistida de proposta comercial a partir do CRM e viabilidade'],
                 acao:['Estratégia de Atuação','Prioridades automáticas, campanhas e plano de ação operacional'],
                 historico:['Histórico de Campanhas','Campanhas mapeadas anteriormente']};
   const [t,s]=titles[mod]||['',''];
@@ -7961,6 +8279,7 @@ function go(mod){
     if(mod==='atendimento') renderAtendimento();
     if(mod==='comercialstatus') renderComercialStatus();
     if(mod==='auditoria360') renderAuditoria360();
+    if(mod==='propostas')renderPropostas();
     if(mod==='acao')renderAcao();
     if(mod==='mapear'){if(STATE.campaign)renderMapPreview();}
     if(mod==='historico') renderHistorico();
@@ -15035,6 +15354,206 @@ function currentPremiacoesFilter(){
 }
 
 // ====================================================================
+// ============== RENDER PROPOSTAS CORPORATIVAS =======================
+// ====================================================================
+function cleanIxcValue(v){
+  return String(v??'').replace(/^="?/,'').replace(/"?$/,'').trim();
+}
+function propParseMoney(v){
+  if(v==null||v==='')return 0;
+  const s=String(v).replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.');
+  const n=Number(s);
+  return Number.isFinite(n)?n:0;
+}
+function propMoney(v){return brl(Number(v)||0)}
+function propCrmRows(){
+  const raw=STATE.raw||{};
+  const direct=[raw.crmNegociacoes,raw.crm,raw.negociacoes].find(a=>Array.isArray(a)&&a.length);
+  if(direct)return direct;
+  return Object.values(raw).find(a=>{
+    if(!Array.isArray(a)||!a.length)return false;
+    const keys=Object.keys(a[0]||{}).map(norm);
+    return keys.includes('cliente')&&keys.some(k=>k.includes('plano de venda'))&&keys.some(k=>k.includes('estagio')||k.includes('estágio'));
+  })||[];
+}
+function loadPropostaCrmFile(file){
+  if(!file)return;
+  Papa.parse(file,{
+    delimiter:'',
+    header:true,
+    skipEmptyLines:true,
+    complete:(res)=>{
+      const rows=(res.data||[]).filter(r=>Object.values(r||{}).some(v=>String(v||'').trim()));
+      STATE.raw.crmNegociacoes=rows;
+      propostasPopulateCrm();
+      if(rows.length)propApplySelected();
+      toast(`${rows.length.toLocaleString('pt-BR')} negociação(ões) carregada(s) para propostas`,'success');
+    },
+    error:(err)=>toast('Falha ao ler CSV do CRM: '+(err?.message||err),'error')
+  });
+}
+function propostasPopulateCrm(){
+  const sel=document.getElementById('prop-neg-select');
+  if(!sel)return;
+  const rows=propCrmRows();
+  const current=sel.value;
+  sel.innerHTML='<option value="">Selecione uma negociação ou preencha manualmente</option>'+
+    rows.map((r,i)=>{
+      const cli=cleanIxcValue(r.Cliente||r.cliente||r.Contato||r.contato||'Cliente sem nome');
+      const plano=cleanIxcValue(r['Plano de venda']||r['Plano de negociação']||r['Descrição']||r.Descricao||'');
+      const status=cleanIxcValue(r.Status||r.Estágio||r.Estagio||'');
+      return `<option value="${i}">${escHtml(cli)}${plano?' · '+escHtml(plano):''}${status?' · '+escHtml(status):''}</option>`;
+    }).join('');
+  if(current&&rows[Number(current)])sel.value=current;
+}
+function propSet(id,val){
+  const el=document.getElementById(id);
+  if(el)el.value=val||'';
+}
+function propApplySelected(){
+  const sel=document.getElementById('prop-neg-select');
+  const rows=propCrmRows();
+  const r=rows[Number(sel?.value)];
+  if(!r)return calcularPropostaCorporativa();
+  const desc=cleanIxcValue(r.Descrição||r.Descricao||r['Plano de venda']||'');
+  const banda=(desc.match(/(\d+\s*(?:MB|GB))/i)||[])[1]||'';
+  const valor=cleanIxcValue(r['Valor recorrente']||r['Valor fixo']||'');
+  propSet('prop-cliente',cleanIxcValue(r.Cliente||r.Contato));
+  propSet('prop-contato',cleanIxcValue(r.Contato||r.Cliente));
+  propSet('prop-telefone',cleanIxcValue(r.Telefone||r.Celular||r.Fone));
+  propSet('prop-responsavel',cleanIxcValue(r.Responsável||r.Responsavel||r['Criado por']));
+  propSet('prop-plano',cleanIxcValue(r['Plano de venda']||r['Plano de negociação']||desc));
+  propSet('prop-banda',banda);
+  if(valor)propSet('prop-mensalidade',valor);
+  propSet('prop-referencia',cleanIxcValue(r.Descrição||r.Descricao||'Cotação de serviço corporativo Hilink'));
+  calcularPropostaCorporativa();
+}
+function propVal(id){
+  return (document.getElementById(id)?.value||'').trim();
+}
+function calcularPropostaCorporativa(){
+  const tipo=propVal('prop-tipo')||'rede';
+  const dist=Number(propVal('prop-distancia'))||0;
+  const mensalManual=propParseMoney(propVal('prop-mensalidade'));
+  const instManual=propParseMoney(propVal('prop-instalacao-manual'));
+  const custoMensal=propParseMoney(propVal('prop-parceiro-mensal'));
+  const custoInfra=propParseMoney(propVal('prop-parceiro-infra'));
+  const fator=propParseMoney(propVal('prop-fator'))||1.3;
+  let instalacao=0, mensalidade=mensalManual, nota='';
+  if(dist<=300){
+    instalacao=0;
+    nota='Regra aplicada: até 300m dentro da cobertura corporativa, instalação sem cobrança adicional.';
+  }else if(dist<=600){
+    instalacao=800;
+    nota='Regra aplicada: acima de 300m e até 600m, instalação inicial sugerida de R$ 800,00. Validar com Akassio/engenharia.';
+  }else{
+    instalacao=0;
+    nota='Distância acima de 600m: orçamento manual obrigatório para infraestrutura.';
+  }
+  if(tipo==='transporte'){
+    instalacao=custoInfra?custoInfra*fator:instalacao;
+    mensalidade=custoMensal?custoMensal*fator:mensalidade;
+    nota='Transporte terceiro: mensalidade e infraestrutura usam custo do parceiro multiplicado pelo fator comercial informado.';
+  }else if(tipo==='mista'){
+    instalacao+=custoInfra?custoInfra*fator:0;
+    mensalidade=custoMensal?Math.max(mensalidade,custoMensal*fator):mensalidade;
+    nota='Modelo misto: soma infraestrutura própria + infraestrutura do parceiro; mensalidade considera o maior valor entre Hilink e parceiro com fator.';
+  }else if(tipo==='infra'){
+    nota+=' Caso exista custo real de material/equipe, usar instalação manual.';
+  }
+  if(instManual>0)instalacao=instManual;
+  document.getElementById('prop-kpi-instalacao').textContent=propMoney(instalacao);
+  document.getElementById('prop-kpi-mensalidade').textContent=propMoney(mensalidade);
+  document.getElementById('prop-kpi-tipo').textContent=({rede:'Rede Hilink',infra:'Infra adicional',transporte:'Transporte terceiro',mista:'Mista'}[tipo]||tipo);
+  document.getElementById('prop-rule-note').textContent=nota;
+  renderPropostaPreview({tipo,dist,instalacao,mensalidade,nota});
+}
+function renderPropostaPreview(calc){
+  const cliente=propVal('prop-cliente')||'Cliente corporativo';
+  const contato=propVal('prop-contato')||'Responsável pelo projeto';
+  const tel=propVal('prop-telefone')||'';
+  const resp=propVal('prop-responsavel')||'Equipe Comercial Hilink';
+  const plano=propVal('prop-plano')||'HILINK - Serviço corporativo';
+  const banda=propVal('prop-banda')||'A definir';
+  const ref=propVal('prop-referencia')||'Cotação de serviço corporativo';
+  const today=new Date();
+  const dateText=today.toLocaleDateString('pt-BR');
+  const dateEl=document.getElementById('prop-paper-date');
+  if(dateEl)dateEl.textContent='Recife, '+dateText;
+  const body=document.getElementById('prop-paper-body');
+  if(!body)return;
+  body.innerHTML=`
+    <p><strong>À empresa ${escHtml(cliente)}</strong></p>
+    <p><strong>Att.:</strong> ${escHtml(contato)}${tel?' · '+escHtml(tel):''}<br>
+    <strong>Referência:</strong> ${escHtml(ref)}</p>
+    <h4>Objeto</h4>
+    <p>Apresentamos proposta para prestação de serviço de conectividade corporativa Hilink, conforme viabilidade técnica e comercial inicial do projeto.</p>
+    <h4>Características do serviço</h4>
+    <ul>
+      <li>Atendimento técnico e suporte operacional Hilink.</li>
+      <li>Entrega por fibra óptica, infraestrutura própria ou transporte terceiro conforme viabilidade.</li>
+      <li>Monitoramento e acompanhamento do serviço dentro das condições contratadas.</li>
+      <li>Equipamentos em comodato quando aplicável ao projeto.</li>
+    </ul>
+    <h4>Condições comerciais</h4>
+    <table>
+      <thead><tr><th>Item</th><th>Descrição</th><th>Valor</th></tr></thead>
+      <tbody>
+        <tr><td>Plano</td><td>${escHtml(plano)} · ${escHtml(banda)}</td><td>${propMoney(calc.mensalidade)}/mês</td></tr>
+        <tr><td>Instalação / infraestrutura</td><td>Distância considerada: ${Number(calc.dist||0).toLocaleString('pt-BR')}m · ${escHtml(document.getElementById('prop-kpi-tipo')?.textContent||'')}</td><td>${propMoney(calc.instalacao)}</td></tr>
+      </tbody>
+    </table>
+    <h4>Observações de viabilidade</h4>
+    <p>${escHtml(calc.nota||'Regra em validação.')}</p>
+    <h4>Validade e pagamento</h4>
+    <p>Esta proposta tem validade de 30 dias. Forma de pagamento e prazo de execução serão confirmados após validação técnica final.</p>
+    <h4>Responsável comercial</h4>
+    <p>${escHtml(resp)}</p>
+  `;
+}
+function renderPropostas(){
+  propostasPopulateCrm();
+  calcularPropostaCorporativa();
+  ['prop-cliente','prop-contato','prop-telefone','prop-responsavel','prop-plano','prop-banda','prop-referencia','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&!el.dataset.propBound){
+      el.dataset.propBound='1';
+      el.addEventListener('input',calcularPropostaCorporativa);
+      el.addEventListener('change',calcularPropostaCorporativa);
+    }
+  });
+}
+function baixarPropostaHtml(){
+  calcularPropostaCorporativa();
+  const paper=document.getElementById('prop-paper');
+  const cliente=(propVal('prop-cliente')||'proposta').replace(/[^\w\-]+/g,'_');
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Proposta Hilink</title><style>body{margin:0;background:#e8eef5;font-family:Inter,Segoe UI,Arial,sans-serif}.paper{width:900px;min-height:1120px;margin:24px auto;background:#fff;padding:42px 48px;box-sizing:border-box;color:#102033}.prop-paper-head{display:flex;justify-content:space-between;border-bottom:2px solid #0d74bc;margin-bottom:24px;padding-bottom:20px}.prop-brand{font-size:38px;font-weight:900;color:#0d74bc}.prop-paper h4{margin:18px 0 7px;text-transform:uppercase;font-size:13px}.prop-paper p,.prop-paper li{font-size:12px;line-height:1.48}.prop-paper table{width:100%;border-collapse:collapse;font-size:12px}.prop-paper th,.prop-paper td{border:1px solid #d8e1ec;padding:9px}.prop-paper th{background:#eef6fc;color:#0d4f83}.prop-paper-foot{margin-top:28px;padding-top:14px;border-top:1px solid #d8e1ec;color:#66788d;font-size:10px;text-align:center}</style></head><body><div class="paper prop-paper">${paper.innerHTML}</div></body></html>`;
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`proposta_hilink_${cliente}.html`;
+  a.click();
+}
+function baixarPropostaCsv(){
+  calcularPropostaCorporativa();
+  const rows=[{
+    cliente:propVal('prop-cliente'),
+    contato:propVal('prop-contato'),
+    telefone:propVal('prop-telefone'),
+    plano:propVal('prop-plano'),
+    banda:propVal('prop-banda'),
+    tipo:document.getElementById('prop-kpi-tipo')?.textContent||'',
+    distancia_m:propVal('prop-distancia'),
+    mensalidade:document.getElementById('prop-kpi-mensalidade')?.textContent||'',
+    instalacao:document.getElementById('prop-kpi-instalacao')?.textContent||'',
+    regra:document.getElementById('prop-rule-note')?.textContent||''
+  }];
+  const cols=Object.keys(rows[0]);
+  const esc=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const csv='\ufeff'+cols.join(';')+'\n'+rows.map(r=>cols.map(c=>esc(r[c])).join(';')).join('\n');
+  dlCsv(csv,'orcamento_proposta_hilink.csv');
+}
+// ====================================================================
 // ============== RENDER ESTRATEGIA DE ATUACAO ========================
 // ====================================================================
 function renderAcao(){
@@ -17484,6 +18003,20 @@ function setAllDrillCols(on){
     _ruReceiptsCache = {count:rows.length,map:map};
     return map;
   }
+  // Retorna apenas títulos com data de pagamento >= data do upgrade (ou todos se a data não estiver disponível)
+  function ruReceiptsAfterUpgrade(receipts, upgradeDate){
+    if(!upgradeDate || isNaN(upgradeDate)) return receipts; // sem data: não filtra (comportamento seguro para não excluir indevidamente)
+    return receipts.filter(function(rec){
+      var d = ruReceiptDate(rec);
+      return !d || isNaN(d) || d >= upgradeDate;
+    });
+  }
+  function ruUpgradeDate(r){
+    // _date é o Date já parseado pelo processador principal (mais confiável)
+    if(r._date && !isNaN(r._date)) return r._date;
+    // Fallback por nome de coluna (processado vs raw)
+    return ruDate(r['Data alteração'] || r['Data hora alteracao'] || r['Data alteracao'] || '');
+  }
   function ruPaymentSummary(item){
     var map = ruReceiptsByContract();
     var upLines = (item.linhas || []).filter(function(r){
@@ -17491,7 +18024,9 @@ function setAllDrillCols(on){
     });
     var out = {total:upLines.length,paid:0,pending:0,unknown:0};
     upLines.forEach(function(r){
-      var receipts = map[ruId(r['ID Contrato'])] || [];
+      var allReceipts = map[ruId(r['ID Contrato'])] || [];
+      // Filtra títulos com data >= data do upgrade para não contar pagamentos anteriores
+      var receipts = ruReceiptsAfterUpgrade(allReceipts, ruUpgradeDate(r));
       if(!receipts.length){ out.unknown += 1; return; }
       if(receipts.some(ruReceiptPaid)) out.paid += 1;
       else out.pending += 1;
@@ -17504,7 +18039,9 @@ function setAllDrillCols(on){
       return String(r['Tipo alteração'] || r['Tipo alteracao']) === 'Upgrade';
     }).map(function(r){
       var contrato = ruId(r['ID Contrato']);
-      var receipts = map[contrato] || [];
+      var allReceipts = map[contrato] || [];
+      // Filtra títulos com data >= data do upgrade para não contar pagamentos anteriores
+      var receipts = ruReceiptsAfterUpgrade(allReceipts, ruUpgradeDate(r));
       var paid = receipts.some(ruReceiptPaid);
       var firstReceipt = receipts[0] || {};
       var statusPgto = receipts.length ? (paid ? 'Pago localizado' : 'Pendente') : 'Sem vínculo em Contas a Receber';
@@ -17516,7 +18053,7 @@ function setAllDrillCols(on){
         'Qtd. títulos': receipts.length,
         'Valor localizado': ruBRL(receipts.reduce(function(s,x){return s + ruReceiptAmount(x);},0)),
         'Data PGTO localizada': receipts.map(ruReceiptDate).filter(Boolean).sort(function(a,b){return a-b}).map(dateIso)[0] || '',
-        'Data alteração': r['Data alteracao'] || '',
+        'Data alteração': r['Data alteração'] || r['Data hora alteracao'] || r['Data alteracao'] || '',
         'Valor anterior': ruBRL(r['Valor anterior'] || 0),
         'Valor novo': ruBRL(r['Valor novo'] || 0),
         'Diferença': ruBRL(r['Diferença'] != null ? r['Diferença'] : r['Diferenca'])
