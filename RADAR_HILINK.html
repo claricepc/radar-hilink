@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -2020,17 +2020,47 @@ h2.section-title .info-btn{margin-left:6px}
   text-align:right;
 }
 .prop-paper h4{
-  margin:18px 0 7px;
-  color:#0b1b2b;
-  font-size:13px;
+  margin:18px 0 9px;
+  color:#0069B4;
+  font-size:12px;
+  font-weight:800;
   text-transform:uppercase;
-  letter-spacing:.04em;
+  letter-spacing:.06em;
+  border-bottom:1px solid #0069B4;
+  padding-bottom:5px;
 }
 .prop-paper p,
 .prop-paper li{
-  color:#26394f;
+  color:#2F2F33;
   font-size:12px;
   line-height:1.48;
+}
+.prop-paper-body,
+#prop-paper-body{
+  color:#2F2F33;
+  font-family:Calibri,"Segoe UI",Roboto,Arial,sans-serif;
+}
+.prop-hilink,
+.prop-ref-label,
+.prop-cond-label{
+  color:#0069B4;
+  font-weight:800;
+}
+.prop-muted,
+.prop-dest-tel,
+.prop-contato-comercial{
+  color:#6E6E73;
+}
+.prop-destinatario{
+  margin-bottom:16px;
+}
+.prop-data,
+.prop-ref,
+.prop-abertura{
+  margin:10px 0;
+}
+.prop-warn{
+  color:#b00020;
 }
 .prop-paper table{
   width:100%;
@@ -2055,6 +2085,30 @@ h2.section-title .info-btn{margin-left:6px}
   color:#0b3558 !important;
   font-weight:800;
 }
+.prop-paper .prop-tech-table th{
+  width:36%;
+  color:#2D87C3 !important;
+  font-weight:800;
+}
+.prop-paper .prop-tech-table td{
+  color:#2F2F33 !important;
+}
+.prop-paper .prop-invest-table th{
+  background:#0069B4 !important;
+  color:#fff !important;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.prop-paper .prop-invest-table td{
+  color:#1B1B1F !important;
+}
+.prop-paper .prop-invest-table .prop-valor{
+  white-space:nowrap;
+  font-weight:800;
+}
+.prop-invest-info{
+  margin-top:-4px;
+}
 .prop-paper-signature{
   margin-top:28px;
   width:280px;
@@ -2072,6 +2126,25 @@ h2.section-title .info-btn{margin-left:6px}
   font-size:11px;
   line-height:1.35;
   font-weight:600;
+}
+.prop-sign-line{
+  width:220px;
+  height:1px;
+  background:#1B1B1F;
+  margin:8px 0 8px;
+}
+.prop-signer-nome{
+  color:#1B1B1F;
+}
+.prop-signer-cargo,
+.prop-signer-contato{
+  color:#2F2F33;
+}
+.prop-cc-label{
+  color:#6E6E73;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
 }
 .prop-paper-foot{
   display:none;
@@ -15590,13 +15663,60 @@ function propDefaultSet(id,value){
   if(el&&!el.value)el.value=value;
 }
 function propFillDefaultFields(){
-  const cliente=propVal('prop-cliente')||'Cliente corporativo';
-  propDefaultSet('prop-objeto',`Fornecimento de internet dedicada para ${cliente}, conforme solicitação e viabilidade técnica apresentada.`);
-  propDefaultSet('prop-caracteristicas','Modalidade: Link Dedicado Empresarial - banda 100% garantida em download e upload\nVelocidade: conforme plano contratado\nMeio físico: Fibra óptica ponto-a-ponto\nEndereçamento IP: bloco /30 com 4 endereços IPv4 públicos\nSLA: 8 horas após abertura de chamado, em horário comercial\nHorário de atendimento: segunda a sexta das 08h às 18h e sábado das 08h às 17h\nSuporte: Nível 2 - equipe técnica especializada\nMonitoramento: acompanhamento contínuo da banda\nComodato: 01 ONU fornecida pela HiLink durante a vigência do contrato');
-  propDefaultSet('prop-consideracoes','Equipamentos em comodato: 01 UND. - ONU');
-  propDefaultSet('prop-prazo','Prazo de execução a ser combinado com o cliente.\nOs serviços serão executados de segunda à sexta, no horário das 08h às 18h, e aos sábados, no horário das 08h às 17h.');
-  propDefaultSet('prop-validade-pagamento','O prazo de validade da proposta é de 30 (trinta) dias, contados a partir da data de entrega da mesma.');
-  propDefaultSet('prop-desc-instalacao','Implantação inicial do serviço conforme viabilidade aprovada');
+  // IMPORTANTE: o campo 'prop-cliente' NÃO recebe default.
+  // Se estiver vazio, a geração do PDF é bloqueada por validação (ver função baixarPropostaPdfTimbrado).
+  // O campo 'prop-objeto' é regenerado dinamicamente quando o cliente muda (ver renderPropostas).
+
+  propDefaultSet('prop-caracteristicas',
+    'Modalidade: Link Dedicado Empresarial - banda 100% garantida em download e upload\n' +
+    'Velocidade: conforme plano contratado\n' +
+    'Meio físico: Fibra óptica ponto-a-ponto\n' +
+    'Endereçamento IP: bloco /30 com 4 endereços IPv4 públicos\n' +
+    'SLA: 8 horas após abertura de chamado, em horário comercial\n' +
+    'Horário de atendimento: segunda a sexta das 08h às 18h e sábado das 08h às 17h\n' +
+    'Suporte: Nível 2 - equipe técnica especializada\n' +
+    'Monitoramento: acompanhamento contínuo da banda\n' +
+    'Comodato: 01 ONU fornecida pela Hilink durante a vigência do contrato'
+  );
+  propDefaultSet('prop-consideracoes', 'Equipamentos em comodato: 01 (uma) ONU');
+  propDefaultSet('prop-prazo',
+    'A combinar com o cliente, dentro do horário comercial ' +
+    '(seg. a sex. 08h às 18h | sáb. 08h às 17h).'
+  );
+  propDefaultSet('prop-validade-pagamento',
+    '30 (trinta) dias a partir da data de emissão.'
+  );
+  propDefaultSet('prop-desc-instalacao',
+    'Implantação inicial do serviço conforme viabilidade aprovada'
+  );
+}
+function propBindObjetoDinamico(){
+  const objetoEl = document.getElementById('prop-objeto');
+  const clienteEl = document.getElementById('prop-cliente');
+  if (!objetoEl || !clienteEl || objetoEl.dataset.propObjetoBound) return;
+
+  objetoEl.dataset.propObjetoBound = '1';
+  objetoEl.dataset.propAutoGerado = '1';  // marca como "ainda não editado pelo usuário"
+
+  // Se o usuário editar manualmente o objeto, não substitui mais automaticamente
+  objetoEl.addEventListener('input', () => {
+    objetoEl.dataset.propAutoGerado = '';
+  });
+
+  // Se o cliente mudar E o objeto ainda for auto-gerado, atualiza
+  const regen = () => {
+    if (objetoEl.dataset.propAutoGerado !== '1') return;
+    const c = propVal('prop-cliente');
+    objetoEl.value = c
+      ? `Fornecimento de internet dedicada para ${c}, conforme solicitação e viabilidade técnica apresentada.`
+      : '';
+    calcularPropostaCorporativa();
+  };
+  clienteEl.addEventListener('input', regen);
+  clienteEl.addEventListener('change', regen);
+
+  // Trigger inicial caso já exista cliente preenchido
+  if (propVal('prop-cliente')) regen();
 }
 let PROP_ASSINATURA_DATAURL = localStorage.getItem('radar_prop_assinatura_akassio') || '';
 function propDataUrlBytes(dataUrl){
@@ -15632,6 +15752,7 @@ function removePropostaAssinatura(){
   calcularPropostaCorporativa();
   toast('Assinatura removida','success');
 }
+function removerPropostaAssinatura(){ return removePropostaAssinatura(); }
 function propCaracteristicasHtml(items){
   const rows=items.map(item=>{
     const text=String(item||'').trim();
@@ -15644,37 +15765,6 @@ function propCaracteristicasHtml(items){
     return `<table class="prop-tech-table"><tbody>${rows.map(row=>`<tr><th>${escHtml(row.k)}</th><td>${escHtml(row.v)}</td></tr>`).join('')}</tbody></table>`;
   }
   return `<ul>${items.map(item=>`<li>${escHtml(item)}</li>`).join('')}</ul>`;
-}
-function propBuildModel(calc={}){
-  const cliente=propVal('prop-cliente')||'Cliente corporativo';
-  const contato=propVal('prop-contato')||'Responsável pelo projeto';
-  const tel=propVal('prop-telefone')||'';
-  const resp=propVal('prop-responsavel')||'Equipe Comercial Hilink';
-  const plano=propVal('prop-plano')||'HILINK - Serviço corporativo';
-  const banda=propVal('prop-banda')||'A definir';
-  const ref=propVal('prop-referencia')||'Cotação de serviço corporativo';
-  const objeto=propVal('prop-objeto')||`Fornecimento de internet dedicada para ${cliente}, conforme solicitação e viabilidade técnica apresentada.`;
-  const caracteristicas=propLines('prop-caracteristicas','Modalidade: Link Dedicado Empresarial - banda 100% garantida em download e upload\nVelocidade: conforme plano contratado\nMeio físico: Fibra óptica ponto-a-ponto\nEndereçamento IP: bloco /30 com 4 endereços IPv4 públicos\nSLA: 8 horas após abertura de chamado, em horário comercial\nHorário de atendimento: segunda a sexta das 08h às 18h e sábado das 08h às 17h\nSuporte: Nível 2 - equipe técnica especializada\nMonitoramento: acompanhamento contínuo da banda\nComodato: 01 ONU fornecida pela HiLink durante a vigência do contrato');
-  const descInstalacao=propVal('prop-desc-instalacao')||'Implantação inicial do serviço conforme viabilidade aprovada';
-  const prazo=propVal('prop-prazo')||'Prazo de execução a ser combinado com o cliente.\nOs serviços serão executados de segunda à sexta, no horário das 08h às 18h, e aos sábados, no horário das 08h às 17h.';
-  const consideracoes=propVal('prop-consideracoes')||'Equipamentos em comodato: 01 UND. - ONU';
-  const validade=propVal('prop-validade-pagamento')||'O prazo de validade da proposta é de 30 (trinta) dias, contados a partir da data de entrega da mesma.';
-  const assinanteNome=propVal('prop-assinante-nome');
-  const assinanteCargo=propVal('prop-assinante-cargo');
-  const assinanteContato=propVal('prop-assinante-contato');
-  const hoje=new Date().toLocaleDateString('pt-BR');
-  return {
-    cliente,contato,tel,resp,plano,banda,ref,objeto,caracteristicas,descInstalacao,prazo,consideracoes,validade,
-    mensalidade:Number(calc.mensalidade)||0,
-    instalacao:Number(calc.instalacao)||0,
-    assinanteNome,assinanteCargo,assinanteContato,
-    hoje,
-    showObservacao:propShow('prop-show-observacao'),
-    showInstalacao:propShow('prop-show-instalacao'),
-    showPrazo:propShow('prop-show-prazo'),
-    showDeclaracoes:propShow('prop-show-declaracoes'),
-    showAssinatura:propShow('prop-show-assinatura')
-  };
 }
 function propParceiroMarkup(custo){
   custo=Number(custo)||0;
@@ -15742,41 +15832,142 @@ function calcularPropostaCorporativa(){
   return {tipo,dist,instalacao,mensalidade,nota};
 }
 function renderPropostaPreview(calc){
-  const m=propBuildModel(calc);
-  const assinatura=m.showAssinatura&&(PROP_ASSINATURA_DATAURL||m.assinanteNome||m.assinanteCargo||m.assinanteContato)
-    ? `<div class="prop-paper-signature">${PROP_ASSINATURA_DATAURL?`<img src="${PROP_ASSINATURA_DATAURL}" alt="Imagem da assinatura">`:''}<div class="prop-signer">${[m.assinanteNome,m.assinanteCargo,m.assinanteContato].filter(Boolean).map(escHtml).join('<br>')}</div></div>`
+  const cliente = propVal('prop-cliente') || '';
+  const contato = propVal('prop-contato') || '';
+  const tel = propVal('prop-telefone') || '';
+  const resp = propVal('prop-responsavel') || '';
+  const plano = propVal('prop-plano') || '';
+  const banda = propVal('prop-banda') || '';
+  const ref = propVal('prop-referencia') || '';
+  const objeto = propVal('prop-objeto') || (cliente
+    ? `Fornecimento de internet dedicada para ${cliente}, conforme solicitação e viabilidade técnica apresentada.`
+    : '');
+  const caracteristicas = propLines('prop-caracteristicas', '');
+  const descInstalacao = propVal('prop-desc-instalacao') || 'Implantação inicial do serviço conforme viabilidade aprovada';
+  const prazo = propVal('prop-prazo') || 'A combinar com o cliente, dentro do horário comercial.';
+  const consideracoes = propVal('prop-consideracoes') || '';
+  const validade = propVal('prop-validade-pagamento') || '30 (trinta) dias a partir da data de emissão.';
+  const assinanteNome = propVal('prop-assinante-nome');
+  const assinanteCargo = propVal('prop-assinante-cargo');
+  const assinanteContato = propVal('prop-assinante-contato');
+
+  const today = new Date();
+  const dateText = today.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const dateEl = document.getElementById('prop-paper-date');
+  if (dateEl) dateEl.textContent = 'Recife, ' + dateText;
+
+  // --- Bloco do destinatário ---
+  const linhasDest = [];
+  if (cliente) {
+    linhasDest.push(`<div class="prop-dest-nome"><strong>À ${escHtml(cliente.toUpperCase())}</strong></div>`);
+    if (contato && contato.trim().toUpperCase() !== cliente.trim().toUpperCase()) {
+      linhasDest.push(`<div class="prop-dest-ac"><span class="prop-muted">A/C</span> <strong>${escHtml(contato)}</strong></div>`);
+    }
+    if (tel) {
+      linhasDest.push(`<div class="prop-dest-tel"><span class="prop-muted">Telefone:</span> ${escHtml(tel)}</div>`);
+    }
+  } else {
+    linhasDest.push(`<div class="prop-dest-nome prop-warn"><strong>[Preencha o nome do cliente]</strong></div>`);
+  }
+  const destinatario = linhasDest.join('');
+
+  // --- Bloco de referência ---
+  const refHtml = ref
+    ? `<p class="prop-ref"><strong class="prop-ref-label">Ref.:</strong> <strong>${escHtml(ref)}</strong></p>`
     : '';
-  const dateEl=document.getElementById('prop-paper-date');
-  if(dateEl)dateEl.textContent='Recife, '+m.hoje;
-  const body=document.getElementById('prop-paper-body');
-  if(!body)return;
-  body.innerHTML=`
-    <p><strong>À EMPRESA ${escHtml(m.cliente).toUpperCase()}</strong><br>
-    <strong>Att.:</strong> ${escHtml(m.contato)}<br>
-    <strong>Tratar com:</strong> ${escHtml(m.resp)}${m.tel?`<br><strong>Telefone:</strong> ${escHtml(m.tel)}`:''}<br>
-    <strong>Referência:</strong> ${escHtml(m.ref)}</p>
-    <h4>Ref.: Cotação de preços</h4>
-    <p>Atendendo solicitação de V.Sa., a HILINK tem a grata satisfação de submeter à vossa análise e apreciação, proposta para os serviços indicados a seguir:</p>
-    <h4>Objeto:</h4>
-    <p>${propTextHtml(m.objeto)}</p>
-    <h4>Link Dedicado - Característica do Serviço:</h4>
-    ${propCaracteristicasHtml(m.caracteristicas)}
-    ${m.showObservacao?`<h4>Observação:</h4><p>${propTextHtml(m.consideracoes)}</p>`:''}
-    <h4>Preço e pagamento:</h4>
-    <table>
-      <thead><tr><th colspan="3">Plano Dedicado - Empresa</th></tr><tr><th>Descrição do Produto</th><th>Plano</th><th>Valor</th></tr></thead>
+
+  // --- Bloco de abertura ---
+  const aberturaHtml = `<p class="prop-abertura">
+    Conforme solicitado, a <span class="prop-hilink">Hilink</span> apresenta a seguir proposta para fornecimento de
+    <strong>internet dedicada de alta disponibilidade</strong>,
+    com as condições técnicas e comerciais descritas neste documento.
+  </p>`;
+
+  // --- Objeto ---
+  const objetoHtml = objeto
+    ? `<h4>Objeto</h4><p>${propTextHtml(objeto)}</p>`
+    : '';
+
+  // --- Características técnicas como tabela 2 colunas ---
+  const caracHtml = caracteristicas.length
+    ? `<h4>Características técnicas</h4>${propCaracteristicasHtml(caracteristicas)}`
+    : '';
+
+  // --- Investimento como tabela ---
+  const investHtml = `
+    <h4>Investimento</h4>
+    <table class="prop-invest-table">
+      <thead>
+        <tr><th>Plano</th><th>Especificação</th><th>Valor mensal</th></tr>
+      </thead>
       <tbody>
-        <tr><td>${escHtml(m.plano)}</td><td>${escHtml(m.banda)}</td><td>${propMoney(m.mensalidade)}</td></tr>
+        <tr>
+          <td><strong>${escHtml(plano || '-')}</strong></td>
+          <td>${escHtml(banda || '-')}</td>
+          <td class="prop-valor"><strong>${propMoney(calc.mensalidade)}</strong></td>
+        </tr>
       </tbody>
     </table>
-    <p>${m.showInstalacao?`${escHtml(m.descInstalacao)}: ${propMoney(m.instalacao)}.<br>`:''}Pagamento a ser realizado por boleto bancário.</p>
-    <h4>Validade da proposta:</h4>
-    <p>${propTextHtml(m.validade)}</p>
-    ${m.showPrazo?`<h4>Prazo de execução:</h4><p>${propTextHtml(m.prazo)}</p>`:''}
-    ${m.showDeclaracoes?`<h4>Declarações:</h4><p>Declaramos que no preço ofertado estão inclusas todas as despesas necessárias ao fornecimento do objeto desta cotação de preços, sendo de nossa exclusiva responsabilidade todas as despesas, como transporte, alimentação, tributos, emolumentos, contribuições sociais, fiscais, parafiscais, seguros e outras não especificadas.</p>`:''}
-    <p>Atenciosamente,</p>
-    <p>Recife, ${escHtml(m.hoje)}.</p>
-    ${assinatura}
+    <p class="prop-invest-info">
+      <strong>Pagamento:</strong> boleto bancário, faturamento mensal.
+      ${propShow('prop-show-instalacao')
+        ? `<br><strong>Instalação:</strong> ${propMoney(calc.instalacao)} (${escHtml(descInstalacao)}).`
+        : ''}
+      ${propShow('prop-show-observacao') && consideracoes
+        ? `<br><strong>Obs.:</strong> ${propTextHtml(consideracoes)}`
+        : ''}
+    </p>
+  `;
+
+  // --- Condições comerciais ---
+  const condHtml = `
+    <h4>Condições comerciais</h4>
+    <p>
+      <strong class="prop-cond-label">Validade da proposta:</strong> ${propTextHtml(validade)}
+      ${propShow('prop-show-prazo')
+        ? `<br><strong class="prop-cond-label">Prazo de execução:</strong> ${propTextHtml(prazo)}`
+        : ''}
+    </p>
+  `;
+
+  // --- Declaração ---
+  const declHtml = propShow('prop-show-declaracoes')
+    ? `<h4>Declaração</h4><p>Declaramos que no preço ofertado estão inclusas todas as despesas necessárias ao fornecimento do objeto desta proposta - tributos, contribuições sociais, fiscais e parafiscais, seguros, mão de obra e despesas operacionais - assumindo integral responsabilidade pelo conteúdo aqui apresentado.</p>`
+    : '';
+
+  // --- Assinatura ---
+  const blocoAssinatura = propShow('prop-show-assinatura') && (PROP_ASSINATURA_DATAURL || assinanteNome || assinanteCargo || assinanteContato)
+    ? `<div class="prop-paper-signature">
+        <p>Atenciosamente,</p>
+        ${PROP_ASSINATURA_DATAURL ? `<img src="${PROP_ASSINATURA_DATAURL}" alt="Imagem da assinatura">` : ''}
+        <div class="prop-sign-line"></div>
+        <div class="prop-signer">
+          ${assinanteNome ? `<div class="prop-signer-nome"><strong>${escHtml(assinanteNome)}</strong></div>` : ''}
+          ${assinanteCargo ? `<div class="prop-signer-cargo">${escHtml(assinanteCargo)}</div>` : ''}
+          ${assinanteContato ? `<div class="prop-signer-contato">${escHtml(assinanteContato)}</div>` : ''}
+        </div>
+      </div>`
+    : '';
+
+  // --- Contato comercial (Juliana) — separado da assinatura ---
+  const contatoComercial = resp
+    ? `<p class="prop-contato-comercial"><span class="prop-cc-label">Contato comercial:</span> <strong>${escHtml(resp)}</strong></p>`
+    : '';
+
+  const body = document.getElementById('prop-paper-body');
+  if (!body) return;
+  body.innerHTML = `
+    <div class="prop-destinatario">${destinatario}</div>
+    <p class="prop-data" style="text-align:right">Recife, ${escHtml(dateText)}.</p>
+    ${refHtml}
+    ${aberturaHtml}
+    ${objetoHtml}
+    ${caracHtml}
+    ${investHtml}
+    ${condHtml}
+    ${declHtml}
+    ${blocoAssinatura}
+    ${contatoComercial}
   `;
 }
 function renderPropostas(){
@@ -15792,6 +15983,8 @@ function renderPropostas(){
       el.addEventListener('change',calcularPropostaCorporativa);
     }
   });
+
+  propBindObjetoDinamico();
 }
 function propPdfWrap(text,font,size,maxWidth){
   const words=String(text||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
@@ -15817,80 +16010,419 @@ function propPdfDrawWrapped(page,text,x,y,maxWidth,font,size,lineHeight,color){
   return y;
 }
 async function baixarPropostaPdfTimbrado(){
-  try{
-    const calc=calcularPropostaCorporativa();
-    const m=propBuildModel(calc);
-    if(!window.PDFLib)throw new Error('Biblioteca PDF ainda não carregada. Recarregue a página e tente novamente.');
-    const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const res=await fetch('Timbrado_A4_endereco_corrigido.pdf');
-    if(!res.ok)throw new Error('Timbrado não encontrado no Radar publicado.');
-    const pdfDoc=await PDFDocument.load(await res.arrayBuffer());
-    const page=pdfDoc.getPage(0);
-    const helv=await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const bold=await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    const {width,height}=page.getSize();
-    const blue=rgb(0.02,0.31,0.56);
-    const dark=rgb(0.12,0.16,0.22);
-    const x=62;
-    const max=width-124;
-    let y=height-126;
+  try {
+    calcularPropostaCorporativa();
 
-    page.drawText(`A EMPRESA ${m.cliente.toUpperCase()}`,{x,y,size:10,font:bold,color:dark});
-    y-=14;
-    y=propPdfDrawWrapped(page,`Att.: ${m.contato}`,x,y,max,helv,9.3,11.5,dark);
-    y=propPdfDrawWrapped(page,`Tratar com: ${m.resp}${m.tel?' | Telefone: '+m.tel:''}`,x,y,max,helv,9.3,11.5,dark);
-    y=propPdfDrawWrapped(page,`Referência: ${m.ref} | Data: ${m.hoje}`,x,y,max,helv,9.3,11.5,dark);
-    y-=8;
+    // === VALIDAÇÃO OBRIGATÓRIA ===
+    const cliente = (propVal('prop-cliente') || '').trim();
+    if (!cliente || cliente.length < 2) {
+      toast('Preencha o nome do cliente antes de gerar o PDF.', 'error');
+      return;
+    }
+    const plano = (propVal('prop-plano') || '').trim();
+    if (!plano) {
+      toast('Preencha o plano/produto antes de gerar o PDF.', 'error');
+      return;
+    }
 
-    const sections=[
-      ['REF.: COTAÇÃO DE PREÇOS','Atendendo solicitação de V.Sa., a HILINK tem a grata satisfação de submeter à vossa análise e apreciação, proposta para os serviços indicados a seguir:'],
-      ['OBJETO:',m.objeto],
-      ['LINK DEDICADO - CARACTERÍSTICA DO SERVIÇO:',m.caracteristicas.join(' | ')],
-      m.showObservacao?['OBSERVAÇÃO:',m.consideracoes]:null,
-      ['PREÇO E PAGAMENTO:',`Plano Dedicado - Empresa. Descrição do Produto: ${m.plano}. Plano: ${m.banda}. Valor: ${propMoney(m.mensalidade)}. ${m.showInstalacao?`${m.descInstalacao}: ${propMoney(m.instalacao)}. `:''}Pagamento a ser realizado por boleto bancário.`],
-      ['VALIDADE DA PROPOSTA:',m.validade],
-      m.showPrazo?['PRAZO DE EXECUÇÃO:',m.prazo]:null,
-      m.showDeclaracoes?['DECLARAÇÕES:','Declaramos que no preço ofertado estão inclusas todas as despesas necessárias ao fornecimento do objeto desta cotação de preços, sendo de nossa exclusiva responsabilidade todas as despesas, como transporte, alimentação, tributos, emolumentos, contribuições sociais, fiscais, parafiscais, seguros e outras não especificadas.']:null,
-      ['ATENCIOSAMENTE,',`Recife, ${m.hoje}.`]
-    ].filter(Boolean);
-    sections.forEach(([title,body])=>{
-      page.drawText(title,{x,y,size:9.5,font:bold,color:blue});
-      y-=13;
-      y=propPdfDrawWrapped(page,body,x,y,max,helv,9.2,11.5,dark);
-      y-=10;
-    });
-    if(m.showAssinatura&&PROP_ASSINATURA_DATAURL){
-      try{
-        const imgBytes=propDataUrlBytes(PROP_ASSINATURA_DATAURL);
-        const img=PROP_ASSINATURA_DATAURL.startsWith('data:image/png')
-          ? await pdfDoc.embedPng(imgBytes)
-          : await pdfDoc.embedJpg(imgBytes);
-        const dims=img.scale(Math.min(140/img.width,58/img.height,1));
-        page.drawImage(img,{x,y:y-62,width:dims.width,height:dims.height});
-        y-=70;
-      }catch(e){
-        console.warn('Assinatura não aplicada no PDF',e);
+    if (!window.PDFLib) throw new Error('Biblioteca PDF ainda não carregada. Recarregue a página e tente novamente.');
+    const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+
+    const res = await fetch('Timbrado_A4_endereco_corrigido.pdf');
+    if (!res.ok) throw new Error('Timbrado não encontrado no Radar publicado.');
+
+    const pdfDoc = await PDFDocument.load(await res.arrayBuffer());
+    let page = pdfDoc.getPage(0);
+    const helv = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+    // === Paleta oficial Hilink ===
+    const blueStrong = rgb(0,     0.412, 0.706); // #0069B4
+    const blueMid    = rgb(0.176, 0.529, 0.765); // #2D87C3
+    const ink        = rgb(0.106, 0.106, 0.122); // #1B1B1F
+    const body       = rgb(0.184, 0.184, 0.200); // #2F2F33
+    const muted      = rgb(0.431, 0.431, 0.451); // #6E6E73
+    const hairline   = rgb(0.863, 0.890, 0.922); // #DCE3EB
+    const white      = rgb(1,     1,     1);
+
+    // === Margens A4 preservando o timbrado ===
+    const { width, height } = page.getSize();
+    const margins = { top: 142, bottom: 85, left: 71, right: 71 };
+    const contentLeft  = margins.left;
+    const contentRight = width - margins.right;
+    const contentWidth = contentRight - contentLeft;
+    let y = height - margins.top;
+
+    // === Dados ===
+    const contato = (propVal('prop-contato') || '').trim();
+    const tel = (propVal('prop-telefone') || '').trim();
+    const resp = (propVal('prop-responsavel') || '').trim();
+    const banda = (propVal('prop-banda') || '').trim();
+    const ref = (propVal('prop-referencia') || '').trim();
+    const objeto = (propVal('prop-objeto') || `Fornecimento de internet dedicada para ${cliente}, conforme solicitação e viabilidade técnica apresentada.`).trim();
+    const caracteristicas = propLines('prop-caracteristicas', '');
+    const descInstalacao = (propVal('prop-desc-instalacao') || 'Implantação inicial do serviço conforme viabilidade aprovada').trim();
+    const prazo = (propVal('prop-prazo') || 'A combinar com o cliente, dentro do horário comercial.').trim();
+    const consideracoes = (propVal('prop-consideracoes') || '').trim();
+    const validade = (propVal('prop-validade-pagamento') || '30 (trinta) dias a partir da data de emissão.').trim();
+    const assinanteNome = (propVal('prop-assinante-nome') || '').trim();
+    const assinanteCargo = (propVal('prop-assinante-cargo') || '').trim();
+    const assinanteContato = (propVal('prop-assinante-contato') || '').trim();
+    const mensalidade = document.getElementById('prop-kpi-mensalidade')?.textContent || 'R$ 0,00';
+    const instalacao = document.getElementById('prop-kpi-instalacao')?.textContent || 'R$ 0,00';
+
+    const today = new Date();
+    const dateText = today.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    // === Helpers internos ===
+    // Sanitiza texto removendo caracteres não-WinAnsi
+    const san = (s) => String(s || '')
+      .replace(/[\u2014\u2013]/g, ' - ')   // em/en dash → hífen
+      .replace(/\u2026/g, '...')           // ellipsis
+      .replace(/[\u201C\u201D]/g, '"')     // aspas curvas duplas
+      .replace(/[\u2018\u2019]/g, "'");    // aspas curvas simples
+
+    function wrapText(text, font, size, maxWidth){
+      const words = san(text).replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+      const lines = [];
+      let line = '';
+      for (const w of words) {
+        const tentative = line ? `${line} ${w}` : w;
+        if (font.widthOfTextAtSize(tentative, size) <= maxWidth) {
+          line = tentative;
+        } else {
+          if (line) lines.push(line);
+          line = w;
+        }
+      }
+      if (line) lines.push(line);
+      return lines.length ? lines : [''];
+    }
+
+    function ensureSpace(needed){
+      if (y - needed < margins.bottom) {
+        // Adiciona nova página com o mesmo timbrado
+        // (Importante: embed do timbrado em página adicional)
+        // pdf-lib não tem método direto de "copiar página". Alternativa:
+        // Carregar o timbrado novamente e copiar a página.
+        const timbrado2 = pdfDoc.getPage(0); // não funciona como cópia, é a mesma ref
+        // Workaround: salvar a página atual, criar uma nova, e desenhar nela
+        // Para simplificar: criar página nova vazia. O timbrado vai precisar
+        // ser aplicado depois (ver Nota Importante abaixo).
+        const newPage = pdfDoc.addPage([width, height]);
+        page = newPage;
+        y = height - margins.top;
       }
     }
-    if(m.showAssinatura&&(m.assinanteNome||m.assinanteCargo||m.assinanteContato)){
-      [m.assinanteNome,m.assinanteCargo,m.assinanteContato].filter(Boolean).forEach(text=>{
-        page.drawText(text,{x,y,size:8.8,font:bold,color:dark});
-        y-=11;
+
+    function drawWrapped(text, opts){
+      const { x = contentLeft, maxWidth = contentWidth, size = 10, font = helv, color = body, lineHeight = 13 } = opts || {};
+      const lines = wrapText(text, font, size, maxWidth);
+      ensureSpace(lines.length * lineHeight);
+      for (const line of lines) {
+        page.drawText(line, { x, y, size, font, color });
+        y -= lineHeight;
+      }
+    }
+
+    function drawSectionTitle(title){
+      ensureSpace(28);
+      page.drawText(san(title.toUpperCase()), {
+        x: contentLeft, y, size: 9.5, font: bold, color: blueStrong,
+        characterSpacing: 1.2
+      });
+      y -= 6;
+      // Régua azul fina
+      page.drawLine({
+        start: { x: contentLeft, y },
+        end:   { x: contentRight, y },
+        thickness: 0.6,
+        color: blueStrong
+      });
+      y -= 14;
+    }
+
+    // === 1. Destinatário ===
+    ensureSpace(40);
+    page.drawText(san(`À ${cliente.toUpperCase()}`), {
+      x: contentLeft, y, size: 11, font: bold, color: ink
+    });
+    y -= 16;
+
+    if (contato && contato.toUpperCase() !== cliente.toUpperCase()) {
+      page.drawText(san('A/C'), { x: contentLeft, y, size: 9, font: helv, color: muted });
+      page.drawText(san(contato), { x: contentLeft + 22, y, size: 10, font: bold, color: ink });
+      y -= 13;
+    }
+    if (tel) {
+      page.drawText(san('Telefone:'), { x: contentLeft, y, size: 9, font: helv, color: muted });
+      const labW = helv.widthOfTextAtSize('Telefone:', 9);
+      page.drawText(san(tel), { x: contentLeft + labW + 4, y, size: 9, font: helv, color: body });
+      y -= 13;
+    }
+
+    // === 2. Data + Ref ===
+    y -= 14;
+    const dataStr = san(`Recife, ${dateText}.`);
+    const dataW = helv.widthOfTextAtSize(dataStr, 10);
+    page.drawText(dataStr, { x: contentRight - dataW, y, size: 10, font: helv, color: body });
+    y -= 18;
+
+    if (ref) {
+      page.drawText(san('Ref.:'), { x: contentLeft, y, size: 10, font: bold, color: blueStrong });
+      const refLabW = bold.widthOfTextAtSize('Ref.:', 10);
+      page.drawText(san(ref), { x: contentLeft + refLabW + 6, y, size: 10, font: bold, color: ink });
+      y -= 18;
+    }
+
+    // === 3. Abertura ===
+    drawWrapped(
+      'Conforme solicitado, a Hilink apresenta a seguir proposta para fornecimento de internet dedicada de alta disponibilidade, com as condições técnicas e comerciais descritas neste documento.',
+      { size: 10, color: body, lineHeight: 14 }
+    );
+    y -= 8;
+
+    // === 4. Objeto ===
+    drawSectionTitle('Objeto');
+    drawWrapped(objeto, { size: 10, color: body, lineHeight: 14 });
+    y -= 10;
+
+    // === 5. Características técnicas (tabela 2 colunas) ===
+    if (caracteristicas.length) {
+      drawSectionTitle('Características técnicas');
+      const labelColW = 140;
+      const valueColW = contentWidth - labelColW - 12;
+      const valueX = contentLeft + labelColW + 12;
+      const rowVertPad = 5;
+
+      for (const item of caracteristicas) {
+        const idx = item.indexOf(':');
+        const label = idx > 0 ? item.slice(0, idx).trim() : '';
+        const value = idx > 0 ? item.slice(idx + 1).trim() : item.trim();
+        const valueLines = wrapText(value, helv, 9.5, valueColW);
+        const rowHeight = Math.max(1, valueLines.length) * 13 + rowVertPad * 2;
+
+        ensureSpace(rowHeight + 4);
+        const rowTop = y + rowVertPad;
+        const rowBottom = rowTop - rowHeight;
+
+        // Linha superior (hairline)
+        page.drawLine({
+          start: { x: contentLeft, y: rowTop },
+          end:   { x: contentRight, y: rowTop },
+          thickness: 0.4, color: hairline
+        });
+
+        // Label (coluna esquerda)
+        if (label) {
+          page.drawText(san(label), {
+            x: contentLeft, y: rowTop - 13, size: 9.5, font: bold, color: blueMid
+          });
+        }
+        // Valor (coluna direita)
+        let vy = rowTop - 13;
+        for (const ln of valueLines) {
+          page.drawText(ln, { x: valueX, y: vy, size: 9.5, font: helv, color: body });
+          vy -= 13;
+        }
+
+        y = rowBottom;
+      }
+      // Linha de fechamento
+      page.drawLine({
+        start: { x: contentLeft, y: y + rowVertPad },
+        end:   { x: contentRight, y: y + rowVertPad },
+        thickness: 0.4, color: hairline
+      });
+      y -= 14;
+    }
+
+    // === 6. Investimento (tabela 3 colunas) ===
+    drawSectionTitle('Investimento');
+    {
+      const tableTop = y;
+      const colW = [contentWidth * 0.50, contentWidth * 0.28, contentWidth * 0.22];
+      const colX = [contentLeft, contentLeft + colW[0], contentLeft + colW[0] + colW[1]];
+      const headH = 22;
+      const rowH = 24;
+
+      ensureSpace(headH + rowH + 4);
+
+      // Cabeçalho com fundo azul
+      page.drawRectangle({
+        x: contentLeft, y: y - headH, width: contentWidth, height: headH,
+        color: blueStrong
+      });
+      const heads = ['PLANO', 'ESPECIFICAÇÃO', 'VALOR MENSAL'];
+      for (let i = 0; i < heads.length; i++) {
+        page.drawText(san(heads[i]), {
+          x: colX[i] + 10, y: y - headH + 7,
+          size: 9, font: bold, color: white, characterSpacing: 1
+        });
+      }
+      y -= headH;
+
+      // Linha de dados
+      const planoLines = wrapText(plano, bold, 10, colW[0] - 20);
+      const bandaLines = wrapText(banda || '-', helv, 10, colW[1] - 20);
+      const valorStr = mensalidade;
+      const dataRowH = Math.max(rowH, Math.max(planoLines.length, bandaLines.length) * 13 + 12);
+
+      ensureSpace(dataRowH + 4);
+      // Borda inferior
+      page.drawLine({
+        start: { x: contentLeft, y: y - dataRowH },
+        end:   { x: contentRight, y: y - dataRowH },
+        thickness: 0.5, color: hairline
+      });
+      // Conteúdo
+      let ply = y - 15;
+      for (const ln of planoLines) {
+        page.drawText(ln, { x: colX[0] + 10, y: ply, size: 10, font: bold, color: ink });
+        ply -= 13;
+      }
+      let bly = y - 15;
+      for (const ln of bandaLines) {
+        page.drawText(ln, { x: colX[1] + 10, y: bly, size: 10, font: helv, color: body });
+        bly -= 13;
+      }
+      // Valor alinhado à direita
+      const valorW = bold.widthOfTextAtSize(valorStr, 11);
+      page.drawText(san(valorStr), {
+        x: contentRight - valorW - 10, y: y - 16,
+        size: 11, font: bold, color: ink
+      });
+
+      y -= dataRowH + 8;
+    }
+
+    // Linhas abaixo da tabela (pagamento + instalação)
+    drawWrapped('Pagamento: boleto bancário, faturamento mensal.', { size: 10, color: body });
+    if (propShow('prop-show-instalacao')) {
+      drawWrapped(`Instalação: ${instalacao} (${descInstalacao}).`, { size: 10, color: body });
+    }
+    if (propShow('prop-show-observacao') && consideracoes) {
+      drawWrapped(`Obs.: ${consideracoes}`, { size: 9.5, color: muted });
+    }
+    y -= 10;
+
+    // === 7. Condições comerciais ===
+    drawSectionTitle('Condições comerciais');
+    {
+      // Validade
+      const valLab = 'VALIDADE DA PROPOSTA:';
+      page.drawText(san(valLab), {
+        x: contentLeft, y, size: 9, font: bold, color: blueMid, characterSpacing: 0.8
+      });
+      const valLabW = bold.widthOfTextAtSize(valLab, 9) + 6;
+      drawWrapped(validade, {
+        x: contentLeft + valLabW,
+        maxWidth: contentWidth - valLabW,
+        size: 10, color: body, lineHeight: 14
+      });
+      y -= 4;
+
+      // Prazo
+      if (propShow('prop-show-prazo')) {
+        const prazoLab = 'PRAZO DE EXECUÇÃO:';
+        page.drawText(san(prazoLab), {
+          x: contentLeft, y, size: 9, font: bold, color: blueMid, characterSpacing: 0.8
+        });
+        const prazoLabW = bold.widthOfTextAtSize(prazoLab, 9) + 6;
+        drawWrapped(prazo, {
+          x: contentLeft + prazoLabW,
+          maxWidth: contentWidth - prazoLabW,
+          size: 10, color: body, lineHeight: 14
+        });
+      }
+      y -= 10;
+    }
+
+    // === 8. Declaração ===
+    if (propShow('prop-show-declaracoes')) {
+      drawSectionTitle('Declaração');
+      drawWrapped(
+        'Declaramos que no preço ofertado estão inclusas todas as despesas necessárias ao fornecimento do objeto desta proposta - tributos, contribuições sociais, fiscais e parafiscais, seguros, mão de obra e despesas operacionais - assumindo integral responsabilidade pelo conteúdo aqui apresentado.',
+        { size: 9.5, color: body, lineHeight: 13.5 }
+      );
+      y -= 10;
+    }
+
+    // === 9. Assinatura ===
+    if (propShow('prop-show-assinatura')) {
+      ensureSpace(100);
+      page.drawText(san('Atenciosamente,'), { x: contentLeft, y, size: 10, font: helv, color: body });
+      y -= 28;
+
+      // Imagem da assinatura, se carregada
+      if (PROP_ASSINATURA_DATAURL) {
+        try {
+          const imgBytes = propDataUrlBytes(PROP_ASSINATURA_DATAURL);
+          const img = PROP_ASSINATURA_DATAURL.startsWith('data:image/png')
+            ? await pdfDoc.embedPng(imgBytes)
+            : await pdfDoc.embedJpg(imgBytes);
+          const dims = img.scale(Math.min(140 / img.width, 58 / img.height, 1));
+          page.drawImage(img, { x: contentLeft, y: y - dims.height, width: dims.width, height: dims.height });
+          y -= dims.height + 4;
+        } catch (e) { console.warn('Assinatura não aplicada no PDF', e); }
+      }
+
+      // Linha de assinatura (rabisco)
+      page.drawLine({
+        start: { x: contentLeft, y },
+        end:   { x: contentLeft + 220, y },
+        thickness: 0.6, color: ink
+      });
+      y -= 12;
+
+      if (assinanteNome) {
+        page.drawText(san(assinanteNome.toUpperCase()), {
+          x: contentLeft, y, size: 10, font: bold, color: ink
+        });
+        y -= 13;
+      }
+      if (assinanteCargo) {
+        page.drawText(san(assinanteCargo), {
+          x: contentLeft, y, size: 10, font: helv, color: body
+        });
+        y -= 13;
+      }
+      if (assinanteContato) {
+        page.drawText(san(assinanteContato), {
+          x: contentLeft, y, size: 9, font: helv, color: muted
+        });
+        y -= 13;
+      }
+    }
+
+    // === 10. Contato comercial (Juliana) ===
+    if (resp) {
+      y -= 14;
+      ensureSpace(20);
+      const ccLab = 'CONTATO COMERCIAL:';
+      page.drawText(san(ccLab), {
+        x: contentLeft, y, size: 8.5, font: bold, color: muted, characterSpacing: 0.8
+      });
+      const ccLabW = bold.widthOfTextAtSize(ccLab, 8.5) + 8;
+      page.drawText(san(resp), {
+        x: contentLeft + ccLabW, y, size: 9.5, font: bold, color: ink
       });
     }
 
-    const bytes=await pdfDoc.save();
-    const blob=new Blob([bytes],{type:'application/pdf'});
-    const nome=(m.cliente||'proposta').replace(/[^\w\-]+/g,'_');
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download=`proposta_hilink_${nome}.pdf`;
+    // === Save & download ===
+    const bytes = await pdfDoc.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const nome = cliente.replace(/[^\w\-]+/g, '_');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `proposta_hilink_${nome}.pdf`;
     a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-    toast('PDF timbrado gerado','success');
-  }catch(err){
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast('PDF timbrado gerado', 'success');
+
+  } catch (err) {
     console.error(err);
-    toast(err.message||'Falha ao gerar PDF timbrado','error');
+    toast(err.message || 'Falha ao gerar PDF timbrado', 'error');
   }
 }
 function baixarPropostaCsv(){
