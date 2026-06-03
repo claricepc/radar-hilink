@@ -7023,7 +7023,7 @@ h2.section-title .info-btn{margin-left:6px}
             <label>Instalação manual (R$) <input id="prop-instalacao-manual" inputmode="decimal" placeholder="opcional"></label>
             <label>Custo parceiro mensal (R$) <input id="prop-parceiro-mensal" inputmode="decimal" placeholder="transporte"></label>
             <label>Custo parceiro infra (R$) <input id="prop-parceiro-infra" inputmode="decimal" placeholder="infra terceiro"></label>
-            <label>Fator parceiro <input id="prop-fator" inputmode="decimal" value="1,30"></label>
+            <label>Margem parceiro <input id="prop-fator" inputmode="decimal" value="auto"></label>
           </div>
           <div class="prop-kpis">
             <div class="prop-kpi"><span>Instalação</span><strong id="prop-kpi-instalacao">R$ 0,00</strong></div>
@@ -15431,6 +15431,26 @@ function propApplySelected(){
 function propVal(id){
   return (document.getElementById(id)?.value||'').trim();
 }
+function propParceiroMarkup(custo){
+  custo=Number(custo)||0;
+  if(custo<=0)return {margem:0,preco:0,nota:'sem custo de parceiro informado'};
+  let margem=.20;
+  if(custo<=400)margem=.37;
+  else if(custo<=1000)margem=.30;
+  else if(custo<=2500)margem=.23;
+  const preco=Math.ceil((custo/(1-margem))/10)*10;
+  const precoMin=custo<=400?500:0;
+  const final=Math.max(preco,precoMin);
+  return {margem,preco:final,nota:`custo ${propMoney(custo)} com margem ${(margem*100).toFixed(0)}%`};
+}
+function propInfraPropriaPorDistancia(dist){
+  dist=Number(dist)||0;
+  if(dist<=300)return {valor:0,nota:'até 300m sem cobrança de instalação'};
+  if(dist<=600)return {valor:800,nota:'301m a 600m: instalação sugerida de R$ 800,00'};
+  if(dist<=900)return {valor:1200,nota:'601m a 900m: instalação sugerida de R$ 1.200,00'};
+  if(dist<=1200)return {valor:1600,nota:'901m a 1.200m: instalação sugerida de R$ 1.600,00'};
+  return {valor:0,nota:'acima de 1.200m: orçamento manual obrigatório'};
+}
 function calcularPropostaCorporativa(){
   const tipo=propVal('prop-tipo')||'rede';
   const dist=Number(propVal('prop-distancia'))||0;
@@ -15438,30 +15458,37 @@ function calcularPropostaCorporativa(){
   const instManual=propParseMoney(propVal('prop-instalacao-manual'));
   const custoMensal=propParseMoney(propVal('prop-parceiro-mensal'));
   const custoInfra=propParseMoney(propVal('prop-parceiro-infra'));
-  const fator=propParseMoney(propVal('prop-fator'))||1.3;
-  let instalacao=0, mensalidade=mensalManual, nota='';
-  if(dist<=300){
-    instalacao=0;
-    nota='Regra aplicada: até 300m dentro da cobertura corporativa, instalação sem cobrança adicional.';
-  }else if(dist<=600){
-    instalacao=800;
-    nota='Regra aplicada: acima de 300m e até 600m, instalação inicial sugerida de R$ 800,00. Validar com Akassio/engenharia.';
-  }else{
-    instalacao=0;
-    nota='Distância acima de 600m: orçamento manual obrigatório para infraestrutura.';
+  const margemManual=propParseMoney(propVal('prop-fator'));
+  const margemOverride=margemManual>0?(margemManual>1?margemManual/100:margemManual):0;
+  const infraPropria=propInfraPropriaPorDistancia(dist);
+  const parceiroMensal=propParceiroMarkup(custoMensal);
+  const parceiroInfra=propParceiroMarkup(custoInfra);
+  if(margemOverride&&custoMensal>0){
+    parceiroMensal.margem=margemOverride;
+    parceiroMensal.preco=Math.ceil((custoMensal/(1-margemOverride))/10)*10;
+    parceiroMensal.nota=`custo mensal ${propMoney(custoMensal)} com margem manual ${(margemOverride*100).toFixed(0)}%`;
   }
+  if(margemOverride&&custoInfra>0){
+    parceiroInfra.margem=margemOverride;
+    parceiroInfra.preco=Math.ceil((custoInfra/(1-margemOverride))/10)*10;
+    parceiroInfra.nota=`custo infra ${propMoney(custoInfra)} com margem manual ${(margemOverride*100).toFixed(0)}%`;
+  }
+  let instalacao=infraPropria.valor, mensalidade=mensalManual, notas=[`Infra própria: ${infraPropria.nota}.`];
   if(tipo==='transporte'){
-    instalacao=custoInfra?custoInfra*fator:instalacao;
-    mensalidade=custoMensal?custoMensal*fator:mensalidade;
-    nota='Transporte terceiro: mensalidade e infraestrutura usam custo do parceiro multiplicado pelo fator comercial informado.';
+    instalacao=custoInfra?parceiroInfra.preco:instalacao;
+    mensalidade=custoMensal?parceiroMensal.preco:mensalidade;
+    notas.push(`Transporte terceiro: ${parceiroMensal.nota}; infraestrutura ${parceiroInfra.nota}.`);
   }else if(tipo==='mista'){
-    instalacao+=custoInfra?custoInfra*fator:0;
-    mensalidade=custoMensal?Math.max(mensalidade,custoMensal*fator):mensalidade;
-    nota='Modelo misto: soma infraestrutura própria + infraestrutura do parceiro; mensalidade considera o maior valor entre Hilink e parceiro com fator.';
+    instalacao+=custoInfra?parceiroInfra.preco:0;
+    mensalidade=custoMensal?Math.max(mensalidade,parceiroMensal.preco):mensalidade;
+    notas.push(`Modelo misto: soma infra própria + parceiro; mensalidade considera maior valor entre Hilink e parceiro. ${parceiroMensal.nota}; infraestrutura ${parceiroInfra.nota}.`);
   }else if(tipo==='infra'){
-    nota+=' Caso exista custo real de material/equipe, usar instalação manual.';
+    notas.push('Tipo infraestrutura adicional: aplica progressão por distância; custos reais podem substituir via instalação manual.');
+  }else{
+    notas.push('Rede Hilink: usa apenas progressão por distância, salvo preenchimento manual.');
   }
   if(instManual>0)instalacao=instManual;
+  const nota=notas.join(' ');
   document.getElementById('prop-kpi-instalacao').textContent=propMoney(instalacao);
   document.getElementById('prop-kpi-mensalidade').textContent=propMoney(mensalidade);
   document.getElementById('prop-kpi-tipo').textContent=({rede:'Rede Hilink',infra:'Infra adicional',transporte:'Transporte terceiro',mista:'Mista'}[tipo]||tipo);
