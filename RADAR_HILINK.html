@@ -2011,20 +2011,21 @@ h2.section-title .info-btn{margin-left:6px}
 .prop-paper-head strong{
   display:block;
   color:#0b1b2b;
-  font-size:22px;
+  font-size:20px;
   text-align:right;
+  line-height:1.1;
 }
 .prop-paper-head span{
   display:block;
   margin-top:5px;
   color:#4d6178;
-  font-size:12px;
+  font-size:11px;
   text-align:right;
 }
 .prop-paper h4{
-  margin:18px 0 9px;
+  margin:16px 0 8px;
   color:#0069B4;
-  font-size:12px;
+  font-size:11px;
   font-weight:800;
   text-transform:uppercase;
   letter-spacing:.06em;
@@ -2034,8 +2035,8 @@ h2.section-title .info-btn{margin-left:6px}
 .prop-paper p,
 .prop-paper li{
   color:#2F2F33;
-  font-size:12px;
-  line-height:1.48;
+  font-size:11px;
+  line-height:1.42;
 }
 .prop-paper-body,
 #prop-paper-body{
@@ -2072,8 +2073,8 @@ h2.section-title .info-btn{margin-left:6px}
 .prop-paper table{
   width:100%;
   border-collapse:collapse;
-  margin:12px 0 18px;
-  font-size:12px;
+  margin:11px 0 16px;
+  font-size:11px;
   background:#fff !important;
   border-radius:8px;
   overflow:hidden;
@@ -2083,7 +2084,7 @@ h2.section-title .info-btn{margin-left:6px}
 .prop-paper td{
   background:#fff !important;
   border:1px solid #d8e1ec !important;
-  padding:9px 10px;
+  padding:8px 9px;
   text-align:left;
   color:#14263a !important;
 }
@@ -2118,24 +2119,30 @@ h2.section-title .info-btn{margin-left:6px}
   padding-top:2px;
 }
 .prop-paper-signature{
-  margin-top:28px;
+  margin-top:22px;
   width:280px;
   text-align:left;
 }
+.prop-paper-signature p{
+  margin:0 0 4px;
+  font-size:11px;
+  color:#2F2F33;
+}
 .prop-paper-signature img{
   display:block;
-  max-width:220px;
-  max-height:80px;
+  max-width:240px;
+  max-height:86px;
   object-fit:contain;
-  margin:0 0 8px;
+  margin:0 0 -8px;
 }
 .prop-signer{
   color:#26394f;
-  font-size:11px;
-  line-height:1.35;
+  font-size:10px;
+  line-height:1.25;
   font-weight:600;
 }
 .prop-sign-line{
+  display:none;
   width:220px;
   height:1px;
   background:#1B1B1F;
@@ -2143,10 +2150,18 @@ h2.section-title .info-btn{margin-left:6px}
 }
 .prop-signer-nome{
   color:#1B1B1F;
+  font-size:10px;
+  font-weight:800;
 }
 .prop-signer-cargo,
 .prop-signer-contato{
   color:#2F2F33;
+  font-size:9.5px;
+}
+.prop-contato-comercial{
+  margin-top:14px;
+  font-size:10px !important;
+  line-height:1.3 !important;
 }
 .prop-cc-label{
   color:#6E6E73;
@@ -16519,8 +16534,8 @@ async function baixarPropostaPdfTimbrado(){
     // === 9. Assinatura ===
     if (propShow('prop-show-assinatura')) {
       ensureSpace(100);
-      page.drawText(san('Atenciosamente,'), { x: contentLeft, y, size: 10, font: helv, color: body });
-      y -= 28;
+      page.drawText(san('Atenciosamente,'), { x: contentLeft, y, size: 9.5, font: helv, color: body });
+      y -= 14;
 
       // Imagem da assinatura, se carregada
       if (PROP_ASSINATURA_DATAURL) {
@@ -16529,29 +16544,29 @@ async function baixarPropostaPdfTimbrado(){
           const img = PROP_ASSINATURA_DATAURL.startsWith('data:image/png')
             ? await pdfDoc.embedPng(imgBytes)
             : await pdfDoc.embedJpg(imgBytes);
-          const dims = img.scale(Math.min(140 / img.width, 58 / img.height, 1));
-          page.drawImage(img, { x: contentLeft, y: y - dims.height, width: dims.width, height: dims.height });
-          y -= dims.height + 4;
+          const dims = img.scale(Math.min(170 / img.width, 66 / img.height, 1));
+          page.drawImage(img, { x: contentLeft - 3, y: y - dims.height, width: dims.width, height: dims.height });
+          y -= Math.max(dims.height - 8, 38);
         } catch (e) { console.warn('Assinatura não aplicada no PDF', e); }
       }
 
       if (assinanteNome) {
         page.drawText(san(assinanteNome.toUpperCase()), {
-          x: contentLeft, y, size: 10, font: bold, color: ink
+          x: contentLeft, y, size: 9.3, font: bold, color: ink
         });
-        y -= 13;
+        y -= 11;
       }
       if (assinanteCargo) {
         page.drawText(san(assinanteCargo), {
-          x: contentLeft, y, size: 10, font: helv, color: body
+          x: contentLeft, y, size: 8.7, font: helv, color: body
         });
-        y -= 13;
+        y -= 10;
       }
       if (assinanteContato) {
         page.drawText(san(assinanteContato), {
-          x: contentLeft, y, size: 9, font: helv, color: muted
+          x: contentLeft, y, size: 8.5, font: helv, color: muted
         });
-        y -= 13;
+        y -= 10;
       }
     }
 
@@ -16561,17 +16576,17 @@ async function baixarPropostaPdfTimbrado(){
       ensureSpace(20);
       const ccLab = 'CONTATO COMERCIAL:';
       page.drawText(san(ccLab), {
-        x: contentLeft, y, size: 8.5, font: bold, color: muted, characterSpacing: 0.8
+        x: contentLeft, y, size: 8, font: bold, color: muted, characterSpacing: 0.8
       });
-      const ccLabW = bold.widthOfTextAtSize(ccLab, 8.5) + 8;
+      const ccLabW = bold.widthOfTextAtSize(ccLab, 8) + 8;
       const contatoTexto = respContato ? `${resp} - ${respContato}` : resp;
       drawWrapped(contatoTexto, {
         x: contentLeft + ccLabW,
         maxWidth: contentRight - (contentLeft + ccLabW),
-        size: 9.5,
+        size: 8.7,
         font: bold,
         color: ink,
-        lineHeight: 12
+        lineHeight: 11
       });
     }
 
