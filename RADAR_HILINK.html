@@ -7176,10 +7176,10 @@ h2.section-title .info-btn{margin-left:6px}
               <small class="prop-help">Preenchido automaticamente com o ID do cliente no IXC. Esse ID será usado como número da proposta e pode ser editado se necessário.</small>
             </label>
             <label>Cliente <input id="prop-cliente" placeholder="Empresa / cliente"><small class="prop-help">Preenchido pelo CRM quando disponível. Na proposta, o nome do cliente fica padronizado em caixa alta.</small></label>
-            <label>Contato do cliente <input id="prop-contato" placeholder="Responsável pelo projeto"><small class="prop-help">Pessoa do cliente ou responsável pela negociação no cadastro.</small></label>
+            <label>A/C - Aos cuidados de <input id="prop-contato" placeholder="Nome do responsável pelo cliente"><small class="prop-help">Pessoa do cliente que receberá a proposta. Preencha manualmente se o CRM não trouxer um contato confiável.</small></label>
             <label>Endereço do cliente * <input id="prop-endereco" required placeholder="Endereço obrigatório do cliente"><small class="prop-help">Obrigatório para gerar o PDF. Preenchido automaticamente quando o CRM trouxer endereço; se não vier no arquivo, preencha manualmente.</small></label>
             <label>Telefone do cliente (uso interno) <input id="prop-telefone" placeholder="Preenchido pelo CRM"><small class="prop-help">Telefone do contato/cliente. Serve apenas para conferência interna e não aparece na proposta.</small></label>
-            <label>Responsável Hilink <input id="prop-responsavel" placeholder="Consultor(a)"><small class="prop-help">Pessoa da Hilink que está tratando a proposta.</small></label>
+            <label>Responsável Hilink <input id="prop-responsavel" placeholder="Consultor(a)"><small class="prop-help">Padrão: Juliana Talitha. Edite apenas quando a proposta for tratada por outra pessoa.</small></label>
             <label>Contato responsável Hilink <input id="prop-responsavel-contato" placeholder="Telefone e/ou e-mail"><small class="prop-help">Contato comercial da responsável Hilink. Pode ser editado antes de baixar a proposta.</small></label>
           </div>
           <label>Objeto da proposta
@@ -15609,6 +15609,26 @@ function propPick(row,names){
   }
   return '';
 }
+function propPickExact(row,names){
+  const keys=Object.keys(row||{});
+  for(const name of names){
+    const wanted=propKeyNorm(name);
+    const exact=keys.find(k=>propKeyNorm(k)===wanted);
+    if(exact&&cleanIxcValue(row[exact]))return cleanIxcValue(row[exact]);
+  }
+  return '';
+}
+function propIsStatusLike(v){
+  return /^(ativo|inativo|aberto|fechado|ganho|perdido|em andamento|prospect|cliente|bloqueado|cancelado)$/i.test(String(v||'').trim());
+}
+function propValorMensalValido(v){
+  const n=propParseMoney(v);
+  return n>=50&&n<=10000;
+}
+function propTextoPlanoValido(v){
+  const s=String(v||'').trim();
+  return s.length>5&&/[^\W\d_]/u.test(s);
+}
 function propPlainText(v){
   return String(v||'').replace(/\s+/g,' ').trim();
 }
@@ -15697,8 +15717,7 @@ function propEnderecoFromRow(r){
     'Endereço instalação','Endereco instalacao','Endereço de instalação','Endereco de instalacao',
     'Local de instalação','Local de instalacao','Local instalação','Local instalacao'
   ]);
-  if(direto)return direto;
-  const logradouro=propPick(r,['Logradouro','Rua','Endereço logradouro','Endereco logradouro','Logradouro cliente','Rua cliente']);
+  const logradouro=propPick(r,['Logradouro','Rua','Endereço logradouro','Endereco logradouro','Logradouro cliente','Rua cliente'])||direto;
   const numero=propPick(r,['Número','Numero','Nº','N°','Num','Número endereço','Numero endereco']);
   const complemento=propPick(r,['Complemento','Complemento endereço','Complemento endereco']);
   const bairro=propPick(r,['Bairro','Bairro cliente']);
@@ -15721,32 +15740,52 @@ function propApplySelected(){
   const rows=propCrmRows();
   const r=rows[Number(sel?.value)];
   if(!r)return calcularPropostaCorporativa();
-  const desc=propPick(r,['Descrição','Descricao','Plano de venda','Plano de negociação','Plano de negociacao','Descrição aux. plano venda','Produto','Serviço','Servico','Interesse','Oferta','Pacote'])||'';
+
+  const desc=propPick(r,[
+    'Plano de venda','Plano de negociação','Plano de negociacao',
+    'Descrição aux. plano venda','Descrição do produto','Descricao do produto',
+    'Produto','Serviço','Servico','Interesse','Oferta','Pacote','Descrição','Descricao'
+  ])||'';
   const banda=(desc.match(/(\d+\s*(?:MB|GB))/i)||[])[1]||'';
-  const valor=propPick(r,['Valor recorrente','Valor fixo','Mensalidade','Valor mensal','Valor']);
-  const cliente=propPick(r,['Cliente','Nome cliente','Nome do cliente','Razão social','Razao social','Nome prospect','Nome do prospect','Prospect','Prospecção','Prospeccao','Contato']);
-  const contato=propPick(r,['Contato','Responsável pelo projeto','Responsavel pelo projeto','Responsável','Responsavel','A/C','Pessoa de contato','Contato principal','Nome contato','Nome do contato']);
+  const planoKey=/1\s*GB/i.test(banda)?'1000':((banda.match(/\d+/)||[])[0]||'');
+  const planoBase=PROP_PLANOS_HILINK[planoKey];
+
+  const valorRaw=propPickExact(r,['Valor recorrente','Valor fixo','Mensalidade','Valor mensal','Valor do plano','Preço mensal','Preco mensal']);
+  const valorValido=propValorMensalValido(valorRaw);
+
+  const cliente=propPick(r,['Cliente','Nome cliente','Nome do cliente','Razão social','Razao social','Nome prospect','Nome do prospect','Prospect','Prospecção','Prospeccao']);
+  let contato=propPickExact(r,['A/C','Aos cuidados','Aos cuidados de','Responsável pelo projeto','Responsavel pelo projeto','Pessoa de contato','Contato principal','Nome contato','Nome do contato','Representante','Solicitante']);
+  if(propIsStatusLike(contato))contato='';
   const endereco=propEnderecoFromRow(r);
   const clienteId=propClienteIdFromRow(r);
   const telefone=propPick(r,['Telefone celular','Telefone residencial','Telefone comercial','Telefone 1','Telefone 2','Telefone','Celular','Fone','WhatsApp','Whatsapp','Contato telefone','Telefone contato']);
+
   propSet('prop-cliente',propNomeCliente(cliente||contato));
-  propSet('prop-contato',contato||cliente);
+  propSet('prop-contato',contato);
   propSet('prop-endereco',endereco);
   propSet('prop-telefone',telefone);
-  propSet('prop-responsavel',propPick(r,['Responsável/vendedor','Responsavel/vendedor','Responsável','Responsavel','Vendedor','Vendedor ativação','Criado por','Consultor','Usuário','Usuario']));
-  const planoArquivo=propPick(r,['Plano de venda','Plano de negociação','Plano de negociacao','Produto','Serviço','Servico','Oferta'])||desc;
-  propSet('prop-plano',planoArquivo);
-  propSet('prop-desc-plano',planoArquivo);
-  propSet('prop-banda',banda);
-  if(valor)propSet('prop-mensalidade',valor);
-  const planoKey=/1\s*GB/i.test(banda)?'1000':((banda.match(/\d+/)||[])[0]||'');
-  if(PROP_PLANOS_HILINK[planoKey]){
+
+  propSet('prop-responsavel','JULIANA TALITHA');
+  propSet('prop-responsavel-contato','81 97341-7801');
+
+  const planoArquivo=propPick(r,['Plano de venda','Plano de negociação','Plano de negociacao','Produto','Serviço','Servico','Oferta','Descrição do produto','Descricao do produto'])||desc;
+  const planoFinal=propTextoPlanoValido(planoArquivo)?planoArquivo:(planoBase?planoBase.plano:'');
+  propSet('prop-plano',planoFinal);
+  propSet('prop-desc-plano',planoFinal);
+  propSet('prop-banda',banda||(planoBase?planoBase.banda:''));
+  if(valorValido)propSet('prop-mensalidade',valorRaw);
+
+  if(planoBase){
     propSet('prop-plano-base',planoKey);
-    if(!valor){
-      propSet('prop-mensalidade',PROP_PLANOS_HILINK[planoKey].mensalidade);
-      propSet('prop-desc-plano',PROP_PLANOS_HILINK[planoKey].plano);
+    if(!propTextoPlanoValido(planoArquivo)){
+      propSet('prop-plano',planoBase.plano);
+      propSet('prop-desc-plano',planoBase.plano);
+    }
+    if(!valorValido){
+      propSet('prop-mensalidade',planoBase.mensalidade);
     }
   }
+
   propSet('prop-referencia',clienteId||'');
   propFillDefaultFields();
   propSyncObjetoDinamico(true);
