@@ -7142,12 +7142,13 @@ h2.section-title .info-btn{margin-left:6px}
       <div class="prop-grid">
         <div class="prop-panel">
           <div class="prop-panel-head">
-            <h3>CRM / NEGOCIAÇÃO</h3>
-            <span>Fonte: Sistemas &gt; CRM &gt; Negociações</span>
+            <h3>CRM / PROPOSTA</h3>
+            <span>Fontes: CRM &gt; Negociações ou CRM &gt; Prospecções</span>
           </div>
           <label class="prop-file">
             <input type="file" id="prop-crm-file" accept=".csv" onchange="loadPropostaCrmFile(this.files&&this.files[0])">
             <span>Carregar CSV do CRM</span>
+            <small class="prop-help">Arquivos aceitos: CSV do IXC em Sistema &gt; CRM &gt; Negociações ou Sistema &gt; CRM &gt; Prospecções. Se o endereço não vier no arquivo, preencha manualmente antes de gerar o PDF.</small>
           </label>
           <label>Negociação
             <select id="prop-neg-select" onchange="propApplySelected()">
@@ -7157,7 +7158,7 @@ h2.section-title .info-btn{margin-left:6px}
           <div class="prop-form two">
             <label>Cliente <input id="prop-cliente" placeholder="Empresa / cliente"><small class="prop-help">Preenchido pelo CRM quando disponível. Na proposta, o nome do cliente fica padronizado em caixa alta.</small></label>
             <label>Contato do cliente <input id="prop-contato" placeholder="Responsável pelo projeto"><small class="prop-help">Pessoa do cliente ou responsável pela negociação no cadastro.</small></label>
-            <label>Endereço do cliente <input id="prop-endereco" placeholder="Endereço do cliente"><small class="prop-help">Preenchido automaticamente quando o CRM trouxer endereço. Aparece abaixo do nome do cliente na proposta.</small></label>
+            <label>Endereço do cliente * <input id="prop-endereco" required placeholder="Endereço obrigatório do cliente"><small class="prop-help">Obrigatório para gerar o PDF. Preenchido automaticamente quando o CRM trouxer endereço; se não vier no arquivo, preencha manualmente.</small></label>
             <label>Telefone do cliente (uso interno) <input id="prop-telefone" placeholder="Preenchido pelo CRM"><small class="prop-help">Telefone do contato/cliente. Serve apenas para conferência interna e não aparece na proposta.</small></label>
             <label>Responsável Hilink <input id="prop-responsavel" placeholder="Consultor(a)"><small class="prop-help">Pessoa da Hilink que está tratando a proposta.</small></label>
             <label>Tabela Hilink
@@ -15611,12 +15612,14 @@ function propSyncObjetoDinamico(force=false){
 }
 function propCrmRows(){
   const raw=STATE.raw||{};
-  const direct=[raw.crmNegociacoes,raw.crm,raw.negociacoes].find(a=>Array.isArray(a)&&a.length);
+  const direct=[raw.crmNegociacoes,raw.crmProspeccoes,raw.crmProspecções,raw.crm,raw.negociacoes,raw.prospeccoes,raw.prospecções].find(a=>Array.isArray(a)&&a.length);
   if(direct)return direct;
   return Object.values(raw).find(a=>{
     if(!Array.isArray(a)||!a.length)return false;
     const keys=Object.keys(a[0]||{}).map(norm);
-    return keys.includes('cliente')&&keys.some(k=>k.includes('plano de venda'))&&keys.some(k=>k.includes('estagio')||k.includes('estágio'));
+    const hasClient=keys.some(k=>['cliente','nome cliente','razao social','razão social','nome prospect','nome do prospect','prospect','prospeccao','prospecção'].includes(k)||k.includes('cliente')||k.includes('prospect'));
+    const hasCrmSignal=keys.some(k=>k.includes('plano')||k.includes('produto')||k.includes('servico')||k.includes('serviço')||k.includes('estagio')||k.includes('estágio')||k.includes('funil')||k.includes('negociacao')||k.includes('negociação'));
+    return hasClient&&hasCrmSignal;
   })||[];
 }
 function loadPropostaCrmFile(file){
@@ -15630,7 +15633,7 @@ function loadPropostaCrmFile(file){
       STATE.raw.crmNegociacoes=rows;
       propostasPopulateCrm();
       if(rows.length)propApplySelected();
-      toast(`${rows.length.toLocaleString('pt-BR')} negociação(ões) carregada(s) para propostas`,'success');
+      toast(`${rows.length.toLocaleString('pt-BR')} registro(s) de CRM carregado(s) para propostas`,'success');
     },
     error:(err)=>toast('Falha ao ler CSV do CRM: '+(err?.message||err),'error')
   });
@@ -15640,11 +15643,11 @@ function propostasPopulateCrm(){
   if(!sel)return;
   const rows=propCrmRows();
   const current=sel.value;
-  sel.innerHTML='<option value="">Selecione uma negociação ou preencha manualmente</option>'+
+  sel.innerHTML='<option value="">Selecione uma negociação/prospecção ou preencha manualmente</option>'+
     rows.map((r,i)=>{
-      const cli=propPick(r,['Cliente','Nome cliente','Razão social','Razao social','Contato'])||'Cliente sem nome';
-      const plano=propPick(r,['Plano de venda','Plano de negociação','Plano de negociacao','Descrição','Descricao']);
-      const status=propPick(r,['Status','Estágio','Estagio','Status contrato','Status acesso']);
+      const cli=propPick(r,['Cliente','Nome cliente','Nome do cliente','Razão social','Razao social','Nome prospect','Nome do prospect','Prospect','Prospecção','Prospeccao','Contato'])||'Cliente sem nome';
+      const plano=propPick(r,['Plano de venda','Plano de negociação','Plano de negociacao','Descrição','Descricao','Produto','Serviço','Servico','Interesse','Oferta']);
+      const status=propPick(r,['Status','Estágio','Estagio','Funil','Status contrato','Status acesso','Situação','Situacao']);
       return `<option value="${i}">${escHtml(cli)}${plano?' · '+escHtml(plano):''}${status?' · '+escHtml(status):''}</option>`;
     }).join('');
   if(current&&rows[Number(current)])sel.value=current;
@@ -15668,24 +15671,44 @@ function propApplyPlanoBase(){
   propSet('prop-desc-plano',`${plano.plano}`);
   calcularPropostaCorporativa();
 }
+function propEnderecoFromRow(r){
+  const direto=propPick(r,[
+    'Endereço','Endereco','Endereço completo','Endereco completo','Endereço cliente','Endereco cliente',
+    'Endereço comercial','Endereco comercial','Endereço residencial','Endereco residencial',
+    'Endereço cobrança','Endereco cobranca','Endereço de cobrança','Endereco de cobranca',
+    'Endereço instalação','Endereco instalacao','Endereço de instalação','Endereco de instalacao',
+    'Local de instalação','Local de instalacao','Local instalação','Local instalacao'
+  ]);
+  if(direto)return direto;
+  const logradouro=propPick(r,['Logradouro','Rua','Endereço logradouro','Endereco logradouro','Logradouro cliente','Rua cliente']);
+  const numero=propPick(r,['Número','Numero','Nº','N°','Num','Número endereço','Numero endereco']);
+  const complemento=propPick(r,['Complemento','Complemento endereço','Complemento endereco']);
+  const bairro=propPick(r,['Bairro','Bairro cliente']);
+  const cidade=propPick(r,['Cidade','Município','Municipio']);
+  const uf=propPick(r,['UF','Estado']);
+  const cep=propPick(r,['CEP','Cep']);
+  const linha1=[logradouro,numero].filter(Boolean).join(', ');
+  const cidadeUf=[cidade,uf].filter(Boolean).join('/');
+  return [linha1,complemento,bairro,cidadeUf,cep?`CEP ${cep}`:''].filter(Boolean).join(' - ');
+}
 function propApplySelected(){
   const sel=document.getElementById('prop-neg-select');
   const rows=propCrmRows();
   const r=rows[Number(sel?.value)];
   if(!r)return calcularPropostaCorporativa();
-  const desc=propPick(r,['Descrição','Descricao','Plano de venda','Plano de negociação','Plano de negociacao','Descrição aux. plano venda']);
+  const desc=propPick(r,['Descrição','Descricao','Plano de venda','Plano de negociação','Plano de negociacao','Descrição aux. plano venda','Produto','Serviço','Servico','Interesse','Oferta','Pacote'])||'';
   const banda=(desc.match(/(\d+\s*(?:MB|GB))/i)||[])[1]||'';
   const valor=propPick(r,['Valor recorrente','Valor fixo','Mensalidade','Valor mensal','Valor']);
-  const cliente=propPick(r,['Cliente','Nome cliente','Razão social','Razao social','Contato']);
-  const contato=propPick(r,['Contato','Responsável pelo projeto','Responsavel pelo projeto','Responsável','Responsavel','A/C']);
-  const endereco=propPick(r,['Endereço','Endereco','Endereço completo','Endereco completo','Logradouro','Rua','Endereço instalação','Endereco instalacao','Endereço de instalação','Endereco de instalacao','Local de instalação','Local de instalacao']);
-  const telefone=propPick(r,['Telefone celular','Telefone residencial','Telefone comercial','Telefone','Celular','Fone','WhatsApp','Whatsapp']);
+  const cliente=propPick(r,['Cliente','Nome cliente','Nome do cliente','Razão social','Razao social','Nome prospect','Nome do prospect','Prospect','Prospecção','Prospeccao','Contato']);
+  const contato=propPick(r,['Contato','Responsável pelo projeto','Responsavel pelo projeto','Responsável','Responsavel','A/C','Pessoa de contato','Contato principal','Nome contato','Nome do contato']);
+  const endereco=propEnderecoFromRow(r);
+  const telefone=propPick(r,['Telefone celular','Telefone residencial','Telefone comercial','Telefone 1','Telefone 2','Telefone','Celular','Fone','WhatsApp','Whatsapp','Contato telefone','Telefone contato']);
   propSet('prop-cliente',propNomeCliente(cliente||contato));
   propSet('prop-contato',contato||cliente);
   propSet('prop-endereco',endereco);
   propSet('prop-telefone',telefone);
-  propSet('prop-responsavel',propPick(r,['Responsável/vendedor','Responsavel/vendedor','Responsável','Responsavel','Vendedor','Vendedor ativação','Criado por']));
-  propSet('prop-plano',propPick(r,['Plano de venda','Plano de negociação','Plano de negociacao'])||desc);
+  propSet('prop-responsavel',propPick(r,['Responsável/vendedor','Responsavel/vendedor','Responsável','Responsavel','Vendedor','Vendedor ativação','Criado por','Consultor','Usuário','Usuario']));
+  propSet('prop-plano',propPick(r,['Plano de venda','Plano de negociação','Plano de negociacao','Produto','Serviço','Servico','Oferta'])||desc);
   propSet('prop-banda',banda);
   if(valor)propSet('prop-mensalidade',valor);
   const mb=(banda.match(/\d+/)||[])[0]||'';
@@ -16091,6 +16114,12 @@ async function baixarPropostaPdfTimbrado(){
       toast('Preencha o plano/produto antes de gerar o PDF.', 'error');
       return;
     }
+    const enderecoObrigatorio = propPlainText(propVal('prop-endereco'));
+    if (!enderecoObrigatorio || enderecoObrigatorio.length < 5) {
+      toast('Preencha o endereço do cliente antes de gerar o PDF.', 'error');
+      document.getElementById('prop-endereco')?.focus();
+      return;
+    }
 
     if (!window.PDFLib) throw new Error('Biblioteca PDF ainda não carregada. Recarregue a página e tente novamente.');
     const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
@@ -16124,7 +16153,7 @@ async function baixarPropostaPdfTimbrado(){
 
     // === Dados ===
     const contato = propPlainText(propVal('prop-contato'));
-    const endereco = propPlainText(propVal('prop-endereco'));
+    const endereco = enderecoObrigatorio;
     const resp = (propVal('prop-responsavel') || '').trim();
     const banda = (propVal('prop-banda') || '').trim();
     const ref = (propVal('prop-referencia') || '').trim();
