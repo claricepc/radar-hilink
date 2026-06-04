@@ -7170,7 +7170,7 @@ h2.section-title .info-btn{margin-left:6px}
                 <option value="800">800MB FTTH SIMÉTRICO · R$ 950,00</option>
                 <option value="1000">1GB FTTH SIMÉTRICO · R$ 2.300,00</option>
               </select>
-              <small class="prop-help">Atalho de preço para cliente dentro da nossa rede. O valor continua editável.</small>
+              <small class="prop-help">Planos corporativos vigentes. Ao selecionar um CRM, os dados do arquivo têm prioridade; use esta tabela apenas como fallback ou ajuste manual.</small>
             </label>
             <label>Plano / produto <input id="prop-plano" placeholder="Ex.: Dedicado Empresarial Lite"><small class="prop-help">Descrição comercial do produto que aparecerá no quadro de preço.</small></label>
             <label>Banda <input id="prop-banda" placeholder="Ex.: 500MB"><small class="prop-help">Banda contratada ou apresentada na proposta.</small></label>
@@ -15719,7 +15719,9 @@ function propApplySelected(){
   propSet('prop-endereco',endereco);
   propSet('prop-telefone',telefone);
   propSet('prop-responsavel',propPick(r,['Responsável/vendedor','Responsavel/vendedor','Responsável','Responsavel','Vendedor','Vendedor ativação','Criado por','Consultor','Usuário','Usuario']));
-  propSet('prop-plano',propPick(r,['Plano de venda','Plano de negociação','Plano de negociacao','Produto','Serviço','Servico','Oferta'])||desc);
+  const planoArquivo=propPick(r,['Plano de venda','Plano de negociação','Plano de negociacao','Produto','Serviço','Servico','Oferta'])||desc;
+  propSet('prop-plano',planoArquivo);
+  propSet('prop-desc-plano',planoArquivo);
   propSet('prop-banda',banda);
   if(valor)propSet('prop-mensalidade',valor);
   const planoKey=/1\s*GB/i.test(banda)?'1000':((banda.match(/\d+/)||[])[0]||'');
