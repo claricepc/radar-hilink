@@ -15905,20 +15905,71 @@ async function initPropostaAssinaturaPadrao(){
   calcularPropostaCorporativa();
 }
 function propostaBasicaCompleta(){
-  const cliente=propNomeCliente(propVal('prop-cliente'));
-  const endereco=propPlainText(propVal('prop-endereco'));
-  const plano=propVal('prop-plano');
-  const banda=propVal('prop-banda');
-  const mensalidade=propVal('prop-mensalidade') || (document.getElementById('prop-kpi-mensalidade')?.textContent||'').replace(/[^\d]/g,'');
-  return !!(cliente && cliente.length>=2 && endereco && endereco.length>=5 && plano && banda && mensalidade);
+  return propCamposObrigatoriosPendentes().length===0;
+}
+function propCamposObrigatoriosPendentes(){
+  const calcInstalacao=(document.getElementById('prop-kpi-instalacao')?.textContent||'').replace(/[^\d]/g,'');
+  const calcMensalidade=(document.getElementById('prop-kpi-mensalidade')?.textContent||'').replace(/[^\d]/g,'');
+  const missing=[];
+  const requireText=(id,label,min=1)=>{
+    const value=propPlainText(propVal(id));
+    if(!value || value.length<min)missing.push({id,label});
+  };
+  const requireAny=(ids,label)=>{
+    const ok=ids.some(id=>propPlainText(propVal(id)));
+    if(!ok)missing.push({id:ids[0],label});
+  };
+
+  requireText('prop-cliente','cliente',2);
+  requireText('prop-endereco','endereço do cliente',5);
+  requireText('prop-referencia','número da proposta');
+  requireText('prop-objeto','objeto da proposta',10);
+  requireText('prop-plano','plano/produto');
+  requireText('prop-banda','banda');
+  requireAny(['prop-mensalidade'],'mensalidade');
+  if(!calcMensalidade)missing.push({id:'prop-mensalidade',label:'valor mensal calculado'});
+  requireText('prop-desc-plano','descrição do plano');
+  requireText('prop-caracteristicas','características técnicas',10);
+  requireText('prop-validade-pagamento','validade e pagamento',10);
+  requireText('prop-responsavel','responsável Hilink');
+  requireText('prop-responsavel-contato','contato responsável Hilink');
+
+  if(propShow('prop-show-observacao')){
+    requireText('prop-consideracoes','observação/considerações gerais',10);
+  }
+  if(propShow('prop-show-instalacao')){
+    requireText('prop-desc-instalacao','descrição da instalação',5);
+    if(!calcInstalacao)missing.push({id:'prop-instalacao-manual',label:'valor da instalação calculado'});
+  }
+  if(propShow('prop-show-prazo')){
+    requireText('prop-prazo','prazo de execução',10);
+  }
+  if(propShow('prop-show-assinatura')){
+    requireText('prop-assinante-nome','nome do assinante');
+    requireText('prop-assinante-cargo','cargo/função do assinante');
+    requireText('prop-assinante-contato','contato do assinante');
+    if(!PROP_ASSINATURA_DATAURL)missing.push({id:'prop-assinatura',label:'imagem da assinatura'});
+  }
+  return missing;
+}
+function propValidarCamposObrigatorios(){
+  const missing=propCamposObrigatoriosPendentes();
+  if(!missing.length)return true;
+  const lista=missing.slice(0,6).map(m=>m.label).join(', ');
+  toast(`Preencha os campos obrigatórios da proposta: ${lista}${missing.length>6?'...':''}.`, 'error');
+  const first=missing.find(m=>document.getElementById(m.id));
+  if(first)document.getElementById(first.id)?.focus();
+  updatePropostaDownloadState();
+  return false;
 }
 function updatePropostaDownloadState(){
-  const ok=propostaBasicaCompleta();
+  const missing=propCamposObrigatoriosPendentes();
+  const ok=missing.length===0;
   ['prop-btn-pdf','prop-btn-csv'].forEach(id=>{
     const btn=document.getElementById(id);
     if(btn){
       btn.disabled=!ok;
-      btn.title=ok?'':'Preencha cliente, endereco, plano, banda e mensalidade para baixar.';
+      btn.title=ok?'':`Campos pendentes: ${missing.slice(0,6).map(m=>m.label).join(', ')}${missing.length>6?'...':''}.`;
     }
   });
 }
@@ -16221,13 +16272,9 @@ function propPdfDrawWrapped(page,text,x,y,maxWidth,font,size,lineHeight,color){
 async function baixarPropostaPdfTimbrado(){
   try {
     calcularPropostaCorporativa();
-    if(!propostaBasicaCompleta()){
-      toast('Preencha cliente, endereço, plano, banda e mensalidade antes de baixar.', 'error');
-      updatePropostaDownloadState();
-      return;
-    }
+    if(!propValidarCamposObrigatorios())return;
 
-    // === VALIDAÇÃO OBRIGATÓRIA ===
+    // === VALIDAÇÃO OBRIGATÓRIA DE SEGURANÇA ===
     const cliente = propNomeCliente(propVal('prop-cliente'));
     if (!cliente || cliente.length < 2) {
       toast('Preencha o nome do cliente antes de gerar o PDF.', 'error');
@@ -16647,11 +16694,7 @@ async function baixarPropostaPdfTimbrado(){
 }
 function baixarPropostaCsv(){
   calcularPropostaCorporativa();
-  if(!propostaBasicaCompleta()){
-    toast('Preencha cliente, endereço, plano, banda e mensalidade antes de baixar.', 'error');
-    updatePropostaDownloadState();
-    return;
-  }
+  if(!propValidarCamposObrigatorios())return;
   const rows=[{
     cliente:propVal('prop-cliente'),
     contato:propVal('prop-contato'),
