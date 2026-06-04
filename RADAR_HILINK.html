@@ -7156,29 +7156,17 @@ h2.section-title .info-btn{margin-left:6px}
             </select>
           </label>
           <div class="prop-form two">
+            <label>Número da proposta
+              <input id="prop-referencia" placeholder="ID do cliente no IXC">
+              <small class="prop-help">Preenchido automaticamente com o ID do cliente no IXC. Esse ID será usado como número da proposta e pode ser editado se necessário.</small>
+            </label>
             <label>Cliente <input id="prop-cliente" placeholder="Empresa / cliente"><small class="prop-help">Preenchido pelo CRM quando disponível. Na proposta, o nome do cliente fica padronizado em caixa alta.</small></label>
             <label>Contato do cliente <input id="prop-contato" placeholder="Responsável pelo projeto"><small class="prop-help">Pessoa do cliente ou responsável pela negociação no cadastro.</small></label>
             <label>Endereço do cliente * <input id="prop-endereco" required placeholder="Endereço obrigatório do cliente"><small class="prop-help">Obrigatório para gerar o PDF. Preenchido automaticamente quando o CRM trouxer endereço; se não vier no arquivo, preencha manualmente.</small></label>
             <label>Telefone do cliente (uso interno) <input id="prop-telefone" placeholder="Preenchido pelo CRM"><small class="prop-help">Telefone do contato/cliente. Serve apenas para conferência interna e não aparece na proposta.</small></label>
             <label>Responsável Hilink <input id="prop-responsavel" placeholder="Consultor(a)"><small class="prop-help">Pessoa da Hilink que está tratando a proposta.</small></label>
             <label>Contato responsável Hilink <input id="prop-responsavel-contato" placeholder="Telefone e/ou e-mail"><small class="prop-help">Contato comercial da responsável Hilink. Pode ser editado antes de baixar a proposta.</small></label>
-            <label>Tabela Hilink
-              <select id="prop-plano-base" onchange="propApplyPlanoBase()">
-                <option value="">Selecionar plano da rede</option>
-                <option value="300">300MB FTTH SIMÉTRICO · R$ 600,00</option>
-                <option value="500">500MB FTTH SIMÉTRICO · R$ 700,00</option>
-                <option value="800">800MB FTTH SIMÉTRICO · R$ 950,00</option>
-                <option value="1000">1GB FTTH SIMÉTRICO · R$ 2.300,00</option>
-              </select>
-              <small class="prop-help">Planos corporativos vigentes. Ao selecionar um CRM, os dados do arquivo têm prioridade; use esta tabela apenas como fallback ou ajuste manual.</small>
-            </label>
-            <label>Plano / produto <input id="prop-plano" placeholder="Ex.: Dedicado Empresarial Lite"><small class="prop-help">Descrição comercial do produto que aparecerá no quadro de preço.</small></label>
-            <label>Banda <input id="prop-banda" placeholder="Ex.: 500MB"><small class="prop-help">Banda contratada ou apresentada na proposta.</small></label>
           </div>
-          <label>Número da proposta
-            <input id="prop-referencia" placeholder="ID do cliente no IXC">
-            <small class="prop-help">Preenchido automaticamente com o ID do cliente no IXC. Esse ID será usado como número da proposta e pode ser editado se necessário.</small>
-          </label>
           <label>Objeto da proposta
             <textarea id="prop-objeto" placeholder="Texto de apresentação do objeto da proposta."></textarea>
             <small class="prop-help">Texto do campo OBJETO. Pode ser editado ou apagado antes de baixar o PDF.</small>
@@ -7195,6 +7183,18 @@ h2.section-title .info-btn{margin-left:6px}
             <span>Regras iniciais para validação</span>
           </div>
           <div class="prop-form two">
+            <label>Tabela Hilink
+              <select id="prop-plano-base" onchange="propApplyPlanoBase()">
+                <option value="">Selecionar plano da rede</option>
+                <option value="300">300MB FTTH SIMÉTRICO · R$ 600,00</option>
+                <option value="500">500MB FTTH SIMÉTRICO · R$ 700,00</option>
+                <option value="800">800MB FTTH SIMÉTRICO · R$ 950,00</option>
+                <option value="1000">1GB FTTH SIMÉTRICO · R$ 2.300,00</option>
+              </select>
+              <small class="prop-help">Planos corporativos vigentes. Ao selecionar um CRM, os dados do arquivo têm prioridade; use esta tabela apenas como fallback ou ajuste manual.</small>
+            </label>
+            <label>Plano / produto <input id="prop-plano" placeholder="Ex.: Dedicado Empresarial Lite"><small class="prop-help">Descrição comercial do produto que aparecerá no quadro de preço.</small></label>
+            <label>Banda <input id="prop-banda" placeholder="Ex.: 500MB"><small class="prop-help">Banda contratada ou apresentada na proposta.</small></label>
             <label>Tipo
               <select id="prop-tipo">
                 <option value="rede">Rede Hilink</option>
