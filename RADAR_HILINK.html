@@ -7161,6 +7161,7 @@ h2.section-title .info-btn{margin-left:6px}
             <label>Endereço do cliente * <input id="prop-endereco" required placeholder="Endereço obrigatório do cliente"><small class="prop-help">Obrigatório para gerar o PDF. Preenchido automaticamente quando o CRM trouxer endereço; se não vier no arquivo, preencha manualmente.</small></label>
             <label>Telefone do cliente (uso interno) <input id="prop-telefone" placeholder="Preenchido pelo CRM"><small class="prop-help">Telefone do contato/cliente. Serve apenas para conferência interna e não aparece na proposta.</small></label>
             <label>Responsável Hilink <input id="prop-responsavel" placeholder="Consultor(a)"><small class="prop-help">Pessoa da Hilink que está tratando a proposta.</small></label>
+            <label>Contato responsável Hilink <input id="prop-responsavel-contato" placeholder="Telefone e/ou e-mail"><small class="prop-help">Contato comercial da responsável Hilink. Pode ser editado antes de baixar a proposta.</small></label>
             <label>Tabela Hilink
               <select id="prop-plano-base" onchange="propApplyPlanoBase()">
                 <option value="">Selecionar plano da rede</option>
@@ -7213,7 +7214,7 @@ h2.section-title .info-btn{margin-left:6px}
             <label>Prazo de execução <input id="prop-prazo" placeholder="Ex.: até 15 dias úteis após aprovação técnica"></label>
             <label>Nome do assinante <input id="prop-assinante-nome" placeholder="Nome de quem assina"></label>
             <label>Cargo / função <input id="prop-assinante-cargo" placeholder="Ex.: Engenheiro de Telecomunicações"></label>
-            <label>Contato do assinante <input id="prop-assinante-contato" placeholder="Telefone e/ou e-mail"></label>
+            <label>Contato do assinante <input id="prop-assinante-contato" placeholder="E-mail do assinante"></label>
             <label>Imagem da assinatura
               <input id="prop-assinatura" type="file" accept="image/*" onchange="loadPropostaAssinatura(event)">
               <small class="prop-help">Imagem opcional da assinatura. Não cria linha nem texto automático.</small>
@@ -15772,6 +15773,11 @@ function propFillDefaultFields(){
   propDefaultSet('prop-desc-instalacao',
     'Implantação inicial do serviço conforme viabilidade aprovada'
   );
+  propDefaultSet('prop-responsavel','JULIANA TALITHA');
+  propDefaultSet('prop-responsavel-contato','81 97341-7801');
+  propDefaultSet('prop-assinante-nome','AKASSIO DE ALMEIDA BARROS');
+  propDefaultSet('prop-assinante-cargo','ENGENHEIRO DE TELECOMUNICAÇÕES - CREA PE05584');
+  propDefaultSet('prop-assinante-contato','akassio@hilink.com.br');
 }
 function propConsideracoesVisiveis(){
   const txt=propVal('prop-consideracoes');
@@ -15805,10 +15811,12 @@ function propBindObjetoDinamico(){
   if (propVal('prop-cliente')) regen();
 }
 function atualizarPropostaPreview(){
+  propFillDefaultFields();
   propSyncObjetoDinamico(false);
   calcularPropostaCorporativa();
   toast('Prévia atualizada.','success');
 }
+window.atualizarPropostaPreview = atualizarPropostaPreview;
 let PROP_ASSINATURA_DATAURL = localStorage.getItem('radar_prop_assinatura_akassio') || '';
 function propDataUrlBytes(dataUrl){
   const b64=String(dataUrl||'').split(',')[1]||'';
@@ -15928,6 +15936,7 @@ function renderPropostaPreview(calc){
   const contato = propPlainText(propVal('prop-contato'));
   const endereco = propPlainText(propVal('prop-endereco'));
   const resp = propVal('prop-responsavel') || '';
+  const respContato = propVal('prop-responsavel-contato') || '';
   const plano = propVal('prop-plano') || '';
   const banda = propVal('prop-banda') || '';
   const ref = propVal('prop-referencia') || '';
@@ -16044,7 +16053,7 @@ function renderPropostaPreview(calc){
 
   // --- Contato comercial (Juliana) — separado da assinatura ---
   const contatoComercial = resp
-    ? `<p class="prop-contato-comercial"><span class="prop-cc-label">Contato comercial:</span> <strong>${escHtml(resp)}</strong></p>`
+    ? `<p class="prop-contato-comercial"><span class="prop-cc-label">Contato comercial:</span> <strong>${escHtml(resp)}</strong>${respContato ? ` · ${escHtml(respContato)}` : ''}</p>`
     : '';
 
   const body = document.getElementById('prop-paper-body');
@@ -16067,7 +16076,7 @@ function renderPropostas(){
   refreshPropostaAssinaturaPreview();
   propFillDefaultFields();
   calcularPropostaCorporativa();
-  ['prop-cliente','prop-contato','prop-endereco','prop-telefone','prop-responsavel','prop-plano-base','prop-plano','prop-banda','prop-referencia','prop-objeto','prop-caracteristicas','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-desc-plano','prop-desc-instalacao','prop-prazo','prop-assinante-nome','prop-assinante-cargo','prop-assinante-contato','prop-consideracoes','prop-validade-pagamento','prop-show-observacao','prop-show-instalacao','prop-show-prazo','prop-show-declaracoes','prop-show-assinatura'].forEach(id=>{
+  ['prop-cliente','prop-contato','prop-endereco','prop-telefone','prop-responsavel','prop-responsavel-contato','prop-plano-base','prop-plano','prop-banda','prop-referencia','prop-objeto','prop-caracteristicas','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-desc-plano','prop-desc-instalacao','prop-prazo','prop-assinante-nome','prop-assinante-cargo','prop-assinante-contato','prop-consideracoes','prop-validade-pagamento','prop-show-observacao','prop-show-instalacao','prop-show-prazo','prop-show-declaracoes','prop-show-assinatura'].forEach(id=>{
     const el=document.getElementById(id);
     if(el&&!el.dataset.propBound){
       el.dataset.propBound='1';
@@ -16157,6 +16166,7 @@ async function baixarPropostaPdfTimbrado(){
     const contato = propPlainText(propVal('prop-contato'));
     const endereco = enderecoObrigatorio;
     const resp = (propVal('prop-responsavel') || '').trim();
+    const respContato = (propVal('prop-responsavel-contato') || '').trim();
     const banda = (propVal('prop-banda') || '').trim();
     const ref = (propVal('prop-referencia') || '').trim();
     const objeto = (propVal('prop-objeto') || `Fornecimento de internet dedicada para ${cliente}, conforme solicitação e viabilidade técnica apresentada.`).trim();
@@ -16503,8 +16513,14 @@ async function baixarPropostaPdfTimbrado(){
         x: contentLeft, y, size: 8.5, font: bold, color: muted, characterSpacing: 0.8
       });
       const ccLabW = bold.widthOfTextAtSize(ccLab, 8.5) + 8;
-      page.drawText(san(resp), {
-        x: contentLeft + ccLabW, y, size: 9.5, font: bold, color: ink
+      const contatoTexto = respContato ? `${resp} - ${respContato}` : resp;
+      drawWrapped(contatoTexto, {
+        x: contentLeft + ccLabW,
+        maxWidth: contentRight - (contentLeft + ccLabW),
+        size: 9.5,
+        font: bold,
+        color: ink,
+        lineHeight: 12
       });
     }
 
@@ -16531,6 +16547,8 @@ function baixarPropostaCsv(){
     contato:propVal('prop-contato'),
     endereco:propVal('prop-endereco'),
     telefone:propVal('prop-telefone'),
+    responsavel_hilink:propVal('prop-responsavel'),
+    responsavel_hilink_contato:propVal('prop-responsavel-contato'),
     plano:propVal('prop-plano'),
     banda:propVal('prop-banda'),
     tipo:document.getElementById('prop-kpi-tipo')?.textContent||'',
