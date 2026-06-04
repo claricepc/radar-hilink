@@ -7175,9 +7175,9 @@ h2.section-title .info-btn{margin-left:6px}
             <label>Plano / produto <input id="prop-plano" placeholder="Ex.: Dedicado Empresarial Lite"><small class="prop-help">Descrição comercial do produto que aparecerá no quadro de preço.</small></label>
             <label>Banda <input id="prop-banda" placeholder="Ex.: 500MB"><small class="prop-help">Banda contratada ou apresentada na proposta.</small></label>
           </div>
-          <label>Referência / objeto
-            <input id="prop-referencia" placeholder="Ex.: Cotação de internet corporativa">
-            <small class="prop-help">Resumo da negociação ou número/referência da proposta.</small>
+          <label>Número da proposta
+            <input id="prop-referencia" placeholder="ID do cliente no IXC">
+            <small class="prop-help">Preenchido automaticamente com o ID do cliente no IXC. Esse ID será usado como número da proposta e pode ser editado se necessário.</small>
           </label>
           <label>Objeto da proposta
             <textarea id="prop-objeto" placeholder="Texto de apresentação do objeto da proposta."></textarea>
@@ -15694,6 +15694,13 @@ function propEnderecoFromRow(r){
   const cidadeUf=[cidade,uf].filter(Boolean).join('/');
   return [linha1,complemento,bairro,cidadeUf,cep?`CEP ${cep}`:''].filter(Boolean).join(' - ');
 }
+function propClienteIdFromRow(r){
+  return propPick(r,[
+    'ID Cliente','Id Cliente','ID cliente','Id cliente','id_cliente','cliente_id',
+    'ID do cliente','Id do cliente','Código cliente','Codigo cliente','Cod cliente',
+    'Código do cliente','Codigo do cliente','ID','Id','Cliente ID'
+  ]);
+}
 function propApplySelected(){
   const sel=document.getElementById('prop-neg-select');
   const rows=propCrmRows();
@@ -15705,6 +15712,7 @@ function propApplySelected(){
   const cliente=propPick(r,['Cliente','Nome cliente','Nome do cliente','Razão social','Razao social','Nome prospect','Nome do prospect','Prospect','Prospecção','Prospeccao','Contato']);
   const contato=propPick(r,['Contato','Responsável pelo projeto','Responsavel pelo projeto','Responsável','Responsavel','A/C','Pessoa de contato','Contato principal','Nome contato','Nome do contato']);
   const endereco=propEnderecoFromRow(r);
+  const clienteId=propClienteIdFromRow(r);
   const telefone=propPick(r,['Telefone celular','Telefone residencial','Telefone comercial','Telefone 1','Telefone 2','Telefone','Celular','Fone','WhatsApp','Whatsapp','Contato telefone','Telefone contato']);
   propSet('prop-cliente',propNomeCliente(cliente||contato));
   propSet('prop-contato',contato||cliente);
@@ -15722,7 +15730,7 @@ function propApplySelected(){
       propSet('prop-desc-plano',PROP_PLANOS_HILINK[planoKey].plano);
     }
   }
-  propSet('prop-referencia',desc||'Cotação de serviço corporativo Hilink');
+  propSet('prop-referencia',clienteId||'');
   propFillDefaultFields();
   propSyncObjetoDinamico(true);
   calcularPropostaCorporativa();
@@ -16017,7 +16025,7 @@ function renderPropostaPreview(calc){
 
   // --- Bloco de referência ---
   const refHtml = ref
-    ? `<p class="prop-ref"><strong class="prop-ref-label">Ref.:</strong> <strong>${escHtml(ref)}</strong></p>`
+    ? `<p class="prop-ref"><strong class="prop-ref-label">Nº da proposta:</strong> <strong>${escHtml(ref)}</strong></p>`
     : '';
 
   // --- Bloco de abertura ---
@@ -16316,8 +16324,8 @@ async function baixarPropostaPdfTimbrado(){
     y -= 18;
 
     if (ref) {
-      page.drawText(san('Ref.:'), { x: contentLeft, y, size: 10, font: bold, color: blueStrong });
-      const refLabW = bold.widthOfTextAtSize('Ref.:', 10);
+      page.drawText(san('Nº da proposta:'), { x: contentLeft, y, size: 10, font: bold, color: blueStrong });
+      const refLabW = bold.widthOfTextAtSize('Nº da proposta:', 10);
       page.drawText(san(ref), { x: contentLeft + refLabW + 6, y, size: 10, font: bold, color: ink });
       y -= 18;
     }
@@ -16595,6 +16603,7 @@ function baixarPropostaCsv(){
     telefone:propVal('prop-telefone'),
     responsavel_hilink:propVal('prop-responsavel'),
     responsavel_hilink_contato:propVal('prop-responsavel-contato'),
+    numero_proposta:propVal('prop-referencia'),
     plano:propVal('prop-plano'),
     banda:propVal('prop-banda'),
     tipo:document.getElementById('prop-kpi-tipo')?.textContent||'',
