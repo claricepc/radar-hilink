@@ -7165,10 +7165,13 @@ h2.section-title .info-btn{margin-left:6px}
             <span>Carregar CSV do CRM</span>
             <small class="prop-help">Arquivos aceitos: CSV do IXC em Sistema &gt; CRM &gt; Negociações ou Sistema &gt; CRM &gt; Prospecções. Se o endereço não vier no arquivo, preencha manualmente antes de gerar o PDF.</small>
           </label>
-          <label>Negociação
-            <select id="prop-neg-select" onchange="propApplySelected()">
+          <label>Dados do cliente no relatório
+            <input id="prop-neg-search" list="prop-neg-list" placeholder="Digite para buscar cliente, ID, plano ou status" oninput="propSelectCrmBySearch()" onchange="propSelectCrmBySearch(true)">
+            <datalist id="prop-neg-list"></datalist>
+            <select id="prop-neg-select" onchange="propApplySelected()" hidden>
               <option value="">Carregue o CSV ou preencha manualmente</option>
             </select>
+            <small class="prop-help">Fonte: CSV do IXC carregado no Radar. Lista em ordem alfabética; digite para localizar e selecione o cliente.</small>
           </label>
           <div class="prop-form two">
             <label>Número da proposta
@@ -15669,25 +15672,59 @@ function loadPropostaCrmFile(file){
       const rows=(res.data||[]).filter(r=>Object.values(r||{}).some(v=>String(v||'').trim()));
       STATE.raw.crmNegociacoes=rows;
       propostasPopulateCrm();
-      if(rows.length)propApplySelected();
+      if(rows.length){
+        const sel=document.getElementById('prop-neg-select');
+        if(sel&&!sel.value){
+          const first=Array.from(sel.options).find(o=>o.value);
+          if(first)sel.value=first.value;
+        }
+        propApplySelected();
+      }
       toast(`${rows.length.toLocaleString('pt-BR')} registro(s) de CRM carregado(s) para propostas`,'success');
     },
     error:(err)=>toast('Falha ao ler CSV do CRM: '+(err?.message||err),'error')
   });
 }
+function propCrmOptionLabel(r){
+  const id=propClienteIdFromRow(r);
+  const cli=propPick(r,['Cliente','Nome cliente','Nome do cliente','Razão social','Razao social','Nome prospect','Nome do prospect','Prospect','Prospecção','Prospeccao'])||'Cliente sem nome';
+  const plano=propPick(r,['Descrição','Descricao','Plano de venda','Plano de negociação','Plano de negociacao','Produto','Serviço','Servico','Interesse','Oferta']);
+  const status=propPick(r,['Status contrato','Status acesso','Status','Estágio','Estagio','Funil','Situação','Situacao']);
+  return [propNomeCliente(cli),id?`ID ${id}`:'',plano,status].filter(Boolean).join(' · ');
+}
 function propostasPopulateCrm(){
   const sel=document.getElementById('prop-neg-select');
+  const list=document.getElementById('prop-neg-list');
+  const search=document.getElementById('prop-neg-search');
   if(!sel)return;
   const rows=propCrmRows();
   const current=sel.value;
+  const options=rows.map((r,i)=>({i,label:propCrmOptionLabel(r)}))
+    .sort((a,b)=>a.label.localeCompare(b.label,'pt-BR',{sensitivity:'base'}));
   sel.innerHTML='<option value="">Selecione uma negociação/prospecção ou preencha manualmente</option>'+
-    rows.map((r,i)=>{
-      const cli=propPick(r,['Cliente','Nome cliente','Nome do cliente','Razão social','Razao social','Nome prospect','Nome do prospect','Prospect','Prospecção','Prospeccao','Contato'])||'Cliente sem nome';
-      const plano=propPick(r,['Plano de venda','Plano de negociação','Plano de negociacao','Descrição','Descricao','Produto','Serviço','Servico','Interesse','Oferta']);
-      const status=propPick(r,['Status','Estágio','Estagio','Funil','Status contrato','Status acesso','Situação','Situacao']);
-      return `<option value="${i}">${escHtml(cli)}${plano?' · '+escHtml(plano):''}${status?' · '+escHtml(status):''}</option>`;
-    }).join('');
+    options.map(o=>`<option value="${o.i}">${escHtml(o.label)}</option>`).join('');
+  if(list){
+    list.innerHTML=options.map(o=>`<option value="${escHtml(o.label)}" data-index="${o.i}"></option>`).join('');
+  }
   if(current&&rows[Number(current)])sel.value=current;
+  if(search){
+    const opt=sel.options[sel.selectedIndex];
+    search.value=opt&&sel.value?opt.textContent:'';
+  }
+}
+function propSelectCrmBySearch(force=false){
+  const search=document.getElementById('prop-neg-search');
+  const list=document.getElementById('prop-neg-list');
+  const sel=document.getElementById('prop-neg-select');
+  if(!search||!list||!sel)return;
+  const value=search.value.trim();
+  const opt=Array.from(list.options).find(o=>o.value===value);
+  if(opt){
+    sel.value=opt.dataset.index;
+    propApplySelected();
+  }else if(force&&value===''){
+    sel.value='';
+  }
 }
 function propSet(id,val){
   const el=document.getElementById(id);
@@ -15710,20 +15747,32 @@ function propApplyPlanoBase(){
   calcularPropostaCorporativa();
 }
 function propEnderecoFromRow(r){
-  const direto=propPick(r,[
+  const direto=propPickExact(r,[
     'Endereço','Endereco','Endereço completo','Endereco completo','Endereço cliente','Endereco cliente',
     'Endereço comercial','Endereco comercial','Endereço residencial','Endereco residencial',
     'Endereço cobrança','Endereco cobranca','Endereço de cobrança','Endereco de cobranca',
     'Endereço instalação','Endereco instalacao','Endereço de instalação','Endereco de instalacao',
     'Local de instalação','Local de instalacao','Local instalação','Local instalacao'
   ]);
-  const logradouro=propPick(r,['Logradouro','Rua','Endereço logradouro','Endereco logradouro','Logradouro cliente','Rua cliente'])||direto;
-  const numero=propPick(r,['Número','Numero','Nº','N°','Num','Número endereço','Numero endereco']);
-  const complemento=propPick(r,['Complemento','Complemento endereço','Complemento endereco']);
-  const bairro=propPick(r,['Bairro','Bairro cliente']);
-  const cidade=propPick(r,['Cidade','Município','Municipio']);
-  const uf=propPick(r,['UF','Estado']);
-  const cep=propPick(r,['CEP','Cep']);
+  const logradouroCampo=propPickExact(r,['Logradouro','Rua','Endereço logradouro','Endereco logradouro','Logradouro cliente','Rua cliente']);
+  const numero=propPickExact(r,['Número','Numero','Nº','N°','Num','Número endereço','Numero endereco']);
+  const complemento=propPickExact(r,['Complemento','Complemento endereço','Complemento endereco']);
+  const bairro=propPickExact(r,['Bairro','Bairro cliente']);
+  const cidade=propPickExact(r,['Cidade','Município','Municipio']);
+  const uf=propPickExact(r,['UF','Estado']);
+  const cep=propPickExact(r,['CEP','Cep']);
+  const diretoNorm=propKeyNorm(direto);
+  const diretoJaCompleto=direto&&[numero,bairro,cidade,cep].some(v=>v&&diretoNorm.includes(propKeyNorm(v)));
+  const logradouro=logradouroCampo||direto;
+  if(diretoJaCompleto){
+    const extras=[
+      complemento&&!diretoNorm.includes(propKeyNorm(complemento))?complemento:'',
+      bairro&&!diretoNorm.includes(propKeyNorm(bairro))?bairro:'',
+      cidade&&!diretoNorm.includes(propKeyNorm(cidade))?cidade:'',
+      cep&&!diretoNorm.includes(propKeyNorm(cep))?`CEP ${cep}`:''
+    ].filter(Boolean);
+    return [direto,...extras].join(' - ');
+  }
   const linha1=[logradouro,numero].filter(Boolean).join(', ');
   const cidadeUf=[cidade,uf].filter(Boolean).join('/');
   return [linha1,complemento,bairro,cidadeUf,cep?`CEP ${cep}`:''].filter(Boolean).join(' - ');
