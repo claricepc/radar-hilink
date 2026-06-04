@@ -7249,8 +7249,8 @@ h2.section-title .info-btn{margin-left:6px}
           </div>
           <div class="prop-actions">
             <button class="btn sm primary" onclick="atualizarPropostaPreview()">Atualizar prévia</button>
-            <button class="btn sm" onclick="baixarPropostaPdfTimbrado()">Baixar PDF timbrado</button>
-            <button class="btn sm" onclick="baixarPropostaCsv()">Baixar CSV</button>
+            <button class="btn sm" id="prop-btn-pdf" onclick="baixarPropostaPdfTimbrado()" disabled>Baixar PDF timbrado</button>
+            <button class="btn sm" id="prop-btn-csv" onclick="baixarPropostaCsv()" disabled>Baixar CSV</button>
           </div>
         </div>
       </div>
@@ -15817,7 +15817,47 @@ function atualizarPropostaPreview(){
   toast('Prévia atualizada.','success');
 }
 window.atualizarPropostaPreview = atualizarPropostaPreview;
+const PROP_ASSINATURA_PADRAO_URL = 'assinatura-akassio.png';
 let PROP_ASSINATURA_DATAURL = localStorage.getItem('radar_prop_assinatura_akassio') || '';
+async function initPropostaAssinaturaPadrao(){
+  if(PROP_ASSINATURA_DATAURL || localStorage.getItem('radar_prop_assinatura_removida')==='1'){
+    refreshPropostaAssinaturaPreview();
+    return;
+  }
+  try{
+    const res=await fetch(PROP_ASSINATURA_PADRAO_URL);
+    if(!res.ok)throw new Error('assinatura padrao indisponivel');
+    const blob=await res.blob();
+    await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>{ PROP_ASSINATURA_DATAURL=reader.result; resolve(); };
+      reader.onerror=reject;
+      reader.readAsDataURL(blob);
+    });
+  }catch(e){
+    console.warn('Assinatura padrao nao carregada',e);
+  }
+  refreshPropostaAssinaturaPreview();
+  calcularPropostaCorporativa();
+}
+function propostaBasicaCompleta(){
+  const cliente=propNomeCliente(propVal('prop-cliente'));
+  const endereco=propPlainText(propVal('prop-endereco'));
+  const plano=propVal('prop-plano');
+  const banda=propVal('prop-banda');
+  const mensalidade=propVal('prop-mensalidade') || (document.getElementById('prop-kpi-mensalidade')?.textContent||'').replace(/[^\d]/g,'');
+  return !!(cliente && cliente.length>=2 && endereco && endereco.length>=5 && plano && banda && mensalidade);
+}
+function updatePropostaDownloadState(){
+  const ok=propostaBasicaCompleta();
+  ['prop-btn-pdf','prop-btn-csv'].forEach(id=>{
+    const btn=document.getElementById(id);
+    if(btn){
+      btn.disabled=!ok;
+      btn.title=ok?'':'Preencha cliente, endereco, plano, banda e mensalidade para baixar.';
+    }
+  });
+}
 function propDataUrlBytes(dataUrl){
   const b64=String(dataUrl||'').split(',')[1]||'';
   return Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
@@ -15836,6 +15876,7 @@ function loadPropostaAssinatura(ev){
   reader.onload=()=>{
     PROP_ASSINATURA_DATAURL=reader.result;
     try{localStorage.setItem('radar_prop_assinatura_akassio',PROP_ASSINATURA_DATAURL)}catch(e){}
+    try{localStorage.removeItem('radar_prop_assinatura_removida')}catch(e){}
     refreshPropostaAssinaturaPreview();
     calcularPropostaCorporativa();
     toast('Assinatura carregada','success');
@@ -15845,6 +15886,7 @@ function loadPropostaAssinatura(ev){
 function removePropostaAssinatura(){
   PROP_ASSINATURA_DATAURL='';
   try{localStorage.removeItem('radar_prop_assinatura_akassio')}catch(e){}
+  try{localStorage.setItem('radar_prop_assinatura_removida','1')}catch(e){}
   const input=document.getElementById('prop-assinatura');
   if(input)input.value='';
   refreshPropostaAssinaturaPreview();
@@ -15928,6 +15970,7 @@ function calcularPropostaCorporativa(){
   document.getElementById('prop-kpi-tipo').textContent=({rede:'Rede Hilink',infra:'Infra adicional',transporte:'Transporte terceiro',mista:'Mista'}[tipo]||tipo);
   document.getElementById('prop-rule-note').innerHTML=`<strong>Memória interna:</strong> ${escHtml(nota)}`;
   renderPropostaPreview({tipo,dist,instalacao,mensalidade,nota});
+  updatePropostaDownloadState();
   return {tipo,dist,instalacao,mensalidade,nota};
 }
 function renderPropostaPreview(calc){
@@ -16042,7 +16085,6 @@ function renderPropostaPreview(calc){
     ? `<div class="prop-paper-signature">
         <p>Atenciosamente,</p>
         ${PROP_ASSINATURA_DATAURL ? `<img src="${PROP_ASSINATURA_DATAURL}" alt="Imagem da assinatura">` : ''}
-        <div class="prop-sign-line"></div>
         <div class="prop-signer">
           ${assinanteNome ? `<div class="prop-signer-nome"><strong>${escHtml(assinanteNome)}</strong></div>` : ''}
           ${assinanteCargo ? `<div class="prop-signer-cargo">${escHtml(assinanteCargo)}</div>` : ''}
@@ -16075,6 +16117,7 @@ function renderPropostas(){
   propostasPopulateCrm();
   refreshPropostaAssinaturaPreview();
   propFillDefaultFields();
+  initPropostaAssinaturaPadrao();
   calcularPropostaCorporativa();
   ['prop-cliente','prop-contato','prop-endereco','prop-telefone','prop-responsavel','prop-responsavel-contato','prop-plano-base','prop-plano','prop-banda','prop-referencia','prop-objeto','prop-caracteristicas','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-desc-plano','prop-desc-instalacao','prop-prazo','prop-assinante-nome','prop-assinante-cargo','prop-assinante-contato','prop-consideracoes','prop-validade-pagamento','prop-show-observacao','prop-show-instalacao','prop-show-prazo','prop-show-declaracoes','prop-show-assinatura'].forEach(id=>{
     const el=document.getElementById(id);
@@ -16086,6 +16129,7 @@ function renderPropostas(){
   });
 
   propBindObjetoDinamico();
+  updatePropostaDownloadState();
 }
 function propPdfWrap(text,font,size,maxWidth){
   const words=String(text||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
@@ -16113,6 +16157,11 @@ function propPdfDrawWrapped(page,text,x,y,maxWidth,font,size,lineHeight,color){
 async function baixarPropostaPdfTimbrado(){
   try {
     calcularPropostaCorporativa();
+    if(!propostaBasicaCompleta()){
+      toast('Preencha cliente, endereço, plano, banda e mensalidade antes de baixar.', 'error');
+      updatePropostaDownloadState();
+      return;
+    }
 
     // === VALIDAÇÃO OBRIGATÓRIA ===
     const cliente = propNomeCliente(propVal('prop-cliente'));
@@ -16476,14 +16525,6 @@ async function baixarPropostaPdfTimbrado(){
         } catch (e) { console.warn('Assinatura não aplicada no PDF', e); }
       }
 
-      // Linha de assinatura (rabisco)
-      page.drawLine({
-        start: { x: contentLeft, y },
-        end:   { x: contentLeft + 220, y },
-        thickness: 0.6, color: ink
-      });
-      y -= 12;
-
       if (assinanteNome) {
         page.drawText(san(assinanteNome.toUpperCase()), {
           x: contentLeft, y, size: 10, font: bold, color: ink
@@ -16542,6 +16583,11 @@ async function baixarPropostaPdfTimbrado(){
 }
 function baixarPropostaCsv(){
   calcularPropostaCorporativa();
+  if(!propostaBasicaCompleta()){
+    toast('Preencha cliente, endereço, plano, banda e mensalidade antes de baixar.', 'error');
+    updatePropostaDownloadState();
+    return;
+  }
   const rows=[{
     cliente:propVal('prop-cliente'),
     contato:propVal('prop-contato'),
