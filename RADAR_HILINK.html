@@ -2001,10 +2001,12 @@ h2.section-title .info-btn{margin-left:6px}
   margin-bottom:24px;
 }
 .prop-brand{
-  font-size:38px;
-  font-weight:900;
-  color:#0d74bc;
-  letter-spacing:-.04em;
+  width:124px;
+  height:50px;
+  background:url("logo-hilink-marca.png") left center / contain no-repeat;
+  overflow:hidden;
+  text-indent:-9999px;
+  flex:0 0 auto;
 }
 .prop-paper-head strong{
   display:block;
@@ -2059,6 +2061,10 @@ h2.section-title .info-btn{margin-left:6px}
 .prop-ref,
 .prop-abertura{
   margin:10px 0;
+}
+.prop-abertura{
+  text-align:left;
+  word-spacing:normal;
 }
 .prop-warn{
   color:#b00020;
@@ -15938,11 +15944,7 @@ function renderPropostaPreview(calc){
     : '';
 
   // --- Bloco de abertura ---
-  const aberturaHtml = `<p class="prop-abertura">
-    Conforme solicitado, a <span class="prop-hilink">Hilink</span> apresenta a seguir proposta para fornecimento de
-    <strong>internet dedicada de alta disponibilidade</strong>,
-    com as condições técnicas e comerciais descritas neste documento.
-  </p>`;
+  const aberturaHtml = `<p class="prop-abertura">Conforme solicitado, a <span class="prop-hilink">Hilink</span> apresenta a seguir proposta para fornecimento de internet dedicada de alta disponibilidade, com as condições técnicas e comerciais descritas neste documento.</p>`;
 
   // --- Objeto ---
   const objetoHtml = objeto
@@ -16024,7 +16026,6 @@ function renderPropostaPreview(calc){
   if (!body) return;
   body.innerHTML = `
     <div class="prop-destinatario">${destinatario}</div>
-    <p class="prop-data" style="text-align:right">Recife, ${escHtml(dateText)}.</p>
     ${refHtml}
     ${aberturaHtml}
     ${objetoHtml}
