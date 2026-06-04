@@ -19679,7 +19679,7 @@ function setAllDrillCols(on){
         return s;
       }, {total:0,paid:0,pending:0,unknown:0});
 
-      var W = 1600, pad = 48, gap = 22, footerH = 78;
+      var W = 1600, pad = 48, gap = 22, footerH = 98;
       var rest = ranking.slice(3);
       var restCols = 2;
       var restRows = Math.ceil(rest.length / restCols);
@@ -19899,9 +19899,12 @@ function setAllDrillCols(on){
       ctx.font = '500 14px Inter, Segoe UI, Arial';
       ctx.fillStyle = '#9fb8d7';
       premCanvasCenterText(ctx, rodape, W / 2, footerY + 8, W - pad * 2, 20, 2);
+      ctx.font = '600 12px Inter, Segoe UI, Arial';
+      ctx.fillStyle = '#8fb8e8';
+      premCanvasCenterText(ctx, 'Ranking considera upgrades com aumento mínimo de R$ 9,90.', W / 2, footerY + 32, W - pad * 2, 16, 1);
       ctx.font = '500 12px Inter, Segoe UI, Arial';
       ctx.fillStyle = '#6f86a3';
-      premCanvasCenterText(ctx, 'Fonte: relatórios carregados no Radar Hilink. Valores sujeitos às regras de validação e pagamento da folha.', W / 2, footerY + 48, W - pad * 2, 16, 1);
+      premCanvasCenterText(ctx, 'Fonte: relatórios carregados no Radar Hilink. Valores sujeitos às regras de validação e pagamento da folha.', W / 2, footerY + 58, W - pad * 2, 16, 1);
 
       canvas.toBlob(function(blob){
         var a = document.createElement('a');
