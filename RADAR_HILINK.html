@@ -2048,6 +2048,7 @@ h2.section-title .info-btn{margin-left:6px}
 }
 .prop-muted,
 .prop-dest-tel,
+.prop-dest-endereco,
 .prop-contato-comercial{
   color:#6E6E73;
 }
@@ -2107,7 +2108,8 @@ h2.section-title .info-btn{margin-left:6px}
   font-weight:800;
 }
 .prop-invest-info{
-  margin-top:-4px;
+  margin-top:14px;
+  padding-top:2px;
 }
 .prop-paper-signature{
   margin-top:28px;
@@ -7147,9 +7149,10 @@ h2.section-title .info-btn{margin-left:6px}
             </select>
           </label>
           <div class="prop-form two">
-            <label>Cliente <input id="prop-cliente" placeholder="Empresa / cliente"><small class="prop-help">Nome da empresa/cliente que aparecerá no início da proposta.</small></label>
-            <label>Contato <input id="prop-contato" placeholder="Responsável"><small class="prop-help">Pessoa de contato do cliente ou responsável pela negociação.</small></label>
-            <label>Telefone <input id="prop-telefone" placeholder="Telefone"><small class="prop-help">Contato que será exibido nos dados iniciais, se preenchido.</small></label>
+            <label>Cliente <input id="prop-cliente" placeholder="Empresa / cliente"><small class="prop-help">Preenchido pelo CRM quando disponível. Na proposta, o nome do cliente fica padronizado em caixa alta.</small></label>
+            <label>Contato do cliente <input id="prop-contato" placeholder="Responsável pelo projeto"><small class="prop-help">Pessoa do cliente ou responsável pela negociação no cadastro.</small></label>
+            <label>Endereço do cliente <input id="prop-endereco" placeholder="Endereço do cliente"><small class="prop-help">Preenchido automaticamente quando o CRM trouxer endereço. Aparece abaixo do nome do cliente na proposta.</small></label>
+            <label>Telefone do cliente (uso interno) <input id="prop-telefone" placeholder="Preenchido pelo CRM"><small class="prop-help">Telefone do contato/cliente. Serve apenas para conferência interna e não aparece na proposta.</small></label>
             <label>Responsável Hilink <input id="prop-responsavel" placeholder="Consultor(a)"><small class="prop-help">Pessoa da Hilink que está tratando a proposta.</small></label>
             <label>Tabela Hilink
               <select id="prop-plano-base" onchange="propApplyPlanoBase()">
@@ -7236,7 +7239,7 @@ h2.section-title .info-btn{margin-left:6px}
             <strong>Memória interna:</strong> até 300m sem cobrança de instalação; acima disso validar faixa e custo de infraestrutura.
           </div>
           <div class="prop-actions">
-            <button class="btn sm primary" onclick="calcularPropostaCorporativa()">Atualizar prévia</button>
+            <button class="btn sm primary" onclick="atualizarPropostaPreview()">Atualizar prévia</button>
             <button class="btn sm" onclick="baixarPropostaPdfTimbrado()">Baixar PDF timbrado</button>
             <button class="btn sm" onclick="baixarPropostaCsv()">Baixar CSV</button>
           </div>
@@ -15558,6 +15561,48 @@ function propParseMoney(v){
   return Number.isFinite(n)?n:0;
 }
 function propMoney(v){return brl(Number(v)||0)}
+function propKeyNorm(s){
+  return String(s||'')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g,'');
+}
+function propPick(row,names){
+  const keys=Object.keys(row||{});
+  for(const name of names){
+    const wanted=propKeyNorm(name);
+    const exact=keys.find(k=>propKeyNorm(k)===wanted);
+    if(exact&&cleanIxcValue(row[exact]))return cleanIxcValue(row[exact]);
+  }
+  for(const name of names){
+    const wanted=propKeyNorm(name);
+    const partial=keys.find(k=>{
+      const nk=propKeyNorm(k);
+      return nk.includes(wanted)||wanted.includes(nk);
+    });
+    if(partial&&cleanIxcValue(row[partial]))return cleanIxcValue(row[partial]);
+  }
+  return '';
+}
+function propPlainText(v){
+  return String(v||'').replace(/\s+/g,' ').trim();
+}
+function propNomeCliente(v){
+  return propPlainText(v).toLocaleUpperCase('pt-BR');
+}
+function propObjetoPadrao(){
+  const cliente=propNomeCliente(propVal('prop-cliente'));
+  return cliente ? `Fornecimento de internet dedicada para ${cliente}, conforme solicitação e viabilidade técnica apresentada.` : '';
+}
+function propSyncObjetoDinamico(force=false){
+  const objetoEl=document.getElementById('prop-objeto');
+  if(!objetoEl)return;
+  if(force||objetoEl.dataset.propAutoGerado==='1'){
+    objetoEl.dataset.propAutoGerado='1';
+    objetoEl.value=propObjetoPadrao();
+  }
+}
 function propCrmRows(){
   const raw=STATE.raw||{};
   const direct=[raw.crmNegociacoes,raw.crm,raw.negociacoes].find(a=>Array.isArray(a)&&a.length);
@@ -15591,9 +15636,9 @@ function propostasPopulateCrm(){
   const current=sel.value;
   sel.innerHTML='<option value="">Selecione uma negociação ou preencha manualmente</option>'+
     rows.map((r,i)=>{
-      const cli=cleanIxcValue(r.Cliente||r.cliente||r.Contato||r.contato||'Cliente sem nome');
-      const plano=cleanIxcValue(r['Plano de venda']||r['Plano de negociação']||r['Descrição']||r.Descricao||'');
-      const status=cleanIxcValue(r.Status||r.Estágio||r.Estagio||'');
+      const cli=propPick(r,['Cliente','Nome cliente','Razão social','Razao social','Contato'])||'Cliente sem nome';
+      const plano=propPick(r,['Plano de venda','Plano de negociação','Plano de negociacao','Descrição','Descricao']);
+      const status=propPick(r,['Status','Estágio','Estagio','Status contrato','Status acesso']);
       return `<option value="${i}">${escHtml(cli)}${plano?' · '+escHtml(plano):''}${status?' · '+escHtml(status):''}</option>`;
     }).join('');
   if(current&&rows[Number(current)])sel.value=current;
@@ -15622,14 +15667,19 @@ function propApplySelected(){
   const rows=propCrmRows();
   const r=rows[Number(sel?.value)];
   if(!r)return calcularPropostaCorporativa();
-  const desc=cleanIxcValue(r.Descrição||r.Descricao||r['Plano de venda']||'');
+  const desc=propPick(r,['Descrição','Descricao','Plano de venda','Plano de negociação','Plano de negociacao','Descrição aux. plano venda']);
   const banda=(desc.match(/(\d+\s*(?:MB|GB))/i)||[])[1]||'';
-  const valor=cleanIxcValue(r['Valor recorrente']||r['Valor fixo']||'');
-  propSet('prop-cliente',cleanIxcValue(r.Cliente||r.Contato));
-  propSet('prop-contato',cleanIxcValue(r.Contato||r.Cliente));
-  propSet('prop-telefone',cleanIxcValue(r.Telefone||r.Celular||r.Fone));
-  propSet('prop-responsavel',cleanIxcValue(r.Responsável||r.Responsavel||r['Criado por']));
-  propSet('prop-plano',cleanIxcValue(r['Plano de venda']||r['Plano de negociação']||desc));
+  const valor=propPick(r,['Valor recorrente','Valor fixo','Mensalidade','Valor mensal','Valor']);
+  const cliente=propPick(r,['Cliente','Nome cliente','Razão social','Razao social','Contato']);
+  const contato=propPick(r,['Contato','Responsável pelo projeto','Responsavel pelo projeto','Responsável','Responsavel','A/C']);
+  const endereco=propPick(r,['Endereço','Endereco','Endereço completo','Endereco completo','Logradouro','Rua','Endereço instalação','Endereco instalacao','Endereço de instalação','Endereco de instalacao','Local de instalação','Local de instalacao']);
+  const telefone=propPick(r,['Telefone celular','Telefone residencial','Telefone comercial','Telefone','Celular','Fone','WhatsApp','Whatsapp']);
+  propSet('prop-cliente',propNomeCliente(cliente||contato));
+  propSet('prop-contato',contato||cliente);
+  propSet('prop-endereco',endereco);
+  propSet('prop-telefone',telefone);
+  propSet('prop-responsavel',propPick(r,['Responsável/vendedor','Responsavel/vendedor','Responsável','Responsavel','Vendedor','Vendedor ativação','Criado por']));
+  propSet('prop-plano',propPick(r,['Plano de venda','Plano de negociação','Plano de negociacao'])||desc);
   propSet('prop-banda',banda);
   if(valor)propSet('prop-mensalidade',valor);
   const mb=(banda.match(/\d+/)||[])[0]||'';
@@ -15640,8 +15690,9 @@ function propApplySelected(){
       propSet('prop-desc-plano',PROP_PLANOS_HILINK[mb].plano);
     }
   }
-  propSet('prop-referencia',cleanIxcValue(r.Descrição||r.Descricao||'Cotação de serviço corporativo Hilink'));
+  propSet('prop-referencia',desc||'Cotação de serviço corporativo Hilink');
   propFillDefaultFields();
+  propSyncObjetoDinamico(true);
   calcularPropostaCorporativa();
 }
 function propVal(id){
@@ -15678,7 +15729,8 @@ function propFillDefaultFields(){
     'Monitoramento: acompanhamento contínuo da banda\n' +
     'Comodato: 01 ONU fornecida pela Hilink durante a vigência do contrato'
   );
-  propDefaultSet('prop-consideracoes', 'Equipamentos em comodato: 01 (uma) ONU');
+  const consEl=document.getElementById('prop-consideracoes');
+  if(consEl&&/^Equipamentos em comodato:/i.test(consEl.value.trim()))consEl.value='';
   propDefaultSet('prop-prazo',
     'A combinar com o cliente, dentro do horário comercial ' +
     '(seg. a sex. 08h às 18h | sáb. 08h às 17h).'
@@ -15689,6 +15741,12 @@ function propFillDefaultFields(){
   propDefaultSet('prop-desc-instalacao',
     'Implantação inicial do serviço conforme viabilidade aprovada'
   );
+}
+function propConsideracoesVisiveis(){
+  const txt=propVal('prop-consideracoes');
+  if(!txt)return '';
+  if(/^Equipamentos em comodato:/i.test(txt.trim()))return '';
+  return txt;
 }
 function propBindObjetoDinamico(){
   const objetoEl = document.getElementById('prop-objeto');
@@ -15706,10 +15764,7 @@ function propBindObjetoDinamico(){
   // Se o cliente mudar E o objeto ainda for auto-gerado, atualiza
   const regen = () => {
     if (objetoEl.dataset.propAutoGerado !== '1') return;
-    const c = propVal('prop-cliente');
-    objetoEl.value = c
-      ? `Fornecimento de internet dedicada para ${c}, conforme solicitação e viabilidade técnica apresentada.`
-      : '';
+    propSyncObjetoDinamico(false);
     calcularPropostaCorporativa();
   };
   clienteEl.addEventListener('input', regen);
@@ -15717,6 +15772,11 @@ function propBindObjetoDinamico(){
 
   // Trigger inicial caso já exista cliente preenchido
   if (propVal('prop-cliente')) regen();
+}
+function atualizarPropostaPreview(){
+  propSyncObjetoDinamico(false);
+  calcularPropostaCorporativa();
+  toast('Prévia atualizada.','success');
 }
 let PROP_ASSINATURA_DATAURL = localStorage.getItem('radar_prop_assinatura_akassio') || '';
 function propDataUrlBytes(dataUrl){
@@ -15832,9 +15892,10 @@ function calcularPropostaCorporativa(){
   return {tipo,dist,instalacao,mensalidade,nota};
 }
 function renderPropostaPreview(calc){
-  const cliente = propVal('prop-cliente') || '';
-  const contato = propVal('prop-contato') || '';
-  const tel = propVal('prop-telefone') || '';
+  calc = calc || {mensalidade:0, instalacao:0};
+  const cliente = propNomeCliente(propVal('prop-cliente'));
+  const contato = propPlainText(propVal('prop-contato'));
+  const endereco = propPlainText(propVal('prop-endereco'));
   const resp = propVal('prop-responsavel') || '';
   const plano = propVal('prop-plano') || '';
   const banda = propVal('prop-banda') || '';
@@ -15845,7 +15906,7 @@ function renderPropostaPreview(calc){
   const caracteristicas = propLines('prop-caracteristicas', '');
   const descInstalacao = propVal('prop-desc-instalacao') || 'Implantação inicial do serviço conforme viabilidade aprovada';
   const prazo = propVal('prop-prazo') || 'A combinar com o cliente, dentro do horário comercial.';
-  const consideracoes = propVal('prop-consideracoes') || '';
+  const consideracoes = propConsideracoesVisiveis();
   const validade = propVal('prop-validade-pagamento') || '30 (trinta) dias a partir da data de emissão.';
   const assinanteNome = propVal('prop-assinante-nome');
   const assinanteCargo = propVal('prop-assinante-cargo');
@@ -15859,12 +15920,12 @@ function renderPropostaPreview(calc){
   // --- Bloco do destinatário ---
   const linhasDest = [];
   if (cliente) {
-    linhasDest.push(`<div class="prop-dest-nome"><strong>À ${escHtml(cliente.toUpperCase())}</strong></div>`);
-    if (contato && contato.trim().toUpperCase() !== cliente.trim().toUpperCase()) {
+    linhasDest.push(`<div class="prop-dest-nome"><strong>À ${escHtml(cliente)}</strong></div>`);
+    if (contato && propNomeCliente(contato) !== cliente) {
       linhasDest.push(`<div class="prop-dest-ac"><span class="prop-muted">A/C</span> <strong>${escHtml(contato)}</strong></div>`);
     }
-    if (tel) {
-      linhasDest.push(`<div class="prop-dest-tel"><span class="prop-muted">Telefone:</span> ${escHtml(tel)}</div>`);
+    if (endereco) {
+      linhasDest.push(`<div class="prop-dest-endereco">${escHtml(endereco)}</div>`);
     }
   } else {
     linhasDest.push(`<div class="prop-dest-nome prop-warn"><strong>[Preencha o nome do cliente]</strong></div>`);
@@ -15894,25 +15955,30 @@ function renderPropostaPreview(calc){
     : '';
 
   // --- Investimento como tabela ---
+  const instalacaoRow = propShow('prop-show-instalacao')
+    ? `<tr>
+          <td><strong>Instalação / infraestrutura</strong></td>
+          <td>${escHtml(descInstalacao)}</td>
+          <td class="prop-valor"><strong>${propMoney(calc.instalacao)}</strong></td>
+        </tr>`
+    : '';
   const investHtml = `
     <h4>Investimento</h4>
     <table class="prop-invest-table">
       <thead>
-        <tr><th>Plano</th><th>Especificação</th><th>Valor mensal</th></tr>
+        <tr><th>Plano</th><th>Especificação</th><th>Valor</th></tr>
       </thead>
       <tbody>
         <tr>
           <td><strong>${escHtml(plano || '-')}</strong></td>
           <td>${escHtml(banda || '-')}</td>
-          <td class="prop-valor"><strong>${propMoney(calc.mensalidade)}</strong></td>
+          <td class="prop-valor"><strong>${propMoney(calc.mensalidade)}/mês</strong></td>
         </tr>
+        ${instalacaoRow}
       </tbody>
     </table>
     <p class="prop-invest-info">
       <strong>Pagamento:</strong> boleto bancário, faturamento mensal.
-      ${propShow('prop-show-instalacao')
-        ? `<br><strong>Instalação:</strong> ${propMoney(calc.instalacao)} (${escHtml(descInstalacao)}).`
-        : ''}
       ${propShow('prop-show-observacao') && consideracoes
         ? `<br><strong>Obs.:</strong> ${propTextHtml(consideracoes)}`
         : ''}
@@ -15975,7 +16041,7 @@ function renderPropostas(){
   refreshPropostaAssinaturaPreview();
   propFillDefaultFields();
   calcularPropostaCorporativa();
-  ['prop-cliente','prop-contato','prop-telefone','prop-responsavel','prop-plano-base','prop-plano','prop-banda','prop-referencia','prop-objeto','prop-caracteristicas','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-desc-plano','prop-desc-instalacao','prop-prazo','prop-assinante-nome','prop-assinante-cargo','prop-assinante-contato','prop-consideracoes','prop-validade-pagamento','prop-show-observacao','prop-show-instalacao','prop-show-prazo','prop-show-declaracoes','prop-show-assinatura'].forEach(id=>{
+  ['prop-cliente','prop-contato','prop-endereco','prop-telefone','prop-responsavel','prop-plano-base','prop-plano','prop-banda','prop-referencia','prop-objeto','prop-caracteristicas','prop-tipo','prop-distancia','prop-mensalidade','prop-instalacao-manual','prop-parceiro-mensal','prop-parceiro-infra','prop-fator','prop-desc-plano','prop-desc-instalacao','prop-prazo','prop-assinante-nome','prop-assinante-cargo','prop-assinante-contato','prop-consideracoes','prop-validade-pagamento','prop-show-observacao','prop-show-instalacao','prop-show-prazo','prop-show-declaracoes','prop-show-assinatura'].forEach(id=>{
     const el=document.getElementById(id);
     if(el&&!el.dataset.propBound){
       el.dataset.propBound='1';
@@ -16014,7 +16080,7 @@ async function baixarPropostaPdfTimbrado(){
     calcularPropostaCorporativa();
 
     // === VALIDAÇÃO OBRIGATÓRIA ===
-    const cliente = (propVal('prop-cliente') || '').trim();
+    const cliente = propNomeCliente(propVal('prop-cliente'));
     if (!cliente || cliente.length < 2) {
       toast('Preencha o nome do cliente antes de gerar o PDF.', 'error');
       return;
@@ -16054,8 +16120,8 @@ async function baixarPropostaPdfTimbrado(){
     let y = height - margins.top;
 
     // === Dados ===
-    const contato = (propVal('prop-contato') || '').trim();
-    const tel = (propVal('prop-telefone') || '').trim();
+    const contato = propPlainText(propVal('prop-contato'));
+    const endereco = propPlainText(propVal('prop-endereco'));
     const resp = (propVal('prop-responsavel') || '').trim();
     const banda = (propVal('prop-banda') || '').trim();
     const ref = (propVal('prop-referencia') || '').trim();
@@ -16063,7 +16129,7 @@ async function baixarPropostaPdfTimbrado(){
     const caracteristicas = propLines('prop-caracteristicas', '');
     const descInstalacao = (propVal('prop-desc-instalacao') || 'Implantação inicial do serviço conforme viabilidade aprovada').trim();
     const prazo = (propVal('prop-prazo') || 'A combinar com o cliente, dentro do horário comercial.').trim();
-    const consideracoes = (propVal('prop-consideracoes') || '').trim();
+    const consideracoes = propConsideracoesVisiveis();
     const validade = (propVal('prop-validade-pagamento') || '30 (trinta) dias a partir da data de emissão.').trim();
     const assinanteNome = (propVal('prop-assinante-nome') || '').trim();
     const assinanteCargo = (propVal('prop-assinante-cargo') || '').trim();
@@ -16144,7 +16210,7 @@ async function baixarPropostaPdfTimbrado(){
 
     // === 1. Destinatário ===
     ensureSpace(40);
-    page.drawText(san(`À ${cliente.toUpperCase()}`), {
+    page.drawText(san(`À ${cliente}`), {
       x: contentLeft, y, size: 11, font: bold, color: ink
     });
     y -= 16;
@@ -16154,13 +16220,9 @@ async function baixarPropostaPdfTimbrado(){
       page.drawText(san(contato), { x: contentLeft + 22, y, size: 10, font: bold, color: ink });
       y -= 13;
     }
-    if (tel) {
-      page.drawText(san('Telefone:'), { x: contentLeft, y, size: 9, font: helv, color: muted });
-      const labW = helv.widthOfTextAtSize('Telefone:', 9);
-      page.drawText(san(tel), { x: contentLeft + labW + 4, y, size: 9, font: helv, color: body });
-      y -= 13;
+    if (endereco) {
+      drawWrapped(endereco, { size: 9, color: muted, lineHeight: 12 });
     }
-
     // === 2. Data + Ref ===
     y -= 14;
     const dataStr = san(`Recife, ${dateText}.`);
@@ -16246,14 +16308,27 @@ async function baixarPropostaPdfTimbrado(){
       const headH = 22;
       const rowH = 24;
 
-      ensureSpace(headH + rowH + 4);
+      const tableRows = [{
+        item: plano,
+        espec: banda || '-',
+        valor: `${mensalidade}/mês`
+      }];
+      if (propShow('prop-show-instalacao')) {
+        tableRows.push({
+          item: 'Instalação / infraestrutura',
+          espec: descInstalacao,
+          valor: instalacao
+        });
+      }
+
+      ensureSpace(headH + (rowH * tableRows.length) + 4);
 
       // Cabeçalho com fundo azul
       page.drawRectangle({
         x: contentLeft, y: y - headH, width: contentWidth, height: headH,
         color: blueStrong
       });
-      const heads = ['PLANO', 'ESPECIFICAÇÃO', 'VALOR MENSAL'];
+      const heads = ['PLANO', 'ESPECIFICAÇÃO', 'VALOR'];
       for (let i = 0; i < heads.length; i++) {
         page.drawText(san(heads[i]), {
           x: colX[i] + 10, y: y - headH + 7,
@@ -16262,45 +16337,43 @@ async function baixarPropostaPdfTimbrado(){
       }
       y -= headH;
 
-      // Linha de dados
-      const planoLines = wrapText(plano, bold, 10, colW[0] - 20);
-      const bandaLines = wrapText(banda || '-', helv, 10, colW[1] - 20);
-      const valorStr = mensalidade;
-      const dataRowH = Math.max(rowH, Math.max(planoLines.length, bandaLines.length) * 13 + 12);
+      for (const row of tableRows) {
+        const itemLines = wrapText(row.item, bold, 10, colW[0] - 20);
+        const especLines = wrapText(row.espec || '-', helv, 10, colW[1] - 20);
+        const valorStr = row.valor;
+        const dataRowH = Math.max(rowH, Math.max(itemLines.length, especLines.length) * 13 + 12);
 
-      ensureSpace(dataRowH + 4);
-      // Borda inferior
-      page.drawLine({
-        start: { x: contentLeft, y: y - dataRowH },
-        end:   { x: contentRight, y: y - dataRowH },
-        thickness: 0.5, color: hairline
-      });
-      // Conteúdo
-      let ply = y - 15;
-      for (const ln of planoLines) {
-        page.drawText(ln, { x: colX[0] + 10, y: ply, size: 10, font: bold, color: ink });
-        ply -= 13;
-      }
-      let bly = y - 15;
-      for (const ln of bandaLines) {
-        page.drawText(ln, { x: colX[1] + 10, y: bly, size: 10, font: helv, color: body });
-        bly -= 13;
-      }
-      // Valor alinhado à direita
-      const valorW = bold.widthOfTextAtSize(valorStr, 11);
-      page.drawText(san(valorStr), {
-        x: contentRight - valorW - 10, y: y - 16,
-        size: 11, font: bold, color: ink
-      });
+        ensureSpace(dataRowH + 4);
+        page.drawLine({
+          start: { x: contentLeft, y: y - dataRowH },
+          end:   { x: contentRight, y: y - dataRowH },
+          thickness: 0.5, color: hairline
+        });
 
-      y -= dataRowH + 8;
+        let iy = y - 15;
+        for (const ln of itemLines) {
+          page.drawText(ln, { x: colX[0] + 10, y: iy, size: 10, font: bold, color: ink });
+          iy -= 13;
+        }
+        let ey = y - 15;
+        for (const ln of especLines) {
+          page.drawText(ln, { x: colX[1] + 10, y: ey, size: 10, font: helv, color: body });
+          ey -= 13;
+        }
+        const valorW = bold.widthOfTextAtSize(valorStr, 11);
+        page.drawText(san(valorStr), {
+          x: contentRight - valorW - 10, y: y - 16,
+          size: 11, font: bold, color: ink
+        });
+
+        y -= dataRowH;
+      }
+
+      y -= 8;
     }
 
-    // Linhas abaixo da tabela (pagamento + instalação)
+    // Linhas abaixo da tabela (pagamento + observações)
     drawWrapped('Pagamento: boleto bancário, faturamento mensal.', { size: 10, color: body });
-    if (propShow('prop-show-instalacao')) {
-      drawWrapped(`Instalação: ${instalacao} (${descInstalacao}).`, { size: 10, color: body });
-    }
     if (propShow('prop-show-observacao') && consideracoes) {
       drawWrapped(`Obs.: ${consideracoes}`, { size: 9.5, color: muted });
     }
@@ -16430,6 +16503,7 @@ function baixarPropostaCsv(){
   const rows=[{
     cliente:propVal('prop-cliente'),
     contato:propVal('prop-contato'),
+    endereco:propVal('prop-endereco'),
     telefone:propVal('prop-telefone'),
     plano:propVal('prop-plano'),
     banda:propVal('prop-banda'),
