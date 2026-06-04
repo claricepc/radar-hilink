@@ -16098,7 +16098,9 @@ async function baixarPropostaPdfTimbrado(){
     const res = await fetch('Timbrado_A4_endereco_corrigido.pdf');
     if (!res.ok) throw new Error('Timbrado não encontrado no Radar publicado.');
 
-    const pdfDoc = await PDFDocument.load(await res.arrayBuffer());
+    const timbradoBytes = await res.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(timbradoBytes);
+    const [timbradoTemplate] = await pdfDoc.embedPdf(timbradoBytes, [0]);
     let page = pdfDoc.getPage(0);
     const helv = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -16168,16 +16170,8 @@ async function baixarPropostaPdfTimbrado(){
 
     function ensureSpace(needed){
       if (y - needed < margins.bottom) {
-        // Adiciona nova página com o mesmo timbrado
-        // (Importante: embed do timbrado em página adicional)
-        // pdf-lib não tem método direto de "copiar página". Alternativa:
-        // Carregar o timbrado novamente e copiar a página.
-        const timbrado2 = pdfDoc.getPage(0); // não funciona como cópia, é a mesma ref
-        // Workaround: salvar a página atual, criar uma nova, e desenhar nela
-        // Para simplificar: criar página nova vazia. O timbrado vai precisar
-        // ser aplicado depois (ver Nota Importante abaixo).
-        const newPage = pdfDoc.addPage([width, height]);
-        page = newPage;
+        page = pdfDoc.addPage([width, height]);
+        page.drawPage(timbradoTemplate, { x: 0, y: 0, width, height });
         y = height - margins.top;
       }
     }
