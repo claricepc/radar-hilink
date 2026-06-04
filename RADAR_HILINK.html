@@ -4997,6 +4997,66 @@ h2.section-title .info-btn{margin-left:6px}
       line-height:1.2!important;
       color:var(--text-caption)!important;
     }
+    #mod-premiacoes .prem-upgrade-overview{
+      display:grid;
+      grid-template-columns:1.25fr repeat(4,minmax(130px,1fr));
+      gap:10px;
+      align-items:stretch;
+    }
+    #mod-premiacoes .prem-upgrade-card{
+      min-width:0;
+      min-height:88px;
+      border:1px solid rgba(56,168,255,.38);
+      background:#0f2438;
+      border-radius:10px;
+      padding:12px 14px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      gap:5px;
+      overflow:hidden;
+      cursor:pointer;
+    }
+    #mod-premiacoes .prem-upgrade-card.info{border-color:rgba(56,168,255,.55)}
+    #mod-premiacoes .prem-upgrade-card.good{border-color:rgba(32,217,145,.55);background:rgba(32,217,145,.08)}
+    #mod-premiacoes .prem-upgrade-card.warn{border-color:rgba(255,168,0,.55);background:rgba(255,168,0,.08)}
+    #mod-premiacoes .prem-upgrade-card.danger{border-color:rgba(255,77,94,.50);background:rgba(255,77,94,.08)}
+    #mod-premiacoes .prem-upgrade-card small{
+      font-size:9px!important;
+      font-weight:800!important;
+      color:var(--text-muted)!important;
+      letter-spacing:.06em!important;
+      text-transform:uppercase!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+    }
+    #mod-premiacoes .prem-upgrade-card strong{
+      font-size:20px!important;
+      line-height:1!important;
+      color:#38a8ff!important;
+      font-weight:800!important;
+      font-family:var(--radar-font)!important;
+      font-variant-numeric:tabular-nums!important;
+      white-space:nowrap!important;
+    }
+    #mod-premiacoes .prem-upgrade-card.good strong{color:#20d991!important}
+    #mod-premiacoes .prem-upgrade-card.warn strong{color:#ffa800!important}
+    #mod-premiacoes .prem-upgrade-card.danger strong{color:#ff6b78!important}
+    #mod-premiacoes .prem-upgrade-card span{
+      font-size:9.5px!important;
+      line-height:1.25!important;
+      color:var(--text-caption)!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+    }
+    @media(max-width:1400px){
+      #mod-premiacoes .prem-upgrade-overview{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media(max-width:900px){
+      #mod-premiacoes .prem-upgrade-overview{grid-template-columns:1fr}
+    }
     #mod-premiacoes .prem-exec-mini-kpis{
       grid-template-columns:repeat(3,minmax(106px,1fr));
       gap:10px;
@@ -6140,6 +6200,15 @@ h2.section-title .info-btn{margin-left:6px}
               </div>
 
             </div><!-- /summary-row -->
+
+            <!-- Resumo de upgrades -->
+            <div class="prem-exec-panel">
+              <div class="prem-exec-panel-head">
+                <strong>Resumo de Upgrades</strong>
+                <span>Receita dentro e fora da regra</span>
+              </div>
+              <div class="prem-exec-panel-body" id="prem-geral-upgrades"></div>
+            </div>
 
             <!-- Ranking por atendente -->
             <div class="prem-exec-panel">
@@ -14579,11 +14648,12 @@ function renderPremiacoesGeral(){
   const desempenho=document.getElementById('prem-geral-desempenho');
   const statusBox=document.getElementById('prem-geral-status');
   const evolucao=document.getElementById('prem-geral-evolucao');
+  const upgradesBox=document.getElementById('prem-geral-upgrades');
   const rankingBox=document.getElementById('prem-geral-ranking');
   const insights=document.getElementById('prem-geral-insights');
   const acoes=document.getElementById('prem-geral-acoes');
   const situacao=document.getElementById('prem-geral-situacao');
-  if(!alertas||!folha||!desempenho||!statusBox||!evolucao||!rankingBox||!insights||!acoes)return;
+  if(!alertas||!folha||!desempenho||!statusBox||!evolucao||!upgradesBox||!rankingBox||!insights||!acoes)return;
   const maps=STATE.premMaps||{};
   const meta=STATE.premOpaMeta||buildPremiacaoOpaMetas();
   const qtd=arr=>(arr&&arr.length)||0;
@@ -14602,7 +14672,7 @@ function renderPremiacoesGeral(){
   const hasData=qtd(maps.ranking)||qtd(meta.base);
   if(!hasData){
     alertas.innerHTML='<div class="drop-empty">Carregue os relatórios para liberar a visão geral da premiação.</div>';
-    folha.innerHTML=desempenho.innerHTML=statusBox.innerHTML=evolucao.innerHTML=rankingBox.innerHTML=insights.innerHTML=acoes.innerHTML='';
+    folha.innerHTML=desempenho.innerHTML=statusBox.innerHTML=evolucao.innerHTML=upgradesBox.innerHTML=rankingBox.innerHTML=insights.innerHTML=acoes.innerHTML='';
     if(situacao)situacao.innerHTML='<div class="prem-situacao-panel"><div class="prem-situacao-badge neutral">Aguardando dados</div><div class="prem-situacao-sub">Carregue os relatórios para ver o status financeiro da folha.</div></div>';
     return;
   }
@@ -14653,6 +14723,38 @@ function renderPremiacoesGeral(){
       <div class="prem-status-legend-row" data-prem-geral="naoelegiveis"><i class="prem-status-dot muted"></i><b>Não elegíveis</b><span>${naoElegiveis.toLocaleString('pt-BR')} (${pctNao.toFixed(1).replace('.',',')}%)</span></div>
     </div>
   </div>`;
+  const upgradeResumo=(typeof window.ruUpgradeOverviewSummary==='function')?window.ruUpgradeOverviewSummary():null;
+  if(upgradeResumo&&upgradeResumo.rows&&upgradeResumo.rows.length){
+    upgradesBox.innerHTML=`<div class="prem-upgrade-overview">
+      <div class="prem-upgrade-card info" data-prem-upgrade-geral="total">
+        <small>Receita total de upgrades</small>
+        <strong>${brl(upgradeResumo.receitaTotal)}</strong>
+        <span>${(upgradeResumo.premiaveis.length+upgradeResumo.abaixo.length).toLocaleString('pt-BR')} ups positivos no recorte</span>
+      </div>
+      <div class="prem-upgrade-card good" data-prem-upgrade-geral="premiaveis">
+        <small>Upgrades premi&aacute;veis</small>
+        <strong>${brl(upgradeResumo.receitaPremiavel)}</strong>
+        <span>${upgradeResumo.premiaveis.length.toLocaleString('pt-BR')} com aumento m&iacute;nimo de R$ 9,90</span>
+      </div>
+      <div class="prem-upgrade-card warn" data-prem-upgrade-geral="abaixo">
+        <small>Abaixo da regra</small>
+        <strong>${brl(upgradeResumo.receitaAbaixo)}</strong>
+        <span>${upgradeResumo.abaixo.length.toLocaleString('pt-BR')} ups geram receita, mas n&atilde;o comiss&atilde;o</span>
+      </div>
+      <div class="prem-upgrade-card danger" data-prem-upgrade-geral="downgrades">
+        <small>Downgrades / ajustes</small>
+        <strong>${brl(upgradeResumo.impactoDowngrade)}</strong>
+        <span>${upgradeResumo.downgrades.length.toLocaleString('pt-BR')} registros negativos no recorte</span>
+      </div>
+      <div class="prem-upgrade-card good" data-prem-upgrade-geral="ranking">
+        <small>Comiss&atilde;o prevista</small>
+        <strong>${brl(upgradeResumo.comissaoPrevista)}</strong>
+        <span>${upgradeResumo.qtdAtendimento.toLocaleString('pt-BR')} ups l&iacute;quidos das atendentes</span>
+      </div>
+    </div>`;
+  }else{
+    upgradesBox.innerHTML='<div class="drop-empty">Carregue o relat&oacute;rio de Altera&ccedil;&otilde;es Contratuais para ver o resumo de upgrades.</div>';
+  }
   evolucao.innerHTML=`<div class="prem-exec-grid">
     <div class="prem-exec-card info" data-prem-geral="vendas"><small>Eventos comerciais</small><strong>${qtd(maps.ranking).toLocaleString('pt-BR')}</strong><span>${qtd(vendasAprovadas).toLocaleString('pt-BR')} aprovados para comissão</span></div>
     <div class="prem-exec-card good" data-prem-geral="atendimento"><small>Prêmio atendimento</small><strong>${brl(valorAtendimento)}</strong><span>${qtd(meta.ranking).toLocaleString('pt-BR')} atendentes elegíveis</span></div>
@@ -14868,6 +14970,23 @@ function renderPremiacoesGeral(){
     const nome=el.dataset.premGeralAtt;
     const item=(meta.ranking||[]).find(r=>r.nome===nome);
     if(item)openDrill('Desempenho de atendimento: '+item.nome,item.rows||[],opaAtendimentoCols(),{sub:`${Number(item.volume||0).toLocaleString('pt-BR')} validados · ${brl(item.total||0)} prêmio operacional`,action:'Indicadores operacionais do mês, sem validação individual em massa.'});
+  });
+  const upgradeCols=[
+    'ID Contrato','Data alteração','Tipo alteração','Plano anterior','Plano novo','Valor anterior','Valor novo','Diferença','Vendedor'
+  ].map(k=>({k,label:k}));
+  const upgradeHandlers={
+    total:()=>openDrill('Receita total de upgrades',[...((upgradeResumo&&upgradeResumo.premiaveis)||[]),...((upgradeResumo&&upgradeResumo.abaixo)||[])],upgradeCols,{action:'Receita gerada por upgrades positivos no recorte, incluindo itens abaixo da regra de comissão.'}),
+    premiaveis:()=>openDrill('Upgrades premiáveis',((upgradeResumo&&upgradeResumo.premiaveis)||[]),upgradeCols,{action:'Upgrades com aumento mínimo de R$ 9,90. Entram na regra do ranking e da comissão.'}),
+    abaixo:()=>openDrill('Upgrades abaixo da regra',((upgradeResumo&&upgradeResumo.abaixo)||[]),upgradeCols,{action:'Receita real abaixo de R$ 9,90. Não gera comissão no ranking, mas aparece para leitura gerencial.'}),
+    downgrades:()=>openDrill('Downgrades / ajustes negativos',((upgradeResumo&&upgradeResumo.downgrades)||[]),upgradeCols,{action:'Ajustes negativos do recorte para leitura de impacto na receita.'}),
+    ranking:()=>{
+      const btn=document.querySelector('#prem-tabs-nav .prem-tab[data-tab="prem-tab-ranking-upgrade"]');
+      if(btn)btn.click();
+    }
+  };
+  document.querySelectorAll('#prem-tab-geral [data-prem-upgrade-geral]').forEach(el=>el.onclick=()=>{
+    const h=upgradeHandlers[el.dataset.premUpgradeGeral];
+    if(h)h();
   });
 }
 function renderPremiacoesConsolidado(){
@@ -19483,6 +19602,62 @@ function setAllDrillCols(on){
       return includeWithoutAvatar || ruHasAvatar(x.nome);
     }).sort(function(a,b){ return (b.rec_liq - a.rec_liq) || (b.ups_liq - a.ups_liq) || a.nome.localeCompare(b.nome); });
   }
+
+  function ruRowsForCurrentPeriod(rows){
+    rows = rows || [];
+    var withType = rows.filter(function(r){
+      var t = String(r['Tipo alteraÃ§Ã£o'] || r['Tipo alteracao'] || '');
+      return t === 'Upgrade' || t === 'Downgrade';
+    });
+    var valid = withType.filter(function(r){ return ruCompetenciaOk(r); });
+    if(withType.length && !valid.length && ruCurrentCompetencia()) valid = withType;
+    return valid;
+  }
+
+  window.ruUpgradeOverviewSummary = function(){
+    var rows = ruSourceRows();
+    var valid = ruRowsForCurrentPeriod(rows);
+    var rankingAtendimento = ruBuild(rows, false, false);
+    var upPremiaveis = valid.filter(function(r){
+      var t = String(r['Tipo alteraÃ§Ã£o'] || r['Tipo alteracao'] || '');
+      var dif = Number(r['DiferenÃ§a'] != null ? r['DiferenÃ§a'] : r['Diferenca']);
+      return t === 'Upgrade' && isFinite(dif) && dif >= RU_MIN_UPGRADE;
+    });
+    var upAbaixo = valid.filter(function(r){
+      var t = String(r['Tipo alteraÃ§Ã£o'] || r['Tipo alteracao'] || '');
+      var dif = Number(r['DiferenÃ§a'] != null ? r['DiferenÃ§a'] : r['Diferenca']);
+      return t === 'Upgrade' && isFinite(dif) && dif > 0 && dif < RU_MIN_UPGRADE;
+    });
+    var downgrades = valid.filter(function(r){
+      return String(r['Tipo alteraÃ§Ã£o'] || r['Tipo alteracao'] || '') === 'Downgrade';
+    });
+    var sumDif = function(arr){
+      return arr.reduce(function(s,r){
+        var dif = Number(r['DiferenÃ§a'] != null ? r['DiferenÃ§a'] : r['Diferenca']);
+        return s + (isFinite(dif) ? dif : 0);
+      },0);
+    };
+    var sumAbsNeg = function(arr){
+      return arr.reduce(function(s,r){
+        var dif = Number(r['DiferenÃ§a'] != null ? r['DiferenÃ§a'] : r['Diferenca']);
+        return s + (isFinite(dif) && dif < 0 ? Math.abs(dif) : 0);
+      },0);
+    };
+    return {
+      source:_ruSourceInfo,
+      rows:valid,
+      premiaveis:upPremiaveis,
+      abaixo:upAbaixo,
+      downgrades:downgrades,
+      receitaTotal:sumDif(upPremiaveis) + sumDif(upAbaixo),
+      receitaPremiavel:sumDif(upPremiaveis),
+      receitaAbaixo:sumDif(upAbaixo),
+      impactoDowngrade:sumAbsNeg(downgrades),
+      totalAtendimento:rankingAtendimento.reduce(function(s,x){return s + x.rec_liq;},0),
+      comissaoPrevista:rankingAtendimento.reduce(function(s,x){return s + x.comissao;},0),
+      qtdAtendimento:rankingAtendimento.reduce(function(s,x){return s + x.ups_liq;},0)
+    };
+  };
 
   function ruApplyCss(){
     if(document.getElementById('ru-fixed-css')) return;
