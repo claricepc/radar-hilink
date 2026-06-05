@@ -5051,11 +5051,136 @@ h2.section-title .info-btn{margin-left:6px}
       overflow:hidden!important;
       text-overflow:ellipsis!important;
     }
+    #mod-premiacoes .prem-commercial-evo{
+      display:grid;
+      grid-template-columns:minmax(0,1.1fr) minmax(0,2fr);
+      gap:14px;
+      align-items:stretch;
+      min-width:0;
+    }
+    #mod-premiacoes .prem-commercial-evo-kpis{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      min-width:0;
+    }
+    #mod-premiacoes .prem-commercial-evo-kpi{
+      border:1px solid rgba(56,168,255,.38);
+      background:#0f2438;
+      border-radius:10px;
+      padding:10px 12px;
+      min-width:0;
+      overflow:hidden;
+    }
+    #mod-premiacoes .prem-commercial-evo-kpi small{
+      display:block;
+      font-size:9px!important;
+      font-weight:800!important;
+      color:var(--text-muted)!important;
+      text-transform:uppercase!important;
+      letter-spacing:.06em!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+    }
+    #mod-premiacoes .prem-commercial-evo-kpi strong{
+      display:block;
+      margin-top:5px;
+      font-size:19px!important;
+      line-height:1!important;
+      color:#38a8ff!important;
+      font-weight:800!important;
+      font-variant-numeric:tabular-nums!important;
+      white-space:nowrap!important;
+    }
+    #mod-premiacoes .prem-commercial-evo-kpi span{
+      display:block;
+      margin-top:5px;
+      font-size:9.5px!important;
+      color:var(--text-caption)!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+    }
+    #mod-premiacoes .prem-commercial-evo-chart{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-width:0;
+      overflow:hidden;
+    }
+    #mod-premiacoes .prem-commercial-evo-row{
+      display:grid;
+      grid-template-columns:76px minmax(0,1fr) 86px;
+      gap:10px;
+      align-items:center;
+      min-width:0;
+    }
+    #mod-premiacoes .prem-commercial-evo-row b{
+      font-size:10px!important;
+      color:#c5d4e8!important;
+      font-weight:800!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+    }
+    #mod-premiacoes .prem-commercial-evo-bars{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width:0;
+    }
+    #mod-premiacoes .prem-commercial-evo-track{
+      height:8px;
+      background:rgba(148,163,184,.18);
+      border-radius:999px;
+      overflow:hidden;
+      min-width:0;
+    }
+    #mod-premiacoes .prem-commercial-evo-fill{
+      display:block;
+      height:100%;
+      border-radius:999px;
+      min-width:3px;
+      max-width:100%;
+    }
+    #mod-premiacoes .prem-commercial-evo-fill.sales{background:#38a8ff}
+    #mod-premiacoes .prem-commercial-evo-fill.upgrade{background:#20d991}
+    #mod-premiacoes .prem-commercial-evo-fill.prize{background:#ffa800}
+    #mod-premiacoes .prem-commercial-evo-value{
+      font-size:10px!important;
+      color:#ddebff!important;
+      font-weight:800!important;
+      white-space:nowrap!important;
+      text-align:right;
+      font-variant-numeric:tabular-nums!important;
+    }
+    #mod-premiacoes .prem-commercial-evo-legend{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      font-size:10px!important;
+      color:#c5d4e8!important;
+      font-weight:600!important;
+      text-transform:uppercase;
+      letter-spacing:.03em;
+    }
+    #mod-premiacoes .prem-commercial-evo-legend i{
+      display:inline-block;
+      width:8px;
+      height:8px;
+      border-radius:2px;
+      margin-right:4px;
+    }
     @media(max-width:1400px){
       #mod-premiacoes .prem-upgrade-overview{grid-template-columns:repeat(3,minmax(0,1fr))}
+      #mod-premiacoes .prem-commercial-evo{grid-template-columns:1fr}
     }
     @media(max-width:900px){
       #mod-premiacoes .prem-upgrade-overview{grid-template-columns:1fr}
+      #mod-premiacoes .prem-commercial-evo-kpis{grid-template-columns:1fr}
+      #mod-premiacoes .prem-commercial-evo-row{grid-template-columns:58px minmax(0,1fr) 72px}
     }
     #mod-premiacoes .prem-exec-mini-kpis{
       grid-template-columns:repeat(3,minmax(106px,1fr));
@@ -6298,6 +6423,15 @@ h2.section-title .info-btn{margin-left:6px}
                 <span>Receita dentro e fora da regra</span>
               </div>
               <div class="prem-exec-panel-body" id="prem-geral-upgrades"></div>
+            </div>
+
+            <!-- Evolução comercial -->
+            <div class="prem-exec-panel">
+              <div class="prem-exec-panel-head">
+                <strong>Evolução Comercial</strong>
+                <span>Vendas aprovadas x upgrades premiáveis</span>
+              </div>
+              <div class="prem-exec-panel-body" id="prem-geral-evolucao-comercial"></div>
             </div>
 
             <!-- Ranking por atendente -->
@@ -14885,6 +15019,108 @@ function premUpgradeOverviewSummaryLocal(){
     qtdAtendimento:rankingAtendimento.reduce((s,x)=>s+x.ups_liq,0)
   };
 }
+function premEvolutionDateFromRow(row, fields){
+  if(!row)return null;
+  for(const field of fields){
+    const raw=field==='_date'?row._date:row[field];
+    const d=raw instanceof Date?raw:(parseDateTime(raw)||parseDate(raw));
+    if(d&&!isNaN(d))return d;
+  }
+  return null;
+}
+function premBuildCommercialEvolution(vendasRows, upgradeResumo){
+  const comp=STATE.filtros?.competencia||'';
+  const vendaDateFields=['_date','Data Ativação','Data ativação','Data de ativação','Data alteração','Data alteracao','Data Cadastro','Data','Venc. 1ª parcela'];
+  const upgradeDateFields=['_date','Data alteração','Data alteracao','Data hora alteração','Data hora alteracao','Data'];
+  const allRows=[];
+  (vendasRows||[]).forEach(row=>{
+    const date=premEvolutionDateFromRow(row,vendaDateFields);
+    if(!date)return;
+    allRows.push({
+      kind:'venda',
+      date,
+      value:premVendaReceitaLinha(row),
+      prize:Number(row['Valor aprovado']||row['Valor premiação']||0),
+      row
+    });
+  });
+  ((upgradeResumo&&upgradeResumo.premiaveis)||[]).forEach(row=>{
+    const date=premEvolutionDateFromRow(row,upgradeDateFields);
+    const diff=premNumber(row['Diferença']);
+    if(!date||!Number.isFinite(diff))return;
+    allRows.push({kind:'upgrade',date,value:Math.max(0,diff),prize:10,row});
+  });
+  const sameMonth=!!comp&&allRows.some(x=>monthKeyFromDate(x.date)===comp);
+  const buckets={};
+  allRows.forEach(item=>{
+    const inMonth=comp&&monthKeyFromDate(item.date)===comp;
+    const key=sameMonth
+      ? (inMonth?`S${Math.min(5,Math.ceil(item.date.getDate()/7))}`:'Fora')
+      : monthKeyFromDate(item.date);
+    if(!key)return;
+    const label=sameMonth
+      ? (key==='Fora'?'Fora do mês':`${key} · dias ${key.slice(1)==='5'?'29+':`${(Number(key.slice(1))-1)*7+1}-${Number(key.slice(1))*7}`}`)
+      : (monthLabelFromKey(key)||key);
+    if(!buckets[key])buckets[key]={key,label,vendas:0,upgrades:0,premios:0,vendaRows:[],upgradeRows:[]};
+    if(item.kind==='venda'){
+      buckets[key].vendas+=Number(item.value||0);
+      buckets[key].premios+=Number(item.prize||0);
+      buckets[key].vendaRows.push(item.row);
+    }else{
+      buckets[key].upgrades+=Number(item.value||0);
+      buckets[key].premios+=Number(item.prize||0);
+      buckets[key].upgradeRows.push(item.row);
+    }
+  });
+  const order=Object.values(buckets).sort((a,b)=>{
+    if(sameMonth){
+      const av=a.key==='Fora'?99:Number(String(a.key).replace('S',''))||0;
+      const bv=b.key==='Fora'?99:Number(String(b.key).replace('S',''))||0;
+      return av-bv;
+    }
+    return String(a.key).localeCompare(String(b.key));
+  });
+  return {
+    mode:sameMonth?'semana':'mês',
+    buckets:order,
+    totalVendas:order.reduce((s,b)=>s+b.vendas,0),
+    totalUpgrades:order.reduce((s,b)=>s+b.upgrades,0),
+    totalPremios:order.reduce((s,b)=>s+b.premios,0),
+    totalEventos:allRows.length
+  };
+}
+function premRenderCommercialEvolution(data){
+  if(!data||!data.buckets||!data.buckets.length){
+    return '<div class="drop-empty">Sem datas suficientes para montar a evolução comercial no recorte atual.</div>';
+  }
+  const max=Math.max(1,...data.buckets.flatMap(b=>[b.vendas,b.upgrades,b.premios]));
+  const rowHtml=data.buckets.map((b,idx)=>`
+    <div class="prem-commercial-evo-row" data-prem-commercial-evo="${idx}">
+      <b title="${escAttr(b.label)}">${escHtml(b.label)}</b>
+      <div class="prem-commercial-evo-bars">
+        <div class="prem-commercial-evo-track" title="Receita comercial aprovada: ${escAttr(brl(b.vendas))}"><span class="prem-commercial-evo-fill sales" style="width:${Math.max(4,(b.vendas/max)*100).toFixed(1)}%"></span></div>
+        <div class="prem-commercial-evo-track" title="Receita de upgrades premiáveis: ${escAttr(brl(b.upgrades))}"><span class="prem-commercial-evo-fill upgrade" style="width:${Math.max(4,(b.upgrades/max)*100).toFixed(1)}%"></span></div>
+        <div class="prem-commercial-evo-track" title="Comissão prevista: ${escAttr(brl(b.premios))}"><span class="prem-commercial-evo-fill prize" style="width:${Math.max(4,(b.premios/max)*100).toFixed(1)}%"></span></div>
+      </div>
+      <div class="prem-commercial-evo-value">${brl(b.vendas+b.upgrades)}</div>
+    </div>`).join('');
+  return `<div class="prem-commercial-evo">
+    <div class="prem-commercial-evo-kpis">
+      <div class="prem-commercial-evo-kpi"><small>Receita comercial</small><strong>${brl(data.totalVendas)}</strong><span>vendas aprovadas</span></div>
+      <div class="prem-commercial-evo-kpi"><small>Receita upgrade</small><strong>${brl(data.totalUpgrades)}</strong><span>upgrades premiáveis</span></div>
+      <div class="prem-commercial-evo-kpi"><small>Comissão prevista</small><strong>${brl(data.totalPremios)}</strong><span>vendas + upgrades</span></div>
+      <div class="prem-commercial-evo-kpi"><small>Recorte</small><strong>${data.buckets.length}</strong><span>por ${data.mode}</span></div>
+    </div>
+    <div class="prem-commercial-evo-chart">
+      <div class="prem-commercial-evo-legend">
+        <span><i style="background:#38a8ff"></i>Vendas</span>
+        <span><i style="background:#20d991"></i>Upgrades</span>
+        <span><i style="background:#ffa800"></i>Comissão</span>
+      </div>
+      ${rowHtml}
+    </div>
+  </div>`;
+}
 function renderPremiacoesGeral(){
   _syncPremFiltrosMirror();
   const alertas=document.getElementById('prem-geral-alertas');
@@ -14893,11 +15129,12 @@ function renderPremiacoesGeral(){
   const statusBox=document.getElementById('prem-geral-status');
   const evolucao=document.getElementById('prem-geral-evolucao');
   const upgradesBox=document.getElementById('prem-geral-upgrades');
+  const evolucaoComercial=document.getElementById('prem-geral-evolucao-comercial');
   const rankingBox=document.getElementById('prem-geral-ranking');
   const insights=document.getElementById('prem-geral-insights');
   const acoes=document.getElementById('prem-geral-acoes');
   const situacao=document.getElementById('prem-geral-situacao');
-  if(!alertas||!folha||!desempenho||!statusBox||!evolucao||!upgradesBox||!rankingBox||!insights||!acoes)return;
+  if(!alertas||!folha||!desempenho||!statusBox||!evolucao||!upgradesBox||!evolucaoComercial||!rankingBox||!insights||!acoes)return;
   const maps=STATE.premMaps||{};
   const meta=STATE.premOpaMeta||buildPremiacaoOpaMetas();
   const qtd=arr=>(arr&&arr.length)||0;
@@ -14916,7 +15153,7 @@ function renderPremiacoesGeral(){
   const hasData=qtd(maps.ranking)||qtd(meta.base);
   if(!hasData){
     alertas.innerHTML='<div class="drop-empty">Carregue os relatórios para liberar a visão geral da premiação.</div>';
-    folha.innerHTML=desempenho.innerHTML=statusBox.innerHTML=evolucao.innerHTML=upgradesBox.innerHTML=rankingBox.innerHTML=insights.innerHTML=acoes.innerHTML='';
+    folha.innerHTML=desempenho.innerHTML=statusBox.innerHTML=evolucao.innerHTML=upgradesBox.innerHTML=evolucaoComercial.innerHTML=rankingBox.innerHTML=insights.innerHTML=acoes.innerHTML='';
     if(situacao)situacao.innerHTML='<div class="prem-situacao-panel"><div class="prem-situacao-badge neutral">Aguardando dados</div><div class="prem-situacao-sub">Carregue os relatórios para ver o status financeiro da folha.</div></div>';
     return;
   }
@@ -15002,6 +15239,8 @@ function renderPremiacoesGeral(){
   }else{
     upgradesBox.innerHTML='<div class="drop-empty">Carregue o relat&oacute;rio de Altera&ccedil;&otilde;es Contratuais para ver o resumo de upgrades.</div>';
   }
+  const comercialEvolution=premBuildCommercialEvolution(vendasAprovadas,upgradeResumo);
+  evolucaoComercial.innerHTML=premRenderCommercialEvolution(comercialEvolution);
   evolucao.innerHTML=`<div class="prem-exec-grid">
     <div class="prem-exec-card info" data-prem-geral="vendas"><small>Eventos comerciais</small><strong>${qtd(maps.ranking).toLocaleString('pt-BR')}</strong><span>${qtd(vendasAprovadas).toLocaleString('pt-BR')} aprovados para comissão</span></div>
     <div class="prem-exec-card good" data-prem-geral="atendimento"><small>Prêmio atendimento</small><strong>${brl(valorAtendimento)}</strong><span>${qtd(meta.ranking).toLocaleString('pt-BR')} atendentes elegíveis</span></div>
@@ -15234,6 +15473,43 @@ function renderPremiacoesGeral(){
   document.querySelectorAll('#prem-tab-geral [data-prem-upgrade-geral]').forEach(el=>el.onclick=()=>{
     const h=upgradeHandlers[el.dataset.premUpgradeGeral];
     if(h)h();
+  });
+  const evoCols=['Tipo','Data','Cliente','Contrato','Responsável','Valor','Prêmio','Origem'].map(k=>({k,label:k}));
+  const rowDateTxt=(row,fields)=>{
+    const d=premEvolutionDateFromRow(row,fields);
+    return d&&!isNaN(d)?d.toLocaleDateString('pt-BR'):'';
+  };
+  const vendaDrillRow=r=>({
+    Tipo:'Venda aprovada',
+    Data:rowDateTxt(r,['_date','Data Ativação','Data ativação','Data de ativação','Data alteração','Data alteracao','Data Cadastro','Data','Venc. 1ª parcela']),
+    Cliente:r.Cliente||r['Nome cliente']||r['Cliente/Contrato']||'',
+    Contrato:r['ID Contrato']||r.Contrato||r['Contrato ID']||'',
+    Responsável:r.Vendedor||r['Vendedor Nome']||r['Responsável']||'',
+    Valor:brl(premVendaReceitaLinha(r)),
+    Prêmio:brl(Number(r['Valor aprovado']||r['Valor premiação']||0)),
+    Origem:r['Motivo de inclusão']||r.Motivo||'Vendas'
+  });
+  const upgradeDrillRow=r=>({
+    Tipo:'Upgrade premiável',
+    Data:rowDateTxt(r,['_date','Data alteração','Data alteracao','Data hora alteração','Data hora alteracao','Data']),
+    Cliente:r.Cliente||r['Nome cliente']||r['Cliente/Contrato']||'',
+    Contrato:r['ID Contrato']||r.Contrato||r['Contrato ID']||'',
+    Responsável:r['Vendedor Nome']||r.Vendedor||r['Responsável']||'',
+    Valor:brl(Math.max(0,premNumber(r['Diferença'])||0)),
+    Prêmio:brl(10),
+    Origem:'Alterações contratuais'
+  });
+  document.querySelectorAll('#prem-tab-geral [data-prem-commercial-evo]').forEach(el=>el.onclick=()=>{
+    const bucket=comercialEvolution&&comercialEvolution.buckets?comercialEvolution.buckets[Number(el.dataset.premCommercialEvo)]:null;
+    if(!bucket)return;
+    const rows=[
+      ...(bucket.vendaRows||[]).map(vendaDrillRow),
+      ...(bucket.upgradeRows||[]).map(upgradeDrillRow)
+    ];
+    openDrill('Evolução comercial: '+bucket.label,rows,evoCols,{
+      sub:`Vendas ${brl(bucket.vendas)} · Upgrades ${brl(bucket.upgrades)} · Comissão ${brl(bucket.premios)}`,
+      action:'Faixa da evolução comercial exibida na Visão Geral. Clique nos registros para conferir a composição por venda e upgrade.'
+    });
   });
 }
 function renderPremiacoesConsolidado(){
