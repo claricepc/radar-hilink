@@ -17717,14 +17717,14 @@ function renderPremiacoesView(){
   document.getElementById('prem-decision-top').innerHTML=`
     <div class="prem-sales-dash-top">
       <div class="prem-sales-revenue-grid">
-        <div class="prem-sales-revenue-card total" data-premk="aprovadas"><small>Receita total</small><strong>${brl(receitaTotalVendas)}</strong><span>vendas aprovadas · ${escHtml(compLabel)}</span></div>
-        <div class="prem-sales-revenue-card upgrade" data-premk="tipo_upgrade"><small>Receita upgrade</small><strong>${brl(receitaTipoVendas.Upgrade)}</strong><span>ganho/mensalidade dos upgrades aprovados</span></div>
-        <div class="prem-sales-revenue-card instalacao" data-premk="tipo_instalacao"><small>Receita instalação</small><strong>${brl(receitaTipoVendas['Instalação'])}</strong><span>mensalidade/título das instalações aprovadas</span></div>
-        <div class="prem-sales-revenue-card reativacao" data-premk="tipo_reativacao"><small>Receita reativação</small><strong>${brl(receitaTipoVendas['Reativação'])}</strong><span>mensalidade/título das reativações aprovadas</span></div>
+        <div class="prem-sales-revenue-card total" data-premk="aprovadas"><small>Receita aprovada total</small><strong>${brl(receitaTotalVendas)}</strong><span>somente vendas aprovadas na folha · ${escHtml(compLabel)}</span></div>
+        <div class="prem-sales-revenue-card upgrade" data-premk="tipo_upgrade_aprovadas"><small>Receita upgrade aprovada</small><strong>${brl(receitaTipoVendas.Upgrade)}</strong><span>upgrade aprovado para pagamento na folha</span></div>
+        <div class="prem-sales-revenue-card instalacao" data-premk="tipo_instalacao_aprovadas"><small>Receita instalação aprovada</small><strong>${brl(receitaTipoVendas['Instalação'])}</strong><span>instalações aprovadas para pagamento</span></div>
+        <div class="prem-sales-revenue-card reativacao" data-premk="tipo_reativacao_aprovadas"><small>Receita reativação aprovada</small><strong>${brl(receitaTipoVendas['Reativação'])}</strong><span>reativações aprovadas para pagamento</span></div>
         <div class="prem-sales-revenue-card total premio" data-premk="aprovadas"><small>Premiação paga total</small><strong>${brl(premioTotalVendas)}</strong><span>valor aprovado na folha comercial</span></div>
-        <div class="prem-sales-revenue-card upgrade premio" data-premk="tipo_upgrade"><small>Premiação upgrade</small><strong>${brl(premioTipoVendas.Upgrade)}</strong><span>comissão aprovada em upgrades</span></div>
-        <div class="prem-sales-revenue-card instalacao premio" data-premk="tipo_instalacao"><small>Premiação instalação</small><strong>${brl(premioTipoVendas['Instalação'])}</strong><span>comissão aprovada em instalações</span></div>
-        <div class="prem-sales-revenue-card reativacao premio" data-premk="tipo_reativacao"><small>Premiação reativação</small><strong>${brl(premioTipoVendas['Reativação'])}</strong><span>comissão aprovada em reativações</span></div>
+        <div class="prem-sales-revenue-card upgrade premio" data-premk="tipo_upgrade_aprovadas"><small>Premiação upgrade</small><strong>${brl(premioTipoVendas.Upgrade)}</strong><span>comissão aprovada em upgrades</span></div>
+        <div class="prem-sales-revenue-card instalacao premio" data-premk="tipo_instalacao_aprovadas"><small>Premiação instalação</small><strong>${brl(premioTipoVendas['Instalação'])}</strong><span>comissão aprovada em instalações</span></div>
+        <div class="prem-sales-revenue-card reativacao premio" data-premk="tipo_reativacao_aprovadas"><small>Premiação reativação</small><strong>${brl(premioTipoVendas['Reativação'])}</strong><span>comissão aprovada em reativações</span></div>
       </div>
     </div>`;
   const salesStatusChart=document.getElementById('prem-sales-status-chart');
@@ -17743,6 +17743,9 @@ function renderPremiacoesView(){
   }
   const dupInternas=premDuplicidadeInterna(rows);
   const maps={aprovadas,validar,reprovadas,validas,pend,anulados,auditoriaPos,downgradeRegistros,foraJanela,manualAudit,reativ:reativNao,semprova:reativSemProva,semhist:reativSemHist,audit:auditAlto,sem,ranking:rows,divergente:motivoDivergente,historico:histAlertas,dupInternas};
+  maps.tipo_instalacao_aprovadas=aprovadas.filter(r=>r['Motivo de inclusão']==='Instalação');
+  maps.tipo_upgrade_aprovadas=aprovadas.filter(r=>r['Motivo de inclusão']==='Upgrade');
+  maps.tipo_reativacao_aprovadas=aprovadas.filter(r=>r['Motivo de inclusão']==='Reativação');
   maps.tipo_instalacao=rows.filter(r=>r['Motivo de inclusão']==='Instalação');
   maps.tipo_upgrade=rows.filter(r=>r['Motivo de inclusão']==='Upgrade');
   maps.tipo_reativacao=rows.filter(r=>r['Motivo de inclusão']==='Reativação');
@@ -18278,7 +18281,7 @@ async function downloadPremRankingImage(){
 function openPremDetail(k){
   const maps=STATE.premMaps||{};
   const rows=maps[k]||maps.ranking||currentPremiacoesFilter();
-  const titles={aprovadas:'APROVADO para pagamento',validar:'VALIDAR antes de pagar',reprovadas:'REPROVADO / não pagar',validas:'Premiações válidas',pend:'1º pagamento não localizado',anulados:'Upgrades anulados',auditoriaPos:'Auditoria pós-pagamento',downgradeRegistros:'Downgrades registrados',historico:'Alertas da base histórica de pagamentos',foraJanela:'Pagamentos fora da janela',manualAudit:'Auditoria manual da supervisão',reativ:'Negociação normal',semprova:'Reativação não comprovada',semhist:'Reativação sem histórico',audit:'Auditoria do motivo',divergente:'Motivo divergente do histórico',ranking:'Detalhamento completo de premiações',sem:'Sem premiação',tipo_instalacao:'Instalações',tipo_upgrade:'Upgrades',tipo_reativacao:'Reativações',tipo_downgrade:'Downgrades',dupInternas:'Duplicidades internas detectadas'};
+  const titles={aprovadas:'APROVADO para pagamento',validar:'VALIDAR antes de pagar',reprovadas:'REPROVADO / não pagar',validas:'Premiações válidas',pend:'1º pagamento não localizado',anulados:'Upgrades anulados',auditoriaPos:'Auditoria pós-pagamento',downgradeRegistros:'Downgrades registrados',historico:'Alertas da base histórica de pagamentos',foraJanela:'Pagamentos fora da janela',manualAudit:'Auditoria manual da supervisão',reativ:'Negociação normal',semprova:'Reativação não comprovada',semhist:'Reativação sem histórico',audit:'Auditoria do motivo',divergente:'Motivo divergente do histórico',ranking:'Detalhamento completo de premiações',sem:'Sem premiação',tipo_instalacao:'Instalações',tipo_upgrade:'Upgrades',tipo_reativacao:'Reativações',tipo_downgrade:'Downgrades',tipo_instalacao_aprovadas:'Instalações aprovadas na folha',tipo_upgrade_aprovadas:'Upgrades aprovados na folha',tipo_reativacao_aprovadas:'Reativações aprovadas na folha',dupInternas:'Duplicidades internas detectadas'};
   if(k && String(k).startsWith('seller_')) titles[k]='Folha de vendas';
   const actions={
     validas:'Conferir amostragem e liberar para pagamento conforme política interna.',
@@ -18299,6 +18302,9 @@ function openPremDetail(k){
     tipo_instalacao:'Validar instalações por primeira parcela paga após ativação.',
     tipo_upgrade:'Validar upgrades por primeira parcela paga após a data da alteração.',
     tipo_reativacao:'Validar reativações por 90 dias off e primeira parcela paga após ativação.',
+    tipo_instalacao_aprovadas:'Itens já aprovados na folha comercial. A produção completa aparece no Ranking Upgrade quando aplicável.',
+    tipo_upgrade_aprovadas:'Itens já aprovados na folha comercial. O Ranking Upgrade mostra a produção validável do relatório de Alterações Contratuais.',
+    tipo_reativacao_aprovadas:'Itens já aprovados na folha comercial. A produção completa aparece nas análises comerciais quando aplicável.',
     tipo_downgrade:'Downgrade é registro/auditoria; ele só afeta o upgrade vinculado quando reverte antes do pagamento.',
     ranking:'Usar filtros e colunas para validar vendedor, motivo, pagamento e histórico.',
     dupInternas:'Não pagar nenhuma das vendedoras até a supervisão definir qual venda é legítima. Registrar a decisão antes de fechar a folha.'
