@@ -14641,6 +14641,56 @@ function _syncPremFiltrosMirror(){
     });
   }catch(e){}
 }
+function premUpgradeOverviewSummaryLocal(){
+  const minUpgrade=9.90;
+  const raw=(STATE.processed&&Array.isArray(STATE.processed.alteracoes)&&STATE.processed.alteracoes.length)
+    ? STATE.processed.alteracoes
+    : ((STATE.raw&&Array.isArray(STATE.raw.alteracoes)&&STATE.raw.alteracoes.length&&typeof processAlteracoesRows==='function')
+      ? processAlteracoesRows(STATE.raw.alteracoes)
+      : []);
+  if(raw.length&&STATE.processed&&(!Array.isArray(STATE.processed.alteracoes)||!STATE.processed.alteracoes.length))STATE.processed.alteracoes=raw;
+  const tipoOf=r=>String(r['Tipo alteração']||r['Tipo alteraÃ§Ã£o']||r['Tipo alteracao']||'');
+  const difOf=r=>Number(r['Diferença']!=null?r['Diferença']:(r['DiferenÃ§a']!=null?r['DiferenÃ§a']:r['Diferenca']));
+  const dataOf=r=>r._date||parseDateTime(r['Data alteração']||r['Data alteraÃ§Ã£o']||r['Data alteracao']||'')||parseDate(r['Data alteração']||r['Data alteraÃ§Ã£o']||r['Data alteracao']||'');
+  const rows=(raw||[]).filter(r=>tipoOf(r)==='Upgrade'||tipoOf(r)==='Downgrade');
+  const comp=STATE.filtros?.competencia||'';
+  let valid=rows.filter(r=>!comp||(dataOf(r)&&monthKeyFromDate(dataOf(r))===comp));
+  if(rows.length&&!valid.length&&comp)valid=rows;
+  const upPremiaveis=valid.filter(r=>tipoOf(r)==='Upgrade'&&isFinite(difOf(r))&&difOf(r)>=minUpgrade);
+  const upAbaixo=valid.filter(r=>tipoOf(r)==='Upgrade'&&isFinite(difOf(r))&&difOf(r)>0&&difOf(r)<minUpgrade);
+  const downgrades=valid.filter(r=>tipoOf(r)==='Downgrade');
+  const sumDif=arr=>arr.reduce((s,r)=>s+(isFinite(difOf(r))?difOf(r):0),0);
+  const sumAbsNeg=arr=>arr.reduce((s,r)=>s+(isFinite(difOf(r))&&difOf(r)<0?Math.abs(difOf(r)):0),0);
+  const byVend={};
+  const ensure=nome=>{
+    const clean=String(nome||'Não identificado').trim()||'Não identificado';
+    const key=clean.toUpperCase();
+    if(!byVend[key])byVend[key]={nome:clean,ups:0,downs:0,rec_b:0,desc:0};
+    return byVend[key];
+  };
+  upPremiaveis.forEach(r=>{const item=ensure(r['Vendedor Nome']||r.Vendedor);item.ups+=1;item.rec_b+=Math.max(0,difOf(r)||0);});
+  downgrades.forEach(r=>{const item=ensure(r['Vendedor Nome']||r.Vendedor);item.downs+=1;item.desc+=Math.max(0,Math.abs(difOf(r)||0));});
+  const rankingAtendimento=Object.values(byVend).filter(x=>premAtendimentoAvatar(x.nome)).map(x=>({
+    ...x,
+    ups_liq:Math.max(0,x.ups-x.downs),
+    rec_liq:Math.max(0,x.rec_b-x.desc),
+    comissao:Math.max(0,x.ups-x.downs)*10
+  }));
+  return {
+    source:'prem-local',
+    rows:valid,
+    premiaveis:upPremiaveis,
+    abaixo:upAbaixo,
+    downgrades,
+    receitaTotal:sumDif(upPremiaveis)+sumDif(upAbaixo),
+    receitaPremiavel:sumDif(upPremiaveis),
+    receitaAbaixo:sumDif(upAbaixo),
+    impactoDowngrade:sumAbsNeg(downgrades),
+    totalAtendimento:rankingAtendimento.reduce((s,x)=>s+x.rec_liq,0),
+    comissaoPrevista:rankingAtendimento.reduce((s,x)=>s+x.comissao,0),
+    qtdAtendimento:rankingAtendimento.reduce((s,x)=>s+x.ups_liq,0)
+  };
+}
 function renderPremiacoesGeral(){
   _syncPremFiltrosMirror();
   const alertas=document.getElementById('prem-geral-alertas');
@@ -14723,7 +14773,10 @@ function renderPremiacoesGeral(){
       <div class="prem-status-legend-row" data-prem-geral="naoelegiveis"><i class="prem-status-dot muted"></i><b>Não elegíveis</b><span>${naoElegiveis.toLocaleString('pt-BR')} (${pctNao.toFixed(1).replace('.',',')}%)</span></div>
     </div>
   </div>`;
-  const upgradeResumo=(typeof window.ruUpgradeOverviewSummary==='function')?window.ruUpgradeOverviewSummary():null;
+  let upgradeResumo=(typeof window.ruUpgradeOverviewSummary==='function')?window.ruUpgradeOverviewSummary():null;
+  if((!upgradeResumo||!upgradeResumo.rows||!upgradeResumo.rows.length)&&typeof premUpgradeOverviewSummaryLocal==='function'){
+    upgradeResumo=premUpgradeOverviewSummaryLocal();
+  }
   if(upgradeResumo&&upgradeResumo.rows&&upgradeResumo.rows.length){
     upgradesBox.innerHTML=`<div class="prem-upgrade-overview">
       <div class="prem-upgrade-card info" data-prem-upgrade-geral="total">
