@@ -2866,36 +2866,15 @@ h2.section-title .info-btn{margin-left:6px}
     #mod-premiacoes #prem-rank-grid .prem-rank-crown{
       position:absolute;
       left:50%;
-      top:-19px;
+      top:-21px;
       transform:translateX(-50%);
-      width:28px;
-      height:22px;
+      width:30px;
+      height:24px;
       z-index:2;
       filter:drop-shadow(0 4px 8px rgba(242,183,5,.35));
     }
-    #mod-premiacoes #prem-rank-grid .prem-rank-crown::before{
-      content:'';
-      position:absolute;
-      left:3px;
-      right:3px;
-      bottom:2px;
-      height:9px;
-      background:#f2b705;
-      border-radius:2px 2px 5px 5px;
-      box-shadow:inset 0 -2px 0 rgba(120,73,0,.25);
-    }
-    #mod-premiacoes #prem-rank-grid .prem-rank-crown i{
-      position:absolute;
-      bottom:8px;
-      width:8px;
-      height:14px;
-      background:#f2b705;
-      border-radius:8px 8px 2px 2px;
-      transform-origin:bottom center;
-    }
-    #mod-premiacoes #prem-rank-grid .prem-rank-crown i:nth-child(1){left:3px;transform:rotate(-24deg)}
-    #mod-premiacoes #prem-rank-grid .prem-rank-crown i:nth-child(2){left:10px;height:17px}
-    #mod-premiacoes #prem-rank-grid .prem-rank-crown i:nth-child(3){right:3px;transform:rotate(24deg)}
+    #mod-premiacoes #prem-rank-grid .prem-rank-crown svg{display:block;width:100%;height:100%}
+    #mod-premiacoes #prem-rank-grid .prem-rank-crown path{fill:#f2b705;stroke:#ffe38a;stroke-width:1.2;stroke-linejoin:round}
     #mod-premiacoes #prem-rank-grid .prem-rank-card.podium.rank-1 .prem-rank-avatar{width:92px;height:92px;border:3px solid #f2b705;box-shadow:0 0 0 4px rgba(242,183,5,.16),0 10px 24px rgba(242,183,5,.12)}
     #mod-premiacoes #prem-rank-grid .prem-rank-card.podium.rank-2 .prem-rank-avatar{width:76px;height:76px;border:3px solid #b8c2cc;box-shadow:0 0 0 3px rgba(184,194,204,.12),0 8px 18px rgba(0,0,0,.22)}
     #mod-premiacoes #prem-rank-grid .prem-rank-card.podium.rank-3 .prem-rank-avatar{width:76px;height:76px;border:3px solid #b87333;box-shadow:0 0 0 3px rgba(184,115,51,.14),0 8px 18px rgba(0,0,0,.22)}
@@ -18404,7 +18383,7 @@ function updateRankingTab(){
       return `<div class="prem-rank-card ${mode}${podiumCls}" data-premk="${key}">
         <div class="prem-rank-pos">${rank}º</div>
         <div class="prem-rank-card-head">
-          <div class="prem-rank-avatar-wrap">${rank===1?'<div class="prem-rank-crown" aria-hidden="true"><i></i><i></i><i></i></div>':''}<div class="prem-rank-avatar">${avatar(v.nome)}</div></div>
+          <div class="prem-rank-avatar-wrap">${rank===1?'<div class="prem-rank-crown" aria-hidden="true"><svg viewBox="0 0 48 36" focusable="false"><path d="M7 31 L10 12 L19 22 L24 7 L29 22 L38 12 L41 31 Z M9 31 H39 V35 H9 Z"/></svg></div>':''}<div class="prem-rank-avatar">${avatar(v.nome)}</div></div>
           <div class="prem-rank-person">
             <div class="prem-rank-name" title="${escHtml(v.nome)}">${escHtml(v.nome)}</div>
             <div class="prem-rank-breakdown">${(v.aprovadas||0).toLocaleString('pt-BR')} aprovados · ${v.total.toLocaleString('pt-BR')} eventos</div>
@@ -20369,12 +20348,9 @@ function setAllDrillCols(on){
       '#mod-premiacoes .ru-card.pos3{border-color:#b87333;box-shadow:inset 0 0 0 1px rgba(184,115,51,.16)}',
       '#mod-premiacoes .ru-top{display:flex;align-items:center;gap:10px;min-width:0}',
       '#mod-premiacoes .ru-avatar-wrap{position:relative;flex:0 0 auto;display:flex;align-items:center;justify-content:center}',
-      '#mod-premiacoes .ru-crown{position:absolute;top:-18px;left:50%;transform:translateX(-50%);width:24px;height:19px;z-index:2;filter:drop-shadow(0 3px 7px rgba(245,197,66,.35))}',
-      '#mod-premiacoes .ru-crown:before{content:"";position:absolute;left:3px;right:3px;bottom:2px;height:8px;background:#f5c542;border-radius:2px 2px 5px 5px;box-shadow:inset 0 -2px 0 rgba(120,73,0,.25)}',
-      '#mod-premiacoes .ru-crown i{position:absolute;bottom:7px;width:7px;height:12px;background:#f5c542;border-radius:7px 7px 2px 2px;transform-origin:bottom center}',
-      '#mod-premiacoes .ru-crown i:nth-child(1){left:3px;transform:rotate(-24deg)}',
-      '#mod-premiacoes .ru-crown i:nth-child(2){left:9px;height:15px}',
-      '#mod-premiacoes .ru-crown i:nth-child(3){right:3px;transform:rotate(24deg)}',
+      '#mod-premiacoes .ru-crown{position:absolute;top:-21px;left:50%;transform:translateX(-50%);width:30px;height:24px;z-index:2;filter:drop-shadow(0 3px 7px rgba(245,197,66,.35))}',
+      '#mod-premiacoes .ru-crown svg{display:block;width:100%;height:100%}',
+      '#mod-premiacoes .ru-crown path{fill:#f5c542;stroke:#ffe38a;stroke-width:1.2;stroke-linejoin:round}',
       '#mod-premiacoes .ru-avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;border:2px solid #2b4362;background:#081523;display:flex;align-items:center;justify-content:center;color:#8fb8e8;font-weight:900;flex:0 0 auto}',
       '#mod-premiacoes .ru-card.pos1 .ru-avatar{border-color:#f5c542;box-shadow:0 0 0 3px rgba(245,197,66,.12)}',
       '#mod-premiacoes .ru-card.pos2 .ru-avatar{border-color:#cbd5e1;box-shadow:0 0 0 3px rgba(203,213,225,.10)}',
@@ -20478,7 +20454,7 @@ function setAllDrillCols(on){
       var pos = x.rank || (ranking.indexOf(x)+1);
       var pct = maxRec ? Math.max(5, Math.round((x.rec_liq / maxRec) * 100)) : 0;
       return '<div class="ru-card '+(mode||'')+' pos'+pos+'">'
-        + '<div class="ru-top"><div class="ru-avatar-wrap">'+(pos===1?'<span class="ru-crown" aria-hidden="true"><i></i><i></i><i></i></span>':'')+'<div class="ru-avatar">'+ruAvatar(x.nome)+'</div></div><div style="min-width:0"><div class="ru-name">'+ruEsc(x.nome)+'</div><div class="ru-sub">'+x.ups+' ups · '+x.downs+' downs</div></div><div class="ru-pos">'+pos+'º</div></div>'
+        + '<div class="ru-top"><div class="ru-avatar-wrap">'+(pos===1?'<span class="ru-crown" aria-hidden="true"><svg viewBox="0 0 48 36" focusable="false"><path d="M7 31 L10 12 L19 22 L24 7 L29 22 L38 12 L41 31 Z M9 31 H39 V35 H9 Z"/></svg></span>':'')+'<div class="ru-avatar">'+ruAvatar(x.nome)+'</div></div><div style="min-width:0"><div class="ru-name">'+ruEsc(x.nome)+'</div><div class="ru-sub">'+x.ups+' ups · '+x.downs+' downs</div></div><div class="ru-pos">'+pos+'º</div></div>'
         + '<div class="ru-money">'+ruBRL(x.rec_liq)+'</div>'
         + '<div class="ru-bar"><div class="ru-fill" style="width:'+pct+'%"></div></div>'
         + '<div class="ru-stats">'
