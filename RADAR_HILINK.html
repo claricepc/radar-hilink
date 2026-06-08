@@ -2555,6 +2555,60 @@ h2.section-title .info-btn{margin-left:6px}
     #mod-premiacoes .prem-period-dates{color:#a9bad0}
     #mod-premiacoes .prem-period-tag{background:#123823;color:#6af2a9;border:1px solid #1d8b58;font-weight:800}
     .prem-tabs-nav{background:#0a1524;border:1px solid #22354d;border-radius:10px;margin-bottom:14px;overflow:hidden}
+    #mod-premiacoes .prem-tab-intro{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      margin:0 0 12px;
+      padding:12px 14px;
+      border:1px solid rgba(56,168,255,.22);
+      border-left:3px solid #38a8ff;
+      border-radius:12px;
+      background:rgba(56,168,255,.055);
+      min-width:0;
+      overflow:hidden;
+    }
+    #mod-premiacoes .prem-tab-intro small{
+      display:block;
+      margin-bottom:4px;
+      color:#8fb8e8;
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      line-height:1.2;
+    }
+    #mod-premiacoes .prem-tab-intro strong{
+      display:block;
+      color:#f8fbff;
+      font-size:14px;
+      font-weight:800;
+      line-height:1.2;
+      white-space:normal;
+    }
+    #mod-premiacoes .prem-tab-intro span{
+      display:block;
+      margin-top:5px;
+      color:#86a3c7;
+      font-size:11px;
+      font-weight:400;
+      line-height:1.35;
+    }
+    #mod-premiacoes .prem-tab-intro b{
+      flex:0 0 auto;
+      align-self:center;
+      color:#7fa0c0;
+      font-size:10px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      white-space:nowrap;
+    }
+    @media(max-width:900px){
+      #mod-premiacoes .prem-tab-intro{flex-direction:column}
+      #mod-premiacoes .prem-tab-intro b{align-self:flex-start}
+    }
     .prem-tab{color:#a9bad0;border-bottom:3px solid transparent;margin-bottom:0;padding:12px 24px}
     .prem-tab:hover{background:#10213a;color:#e6f2ff}
     .prem-tab.active{background:linear-gradient(180deg,#12345a,#0c1d32);border-bottom-color:#2da3ff;color:#42b8ff}
@@ -6379,6 +6433,14 @@ h2.section-title .info-btn{margin-left:6px}
 
     <!-- ══ ABA: VISÃO GERAL ══ -->
     <div class="prem-tab-pane active" id="prem-tab-geral">
+      <div class="prem-tab-intro">
+        <div>
+          <small>Vis&atilde;o Geral</small>
+          <strong>Como foi o m&ecirc;s comercialmente e operacionalmente?</strong>
+          <span>Mostra o resultado do per&iacute;odo, alertas principais, vendas, upgrades, atendimento e evolu&ccedil;&atilde;o comercial em leitura executiva.</span>
+        </div>
+        <b>Resumo executivo</b>
+      </div>
       <div class="section compact-section" id="prem-geral-section">
 
         <!-- LAYOUT PRINCIPAL: main (esquerda) + side (direita) -->
@@ -6505,6 +6567,14 @@ h2.section-title .info-btn{margin-left:6px}
 
     <!-- ABA: VENDAS -->
     <div class="prem-tab-pane" id="prem-tab-vendas">
+    <div class="prem-tab-intro">
+      <div>
+        <small>Vendas</small>
+        <strong>O que entra ou n&atilde;o entra na folha de premia&ccedil;&atilde;o comercial?</strong>
+        <span>Organiza receita, premia&ccedil;&atilde;o, status das vendas, pend&ecirc;ncias de pagamento e auditoria comercial do fechamento.</span>
+      </div>
+      <b>Folha comercial</b>
+    </div>
     <div class="section compact-section" id="prem-vendas-section">
 
       <div class="prem-exec-layout prem-sales-layout">
@@ -6759,6 +6829,14 @@ h2.section-title .info-btn{margin-left:6px}
 
     <!-- ABA: AUDITORIA -->
     <div class="prem-tab-pane" id="prem-tab-auditoria">
+      <div class="prem-tab-intro">
+        <div>
+          <small>Auditoria</small>
+          <strong>O que a supervis&atilde;o precisa decidir antes de fechar a folha?</strong>
+          <span>Re&uacute;ne regras, pend&ecirc;ncias, motivo da automa&ccedil;&atilde;o, aprova&ccedil;&atilde;o, reprova&ccedil;&atilde;o, reabertura e justificativa da decis&atilde;o.</span>
+        </div>
+        <b>Campo de decis&atilde;o</b>
+      </div>
       <div class="section compact-section" id="prem-auditoria-section">
 
         <div class="prem-opa-group">
@@ -6822,6 +6900,14 @@ h2.section-title .info-btn{margin-left:6px}
 
     <!-- ABA: RANKING -->
     <div class="prem-tab-pane" id="prem-tab-ranking">
+      <div class="prem-tab-intro">
+        <div>
+          <small>Ranking Geral</small>
+          <strong>Quem se destacou no resultado total da premia&ccedil;&atilde;o?</strong>
+          <span>Apresenta p&oacute;dio, ranking geral, comiss&atilde;o comercial, pr&ecirc;mio de atendimento e m&eacute;tricas resumidas para divulga&ccedil;&atilde;o.</span>
+        </div>
+        <b>Resultado total</b>
+      </div>
       <div class="section">
         <div class="prem-rank-header">
           <div>
@@ -6840,6 +6926,14 @@ h2.section-title .info-btn{margin-left:6px}
 
     <!-- ══ ABA: RANKING UPGRADE ══ -->
     <div class="prem-tab-pane" id="prem-tab-ranking-upgrade">
+      <div class="prem-tab-intro">
+        <div>
+          <small>Ranking Upgrade</small>
+          <strong>Quem se destacou especificamente em upgrades?</strong>
+          <span>Mostra upgrades v&aacute;lidos, produ&ccedil;&atilde;o por atendente, total geral, pagamento da primeira parcela e regra m&iacute;nima de R$ 9,90.</span>
+        </div>
+        <b>Upgrade di&aacute;rio</b>
+      </div>
       <div class="section" style="background:#0a1120;border-radius:12px;padding:20px">
         <!-- Header -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
