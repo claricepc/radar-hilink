@@ -2496,6 +2496,18 @@ h2.section-title .info-btn{margin-left:6px}
 .cc-alert-box.info{background:#eff6ff;border-color:#3b82f6;color:#1e40af}
 #cc-btn-export:not([disabled]){opacity:1!important}
 </style>
+<style>
+.cd-atalho{display:flex;align-items:center;gap:18px;justify-content:space-between;margin:0 0 14px;padding:18px 20px;border-radius:12px;cursor:pointer;
+  background:linear-gradient(90deg,#0071BC,#005399);color:#fff;border:1px solid rgba(255,255,255,.18)}
+.cd-atalho:hover{filter:brightness(1.08)}
+.cd-atalho-tit{font-size:18px;font-weight:700;margin-bottom:4px}
+.cd-atalho-txt{font-size:13px;opacity:.92;max-width:760px;line-height:1.45}
+.cd-atalho-btn{background:#fff!important;color:#005399!important;font-weight:700;white-space:nowrap;padding:10px 18px}
+.cd-sep{font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.7;margin:4px 0 10px}
+.cd-passos{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 2px;font-size:12px;opacity:.85}
+.cd-passos span{border:1px solid rgba(90,150,220,.45);border-radius:999px;padding:4px 10px}
+@media (max-width:760px){.cd-atalho{flex-direction:column;align-items:flex-start}}
+</style>
 </head>
 <body>
 <!-- ===================== TELA DE LOGIN ===================== -->
@@ -2658,10 +2670,14 @@ h2.section-title .info-btn{margin-left:6px}
         </div>
       </div>
 
-      <div class="setup-intro" style="margin:0 0 10px">
-        <strong>Novo:</strong> inadimpl&ecirc;ncia, pr&eacute;-bloqueio, recolhimento e t&iacute;tulos suspeitos j&aacute; chegam autom&aacute;ticos do IXC, todo dia &agrave;s 4h.
-        <button class="btn sm primary" style="margin-left:8px" onclick="go('cobrancaDia');cdCarregar()">Abrir Cobran&ccedil;a do Dia</button>
+      <div class="cd-atalho" onclick="go('cobrancaDia')">
+        <div>
+          <div class="cd-atalho-tit">Cobran&ccedil;a de hoje j&aacute; est&aacute; pronta</div>
+          <div class="cd-atalho-txt">N&atilde;o precisa exportar nem arrastar relat&oacute;rio. O Radar busca no IXC sozinho, todo dia &agrave;s 4h: quem cobrar antes do bloqueio, recolhimentos para agendar e t&iacute;tulos para corrigir.</div>
+        </div>
+        <button class="btn primary cd-atalho-btn" type="button">Ver cobran&ccedil;a de hoje</button>
       </div>
+      <div class="cd-sep">Outras an&aacute;lises ainda precisam dos relat&oacute;rios abaixo</div>
       <div class="upload-dropzone" id="setup-dropzone" onclick="document.getElementById('setup-drop-input').click()">
         <input type="file" id="setup-drop-input" accept=".csv" multiple onchange="onUploadFiles(this.files)">
         <strong>Arraste seus relatórios aqui</strong>
@@ -2875,7 +2891,7 @@ h2.section-title .info-btn{margin-left:6px}
     .sidebar .logo-box img{display:none!important}
     .sidebar .logo-box::before{display:none!important}
     .sidebar .logo-box::after{display:none!important}
-    .sidebar-logo-svg{display:block;width:148px;height:auto}
+    .sidebar-logo-svg{display:none!important}
     .nav-section{color:#7f93af}
     .nav-section.toggleable:hover{color:#dbeafe}
     .nav-item{color:#dbeafe;border:1px solid transparent}
@@ -22827,9 +22843,9 @@ function renderClientSheet(index){
 // ====================== MÓDULO: COBRANÇA DO DIA (dados do banco, leitura diária do IXC) ======================
 const CD = { dados:{}, aba:'pre_bloqueio', filial:'Todas', carregadoEm:null };
 const CD_ABAS = {
-  pre_bloqueio:     { titulo:'Pré-bloqueio (1 a 5 dias)', desc:'Vencidos de 1 a 5 dias, antes do bloqueio automático. Já exclui Filial 10, liberação em confiança ativa, OS de recolhimento/cancelamento e títulos suspeitos.' },
-  recolhimento_atd: { titulo:'Recolhimento ATD', desc:'OS abertas de recolhimento de equipamento com tarefa ATD (agendamento ou reagendamento): contato das atendentes.' },
-  suspeitos:        { titulo:'Títulos suspeitos', desc:'Títulos em aberto com valor zerado, muito alto ou acumulando mensalidades. Corrigir no IXC antes de cobrar.' }
+  pre_bloqueio:     { titulo:'Cobrar antes do bloqueio', desc:'Vencidos de 1 a 5 dias, antes do bloqueio automático. Já exclui Filial 10, liberação em confiança ativa, OS de recolhimento/cancelamento e títulos suspeitos.' },
+  recolhimento_atd: { titulo:'Agendar recolhimento', desc:'OS abertas de recolhimento de equipamento com tarefa ATD (agendamento ou reagendamento): contato das atendentes.' },
+  suspeitos:        { titulo:'Corrigir no IXC', desc:'Títulos em aberto com valor zerado, muito alto ou acumulando mensalidades. Corrigir no IXC antes de cobrar.' }
 };
 const cdMoeda = v => (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const cdNum = v => (Number(v)||0).toLocaleString('pt-BR');
@@ -22876,9 +22892,10 @@ function renderCobrancaDia(){
   const r = CD.dados.resumo;
   if(!r){
     box.innerHTML = `<div class="section compact-section">
-      <h2 class="section-title">Cobrança do dia <span class="help">Leitura automática do IXC, todo dia às 4h</span></h2>
-      <p style="margin:8px 0 14px">Os dados vêm direto do banco. Não é preciso exportar nem arrastar relatórios.</p>
-      <button class="btn primary" onclick="cdCarregar()">Carregar do banco</button></div>`;
+      <h2 class="section-title">Cobrança do dia</h2>
+      <p style="margin:8px 0 14px">Buscando os dados de hoje...</p>
+      <button class="btn primary" onclick="cdCarregar()">Tentar de novo</button></div>`;
+    if(!CD._tentou){ CD._tentou = true; cdCarregar(); }
     return;
   }
   const faixas = r.faixas || {};
@@ -22925,9 +22942,10 @@ function renderCobrancaDia(){
         </label>
         ${podeOpa?`<button class="btn sm primary" onclick="cdExportarOpa()">Exportar para o OPA</button>`:''}
         <button class="btn sm" onclick="cdExportarPlanilha()">Exportar planilha</button>
-        <button class="btn sm" onclick="cdCarregar()">Recarregar</button>
+        <button class="btn sm" onclick="cdCarregar()" title="Busca de novo no banco os dados da leitura das 4h">Atualizar</button>
       </div>
-      <p style="font-size:12px;margin:0 0 8px">${CD_ABAS[CD.aba].desc} ${linhas.length} registros${podeOpa&&semFone?`, ${semFone} sem celular válido (ficam fora do arquivo do OPA)`:''}.</p>
+      <div class="cd-passos"><span>1. Escolha a lista</span><span>2. Filtre a filial, se quiser</span><span>3. Clique em Exportar para o OPA e suba o arquivo da filial</span></div>
+      <p style="font-size:12px;margin:8px 0">${CD_ABAS[CD.aba].desc} ${linhas.length} registros${podeOpa&&semFone?`, ${semFone} sem celular válido (ficam fora do arquivo do OPA)`:''}.</p>
       <div class="tbl-wrap" style="max-height:520px"><table class="decision-table"><thead><tr>${cab}</tr></thead><tbody>${corpo||'<tr><td colspan="9">Nenhum registro.</td></tr>'}</tbody></table></div>
     </div>`;
 }
