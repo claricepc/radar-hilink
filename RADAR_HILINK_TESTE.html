@@ -22872,12 +22872,12 @@ function renderClientSheet(index){
 const CD = { dados:{}, aba:'cobrar', filial:'Todas', carregadoEm:null, titulosEm:null, atualizando:false,
   f:{ diasMin:1, diasMax:5, boletosMin:'', boletosMax:'', valorMin:'', valorMax:'', busca:'', incluirExcluidos:false, soComTelefone:false, preset:'pre' } };
 const CD_PRESETS = {
-  pre:    { nome:'Antes do bloqueio (1 a 5 dias)', f:{diasMin:1, diasMax:5, boletosMin:'', boletosMax:''} },
-  um:     { nome:'Só 1 boleto em aberto',          f:{diasMin:'', diasMax:'', boletosMin:1, boletosMax:1} },
-  d6_30:  { nome:'6 a 30 dias',                    f:{diasMin:6, diasMax:30, boletosMin:'', boletosMax:''} },
-  d31_90: { nome:'31 a 90 dias',                   f:{diasMin:31, diasMax:90, boletosMin:'', boletosMax:''} },
-  d90:    { nome:'Mais de 90 dias',                f:{diasMin:91, diasMax:'', boletosMin:'', boletosMax:''} },
-  todos:  { nome:'Todos os vencidos',              f:{diasMin:'', diasMax:'', boletosMin:'', boletosMax:''} }
+  pre:    { nome:'Antes do bloqueio (1 a 5 dias)', f:{diasMin:1, diasMax:5, boletosMin:'', boletosMax:'', incluirExcluidos:false} },
+  um:     { nome:'Só 1 boleto em aberto',          f:{diasMin:'', diasMax:'', boletosMin:1, boletosMax:1, incluirExcluidos:false} },
+  d6_30:  { nome:'6 a 30 dias',                    f:{diasMin:6, diasMax:30, boletosMin:'', boletosMax:'', incluirExcluidos:false} },
+  d31_90: { nome:'31 a 90 dias',                   f:{diasMin:31, diasMax:90, boletosMin:'', boletosMax:'', incluirExcluidos:false} },
+  d90:    { nome:'Mais de 90 dias',                f:{diasMin:91, diasMax:'', boletosMin:'', boletosMax:'', incluirExcluidos:false} },
+  todos:  { nome:'Todos os vencidos',              f:{diasMin:'', diasMax:'', boletosMin:'', boletosMax:'', incluirExcluidos:true} }
 };
 const CD_ABAS = {
   cobrar:           { titulo:'Cobrar',               fonte:'clientes_vencidos', desc:'Clientes com boleto vencido, um por linha. "Dias de atraso" conta pelo boleto mais antigo, que é o que define o bloqueio. Já exclui Filial 10 e títulos suspeitos.' },
@@ -22966,7 +22966,15 @@ function cdLinhasFiltradas(){
   const busca = String(CD.f.busca||'').trim().toUpperCase();
   if(busca) l = l.filter(r => String(r.nome||'').toUpperCase().includes(busca) || String(r.id_cliente)===busca);
   if(CD.aba!=='cobrar') return l;
-  const f = CD.f, dmin=cdVal(f.diasMin), dmax=cdVal(f.diasMax), bmin=cdVal(f.boletosMin), bmax=cdVal(f.boletosMax), vmin=cdVal(f.valorMin), vmax=cdVal(f.valorMax);
+  return cdFiltrarCobrar(l, CD.f);
+}
+// mesmo filtro da lista, usado também pelos cartões (o número do cartão é sempre o da lista que ele abre)
+function cdResumoPreset(k){
+  const l = cdFiltrarCobrar(CD.dados.clientes_vencidos||[], { ...CD.f, ...CD_PRESETS[k].f, valorMin:'', valorMax:'', busca:'', soComTelefone:false });
+  return { clientes:l.length, valor:l.reduce((a,x)=>a+(Number(x.valor)||0),0) };
+}
+function cdFiltrarCobrar(l, f){
+  const dmin=cdVal(f.diasMin), dmax=cdVal(f.diasMax), bmin=cdVal(f.boletosMin), bmax=cdVal(f.boletosMax), vmin=cdVal(f.valorMin), vmax=cdVal(f.valorMax);
   return l.filter(r =>
     (f.incluirExcluidos || (!r.exclusao && r.habilitado_cobranca)) &&
     (dmin===null || r.dias_atraso>=dmin) && (dmax===null || r.dias_atraso<=dmax) &&
@@ -23050,6 +23058,7 @@ function renderCobrancaDia(){
   const conferido = CD.titulosEm || CD.carregadoEm;
   const contagem = k => { const fonte=CD_ABAS[k].fonte; return (CD.dados[fonte]||[]).length; };
 
+  const rTodos = cdResumoPreset('todos'), r90 = cdResumoPreset('d90'), rPre = cdResumoPreset('pre');
   const qbL = CD.dados.quebra||[], spL = CD.dados.suspeitos||[];
   const qb = { valor: qbL.reduce((a,x)=>a+(Number(x.valor_aberto)||0),0),
     recentes: new Set(qbL.filter(x=>/^Corrigir/.test(x.tratamento||'')).map(x=>x.id_contrato)).size,
@@ -23062,15 +23071,15 @@ function renderCobrancaDia(){
       ${cargaErros.length?`<div class="drop-empty" style="margin:6px 0">Atenção: a leitura de madrugada teve erro em ${cargaErros.map(c=>cdEsc(c.tipo)).join(', ')}. Confira antes de usar as listas.</div>`:''}
       <div class="cd-faixa">Agir hoje</div>
       <div class="cd-kpis cd-kpis-4">
-        ${cdCard({cls:'risco', label:'Antes do bloqueio (1 a 5 dias)', valor:cdMoeda(r.pre_bloqueio_valor), sub:cdNum(r.pre_bloqueio_clientes)+' clientes para cobrar hoje', ir:"cdIrLista('cobrar','pre')"})}
+        ${cdCard({cls:'risco', label:'Antes do bloqueio (1 a 5 dias)', valor:cdMoeda(rPre.valor), sub:cdNum(rPre.clientes)+' clientes para cobrar hoje', ir:"cdIrLista('cobrar','pre')"})}
         ${cdCard({cls:'corrigir', label:'Quebra financeira', valor:cdMoeda(qb.valor), sub:cdNum(qb.recentes)+' faturas para corrigir, '+cdNum(qb.antigos)+' para cobrar', ir:"cdIrLista('quebra')"})}
         ${cdCard({cls:'corrigir', label:'Corrigir no IXC', valor:cdNum(sp.qt)+' títulos', sub:[[sp.zerado,'zerados'],[sp.alto,'acima de R$ 1.500'],[sp.acumulo,'com acúmulo']].filter(x=>x[0]).map(x=>cdNum(x[0])+' '+x[1]).join(', ')||'nada a corrigir', ir:"cdIrLista('suspeitos')"})}
         ${cdCard({label:'Agendar recolhimento', valor:cdNum((CD.dados.recolhimento_atd||[]).length)+' clientes', sub:'OS de recolhimento com tarefa ATD', ir:"cdIrLista('recolhimento_atd')"})}
       </div>
       <div class="cd-faixa">Acompanhar</div>
       <div class="cd-kpis cd-kpis-5">
-        ${cdCard({label:'Vencido total', valor:cdMoeda(r.vencido_total), sub:cdNum(r.vencido_clientes)+' clientes, sem Filial 10', ir:"cdIrLista('cobrar','todos')"})}
-        ${cdCard({cls:'alerta', label:'Mais de 90 dias', valor:cdMoeda(fx('90+').valor), sub:cdNum(fx('90+').clientes)+' clientes, negociar ou encerrar', ir:"cdIrLista('cobrar','d90')"})}
+        ${cdCard({label:'Vencido total', valor:cdMoeda(rTodos.valor), sub:cdNum(rTodos.clientes)+' clientes, sem Filial 10', ir:"cdIrLista('cobrar','todos')"})}
+        ${cdCard({cls:'alerta', label:'Mais de 90 dias', valor:cdMoeda(r90.valor), sub:cdNum(r90.clientes)+' clientes com boleto mais antigo acima de 90 dias', ir:"cdIrLista('cobrar','d90')"})}
         ${cdCard({cls:'bom', label:'Pagamentos de '+cdData(r.pagamentos_dia), valor:cdMoeda(r.pagamentos_valor), sub:cdNum(r.pagamentos_qt)+' pagamentos, '+cdNum(r.pagamentos_em_atraso)+' em atraso'})}
         ${cdCard({label:'A vencer em 6 dias', valor:cdMoeda(r.avencer_6d_valor), sub:cdNum((CD.dados.avencer||[]).length)+' clientes para lembrar', ir:"cdIrLista('avencer')"})}
         ${cdCard({label:'E-mail útil na base', valor:(r.email_base?Math.round(100*r.email_base.com_email_util/Math.max(1,r.email_base.clientes))+'%':'-'), sub:cdNum((CD.dados.sem_email||[]).length)+' clientes para cadastrar', ir:"cdIrLista('sem_email')"})}
