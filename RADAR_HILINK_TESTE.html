@@ -2507,6 +2507,9 @@ h2.section-title .info-btn{margin-left:6px}
 .cd-filtros{display:flex;flex-wrap:wrap;gap:14px;align-items:center;font-size:12px;padding:10px 12px;border:1px solid rgba(90,150,220,.35);border-radius:10px;margin-bottom:6px}
 .cd-filtros input[type=number],.cd-filtros input[type=text]{background:#0B1B2B;color:#fff;border:1px solid rgba(90,150,220,.55);border-radius:6px;padding:4px 6px;margin:0 2px}
 .cd-chk{display:flex;align-items:center;gap:5px}
+.cd-kpi-acao{cursor:pointer;border-color:rgba(255,170,60,.55)!important}
+.cd-kpi-acao:hover{filter:brightness(1.12)}
+.cd-kpi-link{font-size:11px;font-weight:700;margin-top:6px;color:#FFB44A;text-transform:uppercase;letter-spacing:.05em}
 .cd-resultado{font-size:13px;margin:4px 0 8px}
 .cd-sep{font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.7;margin:4px 0 10px}
 .cd-passos{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 2px;font-size:12px;opacity:.85}
@@ -22967,6 +22970,7 @@ function cdPainelFiltros(){
     </div>`;
 }
 
+function cdIrAba(k){ CD.aba=k; renderCobrancaDia(); const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
 function renderCobrancaDia(){
   const box = document.getElementById('mod-cobrancaDia');
   if(!box) return;
@@ -23007,6 +23011,11 @@ function renderCobrancaDia(){
   const conferido = CD.titulosEm || CD.carregadoEm;
   const contagem = k => { const fonte=CD_ABAS[k].fonte; return (CD.dados[fonte]||[]).length; };
 
+  const qbL = CD.dados.quebra||[], spL = CD.dados.suspeitos||[];
+  const qb = { valor: qbL.reduce((a,x)=>a+(Number(x.valor_aberto)||0),0),
+    recentes: new Set(qbL.filter(x=>/^Corrigir/.test(x.tratamento||'')).map(x=>x.id_contrato)).size,
+    antigos: new Set(qbL.filter(x=>/^Cobrar/.test(x.tratamento||'')).map(x=>x.id_contrato)).size };
+  const sp = { qt: spL.length, valor: spL.reduce((a,x)=>a+(Number(x.valor_aberto ?? x.valor)||0),0) };
   box.innerHTML = `
     <div class="section compact-section">
       <h2 class="section-title">Cobrança do dia <span class="help">Pagamentos conferidos no IXC às ${conferido.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} de ${conferido.toLocaleDateString('pt-BR')}</span></h2>
@@ -23018,9 +23027,11 @@ function renderCobrancaDia(){
         <div class="kpi"><div class="label">Pagamentos de ${cdData(r.pagamentos_dia)}</div><div class="value">${cdMoeda(r.pagamentos_valor)}</div><div class="sub">${cdNum(r.pagamentos_qt)} pagamentos, ${cdNum(r.pagamentos_em_atraso)} em atraso</div></div>
         <div class="kpi"><div class="label">A vencer em 6 dias</div><div class="value">${cdMoeda(r.avencer_6d_valor)}</div><div class="sub">${cdNum(r.avencer_6d_qt)} títulos</div></div>
         <div class="kpi"><div class="label">E-mail útil na base</div><div class="value">${r.email_base?Math.round(100*r.email_base.com_email_util/Math.max(1,r.email_base.clientes))+'%':'-'}</div><div class="sub">${r.email_base?cdNum(r.email_base.email_falso_ou_generico)+' e-mails falsos ou genéricos':''}</div></div>
+        <div class="kpi cd-kpi-acao" onclick="cdIrAba('quebra')" title="Abrir a lista"><div class="label">Quebra financeira</div><div class="value">${cdMoeda(qb.valor)}</div><div class="sub">${cdNum(qb.recentes)} para corrigir a fatura, ${cdNum(qb.antigos)} para cobrar</div><div class="cd-kpi-link">Ver lista</div></div>
+        <div class="kpi cd-kpi-acao" onclick="cdIrAba('suspeitos')" title="Abrir a lista"><div class="label">Corrigir no IXC</div><div class="value">${cdNum(sp.qt)} títulos</div><div class="sub">${cdMoeda(sp.valor)} com valor zerado, alto ou acumulado</div><div class="cd-kpi-link">Ver lista</div></div>
       </div>
     </div>
-    <div class="section compact-section">
+    <div class="section compact-section" id="cd-lista">
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
         ${Object.entries(CD_ABAS).map(([k,a])=>`<button class="btn sm ${k===CD.aba?'primary':''}" onclick="CD.aba='${k}';renderCobrancaDia()">${a.titulo} (${contagem(k)})</button>`).join('')}
         <span style="flex:1"></span>
@@ -23075,7 +23086,7 @@ function cdExportarPlanilha(){
   const corpo = [cols.join(';'), ...linhas.map(x=>cols.map(c=>cdCsvCampo(x[c])).join(';'))].join('\r\n');
   cdBaixar(`${cdNomeLista()}_${cdSlug(CD.filial)}_${String(CD.dados.resumo?.data||'').slice(0,10)}.csv`, corpo);
 }
-Object.assign(window, { cdCarregar, renderCobrancaDia, cdExportarOpa, cdExportarPlanilha, cdAtualizarPagamentos, cdAplicarPreset, cdSetFiltro, cdLimparFiltros, CD });
+Object.assign(window, { cdCarregar, renderCobrancaDia, cdExportarOpa, cdExportarPlanilha, cdAtualizarPagamentos, cdAplicarPreset, cdSetFiltro, cdLimparFiltros, cdIrAba, CD });
 
 
 </script>
