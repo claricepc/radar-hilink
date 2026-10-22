@@ -2507,6 +2507,29 @@ h2.section-title .info-btn{margin-left:6px}
 .cd-filtros{display:flex;flex-wrap:wrap;gap:14px;align-items:center;font-size:12px;padding:10px 12px;border:1px solid rgba(90,150,220,.35);border-radius:10px;margin-bottom:6px}
 .cd-filtros input[type=number],.cd-filtros input[type=text]{background:#0B1B2B;color:#fff;border:1px solid rgba(90,150,220,.55);border-radius:6px;padding:4px 6px;margin:0 2px}
 .cd-chk{display:flex;align-items:center;gap:5px}
+.cd-faixa{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8FA3B8;margin:14px 0 8px}
+.cd-kpis{display:grid;gap:12px}
+.cd-kpis-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cd-kpis-5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:1100px){.cd-kpis-4,.cd-kpis-5{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.cd-kpis-4,.cd-kpis-5{grid-template-columns:1fr}}
+.cd-kpi{background:#0E2236;border:1px solid rgba(143,163,184,.22);border-left:4px solid rgba(143,163,184,.35);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.cd-k-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8FA3B8}
+.cd-k-valor{font-size:24px;font-weight:700;color:#F2F5F8;line-height:1.15;margin-top:2px}
+.cd-k-sub{font-size:12px;color:#B4C2D0}
+.cd-k-ver{margin-top:auto;padding-top:8px;font-size:11px;font-weight:700;color:#4DA3E0;text-transform:uppercase;letter-spacing:.05em}
+.cd-k-link{cursor:pointer;transition:background .15s,border-color .15s}
+.cd-k-link:hover{background:#132B44;border-color:rgba(77,163,224,.6)}
+.cd-k-risco{border-left-color:#E5484D;background:rgba(229,72,77,.10)}
+.cd-k-risco .cd-k-valor{color:#FF6B70}
+.cd-k-risco .cd-k-ver{color:#FF8A8E}
+.cd-k-corrigir{border-left-color:#F5A524;background:rgba(245,165,36,.09)}
+.cd-k-corrigir .cd-k-valor{color:#FFB84D}
+.cd-k-corrigir .cd-k-ver{color:#FFB84D}
+.cd-k-alerta{border-left-color:#E5484D}
+.cd-k-alerta .cd-k-valor{color:#FF8A8E}
+.cd-k-bom{border-left-color:#30A46C}
+.cd-k-bom .cd-k-valor{color:#4CC38A}
 .cd-resultado{font-size:13px;margin:4px 0 8px}
 .cd-sep{font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.7;margin:4px 0 10px}
 .cd-passos{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 2px;font-size:12px;opacity:.85}
@@ -22849,17 +22872,19 @@ function renderClientSheet(index){
 const CD = { dados:{}, aba:'cobrar', filial:'Todas', carregadoEm:null, titulosEm:null, atualizando:false,
   f:{ diasMin:1, diasMax:5, boletosMin:'', boletosMax:'', valorMin:'', valorMax:'', busca:'', incluirExcluidos:false, soComTelefone:false, preset:'pre' } };
 const CD_PRESETS = {
-  pre:    { nome:'Antes do bloqueio (1 a 5 dias)', f:{diasMin:1, diasMax:5, boletosMin:'', boletosMax:''} },
-  um:     { nome:'Só 1 boleto em aberto',          f:{diasMin:'', diasMax:'', boletosMin:1, boletosMax:1} },
-  d6_30:  { nome:'6 a 30 dias',                    f:{diasMin:6, diasMax:30, boletosMin:'', boletosMax:''} },
-  d31_90: { nome:'31 a 90 dias',                   f:{diasMin:31, diasMax:90, boletosMin:'', boletosMax:''} },
-  d90:    { nome:'Mais de 90 dias',                f:{diasMin:91, diasMax:'', boletosMin:'', boletosMax:''} },
-  todos:  { nome:'Todos os vencidos',              f:{diasMin:'', diasMax:'', boletosMin:'', boletosMax:''} }
+  pre:    { nome:'Antes do bloqueio (1 a 5 dias)', f:{diasMin:1, diasMax:5, boletosMin:'', boletosMax:'', incluirExcluidos:false} },
+  um:     { nome:'Só 1 boleto em aberto',          f:{diasMin:'', diasMax:'', boletosMin:1, boletosMax:1, incluirExcluidos:false} },
+  d6_30:  { nome:'6 a 30 dias',                    f:{diasMin:6, diasMax:30, boletosMin:'', boletosMax:'', incluirExcluidos:false} },
+  d31_90: { nome:'31 a 90 dias',                   f:{diasMin:31, diasMax:90, boletosMin:'', boletosMax:'', incluirExcluidos:false} },
+  d90:    { nome:'Mais de 90 dias',                f:{diasMin:91, diasMax:'', boletosMin:'', boletosMax:'', incluirExcluidos:false} },
+  todos:  { nome:'Todos os vencidos',              f:{diasMin:'', diasMax:'', boletosMin:'', boletosMax:'', incluirExcluidos:true} }
 };
 const CD_ABAS = {
   cobrar:           { titulo:'Cobrar',               fonte:'clientes_vencidos', desc:'Clientes com boleto vencido, um por linha. "Dias de atraso" conta pelo boleto mais antigo, que é o que define o bloqueio. Já exclui Filial 10 e títulos suspeitos.' },
   recolhimento_atd: { titulo:'Agendar recolhimento', fonte:'recolhimento_atd',  desc:'OS abertas de recolhimento de equipamento com tarefa ATD (agendamento ou reagendamento): contato das atendentes.' },
   quebra:           { titulo:'Quebra financeira',    fonte:'quebra',            desc:'Boleto antigo em aberto, mas o contrato já está pago até uma data posterior: o cliente pagou a fatura mais nova. Cliente recente: trocar a fatura no IXC (já sai da lista de cobrança). Contrato antigo: segue para a cobrança normal.' },
+  avencer:          { titulo:'Lembrar vencimento',   fonte:'avencer',           desc:'Clientes com boleto vencendo nos próximos 6 dias (sem Filial 10). Lista para o lembrete preventivo, antes de virar atraso.' },
+  sem_email:        { titulo:'Cadastrar e-mail',     fonte:'sem_email',         desc:'Clientes ativos sem e-mail ou com e-mail falso/genérico. Lista para a campanha de cadastro de e-mail, que permite mandar o boleto sem custo.' },
   suspeitos:        { titulo:'Corrigir no IXC',      fonte:'suspeitos',         desc:'Títulos em aberto com valor zerado, muito alto ou acumulando mensalidades. Corrigir no IXC antes de cobrar.' }
 };
 const cdMoeda = v => (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -22883,7 +22908,7 @@ async function cdCarregar(){
   if(!session){ toast('Faça login no Radar para carregar os dados do banco','error'); return; }
   document.getElementById('loading').classList.add('show');
   try{
-    const tipos = ['resumo','clientes_vencidos','recolhimento_atd','quebra','suspeitos'];
+    const tipos = ['resumo','clientes_vencidos','recolhimento_atd','quebra','suspeitos','avencer','sem_email'];
     const res = await Promise.all(tipos.map(t => sb.rpc('radar_cobranca',{ p_tipo:t })));
     res.forEach((r,i)=>{ if(r.error) throw new Error(r.error.message); CD.dados[tipos[i]] = r.data; });
     CD.carregadoEm = new Date();
@@ -22941,7 +22966,15 @@ function cdLinhasFiltradas(){
   const busca = String(CD.f.busca||'').trim().toUpperCase();
   if(busca) l = l.filter(r => String(r.nome||'').toUpperCase().includes(busca) || String(r.id_cliente)===busca);
   if(CD.aba!=='cobrar') return l;
-  const f = CD.f, dmin=cdVal(f.diasMin), dmax=cdVal(f.diasMax), bmin=cdVal(f.boletosMin), bmax=cdVal(f.boletosMax), vmin=cdVal(f.valorMin), vmax=cdVal(f.valorMax);
+  return cdFiltrarCobrar(l, CD.f);
+}
+// mesmo filtro da lista, usado também pelos cartões (o número do cartão é sempre o da lista que ele abre)
+function cdResumoPreset(k){
+  const l = cdFiltrarCobrar(CD.dados.clientes_vencidos||[], { ...CD.f, ...CD_PRESETS[k].f, valorMin:'', valorMax:'', busca:'', soComTelefone:false });
+  return { clientes:l.length, valor:l.reduce((a,x)=>a+(Number(x.valor)||0),0) };
+}
+function cdFiltrarCobrar(l, f){
+  const dmin=cdVal(f.diasMin), dmax=cdVal(f.diasMax), bmin=cdVal(f.boletosMin), bmax=cdVal(f.boletosMax), vmin=cdVal(f.valorMin), vmax=cdVal(f.valorMax);
   return l.filter(r =>
     (f.incluirExcluidos || (!r.exclusao && r.habilitado_cobranca)) &&
     (dmin===null || r.dias_atraso>=dmin) && (dmax===null || r.dias_atraso<=dmax) &&
@@ -22967,6 +23000,18 @@ function cdPainelFiltros(){
     </div>`;
 }
 
+function cdCard(o){
+  return `<div class="cd-kpi ${o.cls?'cd-k-'+o.cls:''} ${o.ir?'cd-k-link':''}" ${o.ir?`onclick="${o.ir}" title="Abrir a lista"`:''}>
+    <div class="cd-k-label">${o.label}</div><div class="cd-k-valor">${o.valor}</div><div class="cd-k-sub">${o.sub||''}</div>
+    ${o.ir?'<div class="cd-k-ver">Ver lista</div>':''}</div>`;
+}
+function cdIrLista(aba, preset){
+  CD.aba = aba;
+  if(aba==='cobrar' && preset){ cdAplicarPreset(preset); }
+  renderCobrancaDia();
+  const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function cdIrAba(k){ CD.aba=k; renderCobrancaDia(); const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
 function renderCobrancaDia(){
   const box = document.getElementById('mod-cobrancaDia');
   if(!box) return;
@@ -22998,6 +23043,12 @@ function renderCobrancaDia(){
   }else if(CD.aba==='quebra'){
     cab = '<th>Tratamento</th><th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Contrato</th><th>Boleto aberto</th><th>Valor</th><th>Pago até</th><th>Ativação</th>';
     corpo = linhas.map(x=>`<tr><td>${cdEsc(x.tratamento)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.id_contrato}</td><td>${cdData(x.vencimento_aberto)}</td><td>${cdMoeda(x.valor_aberto)}</td><td>${cdData(x.pago_ate)}</td><td>${cdData(x.ativacao)}</td></tr>`).join('');
+  }else if(CD.aba==='avencer'){
+    cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Vencimento</th><th>Faltam</th><th>Boletos</th><th>Valor</th><th>E-mail</th>';
+    corpo = linhas.slice(0,1500).map(x=>`<tr><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdData(x.vencimento)}</td><td>${x.dias_para_vencer===0?'vence hoje':x.dias_para_vencer+' dia(s)'}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${cdEsc(x.email||'')}</td></tr>`).join('');
+  }else if(CD.aba==='sem_email'){
+    cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Situação</th><th>E-mail atual</th>';
+    corpo = linhas.slice(0,1500).map(x=>`<tr><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.situacao)}</td><td>${cdEsc(x.email_atual||'')}</td></tr>`).join('');
   }else{
     cab = '<th>Problema</th><th>Filial</th><th>Título</th><th>Cód.</th><th>Cliente</th><th>Vencimento</th><th>Valor</th>';
     corpo = linhas.map(x=>`<tr><td>${cdEsc(x.problema)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_titulo}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdData(x.vencimento)}</td><td>${cdMoeda(x.valor)}</td></tr>`).join('');
@@ -23007,20 +23058,34 @@ function renderCobrancaDia(){
   const conferido = CD.titulosEm || CD.carregadoEm;
   const contagem = k => { const fonte=CD_ABAS[k].fonte; return (CD.dados[fonte]||[]).length; };
 
+  const rTodos = cdResumoPreset('todos'), r90 = cdResumoPreset('d90'), rPre = cdResumoPreset('pre');
+  const qbL = CD.dados.quebra||[], spL = CD.dados.suspeitos||[];
+  const qb = { valor: qbL.reduce((a,x)=>a+(Number(x.valor_aberto)||0),0),
+    recentes: new Set(qbL.filter(x=>/^Corrigir/.test(x.tratamento||'')).map(x=>x.id_contrato)).size,
+    antigos: new Set(qbL.filter(x=>/^Cobrar/.test(x.tratamento||'')).map(x=>x.id_contrato)).size };
+  const sp = { qt: spL.length, zerado: spL.filter(x=>/zerad/.test(x.problema||'')).length, acumulo: spL.filter(x=>/acumulo|acúmulo/.test(x.problema||'')).length };
+  sp.alto = sp.qt - sp.zerado - sp.acumulo;
   box.innerHTML = `
     <div class="section compact-section">
       <h2 class="section-title">Cobrança do dia <span class="help">Pagamentos conferidos no IXC às ${conferido.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} de ${conferido.toLocaleDateString('pt-BR')}</span></h2>
       ${cargaErros.length?`<div class="drop-empty" style="margin:6px 0">Atenção: a leitura de madrugada teve erro em ${cargaErros.map(c=>cdEsc(c.tipo)).join(', ')}. Confira antes de usar as listas.</div>`:''}
-      <div class="kpis">
-        <div class="kpi"><div class="label">Vencido total</div><div class="value">${cdMoeda(r.vencido_total)}</div><div class="sub">${cdNum(r.vencido_clientes)} clientes, sem Filial 10</div></div>
-        <div class="kpi"><div class="label">Antes do bloqueio (1 a 5 dias)</div><div class="value">${cdMoeda(r.pre_bloqueio_valor)}</div><div class="sub">${cdNum(r.pre_bloqueio_clientes)} clientes para cobrar</div></div>
-        <div class="kpi"><div class="label">Mais de 90 dias</div><div class="value">${cdMoeda(fx('90+').valor)}</div><div class="sub">${cdNum(fx('90+').clientes)} clientes, tratar à parte</div></div>
-        <div class="kpi"><div class="label">Pagamentos de ${cdData(r.pagamentos_dia)}</div><div class="value">${cdMoeda(r.pagamentos_valor)}</div><div class="sub">${cdNum(r.pagamentos_qt)} pagamentos, ${cdNum(r.pagamentos_em_atraso)} em atraso</div></div>
-        <div class="kpi"><div class="label">A vencer em 6 dias</div><div class="value">${cdMoeda(r.avencer_6d_valor)}</div><div class="sub">${cdNum(r.avencer_6d_qt)} títulos</div></div>
-        <div class="kpi"><div class="label">E-mail útil na base</div><div class="value">${r.email_base?Math.round(100*r.email_base.com_email_util/Math.max(1,r.email_base.clientes))+'%':'-'}</div><div class="sub">${r.email_base?cdNum(r.email_base.email_falso_ou_generico)+' e-mails falsos ou genéricos':''}</div></div>
+      <div class="cd-faixa">Agir hoje</div>
+      <div class="cd-kpis cd-kpis-4">
+        ${cdCard({cls:'risco', label:'Antes do bloqueio (1 a 5 dias)', valor:cdMoeda(rPre.valor), sub:cdNum(rPre.clientes)+' clientes para cobrar hoje', ir:"cdIrLista('cobrar','pre')"})}
+        ${cdCard({cls:'corrigir', label:'Quebra financeira', valor:cdMoeda(qb.valor), sub:cdNum(qb.recentes)+' faturas para corrigir, '+cdNum(qb.antigos)+' para cobrar', ir:"cdIrLista('quebra')"})}
+        ${cdCard({cls:'corrigir', label:'Corrigir no IXC', valor:cdNum(sp.qt)+' títulos', sub:[[sp.zerado,'zerados'],[sp.alto,'acima de R$ 1.500'],[sp.acumulo,'com acúmulo']].filter(x=>x[0]).map(x=>cdNum(x[0])+' '+x[1]).join(', ')||'nada a corrigir', ir:"cdIrLista('suspeitos')"})}
+        ${cdCard({label:'Agendar recolhimento', valor:cdNum((CD.dados.recolhimento_atd||[]).length)+' clientes', sub:'OS de recolhimento com tarefa ATD', ir:"cdIrLista('recolhimento_atd')"})}
+      </div>
+      <div class="cd-faixa">Acompanhar</div>
+      <div class="cd-kpis cd-kpis-5">
+        ${cdCard({label:'Vencido total', valor:cdMoeda(rTodos.valor), sub:cdNum(rTodos.clientes)+' clientes, sem Filial 10', ir:"cdIrLista('cobrar','todos')"})}
+        ${cdCard({cls:'alerta', label:'Mais de 90 dias', valor:cdMoeda(r90.valor), sub:cdNum(r90.clientes)+' clientes com boleto mais antigo acima de 90 dias', ir:"cdIrLista('cobrar','d90')"})}
+        ${cdCard({cls:'bom', label:'Pagamentos de '+cdData(r.pagamentos_dia), valor:cdMoeda(r.pagamentos_valor), sub:cdNum(r.pagamentos_qt)+' pagamentos, '+cdNum(r.pagamentos_em_atraso)+' em atraso'})}
+        ${cdCard({label:'A vencer em 6 dias', valor:cdMoeda((CD.dados.avencer||[]).reduce((t,x)=>t+(Number(x.valor)||0),0)), sub:cdNum((CD.dados.avencer||[]).length)+' clientes para lembrar', ir:"cdIrLista('avencer')"})}
+        ${cdCard({label:'E-mail útil na base', valor:(r.email_base?Math.round(100*r.email_base.com_email_util/Math.max(1,r.email_base.clientes))+'%':'-'), sub:cdNum((CD.dados.sem_email||[]).length)+' clientes para cadastrar', ir:"cdIrLista('sem_email')"})}
       </div>
     </div>
-    <div class="section compact-section">
+    <div class="section compact-section" id="cd-lista">
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
         ${Object.entries(CD_ABAS).map(([k,a])=>`<button class="btn sm ${k===CD.aba?'primary':''}" onclick="CD.aba='${k}';renderCobrancaDia()">${a.titulo} (${contagem(k)})</button>`).join('')}
         <span style="flex:1"></span>
@@ -23034,7 +23099,7 @@ function renderCobrancaDia(){
       ${CD.aba==='cobrar'?cdPainelFiltros():`<div class="cd-filtros"><label>Cliente <input type="text" value="${cdEsc(CD.f.busca)}" placeholder="nome ou código" style="width:150px" onchange="cdSetFiltro('busca', this.value)"></label></div>`}
       <div class="cd-passos"><span>1. Escolha a lista e os filtros</span><span>2. Confira o resultado</span><span>3. Exporte para o OPA e suba o arquivo de cada filial</span></div>
       <p style="font-size:12px;margin:8px 0">${CD_ABAS[CD.aba].desc}</p>
-      <div class="cd-resultado"><strong>${cdNum(linhas.length)}</strong> ${CD.aba==='suspeitos'||CD.aba==='quebra'?'títulos':'clientes'} na lista, <strong>${cdMoeda(totalValor)}</strong> em aberto${podeOpa&&semFone?`. ${semFone} sem celular válido ficam fora do arquivo do OPA`:''}.${CD.aba==='cobrar'&&linhas.length>1500?' Mostrando os primeiros 1.500 na tela; a exportação leva todos.':''}</div>
+      <div class="cd-resultado"><strong>${cdNum(linhas.length)}</strong> ${CD.aba==='suspeitos'||CD.aba==='quebra'?'títulos':'clientes'} na lista, ${CD.aba==='sem_email'?'para cadastrar o e-mail':`<strong>${cdMoeda(totalValor)}</strong> ${CD.aba==='avencer'?'a vencer':'em aberto'}`}${podeOpa&&semFone?`. ${semFone} sem celular válido ficam fora do arquivo do OPA`:''}.${linhas.length>1500&&['cobrar','avencer','sem_email'].includes(CD.aba)?' Mostrando os primeiros 1.500 na tela; a exportação leva todos.':''}</div>
       <div class="tbl-wrap" style="max-height:520px"><table class="decision-table"><thead><tr>${cab}</tr></thead><tbody>${corpo||'<tr><td colspan="9">Nenhum cliente com esses filtros.</td></tr>'}</tbody></table></div>
     </div>`;
 }
@@ -23075,7 +23140,7 @@ function cdExportarPlanilha(){
   const corpo = [cols.join(';'), ...linhas.map(x=>cols.map(c=>cdCsvCampo(x[c])).join(';'))].join('\r\n');
   cdBaixar(`${cdNomeLista()}_${cdSlug(CD.filial)}_${String(CD.dados.resumo?.data||'').slice(0,10)}.csv`, corpo);
 }
-Object.assign(window, { cdCarregar, renderCobrancaDia, cdExportarOpa, cdExportarPlanilha, cdAtualizarPagamentos, cdAplicarPreset, cdSetFiltro, cdLimparFiltros, CD });
+Object.assign(window, { cdCarregar, renderCobrancaDia, cdExportarOpa, cdExportarPlanilha, cdAtualizarPagamentos, cdAplicarPreset, cdSetFiltro, cdLimparFiltros, cdIrAba, cdIrLista, CD });
 
 
 </script>
