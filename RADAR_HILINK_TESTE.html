@@ -22859,6 +22859,7 @@ const CD_PRESETS = {
 const CD_ABAS = {
   cobrar:           { titulo:'Cobrar',               fonte:'clientes_vencidos', desc:'Clientes com boleto vencido, um por linha. "Dias de atraso" conta pelo boleto mais antigo, que é o que define o bloqueio. Já exclui Filial 10 e títulos suspeitos.' },
   recolhimento_atd: { titulo:'Agendar recolhimento', fonte:'recolhimento_atd',  desc:'OS abertas de recolhimento de equipamento com tarefa ATD (agendamento ou reagendamento): contato das atendentes.' },
+  quebra:           { titulo:'Quebra financeira',    fonte:'quebra',            desc:'Boleto antigo em aberto, mas o contrato já está pago até uma data posterior: o cliente pagou a fatura mais nova. Cliente recente: trocar a fatura no IXC (já sai da lista de cobrança). Contrato antigo: segue para a cobrança normal.' },
   suspeitos:        { titulo:'Corrigir no IXC',      fonte:'suspeitos',         desc:'Títulos em aberto com valor zerado, muito alto ou acumulando mensalidades. Corrigir no IXC antes de cobrar.' }
 };
 const cdMoeda = v => (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -22882,7 +22883,7 @@ async function cdCarregar(){
   if(!session){ toast('Faça login no Radar para carregar os dados do banco','error'); return; }
   document.getElementById('loading').classList.add('show');
   try{
-    const tipos = ['resumo','clientes_vencidos','recolhimento_atd','suspeitos'];
+    const tipos = ['resumo','clientes_vencidos','recolhimento_atd','quebra','suspeitos'];
     const res = await Promise.all(tipos.map(t => sb.rpc('radar_cobranca',{ p_tipo:t })));
     res.forEach((r,i)=>{ if(r.error) throw new Error(r.error.message); CD.dados[tipos[i]] = r.data; });
     CD.carregadoEm = new Date();
@@ -22985,7 +22986,7 @@ function renderCobrancaDia(){
   const filiais = ['Todas', ...[...new Set(base.map(x => x.filial).filter(Boolean))].sort()];
   if(!filiais.includes(CD.filial)) CD.filial = 'Todas';
   const linhas = cdLinhasFiltradas();
-  const totalValor = linhas.reduce((s,x)=>s+(Number(x.valor ?? x.valor_vencido)||0),0);
+  const totalValor = linhas.reduce((s,x)=>s+(Number(x.valor ?? x.valor_aberto ?? x.valor_vencido)||0),0);
 
   let cab='', corpo='';
   if(CD.aba==='cobrar'){
@@ -22994,11 +22995,14 @@ function renderCobrancaDia(){
   }else if(CD.aba==='recolhimento_atd'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>OS</th><th>Tarefa</th><th>Aberta em</th><th>Dias</th><th>Vencido</th>';
     corpo = linhas.map(x=>`<tr><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.os)}</td><td>${cdEsc(x.tarefa)}</td><td>${cdData(x.abertura)}</td><td>${x.dias_aberta}</td><td>${Number(x.valor_vencido)>0?cdMoeda(x.valor_vencido):''}</td></tr>`).join('');
+  }else if(CD.aba==='quebra'){
+    cab = '<th>Tratamento</th><th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Contrato</th><th>Boleto aberto</th><th>Valor</th><th>Pago até</th><th>Ativação</th>';
+    corpo = linhas.map(x=>`<tr><td>${cdEsc(x.tratamento)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.id_contrato}</td><td>${cdData(x.vencimento_aberto)}</td><td>${cdMoeda(x.valor_aberto)}</td><td>${cdData(x.pago_ate)}</td><td>${cdData(x.ativacao)}</td></tr>`).join('');
   }else{
     cab = '<th>Problema</th><th>Filial</th><th>Título</th><th>Cód.</th><th>Cliente</th><th>Vencimento</th><th>Valor</th>';
     corpo = linhas.map(x=>`<tr><td>${cdEsc(x.problema)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_titulo}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdData(x.vencimento)}</td><td>${cdMoeda(x.valor)}</td></tr>`).join('');
   }
-  const podeOpa = CD.aba!=='suspeitos';
+  const podeOpa = CD.aba!=='suspeitos' && CD.aba!=='quebra';
   const semFone = podeOpa ? linhas.filter(x=>!cdFoneOpa(x.telefone)).length : 0;
   const conferido = CD.titulosEm || CD.carregadoEm;
   const contagem = k => { const fonte=CD_ABAS[k].fonte; return (CD.dados[fonte]||[]).length; };
@@ -23030,7 +23034,7 @@ function renderCobrancaDia(){
       ${CD.aba==='cobrar'?cdPainelFiltros():`<div class="cd-filtros"><label>Cliente <input type="text" value="${cdEsc(CD.f.busca)}" placeholder="nome ou código" style="width:150px" onchange="cdSetFiltro('busca', this.value)"></label></div>`}
       <div class="cd-passos"><span>1. Escolha a lista e os filtros</span><span>2. Confira o resultado</span><span>3. Exporte para o OPA e suba o arquivo de cada filial</span></div>
       <p style="font-size:12px;margin:8px 0">${CD_ABAS[CD.aba].desc}</p>
-      <div class="cd-resultado"><strong>${cdNum(linhas.length)}</strong> ${CD.aba==='suspeitos'?'títulos':'clientes'} na lista, <strong>${cdMoeda(totalValor)}</strong> em aberto${podeOpa&&semFone?`. ${semFone} sem celular válido ficam fora do arquivo do OPA`:''}.${CD.aba==='cobrar'&&linhas.length>1500?' Mostrando os primeiros 1.500 na tela; a exportação leva todos.':''}</div>
+      <div class="cd-resultado"><strong>${cdNum(linhas.length)}</strong> ${CD.aba==='suspeitos'||CD.aba==='quebra'?'títulos':'clientes'} na lista, <strong>${cdMoeda(totalValor)}</strong> em aberto${podeOpa&&semFone?`. ${semFone} sem celular válido ficam fora do arquivo do OPA`:''}.${CD.aba==='cobrar'&&linhas.length>1500?' Mostrando os primeiros 1.500 na tela; a exportação leva todos.':''}</div>
       <div class="tbl-wrap" style="max-height:520px"><table class="decision-table"><thead><tr>${cab}</tr></thead><tbody>${corpo||'<tr><td colspan="9">Nenhum cliente com esses filtros.</td></tr>'}</tbody></table></div>
     </div>`;
 }
