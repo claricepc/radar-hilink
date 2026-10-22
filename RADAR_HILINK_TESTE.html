@@ -23015,7 +23015,8 @@ function renderCobrancaDia(){
   const qb = { valor: qbL.reduce((a,x)=>a+(Number(x.valor_aberto)||0),0),
     recentes: new Set(qbL.filter(x=>/^Corrigir/.test(x.tratamento||'')).map(x=>x.id_contrato)).size,
     antigos: new Set(qbL.filter(x=>/^Cobrar/.test(x.tratamento||'')).map(x=>x.id_contrato)).size };
-  const sp = { qt: spL.length, valor: spL.reduce((a,x)=>a+(Number(x.valor_aberto ?? x.valor)||0),0) };
+  const sp = { qt: spL.length, zerado: spL.filter(x=>/zerad/.test(x.problema||'')).length, acumulo: spL.filter(x=>/acumulo|acúmulo/.test(x.problema||'')).length };
+  sp.alto = sp.qt - sp.zerado - sp.acumulo;
   box.innerHTML = `
     <div class="section compact-section">
       <h2 class="section-title">Cobrança do dia <span class="help">Pagamentos conferidos no IXC às ${conferido.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} de ${conferido.toLocaleDateString('pt-BR')}</span></h2>
@@ -23028,7 +23029,7 @@ function renderCobrancaDia(){
         <div class="kpi"><div class="label">A vencer em 6 dias</div><div class="value">${cdMoeda(r.avencer_6d_valor)}</div><div class="sub">${cdNum(r.avencer_6d_qt)} títulos</div></div>
         <div class="kpi"><div class="label">E-mail útil na base</div><div class="value">${r.email_base?Math.round(100*r.email_base.com_email_util/Math.max(1,r.email_base.clientes))+'%':'-'}</div><div class="sub">${r.email_base?cdNum(r.email_base.email_falso_ou_generico)+' e-mails falsos ou genéricos':''}</div></div>
         <div class="kpi cd-kpi-acao" onclick="cdIrAba('quebra')" title="Abrir a lista"><div class="label">Quebra financeira</div><div class="value">${cdMoeda(qb.valor)}</div><div class="sub">${cdNum(qb.recentes)} para corrigir a fatura, ${cdNum(qb.antigos)} para cobrar</div><div class="cd-kpi-link">Ver lista</div></div>
-        <div class="kpi cd-kpi-acao" onclick="cdIrAba('suspeitos')" title="Abrir a lista"><div class="label">Corrigir no IXC</div><div class="value">${cdNum(sp.qt)} títulos</div><div class="sub">${cdMoeda(sp.valor)} com valor zerado, alto ou acumulado</div><div class="cd-kpi-link">Ver lista</div></div>
+        <div class="kpi cd-kpi-acao" onclick="cdIrAba('suspeitos')" title="Abrir a lista"><div class="label">Corrigir no IXC</div><div class="value">${cdNum(sp.qt)} títulos</div><div class="sub">${[[sp.zerado,'zerados'],[sp.alto,'acima de R$ 1.500'],[sp.acumulo,'com acúmulo']].filter(x=>x[0]).map(x=>cdNum(x[0])+' '+x[1]).join(', ')||'nada a corrigir'}</div><div class="cd-kpi-link">Ver lista</div></div>
       </div>
     </div>
     <div class="section compact-section" id="cd-lista">
