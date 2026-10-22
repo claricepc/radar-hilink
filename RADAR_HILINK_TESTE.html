@@ -22871,6 +22871,7 @@ async function cdCarregar(){
     const res = await Promise.all(tipos.map(t => sb.rpc('radar_cobranca',{ p_tipo:t })));
     res.forEach((r,i)=>{ if(r.error) throw new Error(r.error.message); CD.dados[tipos[i]] = r.data; });
     CD.carregadoEm = new Date();
+    try{ const u = await sb.rpc('radar_ultima_carga_titulos'); if(!u.error) CD.titulosEm = u.data ? new Date(u.data) : null; }catch(e){}
     renderCobrancaDia();
     toast('Dados do banco carregados','success');
   }catch(e){
@@ -22922,7 +22923,7 @@ function renderCobrancaDia(){
 
   box.innerHTML = `
     <div class="section compact-section">
-      <h2 class="section-title">Cobrança do dia <span class="help">Foto do IXC de ${cdData(r.data)}, carregada às ${CD.carregadoEm.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></h2>
+      <h2 class="section-title">Cobrança do dia <span class="help">Pagamentos conferidos no IXC às ${(CD.titulosEm||CD.carregadoEm).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} de ${(CD.titulosEm||CD.carregadoEm).toLocaleDateString('pt-BR')}</span></h2>
       ${cargaErros.length?`<div class="drop-empty" style="margin:6px 0">Atenção: a leitura de madrugada teve erro em ${cargaErros.map(c=>cdEsc(c.tipo)).join(', ')}. Confira antes de usar as listas.</div>`:''}
       <div class="kpis">
         <div class="kpi"><div class="label">Vencido total</div><div class="value">${cdMoeda(r.vencido_total)}</div><div class="sub">${cdNum(r.vencido_clientes)} clientes, sem Filial 10</div></div>
@@ -22942,7 +22943,7 @@ function renderCobrancaDia(){
         </label>
         ${podeOpa?`<button class="btn sm primary" onclick="cdExportarOpa()">Exportar para o OPA</button>`:''}
         <button class="btn sm" onclick="cdExportarPlanilha()">Exportar planilha</button>
-        <button class="btn sm" onclick="cdCarregar()" title="Busca de novo no banco os dados da leitura das 4h">Atualizar</button>
+        <button class="btn sm primary" id="cd-btn-atualizar" onclick="cdAtualizarPagamentos()" title="Busca agora no IXC os títulos em aberto e tira da lista quem já pagou">${CD.atualizando?'Buscando no IXC...':'Atualizar pagamentos agora'}</button>
       </div>
       <div class="cd-passos"><span>1. Escolha a lista</span><span>2. Filtre a filial, se quiser</span><span>3. Clique em Exportar para o OPA e suba o arquivo da filial</span></div>
       <p style="font-size:12px;margin:8px 0">${CD_ABAS[CD.aba].desc} ${linhas.length} registros${podeOpa&&semFone?`, ${semFone} sem celular válido (ficam fora do arquivo do OPA)`:''}.</p>
@@ -22985,6 +22986,32 @@ function cdExportarPlanilha(){
   const corpo = [cols.join(';'), ...linhas.map(x=>cols.map(c=>cdCsvCampo(x[c])).join(';'))].join('\r\n');
   cdBaixar(`${CD.aba}_${cdSlug(CD.filial)}_${String(CD.dados.resumo?.data||'').slice(0,10)}.csv`, corpo);
 }
+
+// Atualiza só os títulos vencidos direto do IXC (tira quem pagou depois das 4h). Limite: 1 a cada 15 minutos.
+async function cdAtualizarPagamentos(){
+  const sb = getSB(); if(!sb) return;
+  if(CD.atualizando) return;
+  const btn = document.getElementById('cd-btn-atualizar');
+  const antes = CD.titulosEm ? CD.titulosEm.getTime() : 0;
+  const { data, error } = await sb.rpc('radar_atualizar_titulos');
+  if(error){ toast('Erro ao pedir atualização: '+error.message,'error'); return; }
+  if(!data.ok){ toast(data.motivo,'warn'); return; }
+  CD.atualizando = true;
+  if(btn){ btn.disabled = true; btn.textContent = 'Buscando no IXC...'; }
+  toast('Buscando os pagamentos no IXC. Leva cerca de 30 segundos.','success');
+  const inicio = Date.now();
+  let novo = null;
+  while(Date.now() - inicio < 120000){
+    await new Promise(r => setTimeout(r, 5000));
+    const u = await sb.rpc('radar_ultima_carga_titulos');
+    if(!u.error && u.data && new Date(u.data).getTime() > antes && Date.now() - inicio > 20000){ novo = new Date(u.data); break; }
+  }
+  CD.atualizando = false;
+  if(!novo){ toast('O IXC demorou a responder. Tente de novo em alguns minutos.','warn'); renderCobrancaDia(); return; }
+  await cdCarregar();
+  toast('Lista atualizada: quem pagou depois das 4h já saiu.','success');
+}
+window.cdAtualizarPagamentos = cdAtualizarPagamentos;
 window.cdCarregar = cdCarregar;
 window.renderCobrancaDia = renderCobrancaDia;
 window.cdExportarOpa = cdExportarOpa;
