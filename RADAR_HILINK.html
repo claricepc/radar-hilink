@@ -23074,7 +23074,7 @@ function renderCobrancaDia(){
         ${cdCard({cls:'risco', label:'Antes do bloqueio (1 a 5 dias)', valor:cdMoeda(rPre.valor), sub:cdNum(rPre.clientes)+' clientes para cobrar hoje', ir:"cdIrLista('cobrar','pre')"})}
         ${cdCard({cls:'corrigir', label:'Quebra financeira', valor:cdMoeda(qb.valor), sub:cdNum(qb.recentes)+' faturas para corrigir, '+cdNum(qb.antigos)+' para cobrar', ir:"cdIrLista('quebra')"})}
         ${cdCard({cls:'corrigir', label:'Corrigir no IXC', valor:cdNum(sp.qt)+' títulos', sub:[[sp.zerado,'zerados'],[sp.alto,'acima de R$ 1.500'],[sp.acumulo,'com acúmulo']].filter(x=>x[0]).map(x=>cdNum(x[0])+' '+x[1]).join(', ')||'nada a corrigir', ir:"cdIrLista('suspeitos')"})}
-        ${cdCard({label:'Agendar recolhimento', valor:cdNum((CD.dados.recolhimento_atd||[]).length)+' clientes', sub:'OS de recolhimento com tarefa ATD', ir:"cdIrLista('recolhimento_atd')"})}
+        ${cdCard({label:'Agendar recolhimento', valor:cdNum((CD.dados.recolhimento_atd||[]).length)+' clientes', sub:cdNum((CD.dados.recolhimento_atd||[]).reduce((t,x)=>t+String(x.os||'').split('/').filter(Boolean).length,0))+' OS abertas (agendamento e reagendamento ATD)', ir:"cdIrLista('recolhimento_atd')"})}
       </div>
       <div class="cd-faixa">Acompanhar</div>
       <div class="cd-kpis cd-kpis-5">
