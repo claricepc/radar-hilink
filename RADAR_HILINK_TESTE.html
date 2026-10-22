@@ -23081,7 +23081,7 @@ function renderCobrancaDia(){
         ${cdCard({label:'Vencido total', valor:cdMoeda(rTodos.valor), sub:cdNum(rTodos.clientes)+' clientes, sem Filial 10', ir:"cdIrLista('cobrar','todos')"})}
         ${cdCard({cls:'alerta', label:'Mais de 90 dias', valor:cdMoeda(r90.valor), sub:cdNum(r90.clientes)+' clientes com boleto mais antigo acima de 90 dias', ir:"cdIrLista('cobrar','d90')"})}
         ${cdCard({cls:'bom', label:'Pagamentos de '+cdData(r.pagamentos_dia), valor:cdMoeda(r.pagamentos_valor), sub:cdNum(r.pagamentos_qt)+' pagamentos, '+cdNum(r.pagamentos_em_atraso)+' em atraso'})}
-        ${cdCard({label:'A vencer em 6 dias', valor:cdMoeda(r.avencer_6d_valor), sub:cdNum((CD.dados.avencer||[]).length)+' clientes para lembrar', ir:"cdIrLista('avencer')"})}
+        ${cdCard({label:'A vencer em 6 dias', valor:cdMoeda((CD.dados.avencer||[]).reduce((t,x)=>t+(Number(x.valor)||0),0)), sub:cdNum((CD.dados.avencer||[]).length)+' clientes para lembrar', ir:"cdIrLista('avencer')"})}
         ${cdCard({label:'E-mail útil na base', valor:(r.email_base?Math.round(100*r.email_base.com_email_util/Math.max(1,r.email_base.clientes))+'%':'-'), sub:cdNum((CD.dados.sem_email||[]).length)+' clientes para cadastrar', ir:"cdIrLista('sem_email')"})}
       </div>
     </div>
