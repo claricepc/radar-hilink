@@ -2634,6 +2634,13 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-tab td{padding:7px 8px;border-bottom:1px solid rgba(143,163,184,.10);text-align:right;color:var(--g-sub);font-variant-numeric:tabular-nums;white-space:nowrap}
 .cdg-tab td:first-child{color:var(--g-text);font-weight:600}
 .cdg-tab td.bar{width:28%;min-width:90px}
+.cdg-tab tr.tem-pre td:first-child{box-shadow:inset 4px 0 0 var(--g-risk)}
+.cdg-tab tr.tem-pre{background:var(--g-risk-bg)}
+.cdg-prealerta{display:inline-flex;flex-direction:column;align-items:flex-end;gap:1px;border:1.5px solid var(--g-risk);background:var(--g-risk-bg);color:var(--g-risk);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;font-variant-numeric:tabular-nums}
+.cdg-prealerta:hover{background:var(--g-risk);color:#fff}
+.cdg-prealerta span{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.cdg-prefaixa{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;border:1.5px solid var(--g-risk);border-left:6px solid var(--g-risk);background:var(--g-risk-bg);border-radius:10px;padding:10px 14px;margin:0 0 10px;font-size:12.5px;color:var(--g-text)}
+.cdg-prefaixa b{color:var(--g-risk)}
 .cdg-tab td.bar div{height:8px;border-radius:4px;background:#2B5C8A}
 .cdg-tab td.bar div span{display:block;height:100%;border-radius:4px;background:#E5484D}
 .cdg-tab tr.marca td{color:var(--g-muted);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;padding-top:12px;border-bottom:0}
@@ -23305,6 +23312,8 @@ function cdIrLista(aba, preset){
   renderCobrancaDia();
   const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
+function cdIrPreFilial(f){ CD.aba='cobrar'; CD.f = { ...CD.f, ...CD_PRESETS.pre.f, preset:'pre' }; CD.filial=f; renderCobrancaDia();
+  const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
 function cdIrAba(k){ CD.aba=k; renderCobrancaDia(); const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
 // ---- Guia de gestão da Cobrança do Dia ----
 // Só apresentação. Todo número vem de CD.dados (mesmas consultas do módulo) e,
@@ -23331,7 +23340,8 @@ function cdGuiaDados(){
   // filiais e marcas (base: todos os vencidos, igual ao total)
   const fil = {};
   cv.forEach(x => { const k = x.filial||'Sem filial'; const o = fil[k] ||= { filial:k, marca:x.marca||'Sem marca', valor:0, clientes:0, pre:0, preClientes:0 }; o.valor += Number(x.valor)||0; o.clientes++; });
-  g.pre.linhas.forEach(x => { const o = fil[x.filial||'Sem filial']; if(o){ o.pre += Number(x.valor)||0; o.preClientes++; } });
+  g.pre.linhas.forEach(x => { const o = fil[x.filial||'Sem filial']; if(o){ o.pre += Number(x.valor)||0; o.preClientes++;
+    const resta = Math.max(0, 6 - (Number(x.dias_atraso)||0)); o.preResta = Math.min(o.preResta ?? 9, resta); } });
   g.filiais = Object.values(fil).sort((a,b)=>b.valor-a.valor);
   g.semMarca = g.filiais.filter(f => /^Filial \d+/.test(f.marca));
   // demais listas
@@ -23526,7 +23536,8 @@ function cdGuiaHTML(){
   const linhasFil = marcas.map(m => {
     const fs = g.filiais.filter(f=>f.marca===m);
     const tot = fs.reduce((a,f)=>a+f.valor,0);
-    return `<tr class="marca"><td colspan="5">${cdEsc(m)} · ${cdMoeda(tot)}</td></tr>` + fs.map(f=>`<tr><td>${cdEsc(f.filial)}</td><td>${cdMoeda(f.valor)}</td><td>${cdNum(f.clientes)}</td><td>${cdMoeda(f.pre)}${f.preClientes?`<small class="cdg-sub"> · ${cdNum(f.preClientes)} ${f.preClientes===1?'cliente':'clientes'}</small>`:''}</td>
+    return `<tr class="marca"><td colspan="5">${cdEsc(m)} · ${cdMoeda(tot)}</td></tr>` + fs.map(f=>`<tr class="${f.pre>0?'tem-pre':''}"><td>${cdEsc(f.filial)}</td><td>${cdMoeda(f.valor)}</td><td>${cdNum(f.clientes)}</td><td>${f.pre>0 ? `<button type="button" class="cdg-prealerta" onclick="cdIrPreFilial('${cdEsc(String(f.filial).replace(/'/g,''))}')" title="Abrir a lista desta filial">
+        <div><b>${cdMoeda(f.pre)}</b> · ${cdNum(f.preClientes)} ${f.preClientes===1?'cliente':'clientes'}</div><span>${f.preResta<=1?'bloqueia amanhã':'bloqueia em até '+f.preResta+' dias'} · Cobrar</span></button>` : `<span class="cdg-sub">nada a cobrar</span>`}</td>
       <td class="bar"><div style="width:${(100*f.valor/maxFil).toFixed(1)}%"><span style="width:${f.valor>0?(100*f.pre/f.valor).toFixed(1):0}%"></span></div></td></tr>`).join('');
   }).join('');
   const v360 = `<div class="cdg-360">
@@ -23535,8 +23546,10 @@ function cdGuiaHTML(){
       ${cdPodeGerenciar()?`<div class="cdg-botoes" style="margin:8px 0 2px">${faixas.filter(([k])=>g[k].clientes).map(([k,n])=>`<button type="button" class="cdg-ir cdg-gerar" onclick="cdAtvNova('cobrar','${k}')">Gerar atividade: ${n}</button>`).join('')}</div>`:''}
       <div class="cdg-nota">Clientes que podem ser cobrados (${cdNum(g.cobraveis.length)}), pelo boleto mais antigo. Clique numa faixa para abrir a lista. ${g.fora?`Os ${cdNum(g.fora)} fora da cobrança não entram aqui.`:''}</div></div>
     <div class="cdg-box"><div class="cdg-eyebrow">Onde está o vencido</div>
+      ${g.pre.clientes?`<div class="cdg-prefaixa"><div><b>Dá para agir antes do bloqueio:</b> ${cdMoeda(g.pre.valor)} em ${cdNum(g.pre.clientes)} ${g.pre.clientes===1?'cliente':'clientes'}, ${cdNum(g.filiais.filter(f=>f.pre>0).length)} ${g.filiais.filter(f=>f.pre>0).length===1?'filial':'filiais'}. Depois do 5º dia de atraso o cliente é bloqueado e a cobrança fica mais difícil.</div>
+        <div class="cdg-botoes" style="margin:0"><button type="button" class="cdg-ir" onclick="cdIrLista('cobrar','pre')">Ver lista</button>${cdPodeGerenciar()?`<button type="button" class="cdg-ir cdg-gerar" onclick="cdAtvNova('cobrar','pre')">Gerar atividade</button>`:''}</div></div>`:''}
       <div class="cdg-tabwrap"><table class="cdg-tab"><thead><tr><th>Filial</th><th>Vencido</th><th>Clientes</th><th>Antes do bloqueio</th><th></th></tr></thead><tbody>${linhasFil}</tbody></table></div>
-      <div class="cdg-nota">Barra azul: vencido da filial. Parte vermelha: o que ainda dá para cobrar antes do bloqueio.</div></div>
+      <div class="cdg-nota">Barra azul: vencido da filial. Parte vermelha: o que ainda dá para cobrar antes do bloqueio. Linhas marcadas em vermelho têm clientes para cobrar hoje: clique no valor para abrir a lista da filial.</div></div>
   </div>`;
 
   // 5. Estratégias (regras simples sobre os números de hoje)
@@ -24126,7 +24139,7 @@ document.addEventListener('keydown', e=>{
     e.preventDefault();
   }catch(err){}
 });
-Object.assign(window, { cdFocoSelecionar, cdFocoMover, cdFocoProximoId });
+Object.assign(window, { cdIrPreFilial, cdFocoSelecionar, cdFocoMover, cdFocoProximoId });
 async function cdAtvDesfazer(itemId){
   try{
     const r = await cdAtvRpc('radar_atv_desfazer',{p_item:itemId});
