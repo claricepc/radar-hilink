@@ -2642,7 +2642,10 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-tab td.bar{width:28%;min-width:90px}
 .cdg-tab tr.tem-pre td:first-child{box-shadow:inset 4px 0 0 var(--g-risk)}
 .cdg-tab tr.tem-pre{background:var(--g-risk-bg)}
-.cdg-prealerta{display:inline-flex;flex-direction:column;align-items:flex-end;gap:1px;border:1.5px solid var(--g-risk);background:var(--g-risk-bg);color:var(--g-risk);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;font-variant-numeric:tabular-nums}
+.cdg-tab td.pre{width:250px;min-width:250px}
+.cdg-prevazio{box-sizing:border-box;width:100%;display:flex;flex-direction:column;align-items:flex-end;gap:1px;border:1.5px dashed rgba(143,163,184,.45);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--g-muted)}
+.cdg-prevazio span{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.cdg-prealerta{box-sizing:border-box;width:100%;display:flex;flex-direction:column;align-items:flex-end;gap:1px;border:1.5px solid var(--g-risk);background:var(--g-risk-bg);color:var(--g-risk);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;font-variant-numeric:tabular-nums}
 .cdg-prealerta:hover{background:var(--g-risk);color:#fff}
 .cdg-prealerta span{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
 .cdg-prefaixa{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;border:1.5px solid var(--g-risk);border-left:6px solid var(--g-risk);background:var(--g-risk-bg);border-radius:10px;padding:10px 14px;margin:0 0 10px;font-size:12.5px;color:var(--g-text)}
@@ -23543,8 +23546,8 @@ function cdGuiaHTML(){
   const linhasFil = marcas.map(m => {
     const fs = g.filiais.filter(f=>f.marca===m);
     const tot = fs.reduce((a,f)=>a+f.valor,0);
-    return `<tr class="marca"><td colspan="5">${cdEsc(m)} · ${cdMoeda(tot)}</td></tr>` + fs.map(f=>`<tr class="${f.pre>0?'tem-pre':''}"><td>${cdEsc(f.filial)}</td><td>${cdMoeda(f.valor)}</td><td>${cdNum(f.clientes)}</td><td>${f.pre>0 ? `<button type="button" class="cdg-prealerta" onclick="cdIrPreFilial('${cdEsc(String(f.filial).replace(/'/g,''))}')" title="Abrir a lista desta filial">
-        <div><b>${cdMoeda(f.pre)}</b> · ${cdNum(f.preClientes)} ${f.preClientes===1?'cliente':'clientes'}</div><span>${f.preResta<=1?'bloqueia amanhã':'bloqueia em até '+f.preResta+' dias'} · Cobrar</span></button>` : `<span class="cdg-sub">nada a cobrar</span>`}</td>
+    return `<tr class="marca"><td colspan="5">${cdEsc(m)} · ${cdMoeda(tot)}</td></tr>` + fs.map(f=>`<tr class="${f.pre>0?'tem-pre':''}"><td>${cdEsc(f.filial)}</td><td>${cdMoeda(f.valor)}</td><td>${cdNum(f.clientes)}</td><td class="pre">${f.pre>0 ? `<button type="button" class="cdg-prealerta" onclick="cdIrPreFilial('${cdEsc(String(f.filial).replace(/'/g,''))}')" title="Abrir a lista desta filial">
+        <div><b>${cdMoeda(f.pre)}</b> · ${cdNum(f.preClientes)} ${f.preClientes===1?'cliente':'clientes'}</div><span>${f.preResta<=1?'bloqueia amanhã':'bloqueia em até '+f.preResta+' dias'} · Cobrar</span></button>` : `<div class="cdg-prevazio"><div>R$ 0,00</div><span>nenhum inadimplente sem bloqueio</span></div>`}</td>
       <td class="bar"><div style="width:${(100*f.valor/maxFil).toFixed(1)}%"><span style="width:${f.valor>0?(100*f.pre/f.valor).toFixed(1):0}%"></span></div></td></tr>`).join('');
   }).join('');
   const v360 = `<div class="cdg-360">
