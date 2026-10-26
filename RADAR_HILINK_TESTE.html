@@ -2700,6 +2700,36 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-motivo:hover{background:#e8f2fb}
 .cdg-acao.ativo{outline:2px solid #0071BC}
 .cdg-sub{opacity:.7;font-size:11px;font-weight:500}
+.cdf-prog{font-size:12.5px;margin:6px 0 10px;display:flex;flex-direction:column;gap:6px}
+.cdf-grid{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:14px;margin-top:10px}
+@media (max-width:860px){.cdf-grid{grid-template-columns:1fr}}
+.cdf-fila{border:1px solid rgba(143,163,184,.35);border-radius:10px;padding:8px;max-height:640px;overflow:auto;background:rgba(255,255,255,.5)}
+.cdf-q{display:grid;grid-template-columns:1fr auto;gap:2px 8px;width:100%;text-align:left;border:1px solid transparent;border-left:4px solid transparent;border-radius:8px;padding:8px 10px;background:none;cursor:pointer;margin-bottom:2px}
+.cdf-q:hover{background:rgba(0,113,188,.06)}
+.cdf-q.sel{border-color:#0071BC;border-left-color:#0071BC;background:rgba(0,113,188,.08)}
+.cdf-q.feito{border-left-color:#30A46C}
+.cdf-q .nm{font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cdf-q .sb{grid-column:1;font-size:11px;opacity:.7}
+.cdf-q .ok{grid-row:1;grid-column:2;background:#1F8A57;color:#fff;font-size:10px;font-weight:800;border-radius:4px;padding:2px 6px;align-self:start}
+.cdf-q .em{grid-row:1;grid-column:2;background:#F5A524;color:#fff;font-size:10px;font-weight:800;border-radius:4px;padding:2px 6px;align-self:start}
+.cdf-card{border:2px solid #1F8A57;border-radius:12px;padding:16px 18px;background:#fff;min-width:0}
+.cdf-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
+.cdf-tag{font-size:11px;background:rgba(143,163,184,.18);border-radius:4px;padding:2px 8px}
+.cdf-tag.r{background:rgba(229,72,77,.14);color:#D1343A}
+.cdf-nome{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.cdf-nome h3{margin:0;font-size:22px}
+.cdf-copiar{border:1.5px solid #0071BC;background:#fff;color:#0071BC;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer}
+kbd{font-family:inherit;font-size:10px;border:1px solid currentColor;border-radius:3px;padding:0 4px;margin-left:4px;opacity:.8}
+.cdf-instr{background:rgba(0,113,188,.07);border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.cdf-campos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px}
+.cdf-campo{border:1px solid rgba(143,163,184,.4);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.cdf-campo small{font-size:10.5px;font-weight:700;text-transform:uppercase;opacity:.7}
+.cdf-campo b{font-size:17px}
+.cdf-campo .cdg-mini{align-self:flex-start}
+.cdf-obs{background:rgba(245,165,36,.12);border-left:3px solid #F5A524;border-radius:6px;padding:8px 10px;font-size:12.5px;margin-bottom:10px}
+.cdf-input{width:100%;padding:9px 10px;border:1px solid rgba(143,163,184,.5);border-radius:8px;margin-bottom:8px}
+.cdf-rodape{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px;border-top:1px solid rgba(143,163,184,.3);padding-top:12px}
+.cdf-feito{font-size:12px;background:rgba(48,164,108,.14);color:#1F8A57;border-radius:6px;padding:4px 10px;font-weight:600}
 .cdg-como ol{margin:0;padding-left:20px;font-size:13px;line-height:1.6}
 .usr-topo{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,1fr);gap:12px}
 @media (max-width:860px){.usr-topo{grid-template-columns:1fr}}
@@ -23781,7 +23811,7 @@ async function cdPromessaDecidir(id, aprovar){
 
 // ---------- área de trabalho ----------
 async function cdAtvAbrir(id){
-  CD.atv.aberta = id; CD.atv.itens = null; CD.atv.filtro='tratar'; CD.atv.busca=''; CD.atv.expandido=null;
+  CD.atv.aberta = id; CD.atv.itens = null; CD.atv.filtro='tratar'; CD.atv.busca=''; CD.atv.expandido=null; CD.atv.sel=null; CD.atv.modo='foco';
   renderCobrancaDia(); window.scrollTo({top:0,behavior:'smooth'});
   await cdAtvItensCarregar();
 }
@@ -23912,7 +23942,9 @@ async function cdAtvRegistrar(itemId, situacao){
     const r = await cdAtvRpc('radar_atv_registrar',{p_item:itemId, p_situacao:situacao, p_obs:obs||null, p_data_promessa:data});
     if(!r.ok){ toast(r.motivo,'warn'); }
     else toast(r.mensagem, r.promessa==='pendente_aprovacao'?'warn':'success');
-    CD.atv.expandido = null; await cdAtvItensCarregar();
+    CD.atv.expandido = null;
+    if(r.ok && CD.atv.modo!=='lista'){ const prox = cdFocoProximoId(itemId); await cdAtvItensCarregar(); if(prox) cdFocoSelecionar(prox, true); return; }
+    await cdAtvItensCarregar();
   }catch(e){ toast(e.message,'error'); }
 }
 const CD_ATV_COMO = {
@@ -23946,6 +23978,124 @@ async function cdAtvMotivo(itemId, motivo){
   await cdAtvRegistrar(itemId, 'nao_cobrar');
 }
 window.cdAtvMotivo = cdAtvMotivo;
+// ---------- modo foco: fila à esquerda, um cliente por vez à direita ----------
+function cdFocoItens(){
+  const A = CD.atv, meuId = getRadarUser?.()?.id;
+  const its = (A.itens||[]).map(i=>({...i, _e:cdAtvEstado(i, meuId)}));
+  const busca = String(A.busca||'').trim().toUpperCase();
+  const vis = its.filter(i=>(A.filtro==='todos'||i._e.k===A.filtro||i.id===A.sel) && (!busca || String(i.nome||'').toUpperCase().includes(busca) || String(i.id_cliente)===busca));
+  return { its, vis };
+}
+function cdFocoProximoId(depoisDe){
+  const { its } = cdFocoItens(); const meuId = getRadarUser?.()?.id;
+  const livres = its.filter(i=>i.id!==depoisDe && !i.resolvido_ixc && i.situacao==='pendente' && (!i.com_quem || i.com_quem===meuId));
+  const idx = its.findIndex(i=>i.id===depoisDe);
+  return (livres.find(i=>its.indexOf(i)>idx) || livres[0] || {}).id || null;
+}
+async function cdFocoSelecionar(id, semRender){
+  const A = CD.atv; A.sel = id; A.motivoAberto = null;
+  const i = (A.itens||[]).find(x=>x.id===id); const meuId = getRadarUser?.()?.id;
+  if(i && !i.resolvido_ixc && i.situacao==='pendente' && !i.com_quem){
+    try{ const r = await cdAtvRpc('radar_atv_pegar',{p_item:id}); if(r.ok){ i.com_quem = meuId; i.com_quem_nome = CD.meuNome; } }catch(e){}
+  }
+  renderCobrancaDia();
+  setTimeout(()=>document.getElementById('cd-foco-item-'+id)?.scrollIntoView({block:'nearest'}),30);
+}
+function cdFocoMover(d){
+  const { vis } = cdFocoItens(); if(!vis.length) return;
+  const k = Math.max(0, vis.findIndex(i=>i.id===CD.atv.sel));
+  const n = vis[Math.min(vis.length-1, Math.max(0, k+d))]; if(n) cdFocoSelecionar(n.id);
+}
+function cdAreaFocoHTML(){
+  const A = CD.atv, a = (A.lista||[]).find(x=>x.id===A.aberta) || {id:A.aberta, titulo:'Atividade', tipo:'cobrar'};
+  const meuId = getRadarUser?.()?.id, ger = cdPodeGerenciar();
+  if(A.itens===null) return `<div class="section compact-section"><p class="cdg-nota">Carregando os clientes da atividade...</p></div>`;
+  const { its, vis } = cdFocoItens();
+  const cont = k => its.filter(i=>k==='todos'||i._e.k===k).length;
+  const feitos = its.filter(i=>i._e.k==='tratado'||i._e.k==='resolvido').length;
+  if(!A.sel || !its.find(i=>i.id===A.sel)){ const p = its.find(i=>i._e.k==='tratar') || its[0]; A.sel = p ? p.id : null; }
+  const i = its.find(x=>x.id===A.sel);
+  const pessoas = Object.entries(a.por_pessoa||{}).sort((x,y)=>y[1]-x[1]).map(([n,q])=>`${cdEsc(String(n).split(' ')[0])}: ${q}`).join(' · ');
+  const fila = vis.slice(0,500).map(x=>{
+    const feito = x._e.k==='tratado'||x._e.k==='resolvido';
+    return `<button type="button" id="cd-foco-item-${x.id}" class="cdf-q ${x.id===A.sel?'sel':''} ${feito?'feito':''}" onclick="cdFocoSelecionar(${x.id})">
+      <span class="nm">${cdEsc(x.nome||'Cliente '+x.id_cliente)}</span>
+      <span class="sb">${cdEsc(x.filial||'')} · ${cdEsc(x._e.t)}</span>
+      ${feito?'<span class="ok">Feito</span>':x._e.k==='atendendo'?'<span class="em">Com outra</span>':''}</button>`;
+  }).join('');
+  const acoes = cdAtvAcoes(a.tipo);
+  const pos = i ? vis.findIndex(x=>x.id===i.id)+1 : 0;
+  const como = (CD_ATV_COMO[a.tipo]||[]);
+  const card = !i ? `<div class="cdg-nota" style="padding:20px">Nenhum cliente neste filtro.</div>` : (()=>{
+    const comOutra = i.com_quem && i.com_quem!==meuId;
+    const travado = i.resolvido_ixc || a.status==='encerrada' || comOutra;
+    const fone = i.telefone ? String(i.telefone) : '';
+    return `<div class="cdf-top"><span class="cdg-nota" style="margin:0">${pos} de ${vis.length} na fila</span>
+        <span class="cdf-tag">${cdEsc(i.filial||'')}</span>${i.dias_atraso!=null&&a.tipo==='cobrar'?`<span class="cdf-tag r">${i.dias_atraso} dias de atraso</span>`:''}
+        <span class="cdg-chip ${i._e.c}">${cdEsc(i._e.t)}</span></div>
+      <div class="cdf-nome"><h3>${cdEsc(i.nome||'Cliente '+i.id_cliente)}</h3>
+        <button type="button" class="cdf-copiar" onclick="cdAtvCopiar('${cdEsc(String(i.nome||'').replace(/'/g,''))}',this)">Copiar nome <kbd>N</kbd></button></div>
+      <div class="cdg-nota" style="margin:2px 0 10px">Cód. ${i.id_cliente} · ${cdAtvDetalhe(a.tipo,i)}${i.tentativas?` · ${i.tentativas} contato(s)`:''}</div>
+      ${como.length?`<div class="cdf-instr">${como[0]}${como[1]?' '+como[1]:''}</div>`:''}
+      <div class="cdf-campos">
+        <div class="cdf-campo"><small>Telefone</small><b>${fone?cdEsc(fone):'<span class="r">sem telefone</span>'}</b>${fone?`<button type="button" class="cdg-mini" onclick="cdAtvCopiar('${cdEsc(fone.replace(/'/g,''))}',this)">Copiar <kbd>C</kbd></button>`:''}</div>
+        <div class="cdf-campo"><small>Valor</small><b>${i.valor!=null?cdMoeda(i.valor):'-'}</b></div>
+      </div>
+      ${i.obs?`<div class="cdf-obs">Último registro${i.tratado_por_nome?' de '+cdEsc(i.tratado_por_nome):''}: "${cdEsc(i.obs)}"</div>`:''}
+      ${comOutra?`<div class="cdg-alerta warn"><i></i><div>${cdEsc(i.com_quem_nome||'Outra pessoa')} está atendendo este cliente agora.</div></div>`:''}
+      ${i.resolvido_ixc?`<div class="cdg-alerta ok"><i></i><div>O IXC já confirmou: este cliente está resolvido.</div></div>`:''}
+      ${!travado?`<input id="cd-it-obs-${i.id}" class="cdf-input" type="text" placeholder="Observação (o que o cliente disse)" maxlength="300" value="">
+        ${acoes.includes('prometeu')?`<label class="cdg-prom">Data prometida <input id="cd-it-data-${i.id}" type="date" min="${cdHoje()}" max="${cdAddDias(10)}"></label>`:''}
+        <div class="cdg-botoes">${acoes.map(s=>s==='nao_cobrar'
+          ? `<button type="button" class="cdg-acao ${s} ${A.motivoAberto===i.id?'ativo':''}" onclick="CD.atv.motivoAberto=(CD.atv.motivoAberto===${i.id}?null:${i.id});renderCobrancaDia()">${cdAtvRotuloAcao(a.tipo,s)}</button>`
+          : `<button type="button" class="cdg-acao ${s}" onclick="cdAtvRegistrar(${i.id},'${s}')">${cdAtvRotuloAcao(a.tipo,s)}</button>`).join('')}</div>
+        ${A.motivoAberto===i.id?`<div class="cdg-motivos"><span class="cdg-nota" style="margin:0">Qual o motivo?</span>${(CD_ATV_MOTIVOS[a.tipo]||CD_ATV_MOTIVOS.cobrar).map(m=>`<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'${cdEsc(m)}')">${cdEsc(m)}</button>`).join('')}<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'')">Outro (escrever na observação)</button></div>`:''}`:''}
+      <div class="cdf-rodape">
+        ${i.situacao!=='pendente'?`<span class="cdf-feito">Feito${i.tratado_por_nome?' por '+cdEsc(String(i.tratado_por_nome).split(' ')[0]):''}${i.tratado_em?' em '+new Date(i.tratado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}</span>`:''}
+        ${i.situacao!=='pendente'&&!i.resolvido_ixc&&a.status!=='encerrada'?`<button type="button" class="btn sm" onclick="cdAtvDesfazer(${i.id})">Desfazer <kbd>U</kbd></button>`:''}
+        <span style="flex:1"></span>
+        <button type="button" class="btn sm" onclick="cdFocoMover(1)">Pular <kbd>S</kbd></button>
+        <button type="button" class="btn sm primary" onclick="const p=cdFocoProximoId(${i.id}); if(p) cdFocoSelecionar(p); else toast('Não há mais clientes livres para tratar.','success')">Próximo cliente <kbd>Enter</kbd></button>
+      </div>`;
+  })();
+  return `<div class="section compact-section cdg-area cdf">
+    <div class="cdg-area-h">
+      <button type="button" class="btn sm" onclick="cdAtvFechar()">${cdEhAtendente()?'Voltar às minhas atividades':'Voltar ao painel'}</button>
+      <div style="flex:1;min-width:0"><div class="cdg-atv-tit" style="font-size:17px">${cdEsc(a.titulo)}</div>
+        <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdData(a.prazo):''}</div></div>
+      <button type="button" class="btn sm" onclick="cdAtvItensCarregar()">Atualizar</button>
+      <button type="button" class="btn sm" onclick="CD.atv.modo='lista';renderCobrancaDia()" title="Ver todos os clientes numa lista">Ver em lista</button>
+      ${a.status==='aberta'&&ger?`<button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
+      ${ger?`<button type="button" class="btn sm" onclick="cdAtvRemoverModal(${a.id})">Remover</button>`:''}
+    </div>
+    <div class="cdf-prog"><div><b>${cdNum(feitos)}</b> de ${cdNum(its.length)} feitos · <b>${cdNum(cont('tratar'))}</b> pendentes${pessoas?` · Feitos por pessoa: ${pessoas}`:''}</div>
+      ${a.total!==undefined?cdSlaBarra(a):''}</div>
+    <div class="cdg-area-f">${[['tratar','Para tratar'],['tratado','Feitos'],['resolvido','Resolvidos no IXC'],['todos','Todos']].map(([k,t])=>`<button type="button" class="btn sm ${A.filtro===k?'primary':''}" onclick="CD.atv.filtro='${k}';renderCobrancaDia()">${t} (${cont(k)})</button>`).join('')}
+      <input type="text" placeholder="Buscar por nome" value="${cdEsc(A.busca)}" onchange="CD.atv.busca=this.value;renderCobrancaDia()"></div>
+    <div class="cdf-grid"><div class="cdf-fila"><div class="cdg-nota" style="margin:0 0 6px">${cdNum(vis.length)} na fila</div>${fila||'<div class="cdg-nota">Nenhum cliente neste filtro.</div>'}</div>
+      <div class="cdf-card">${card}</div></div>
+    <div class="cdg-nota" style="margin-top:8px">Atalhos: N copia o nome, C copia o telefone, Enter vai para o próximo, U desfaz, S pula, setas navegam.</div>
+  </div>`;
+}
+function cdAreaHTML(){ return CD.atv.modo==='lista' ? cdAreaListaHTML() : cdAreaFocoHTML(); }
+document.addEventListener('keydown', e=>{
+  try{
+    if(!CD.atv.aberta || CD.atv.modo==='lista') return;
+    const box = document.getElementById('mod-cobrancaDia'); if(!box || !box.offsetParent) return;
+    if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'') || document.getElementById('cd-conf-modal')) return;
+    const i = (CD.atv.itens||[]).find(x=>x.id===CD.atv.sel);
+    const k = e.key.toLowerCase();
+    if(k==='n' && i){ cdAtvCopiar(String(i.nome||''), null); toast('Nome copiado.','success'); }
+    else if(k==='c' && i && i.telefone){ cdAtvCopiar(String(i.telefone), null); toast('Telefone copiado.','success'); }
+    else if(k==='enter' && i){ const p=cdFocoProximoId(i.id); if(p) cdFocoSelecionar(p); }
+    else if(k==='u' && i && i.situacao!=='pendente'){ cdAtvDesfazer(i.id); }
+    else if(k==='s' || e.key==='ArrowDown'){ cdFocoMover(1); }
+    else if(e.key==='ArrowUp'){ cdFocoMover(-1); }
+    else return;
+    e.preventDefault();
+  }catch(err){}
+});
+Object.assign(window, { cdFocoSelecionar, cdFocoMover, cdFocoProximoId });
 async function cdAtvDesfazer(itemId){
   try{
     const r = await cdAtvRpc('radar_atv_desfazer',{p_item:itemId});
@@ -24013,7 +24163,7 @@ function cdAtvEstado(i, meuId){
   if(i.com_quem) return {k:'atendendo', t:'Com '+(i.com_quem_nome||'alguém'), c:'info'};
   return {k:'tratar', t:'Para tratar', c:''};
 }
-function cdAreaHTML(){
+function cdAreaListaHTML(){
   const A = CD.atv, a = (A.lista||[]).find(x=>x.id===A.aberta) || {id:A.aberta, titulo:'Atividade', tipo:'cobrar'};
   const meuId = getRadarUser?.()?.id;
   const head = `<div class="cdg-area-h">
