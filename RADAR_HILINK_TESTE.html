@@ -24004,8 +24004,13 @@ function cdFocoProximoId(depoisDe){
 async function cdFocoSelecionar(id, semRender){
   const A = CD.atv; A.sel = id; A.motivoAberto = null;
   const i = (A.itens||[]).find(x=>x.id===id); const meuId = getRadarUser?.()?.id;
-  if(i && !i.resolvido_ixc && i.situacao==='pendente' && !i.com_quem){
-    try{ const r = await cdAtvRpc('radar_atv_pegar',{p_item:id}); if(r.ok){ i.com_quem = meuId; i.com_quem_nome = CD.meuNome; } }catch(e){}
+  // só quem executa a atividade "pega" o cliente; a gestão só olha
+  const atv = (A.lista||[]).find(x=>x.id===A.aberta);
+  const executa = cdEhAtendente() || (atv && atv.responsavel===meuId);
+  if(executa && i && !i.resolvido_ixc && i.situacao==='pendente' && (!i.com_quem || i.com_quem===meuId || cdPegoVencido(i))){
+    try{ const r = await cdAtvRpc('radar_atv_pegar',{p_item:id});
+      if(r.ok){ (A.itens||[]).forEach(x=>{ if(x.id!==id && x.com_quem===meuId && x.situacao==='pendente'){ x.com_quem=null; x.com_quem_nome=null; } });
+        i.com_quem = meuId; i.com_quem_nome = CD.meuNome; i.pego_em = new Date().toISOString(); } }catch(e){}
   }
   renderCobrancaDia();
   setTimeout(()=>document.getElementById('cd-foco-item-'+id)?.scrollIntoView({block:'nearest'}),30);
@@ -24162,12 +24167,14 @@ function cdAtvDetalhe(tipo, i){
   if(tipo==='gerados_vencidos') return `Boleto ${d.id_titulo} emitido em ${cdData(d.emissao)} com vencimento ${cdData(d.vencimento)}${d.o_que_conferir?' · '+cdEsc(d.o_que_conferir):''}`;
   return '';
 }
+function cdPegoVencido(i){ return !!i.pego_em && (Date.now() - new Date(i.pego_em).getTime()) > 30*60000; }
 function cdAtvEstado(i, meuId){
   if(i.resolvido_ixc) return {k:'resolvido', t:'Resolvido no IXC', c:'ok'};
   if(i.promessa_situacao==='não cumprida') return {k:'tratado', t:'Promessa não cumprida', c:'risk'};
   if(i.promessa_situacao==='aguardando aprovação') return {k:'tratado', t:'Promessa aguardando aprovação', c:'warn'};
   if(i.situacao==='prometeu' && i.promessa_data) return {k:'tratado', t:'Prometeu pagar até '+cdData(i.promessa_data), c:'info'};
   if(i.situacao!=='pendente') return {k:'tratado', t:CD_SITUACOES[i.situacao]?.t||i.situacao, c:CD_SITUACOES[i.situacao]?.c||''};
+  if(i.com_quem && cdPegoVencido(i)) return {k:'tratar', t:'Para tratar', c:''};
   if(i.com_quem && i.com_quem===meuId) return {k:'tratar', t:'Com você agora', c:'info'};
   if(i.com_quem) return {k:'atendendo', t:'Com '+(i.com_quem_nome||'alguém'), c:'info'};
   return {k:'tratar', t:'Para tratar', c:''};
