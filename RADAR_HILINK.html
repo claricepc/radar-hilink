@@ -2694,6 +2694,13 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-slabar.grande{height:14px}
 .cdg-slabar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;transition:width .4s}
 .cdg-sla.ok .fill{background:#30A46C}.cdg-sla.warn .fill{background:#F5A524}.cdg-sla.risk .fill{background:#E5484D}.cdg-sla.neutro .fill{background:#8FA3B8}
+.cdg-slabar .aguard{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,#f59e0b,#f59e0b 4px,#fbbf24 4px,#fbbf24 8px);opacity:.85}
+.cdg-ini{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px;border:1px solid}
+.cdg-ini.nao{color:#b91c1c;border-color:#fca5a5;background:#fef2f2}
+.cdg-ini.parada{color:#b45309;border-color:#fcd34d;background:#fffbeb}
+.cdg-ini.ok{color:#047857;border-color:#6ee7b7;background:#ecfdf5}
+.cdg-ini-linha{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 2px}
+.cdf-iniciar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px dashed #f59e0b;border-radius:10px;background:rgba(245,158,11,.08);margin:0 0 10px}
 .cdg-slabar .marca{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;background:#0B2545;border-radius:2px;opacity:.8}
 .cdg-sla-dica{font-size:11.5px;line-height:1.35;opacity:.85}
 .cdg-sla.risk .cdg-sla-dica{color:#D1343A;font-weight:600;opacity:1}
@@ -2933,7 +2940,7 @@ body.radar-modo-atendente .topbar{display:none!important}
         <div class="nav-item" data-mod="tecnica" onclick="go('tecnica')">
           <span>Sa&uacute;de da Rede<small>risco t&eacute;cnico, preven&ccedil;&atilde;o e fila NOC</small></span>
         </div>
-        <div class="nav-item disabled" data-mod="carneCorreios" onclick="go('carneCorreios')">
+        <div class="nav-item" data-mod="carneCorreios" onclick="go('carneCorreios')">
           <span>Envio Correios<small>carn&ecirc; de boletos via e-Carta</small></span>
         </div>
         <div class="nav-item" data-mod="premiacoes" onclick="go('premiacoes')">
@@ -8350,6 +8357,7 @@ body.radar-modo-atendente .topbar{display:none!important}
                 style="width:100%;padding:9px 11px;border:1px solid var(--radar-blue,#2563eb);border-radius:6px;font-size:14px;font-weight:700;background:var(--radar-bg2,#0f172a);color:var(--radar-text,#f1f5f9)"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();processarCarneCorreios()}">
             </label>
+            <div id="cc-ixc-info" style="margin:0 0 7px;font-size:12px;line-height:1.45;font-weight:700;color:#93c5fd">Fonte: IXC direto (sem planilha). Carregando...</div>
             <div id="cc-os-filter-info" style="margin-top:7px;font-size:11px;line-height:1.45;color:var(--radar-soft,#94a3b8)">
               Primeiro o Radar localiza as OS por assunto, remove status Finalizada/Cancelada e só depois cruza com Recebimentos.
             </div>
@@ -8396,6 +8404,7 @@ body.radar-modo-atendente .topbar{display:none!important}
 
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
             <button class="btn-primary" onclick="processarCarneCorreios()" style="white-space:nowrap;font-size:13px;padding:7px 18px">Aplicar Filtro</button>
+            <button type="button" id="cc-ixc-btn" class="btn sm" onclick="ccIxcBuscar()" style="white-space:nowrap;font-weight:800" title="Busca no IXC as OS de entrega de carnê, os boletos, endereço e o Pix de cada boleto">Buscar do IXC agora</button>
             <button type="button" class="btn sm primary" onclick="openAnalysisHelp('carneCorreios')" title="Resumo rápido do fluxo do Radar e do EDI Correios">
               Entenda esta aba
             </button>
@@ -10539,7 +10548,7 @@ function go(mod){
     if(mod==='propostas')renderPropostas();
     if(mod==='relatorios')renderRelatoriosPersonalizados();
     if(mod==='acao')renderAcao();
-    if(mod==='carneCorreios'){if(!STATE.raw?.carneBoletos?.length){toast('Carregue RADAR HILINK | CORREIOS no Setup primeiro','warn');return;}renderCarneCorreios();}
+    if(mod==='carneCorreios'){ccIxcAbrir();}
     if(mod==='mapear'){if(STATE.campaign)renderMapPreview();}
     if(mod==='historico') renderHistorico();
     if(mod==='cobrancaDia') renderCobrancaDia();
@@ -23862,8 +23871,9 @@ function cdPrazoTxt(a, curto){ if(!a.prazo) return ''; const h=(a.prazo_hora||'1
 function cdPrazoEstourou(a){ return !!a.prazo && cdPrazoFim(a) < new Date() && Number(a.pendentes)>0; }
 // SLA: verde dentro do prazo, amarelo perto de estourar ou ritmo abaixo do necessário, vermelho estourado
 function cdSla(a){
-  const tot=Number(a.total)||0, pend=Number(a.pendentes)||0, feitos=tot-pend;
+  const tot=Number(a.total)||0, pend=Number(a.pendentes)||0, agu=Number(a.aguardando)||0, feitos=Math.max(0,tot-pend-agu);
   const pctFeito = tot ? Math.round(100*feitos/tot) : 0;
+  const pctAgu = tot ? Math.round(100*agu/tot) : 0;
   if(a.status==='encerrada') return {c:'ok', t:'Encerrada', pctFeito, pctTempo:null, dica:''};
   if(!a.prazo) return {c:'neutro', t:'Sem prazo definido', pctFeito, pctTempo:null, dica:'Sem prazo não há como medir atraso. Defina um prazo nas próximas atividades.'};
   const ini = new Date(a.criado_em), fim = cdPrazoFim(a), agora = new Date();
@@ -23871,34 +23881,70 @@ function cdSla(a){
   const pctTempo = Math.max(0, Math.min(100, Math.round(100*(agora-ini)/total)));
   const horas = Math.round((fim-agora)/3600000);
   const falta = h => h>=24 ? Math.round(h/24)+' dia(s)' : Math.max(h,0)+'h';
+  if(!pend && agu) return {c:'warn', t:'Aguardando clientes', pctFeito, pctAgu, pctTempo:null, dica:`Tudo foi trabalhado, mas ${cdNum(agu)} ${agu===1?'cliente ainda não respondeu':'clientes ainda não responderam'}. Cobre o retorno.`};
   if(!pend) return {c:'ok', t:'Tudo tratado', pctFeito, pctTempo:null, dica:'Todos os itens foram tratados. Falta só a confirmação do IXC.'};
-  if(agora>fim) return {c:'risk', t:'Prazo estourado há '+falta(-horas), pctFeito, pctTempo:100,
+  if(agora>fim) return {c:'risk', t:'Prazo estourado há '+falta(-horas), pctFeito, pctAgu, pctTempo:100,
     dica:`Faltam ${cdNum(pend)} itens e o prazo acabou. Fale com ${a.responsavel_nome?cdEsc(String(a.responsavel_nome).split(' ')[0]):'a equipe'} ou redistribua o que falta.`};
-  if(pctTempo>=75 || pctFeito+20 < pctTempo) return {c:'warn', t: horas<=24?'Perto do prazo: faltam '+falta(horas):'Ritmo abaixo do necessário', pctFeito, pctTempo,
+  if(pctTempo>=75 || pctFeito+20 < pctTempo) return {c:'warn', t: horas<=24?'Perto do prazo: faltam '+falta(horas):'Ritmo abaixo do necessário', pctFeito, pctAgu, pctTempo,
     dica:`Já passou ${pctTempo}% do prazo e ${pctFeito}% foi tratado. Acompanhe de perto: faltam ${cdNum(pend)} itens.`};
-  return {c:'ok', t:'Dentro do prazo', pctFeito, pctTempo, dica:`${pctFeito}% tratado com ${pctTempo}% do prazo usado. No ritmo certo.`};
+  return {c:'ok', t:'Dentro do prazo', pctFeito, pctAgu, pctTempo, dica:`${pctFeito}% tratado com ${pctTempo}% do prazo usado. No ritmo certo.`};
 }
 function cdSlaBarra(a, grande){
   const s = cdSla(a);
   return `<div class="cdg-sla ${s.c}">
-    <div class="cdg-sla-top"><span class="cdg-sla-chip ${s.c}">${s.t}</span><span class="cdg-sla-pct">${s.pctFeito}% tratado</span></div>
+    <div class="cdg-sla-top"><span class="cdg-sla-chip ${s.c}">${s.t}</span><span class="cdg-sla-pct">${s.pctFeito}% tratado${s.pctAgu?` · ${s.pctAgu}% aguardando cliente`:''}</span></div>
     <div class="cdg-slabar ${grande?'grande':''}" title="Barra: quanto já foi tratado. Linha escura: quanto do prazo já passou.">
-      <span class="fill" style="width:${s.pctFeito}%"></span>${s.pctTempo!==null?`<i class="marca" style="left:${s.pctTempo}%"></i>`:''}</div>
+      <span class="fill" style="width:${s.pctFeito}%"></span>${s.pctAgu?`<span class="aguard" style="left:${s.pctFeito}%;width:${s.pctAgu}%" title="Aguardando retorno do cliente"></span>`:''}${s.pctTempo!==null?`<i class="marca" style="left:${s.pctTempo}%"></i>`:''}</div>
     ${s.dica?`<div class="cdg-sla-dica">${s.dica}</div>`:''}
   </div>`;
 }
 const CD_SITUACOES = {
   pendente:{t:'Para tratar',c:''}, contatado:{t:'Contatado',c:'info'}, sem_resposta:{t:'Sem resposta',c:'warn'}, numero_errado:{t:'Número errado',c:'warn'},
-  prometeu:{t:'Prometeu pagar',c:'info'}, negociando:{t:'Negociando',c:'info'}, corrigido:{t:'Corrigido no IXC',c:'ok'}, nao_cobrar:{t:'Não cobrar',c:''}
+  prometeu:{t:'Prometeu pagar',c:'info'}, negociando:{t:'Negociando',c:'info'}, corrigido:{t:'Corrigido no IXC',c:'ok'}, nao_cobrar:{t:'Não cobrar',c:''}, aguardando:{t:'Aguardando cliente',c:'warn'}
 };
 function cdAtvAcoes(tipo){
-  if(tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos') return ['corrigido','nao_cobrar'];
-  if(tipo==='sem_email') return ['corrigido','sem_resposta','numero_errado'];
-  if(tipo==='recolhimento_atd') return ['contatado','sem_resposta','numero_errado','nao_cobrar'];
+  if(tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos') return ['corrigido','aguardando','nao_cobrar'];
+  if(tipo==='sem_email') return ['corrigido','aguardando','sem_resposta','numero_errado'];
+  if(tipo==='recolhimento_atd') return ['contatado','aguardando','sem_resposta','numero_errado','nao_cobrar'];
   if(tipo==='avencer') return ['contatado','sem_resposta','numero_errado'];
   return ['contatado','sem_resposta','numero_errado','prometeu','negociando','nao_cobrar'];
 }
-const cdAtvRotuloAcao = (tipo,s) => s==='corrigido' ? (tipo==='sem_email'?'E-mail cadastrado':'Corrigido no IXC') : s==='nao_cobrar' ? (tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos'?'Não precisa corrigir':'Não cobrar') : CD_SITUACOES[s].t;
+const cdAtvRotuloAcao = (tipo,s) => s==='aguardando' ? 'Aguardando cliente' : s==='corrigido' ? (tipo==='sem_email'?'E-mail cadastrado':'Corrigido no IXC') : s==='nao_cobrar' ? (tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos'?'Não precisa corrigir':'Não cobrar') : CD_SITUACOES[s].t;
+
+// ---------- início da tarefa e movimento ----------
+function cdHorasDesde(d){ return d ? (Date.now()-new Date(d).getTime())/3600000 : null; }
+function cdTempoTxt(h){ if(h==null) return ''; if(h<1) return Math.max(1,Math.round(h*60))+' min'; if(h<48) return Math.round(h)+'h'; return Math.round(h/24)+' dias'; }
+function cdHoraTxt(d){ return new Date(d).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function cdIniciadaSelo(a){
+  if(a.status==='encerrada') return '';
+  const pend = Number(a.pendentes)||0;
+  if(!a.iniciada_em){
+    const h = cdHorasDesde(a.criado_em);
+    return `<span class="cdg-ini nao" title="A responsável ainda não clicou em Iniciar tarefa nem registrou nenhum cliente">Não iniciada · criada há ${cdTempoTxt(h)}</span>`;
+  }
+  const hu = cdHorasDesde(a.ultima_acao_em||a.iniciada_em);
+  const ini = `Iniciada em ${cdHoraTxt(a.iniciada_em)}${a.iniciada_por_nome?' por '+cdEsc(String(a.iniciada_por_nome).split(' ')[0]):''}`;
+  if(pend && hu!=null && hu>=2) return `<span class="cdg-ini parada" title="${ini}">Sem movimento há ${cdTempoTxt(hu)}</span><span class="cdg-nota" style="margin:0">${ini}</span>`;
+  return `<span class="cdg-ini ok">${ini}</span>${a.ultima_acao_em?`<span class="cdg-nota" style="margin:0">último registro há ${cdTempoTxt(hu)}</span>`:''}`;
+}
+function cdIniciarFaixa(a){
+  if(!a || a.status!=='aberta' || a.iniciada_em) return '';
+  const meuId = getRadarUser?.()?.id;
+  const executa = cdEhAtendente() || a.responsavel===meuId;
+  if(!executa) return `<div class="cdf-iniciar"><span class="cdg-ini nao">Não iniciada</span><span class="cdg-nota" style="margin:0">${a.responsavel_nome?cdEsc(String(a.responsavel_nome).split(' ')[0]):'A responsável'} ainda não iniciou esta tarefa.</span></div>`;
+  return `<div class="cdf-iniciar"><b>Esta tarefa ainda não foi iniciada.</b><span class="cdg-nota" style="margin:0">Clique para avisar a liderança que você começou.</span><span style="flex:1"></span>
+    <button type="button" class="btn sm primary" onclick="cdAtvIniciar(${a.id})">Iniciar tarefa</button></div>`;
+}
+async function cdAtvIniciar(id, silencioso){
+  try{
+    const r = await cdAtvRpc('radar_atv_iniciar',{p_atividade:id});
+    const a = (CD.atv.lista||[]).find(x=>x.id===id);
+    if(a && r && r.iniciada_em){ a.iniciada_em = r.iniciada_em; a.iniciada_por_nome = a.iniciada_por_nome || CD.meuNome; }
+    if(!silencioso) toast('Tarefa iniciada. Bom trabalho!','success');
+    renderCobrancaDia();
+  }catch(e){ if(!silencioso) toast(e.message,'error'); }
+}
+window.cdAtvIniciar = cdAtvIniciar;
 function cdHoje(){ return cdHojeISO(); }
 function cdAddDias(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function cdEhAdmin(){ try{ return typeof radarIsAdminUser==='function' && radarIsAdminUser(); }catch(e){ return false; } }
@@ -23942,8 +23988,9 @@ function cdAtvPainelHTML(){
         <span><small>Prazo</small><b>${a.prazo?cdPrazoTxt(a,true):'sem prazo'}</b></span>
         <span><small>Tipo</small><b>${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||a.tipo)}</b></span>
       </div>
+      <div class="cdg-ini-linha">${cdIniciadaSelo(a)}</div>
       ${cdSlaBarra(a)}
-      <div class="cdg-atv-nums"><span><b>${cdNum(a.pendentes)}</b> para tratar</span><span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(res)}</b> resolvidos no IXC</span>
+      <div class="cdg-atv-nums"><span><b>${cdNum(a.pendentes)}</b> para tratar</span>${Number(a.aguardando)?`<span style="color:#b45309"><b>${cdNum(a.aguardando)}</b> aguardando cliente</span>`:''}<span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(res)}</b> resolvidos no IXC</span>
         ${Number(a.valor_total)?`<span><b>${cdMoeda(a.valor_resolvido)}</b> de ${cdMoeda(a.valor_total)} recebido</span>`:''}
         ${Number(a.promessas_quebradas)?`<span class="r">${cdNum(a.promessas_quebradas)} promessas não cumpridas</span>`:''}
         ${Number(a.em_atendimento)?`<span>${cdNum(a.em_atendimento)} em atendimento agora</span>`:''}</div>
@@ -23973,6 +24020,7 @@ function cdAtvPainelHTML(){
       <ol>
         <li><b>Direcionar:</b> nos quadros abaixo (Fazer agora, Corrigir no IXC, Planejar), clique em <b>Gerar atividade</b>, escolha a atendente e o prazo.</li>
         <li><b>Acompanhar pela cor:</b> <span class="cdg-sla-chip ok">verde</span> no prazo, <span class="cdg-sla-chip warn">amarelo</span> perto de estourar ou ritmo lento, <span class="cdg-sla-chip risk">vermelho</span> prazo estourado. A barra é o quanto já foi tratado; a linha escura é o quanto do prazo já passou.</li>
+        <li><b>Início e movimento:</b> cada atividade mostra se a responsável já <b>iniciou</b> e há quanto tempo foi o <b>último registro</b>. "Não iniciada" ou "Sem movimento" pede uma conversa. A parte listrada da barra são clientes <b>aguardando retorno</b>: o trabalho foi feito, falta o cliente responder.</li>
         <li><b>Agir:</b> se ficou vermelho, fale com a atendente ou use <b>Trocar responsável</b>. Quando terminar, clique em <b>Encerrar</b>. <b>Remover</b> é só para atividade criada por engano.</li>
       </ol>
     </details>
@@ -24234,6 +24282,7 @@ async function cdAtvRegistrar(itemId, situacao){
     data = document.getElementById('cd-it-data-'+itemId)?.value || '';
     if(!data){ toast('Escolha a data prometida.','warn'); document.getElementById('cd-it-data-'+itemId)?.focus(); return; }
   }
+  if(situacao==='aguardando' && !obs){ toast('Escreva na observação o que você pediu ao cliente (ex.: mandei mensagem pedindo nova data).','warn'); document.getElementById('cd-it-obs-'+itemId)?.focus(); return; }
   if(situacao==='nao_cobrar' && !obs){ toast('Escreva o motivo na observação.','warn'); document.getElementById('cd-it-obs-'+itemId)?.focus(); return; }
   try{
     const r = await cdAtvRpc('radar_atv_registrar',{p_item:itemId, p_situacao:situacao, p_obs:obs||null, p_data_promessa:data});
@@ -24325,7 +24374,7 @@ function cdAreaFocoHTML(){
     return `<button type="button" id="cd-foco-item-${x.id}" class="cdf-q ${x.id===A.sel?'sel':''} ${feito?'feito':''}" onclick="cdFocoSelecionar(${x.id})">
       <span class="nm">${cdEsc(x.nome||'Cliente '+x.id_cliente)}</span>
       <span class="sb">${cdEsc(x.filial||'')} · ${cdEsc(x._e.t)}</span>
-      ${x._e.k==='resolvido'?'<span class="ok">Resolvido no IXC</span>':feito?'<span class="ok feito">Feito</span>':x._e.k==='atendendo'?'<span class="em">Em atendimento</span>':''}</button>`;
+      ${x._e.k==='resolvido'?'<span class="ok">Resolvido no IXC</span>':x._e.k==='aguardando'?'<span class="em" style="background:#fef3c7;color:#92400e;border-color:#fcd34d">Aguardando cliente</span>':feito?'<span class="ok feito">Feito</span>':x._e.k==='atendendo'?'<span class="em">Em atendimento</span>':''}</button>`;
   }).join('');
   const acoes = cdAtvAcoes(a.tipo);
   const pos = i ? vis.findIndex(x=>x.id===i.id)+1 : 0;
@@ -24372,9 +24421,9 @@ function cdAreaFocoHTML(){
       ${a.status==='aberta'&&ger?`<button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
       ${ger?`<button type="button" class="btn sm" onclick="cdAtvRemoverModal(${a.id})">Remover</button>`:''}
     </div>
-    <div class="cdf-prog"><div><b>${cdNum(feitos)}</b> de ${cdNum(its.length)} feitos · <b>${cdNum(cont('tratar'))}</b> pendentes${pessoas?` · Feitos por pessoa: ${pessoas}`:''}</div>
+    ${cdIniciarFaixa(a)}<div class="cdf-prog"><div><b>${cdNum(feitos)}</b> de ${cdNum(its.length)} feitos · <b>${cdNum(cont('tratar'))}</b> pendentes${cont('aguardando')?` · <b>${cdNum(cont('aguardando'))}</b> aguardando cliente`:''}${pessoas?` · Feitos por pessoa: ${pessoas}`:''}</div>
       ${a.total!==undefined?cdSlaBarra(a):''}</div>
-    <div class="cdg-area-f">${[['tratar','Para tratar'],['tratado','Feitos'],['resolvido','Resolvidos no IXC'],['todos','Todos']].map(([k,t])=>`<button type="button" class="btn sm ${A.filtro===k?'primary':''}" onclick="CD.atv.filtro='${k}';renderCobrancaDia()">${t} (${cont(k)})</button>`).join('')}
+    <div class="cdg-area-f">${[['tratar','Para tratar'],['aguardando','Aguardando cliente'],['tratado','Feitos'],['resolvido','Resolvidos no IXC'],['todos','Todos']].map(([k,t])=>`<button type="button" class="btn sm ${A.filtro===k?'primary':''}" onclick="CD.atv.filtro='${k}';renderCobrancaDia()">${t} (${cont(k)})</button>`).join('')}
       <input type="text" placeholder="Buscar por nome" value="${cdEsc(A.busca)}" onchange="CD.atv.busca=this.value;renderCobrancaDia()"></div>
     ${A.ultimo?`<div class="cdf-ultimo"><span>Último registro: <b>${cdEsc(A.ultimo.nome)}</b> · ${cdEsc(A.ultimo.acao)}</span>
       <button type="button" class="btn sm" onclick="cdAtvDesfazer(${A.ultimo.id})">Desfazer <kbd>U</kbd></button></div>`:''}
@@ -24468,6 +24517,7 @@ function cdAtvEstado(i, meuId){
   if(i.promessa_situacao==='não cumprida') return {k:'tratado', t:'Promessa não cumprida', c:'risk'};
   if(i.promessa_situacao==='aguardando aprovação') return {k:'tratado', t:'Promessa aguardando aprovação', c:'warn'};
   if(i.situacao==='prometeu' && i.promessa_data) return {k:'tratado', t:'Prometeu pagar até '+cdData(i.promessa_data), c:'info'};
+  if(i.situacao==='aguardando') return {k:'aguardando', t:'Aguardando cliente'+(i.tratado_em?' desde '+new Date(i.tratado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''), c:'warn'};
   if(i.situacao!=='pendente') return {k:'tratado', t:CD_SITUACOES[i.situacao]?.t||i.situacao, c:CD_SITUACOES[i.situacao]?.c||''};
   if(i.com_quem && cdPegoVencido(i)) return {k:'tratar', t:'Para tratar', c:''};
   if(i.com_quem && i.com_quem===meuId) return {k:'tratar', t:'Com você agora', c:'info'};
@@ -24492,7 +24542,7 @@ function cdAreaListaHTML(){
   const cont = k => its.filter(i=>k==='todos'||i._e.k===k).length;
   const tot = its.length, res = cont('resolvido'), trat = cont('tratado');
   const valT = its.reduce((s,i)=>s+(Number(i.valor)||0),0), valR = its.filter(i=>i._e.k==='resolvido').reduce((s,i)=>s+(Number(i.valor)||0),0);
-  const filtros = [['tratar','Para tratar'],['atendendo','Em atendimento'],['tratado','Tratados'],['resolvido','Resolvidos no IXC'],['todos','Todos']];
+  const filtros = [['tratar','Para tratar'],['atendendo','Em atendimento'],['aguardando','Aguardando cliente'],['tratado','Tratados'],['resolvido','Resolvidos no IXC'],['todos','Todos']];
   const busca = String(A.busca||'').trim().toUpperCase();
   const vis0 = its.filter(i=>(A.filtro==='todos'||i._e.k===A.filtro||i.id===A.expandido) && (!busca || String(i.nome||'').toUpperCase().includes(busca) || String(i.id_cliente)===busca));
   const vis = [...vis0.filter(i=>i.id===A.expandido), ...vis0.filter(i=>i.id!==A.expandido)];
@@ -24796,9 +24846,10 @@ function cdAtendenteHTML(){
     return `<div class="cdg-atv-card sla-${cdSla(a).c}">
       <div class="cdg-atv-top"><div><div class="cdg-atv-tit">${cdEsc(a.titulo)}</div>
         <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · direcionada por ${cdEsc(a.criado_por_nome||'-')}${a.prazo?` · prazo ${cdPrazoTxt(a)}`:''}${atrasada?' · <b class="r">atrasada</b>':''}</div></div>
-        <button type="button" class="btn sm primary" onclick="cdAtvAbrir(${a.id})">${Number(a.pendentes)?'Começar':'Abrir'}</button></div>
+        <button type="button" class="btn sm primary" onclick="${a.iniciada_em?'':'cdAtvIniciar('+a.id+',true)'};cdAtvAbrir(${a.id})">${!a.iniciada_em?'Iniciar tarefa':Number(a.pendentes)?'Continuar':'Abrir'}</button></div>
+      <div class="cdg-ini-linha">${cdIniciadaSelo(a)}</div>
       ${cdSlaBarra(a)}
-      <div class="cdg-atv-nums"><span><b>${cdNum(a.pendentes)}</b> para tratar</span><span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(res)}</b> resolvidos</span></div>
+      <div class="cdg-atv-nums"><span><b>${cdNum(a.pendentes)}</b> para tratar</span>${Number(a.aguardando)?`<span style="color:#b45309"><b>${cdNum(a.aguardando)}</b> aguardando cliente</span>`:''}<span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(res)}</b> resolvidos</span></div>
     </div>`;
   }).join('');
   return `<div class="section compact-section cdg-area">
@@ -24807,7 +24858,7 @@ function cdAtendenteHTML(){
       <button type="button" class="btn sm" onclick="cdAtvCarregar()">Atualizar</button></div>
     ${L.length?`<div class="cdg-atv-grid">${cards}</div>`:`<div class="cdg-box"><div class="cdg-nota">Nenhuma atividade direcionada para você no momento. Quando a liderança enviar uma, ela aparece aqui.</div></div>`}
     <div class="cdg-box" style="margin-top:12px"><div class="cdg-eyebrow">Como trabalhar</div><div class="cdg-nota" style="margin:0">
-      Clique em <b>Começar</b> e depois em <b>Pegar o próximo cliente</b>. Fale com o cliente e registre o resultado com um botão. Se ele prometer pagar, escolha a data (até 10 dias). Quando o IXC confirmar o pagamento ou a correção, o cliente passa para "Resolvidos" sozinho.</div></div>
+      Clique em <b>Iniciar tarefa</b> e trate um cliente por vez. Se você falou com o cliente e está esperando a resposta dele, use <b>Aguardando cliente</b> e escreva o que pediu: assim a liderança sabe que a tarefa está andando. Fale com o cliente e registre o resultado com um botão. Se ele prometer pagar, escolha a data (até 10 dias). Quando o IXC confirmar o pagamento ou a correção, o cliente passa para "Resolvidos" sozinho.</div></div>
   </div>`;
 }
 
@@ -26522,7 +26573,9 @@ function renderCarneCorreios(){
 
   if(!raw.length){
     document.getElementById('cc-preview-tbody').innerHTML=
-      '<tr><td colspan="6" style="text-align:center;padding:24px;color:#ef4444">Carregue o relatório <b>RADAR HILINK | CORREIOS</b> no Setup primeiro.</td></tr>';
+      (CC_IXC.ativo
+        ? '<tr><td colspan="6" style="text-align:center;padding:24px;color:#f59e0b"><b>Nenhuma OS de entrega de carnê em aberto no IXC.</b><br><span style="font-size:12px;color:var(--radar-soft,#94a3b8)">Quando houver OS "TEC | ENTREGA DE CARNE" aberta, clique em <b>Buscar do IXC agora</b>.</span></td></tr>'
+        : '<tr><td colspan="6" style="text-align:center;padding:24px;color:#ef4444">Clique em <b>Buscar do IXC agora</b> para trazer os carnês direto do IXC.</td></tr>');
     return;
   }
 
@@ -26559,7 +26612,83 @@ function renderCarneCorreios(){
   processarCarneCorreios();
 }
 
+
+// ===== CORREIOS direto do IXC (OS, boletos, endereço e Pix via API) =====
+const CC_IXC={ativo:false,os:[],boletos:[],execucao:null,buscando:false,timer:null};
+function ccIxcQuando(){
+  const e=CC_IXC.execucao; const d=e&&(e.fim_em||e.pedido_em);
+  return d?new Date(d).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'sem leitura';
+}
+function ccIxcInfo(html){const el=document.getElementById('cc-ixc-info');if(el)el.innerHTML=html;}
+function ccIxcResumo(){
+  const e=CC_IXC.execucao||{};
+  const abertas=(CC_IXC.os||[]).filter(o=>!/finaliz|cancel/i.test(o.Status||'')).length;
+  const semPix=(CC_IXC.boletos||[]).filter(b=>!b.QRCODE).length;
+  const semLinha=(CC_IXC.boletos||[]).filter(b=>!b['Linha digitável']).length;
+  if(e.status==='buscando'||e.status==='pedido')return `Buscando no IXC... ${e.prontos||0} de ${e.contratos??'?'} contratos prontos.`;
+  if(e.erro)return `<span style="color:#ef4444">Última busca no IXC com erro: ${String(e.erro).slice(0,160)}</span>`;
+  return `Fonte: <b>IXC direto</b> · atualizado em <b>${ccIxcQuando()}</b> · OS abertas de entrega de carnê: <b>${abertas}</b> · boletos em aberto: <b>${(CC_IXC.boletos||[]).length}</b> · sem Pix: <b>${semPix}</b> · sem linha digitável: <b>${semLinha}</b>${CC_IXC.naoImpressos?` · <span style="color:#f59e0b">${CC_IXC.naoImpressos} boleto(s) desses contratos ainda não impressos no IXC (ficam fora do carnê, como no Query Builder)</span>`:''}`;
+}
+async function ccIxcCarregarDados(){
+  const sb=getSB(); const r=await sb.rpc('radar_correios_dados'); if(r.error)throw r.error;
+  const d=r.data||{};
+  CC_IXC.os=d.os||[]; CC_IXC.boletos=(d.boletos||[]).map(b=>({...b})); CC_IXC.execucao=d.execucao||null; CC_IXC.naoImpressos=Number(d.nao_impressos)||0; CC_IXC.ativo=true;
+  ccIxcInfo(ccIxcResumo());
+}
+async function ccIxcAbrir(){
+  if(STATE.raw?.carneBoletos?.length&&!CC_IXC.ativo){renderCarneCorreios();return;}
+  try{
+    if(!CC_IXC.ativo){ccIxcInfo('Fonte: IXC direto. Carregando a última leitura...');await ccIxcCarregarDados();}
+    renderCarneCorreios();
+    const e=CC_IXC.execucao;
+    if(e&&(e.status==='buscando'||e.status==='pedido'))ccIxcAcompanhar();
+  }catch(err){console.error('[Correios IXC]',err);ccIxcInfo('<span style="color:#ef4444">Não consegui ler os dados do IXC: '+(err.message||err)+'</span>');}
+}
+async function ccIxcBuscar(){
+  if(CC_IXC.buscando)return;
+  const btn=document.getElementById('cc-ixc-btn');
+  try{
+    CC_IXC.buscando=true; if(btn){btn.disabled=true;btn.textContent='Buscando no IXC...';}
+    const sb=getSB(); const r=await sb.rpc('radar_correios_buscar'); if(r.error)throw r.error;
+    toast('Buscando OS, boletos e Pix direto do IXC. Leva de 1 a 3 minutos.','success');
+    ccIxcInfo('Buscando no IXC... aguarde.');
+    ccIxcAcompanhar();
+  }catch(err){
+    CC_IXC.buscando=false; if(btn){btn.disabled=false;btn.textContent='Buscar do IXC agora';}
+    toast('Erro ao buscar no IXC: '+(err.message||err),'error');
+  }
+}
+function ccIxcAcompanhar(){
+  clearTimeout(CC_IXC.timer);
+  const btn=document.getElementById('cc-ixc-btn');
+  const inicio=Date.now();
+  const passo=async()=>{
+    try{
+      const sb=getSB(); const r=await sb.rpc('radar_correios_status'); if(r.error)throw r.error;
+      CC_IXC.execucao=r.data||null; ccIxcInfo(ccIxcResumo());
+      const st=CC_IXC.execucao?.status;
+      if(st==='concluido'||CC_IXC.execucao?.erro||Date.now()-inicio>8*60*1000){
+        CC_IXC.buscando=false; if(btn){btn.disabled=false;btn.textContent='Buscar do IXC agora';}
+        await ccIxcCarregarDados();
+        if(STATE.activeMod==='carneCorreios')renderCarneCorreios();
+        if(st==='concluido')toast('Correios atualizado direto do IXC','success');
+        else if(Date.now()-inicio>8*60*1000)toast('A busca no IXC está demorando. Mostrando o que já chegou.','warn');
+        return;
+      }
+    }catch(err){console.warn('[Correios IXC] status',err);}
+    CC_IXC.timer=setTimeout(passo,4000);
+  };
+  CC_IXC.timer=setTimeout(passo,3000);
+}
+window.ccIxcBuscar=ccIxcBuscar;
+function ccOsSource(){
+  if(CC_IXC.ativo)return CC_IXC.os||[];
+  return STATE.raw.comodato||[];
+}
 function ccGetBoletosSource(){
+  if(CC_IXC.ativo){
+    return {rows:CC_IXC.boletos||[],label:'IXC direto (atualizado '+ccIxcQuando()+')',key:'ixc'};
+  }
   if(STATE.raw?.carneBoletos?.length){
     return {rows:STATE.raw.carneBoletos,label:'RADAR HILINK | CORREIOS',key:'carneBoletos'};
   }
@@ -27243,7 +27372,19 @@ function processarCarneCorreios(){
   const nomeKey=r=>String(r[CC._colNome]||r['Cliente']||r['Nome']||'');
 
   // -- Filtro por Assunto OS ---------------------------------------------
-  const osRaw=STATE.raw.comodato||[];
+  const osRaw=ccOsSource();
+  if(CC_IXC.ativo&&!osRaw.some(os=>!/finaliz|cancel/i.test(String(os.Status||'')))){
+    document.getElementById('cc-preview-tbody').innerHTML=
+      `<tr><td colspan="10" style="text-align:center;padding:28px;color:#22c55e">
+        <b style="font-size:14px">Nenhuma OS de entrega de carnê em aberto no IXC</b><br><br>
+        <span style="color:var(--radar-soft,#94a3b8)">Leitura de ${ccIxcQuando()}. Quando a equipe abrir uma OS <b>TEC | ENTREGA DE CARNE</b>, clique em <b>Buscar do IXC agora</b>.</span>
+      </td></tr>`;
+    const osInfo=document.getElementById('cc-os-filter-info');
+    if(osInfo)osInfo.innerHTML=`OS de entrega de carnê no IXC: <b>${osRaw.length}</b> no histórico, <b>0</b> em aberto.`;
+    CC.clientes=[]; CC.filtered=[];
+    ccSetCorreiosExportButtonsDisabled(true);
+    return;
+  }
   if(!assuntoFiltro){
     document.getElementById('cc-preview-tbody').innerHTML=
       `<tr><td colspan="10" style="text-align:center;padding:28px;color:#f59e0b">
@@ -27910,7 +28051,7 @@ function _renderCorreiosPreview(lista){
   const colVenc=CC._colVenc||'Data do vencimento';
 
   // -- Dashboard KPIs ----------------------------------------------------
-  const osRaw=STATE.raw.comodato||[];
+  const osRaw=ccOsSource();
   const assuntoFiltro=ccNormTxt(document.getElementById('cc-assunto-os')?.value||'');
   const osLayout=ccDetectOsLayout(osRaw,assuntoFiltro);
   const nOsLocalizadas=assuntoFiltro&&osRaw.length?
