@@ -2831,7 +2831,8 @@ kbd{font-family:inherit;font-size:10px;border:1px solid currentColor;border-radi
 .cdg-pessoas{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px 12px;padding:8px 10px;border:1px solid rgba(90,150,220,.35);border-radius:8px;background:#0B1B2B;font-weight:500;color:#F2F5F8}
 .cdg-pessoas small{color:#8FA3B8}
 /* modo atendente: só a área de atividades */
-body.radar-modo-atendente .sidebar nav .nav-item:not([data-mod="cobrancaDia"]),
+body.radar-modulos-restritos .sidebar nav .nav-item:not(.perm-ok),
+body.radar-modo-atendente .sidebar nav .nav-item:not([data-mod="cobrancaDia"]):not(.perm-ok),
 body.radar-modo-atendente .sidebar .nav-section,
 body.radar-modo-atendente .sidebar .nav-note,
 body.radar-modo-atendente .topbar .badge,
@@ -24506,6 +24507,56 @@ function usrSugerirEmail(nome){
   const p = String(nome||'').trim().split(/\s+/)[0]||'';
   return p ? p.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')+'@hilink.com.br' : '';
 }
+
+// ---------- módulos liberados por usuário ----------
+const USR_MODULOS = [
+  ['cobrancaDia','Cobrança do Dia'],['tecnica','Saúde da Rede'],['carneCorreios','Envio Correios'],['premiacoes','Premiação'],
+  ['propostas','Propostas Corporativas'],['acao','Estratégia de Atuação'],['relatorios','Relatórios Personalizados'],['setup','Carregar Relatórios']
+];
+function usrModulosTxt(u){
+  if(u.perfil==='admin'||u.perfil==='lider') return 'Módulos: todos';
+  const m = u.modulos||[];
+  const nome = k => (USR_MODULOS.find(x=>x[0]===k)||[k,k])[1];
+  if(u.perfil==='atendente') return 'Módulos: Cobrança do Dia (só as atividades dela)'+(m.length?' + '+m.filter(k=>k!=='cobrancaDia').map(nome).join(', '):'');
+  return m.length ? 'Módulos: '+m.map(nome).join(', ') : 'Módulos: todos';
+}
+function usrModulosModal(em){
+  const u = usrAchar(em); if(!u) return;
+  const m = new Set(u.modulos||[]);
+  const at = u.perfil==='atendente';
+  cdModal(`<h3>Módulos liberados</h3>
+    <p class="cdg-nota" style="margin:0 0 10px"><b>${cdEsc(u.nome||u.email)}</b> · ${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}</p>
+    <div class="cdg-pessoas">${USR_MODULOS.map(([k,t])=>{
+      const fixo = at && k==='cobrancaDia';
+      return `<label class="cd-chk"><input type="checkbox" class="usr-mod" value="${k}" ${fixo||m.has(k)?'checked':''} ${fixo?'disabled':''}> ${t}${fixo?' <small>(sempre, só as atividades dela)</small>':''}</label>`; }).join('')}</div>
+    <p class="cdg-nota" style="margin:8px 0 14px">${at?'A atendente continua vendo só as atividades direcionadas a ela na Cobrança do Dia. Os módulos marcados aparecem no menu dela.':'Sem nenhum módulo marcado, a pessoa vê todos os módulos.'} Envio Correios precisa de Carregar Relatórios para subir o arquivo da cena.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+      <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="usrModulosSalvar('${em}')">Salvar</button></div>`);
+  const cc=[...document.querySelectorAll('.usr-mod')].find(x=>x.value==='carneCorreios'), st=[...document.querySelectorAll('.usr-mod')].find(x=>x.value==='setup');
+  if(cc&&st) cc.addEventListener('change',()=>{ if(cc.checked) st.checked=true; });
+}
+async function usrModulosSalvar(em){
+  const mods=[...document.querySelectorAll('.usr-mod:checked')].map(x=>x.value).filter(k=>!(k==='cobrancaDia'&&usrAchar(em)?.perfil==='atendente'));
+  try{ const r = await cdAtvRpc('radar_usr_modulos',{p_email:decodeURIComponent(em), p_modulos:mods});
+    cdModal(null); toast('Módulos atualizados. Vale no próximo acesso da pessoa (ou ao atualizar a página).','success'); USR.lista=null; renderUsuarios(); }
+  catch(e){ toast(e.message,'error'); }
+}
+// aplica a permissão de módulos no menu e na navegação
+function radarAplicarModulos(){
+  const perfil = CD.perfil, mods = new Set(CD.modulos||[]);
+  const restrito = perfil==='atendente' || (perfil==='usuario' && mods.size>0);
+  if(perfil==='atendente') mods.add('cobrancaDia');
+  document.body.classList.toggle('radar-modulos-restritos', restrito);
+  document.querySelectorAll('.sidebar nav .nav-item').forEach(el=>{ el.classList.toggle('perm-ok', !restrito || mods.has(el.dataset.mod)); });
+}
+function radarModuloPermitido(mod){
+  const perfil = CD.perfil, mods = new Set(CD.modulos||[]);
+  if(perfil==='atendente') return mod==='cobrancaDia' || mods.has(mod);
+  if(perfil==='usuario' && mods.size) return mods.has(mod);
+  return true;
+}
+Object.assign(window,{usrModulosModal, usrModulosSalvar});
+
 function renderUsuarios(){
   const box = document.getElementById('mod-usuarios'); if(!box) return;
   if(!cdPodeGerenciar()){ box.innerHTML = `<div class="section compact-section"><h2 class="section-title">Usuários e acessos</h2><p class="cdg-nota">Acesso restrito à gestão e à liderança do atendimento.</p></div>`; return; }
@@ -24522,11 +24573,12 @@ function renderUsuarios(){
     const em = encodeURIComponent(u.email);
     const acoes = !u.pode_editar ? '<span class="cdg-nota" style="margin:0">só a gestão altera</span>' : `
       <button type="button" class="cdg-mini" onclick="usrSenhaModal('${em}')">Redefinir senha</button>
+      ${u.perfil==='atendente'||u.perfil==='usuario'?`<button type="button" class="cdg-mini" onclick="usrModulosModal('${em}')">Módulos</button>`:''}
       ${admin&&!u.admin_sistema?`<button type="button" class="cdg-mini" onclick="usrEditarModal('${em}')">Editar</button>
       ${u.status==='ativo'?`<button type="button" class="cdg-mini" onclick="usrSituacao('${em}','inativo')">Desativar</button>`:`<button type="button" class="cdg-mini" onclick="usrSituacao('${em}','ativo')">Reativar</button>`}
       <button type="button" class="cdg-mini perigo-txt" onclick="usrExcluirModal('${em}')">Excluir</button>`:''}`;
     return `<tr class="${u.status!=='ativo'?'usr-inativo':''}"><td><b>${cdEsc(u.nome||'-')}</b><small>${cdEsc(u.email)}</small></td>
-      <td>${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}${u.admin_sistema?' <small>(administradora do sistema)</small>':''}</td><td>${sit}</td><td>${ult}</td><td class="usr-acoes">${acoes}</td></tr>`;
+      <td>${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}${u.admin_sistema?' <small>(administradora do sistema)</small>':''}<small>${usrModulosTxt(u)}</small></td><td>${sit}</td><td>${ult}</td><td class="usr-acoes">${acoes}</td></tr>`;
   }).join('');
   const perfisCad = admin ? ['atendente','lider','usuario'] : ['atendente'];
   box.innerHTML = `<div class="section compact-section usr">
@@ -24642,8 +24694,8 @@ async function radarAplicarPerfil(){
   try{
     const { data, error } = await sb.rpc('radar_meu_perfil');
     if(error) throw error;
-    CD.perfil = data?.perfil || 'usuario'; CD.meuNome = data?.nome || '';
-    document.body.classList.toggle('radar-modo-atendente', CD.perfil==='atendente');
+    CD.perfil = data?.perfil || 'usuario'; CD.meuNome = data?.nome || ''; CD.modulos = Array.isArray(data?.modulos) ? data.modulos : [];
+    document.body.classList.toggle('radar-modo-atendente', CD.perfil==='atendente'); try{ radarAplicarModulos(); }catch(e){}
     const navU = document.querySelector('.nav-item[data-mod="usuarios"]'); if(navU) navU.style.display = cdPodeGerenciar() ? '' : 'none';
     if(data?.trocar_senha) radarTrocarSenhaModal();
     if(CD.perfil==='atendente'){ CD.atv.lista=null; go('cobrancaDia'); }
@@ -24654,7 +24706,7 @@ async function radarAplicarPerfil(){
 (function(){
   const _go = window.go;
   if(typeof _go==='function' && !_go._cdPerfil){
-    const g = function(mod){ return _go(CD.perfil==='atendente' ? 'cobrancaDia' : mod); };
+    const g = function(mod){ return _go(typeof radarModuloPermitido==='function' && !radarModuloPermitido(mod) ? (CD.perfil==='atendente' ? 'cobrancaDia' : mod) : mod); };
     g._cdPerfil = true; window.go = g;
   }
   setTimeout(()=>{ if(getRadarUser?.()) radarAplicarPerfil(); }, 0);
