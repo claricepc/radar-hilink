@@ -2572,6 +2572,12 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-numeros .cdg-num.info .v{color:var(--g-blue)}
 .cdg-numeros .cdg-num .l{color:var(--c)}
 .cdg-numeros .cdg-num .v{font-size:22px}
+.cdg-numeros .cdg-num.clicavel{cursor:pointer;transition:transform .12s, box-shadow .12s}
+.cdg-numeros .cdg-num.clicavel:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.cdg-numeros .cdg-num .ver{margin-left:8px;font-size:10px;border:1px solid var(--c);border-radius:999px;padding:1px 8px;letter-spacing:.02em}
+.cdg-link{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+.cdg-link:hover{text-decoration-style:solid}
+.cdg-link.r{color:var(--g-risk);font-weight:600}
 .cdg-numeros .cdg-num .d{grid-column:1 / span 2;font-size:12px;color:var(--g-sub);margin-top:8px;padding-top:7px;border-top:1px dashed color-mix(in srgb,var(--c) 35%,transparent)}
 .cdg-numeros .cdg-num .d .bom{color:var(--g-ok)} .cdg-numeros .cdg-num .d .ruim{color:var(--g-risk)}
 .cdg-delta{font-weight:700}
@@ -2636,7 +2642,10 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-tab td.bar{width:28%;min-width:90px}
 .cdg-tab tr.tem-pre td:first-child{box-shadow:inset 4px 0 0 var(--g-risk)}
 .cdg-tab tr.tem-pre{background:var(--g-risk-bg)}
-.cdg-prealerta{display:inline-flex;flex-direction:column;align-items:flex-end;gap:1px;border:1.5px solid var(--g-risk);background:var(--g-risk-bg);color:var(--g-risk);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;font-variant-numeric:tabular-nums}
+.cdg-tab td.pre{width:250px;min-width:250px}
+.cdg-prevazio{box-sizing:border-box;width:100%;display:flex;flex-direction:column;align-items:flex-end;gap:1px;border:1.5px dashed rgba(143,163,184,.45);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--g-muted)}
+.cdg-prevazio span{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.cdg-prealerta{box-sizing:border-box;width:100%;display:flex;flex-direction:column;align-items:flex-end;gap:1px;border:1.5px solid var(--g-risk);background:var(--g-risk-bg);color:var(--g-risk);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;font-variant-numeric:tabular-nums}
 .cdg-prealerta:hover{background:var(--g-risk);color:#fff}
 .cdg-prealerta span{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
 .cdg-prefaixa{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;border:1.5px solid var(--g-risk);border-left:6px solid var(--g-risk);background:var(--g-risk-bg);border-radius:10px;padding:10px 14px;margin:0 0 10px;font-size:12.5px;color:var(--g-text)}
@@ -2716,6 +2725,7 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-motivo:hover{background:#e8f2fb}
 .cdg-acao.ativo{outline:2px solid #0071BC}
 .cdg-sub{opacity:.7;font-size:11px;font-weight:500}
+.cdf-ultimo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding:8px 12px;border-radius:8px;background:rgba(48,164,108,.12);border-left:4px solid #30A46C;font-size:13px}
 .cdf-prog{font-size:12.5px;margin:6px 0 10px;display:flex;flex-direction:column;gap:6px}
 .cdf-grid{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:14px;margin-top:10px}
 @media (max-width:860px){.cdf-grid{grid-template-columns:1fr}}
@@ -23308,7 +23318,7 @@ function cdCard(o){
 }
 function cdIrLista(aba, preset){
   CD.aba = aba;
-  if(aba==='cobrar' && preset){ cdAplicarPreset(preset); }
+  if(aba==='cobrar' && preset){ CD.filial='Todas'; cdAplicarPreset(preset); }
   renderCobrancaDia();
   const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -23420,14 +23430,14 @@ function cdGuiaHTML(){
   // 2. Resumo em texto
   const delta = g.delta===null ? '' : (Math.abs(g.delta) < 0.005 ? ' O valor está igual ao da leitura anterior.'
     : ` Desde a leitura anterior, o vencido <span class="cdg-delta ${g.delta<0?'down':'up'}">${g.delta<0?'caiu':'subiu'} ${cdMoeda(Math.abs(g.delta))}</span>.`);
-  const p1 = `Hoje há <b>${cdMoeda(g.todos.valor)}</b> vencidos, de <b>${cdNum(g.todos.clientes)} clientes</b>.${delta}`;
+  const p1 = `Hoje há <b>${cdMoeda(g.todos.valor)}</b> vencidos, de <button type="button" class="cdg-link " onclick="cdIrLista('cobrar','todos')" title="Abrir a lista"><b>${cdNum(g.todos.clientes)} clientes</b></button>.${delta}`;
   const p2 = g.pre.clientes
-    ? `A prioridade do dia é cobrar <span class="r">${cdNum(g.pre.clientes)} clientes com 1 a 5 dias de atraso</span> (${cdMoeda(g.pre.valor)}). Depois de cerca de 5 dias úteis o IXC bloqueia a internet deles, e cada bloqueio vira ligação, desgaste e risco de cancelamento.`
+    ? `A prioridade do dia é cobrar <button type="button" class="cdg-link r" onclick="cdIrLista('cobrar','pre')" title="Abrir a lista">${cdNum(g.pre.clientes)} clientes com 1 a 5 dias de atraso</button> (${cdMoeda(g.pre.valor)}). Depois de cerca de 5 dias úteis o IXC bloqueia a internet deles, e cada bloqueio vira ligação, desgaste e risco de cancelamento.`
     : `Não há clientes cobráveis com 1 a 5 dias de atraso hoje.`;
   const p3 = g.pag.qt
     ? `No último dia carregado (${cdData(g.pag.dia)}) entraram <b>${cdMoeda(g.pag.valor)}</b> em ${cdNum(g.pag.qt)} pagamentos, e ${g.pag.pctAtraso}% deles foram pagos depois do vencimento.`
     : `Não há pagamentos carregados do último dia.`;
-  const p4 = g.pct90>=30 ? `${g.pct90}% do valor cobrável está parado há mais de 90 dias. Esse dinheiro precisa de uma régua própria de recuperação, separada da cobrança do dia.` : '';
+  const p4 = g.pct90>=30 ? `${g.pct90}% do valor cobrável <button type="button" class="cdg-link " onclick="cdIrLista('cobrar','d90')" title="Abrir a lista">está parado há mais de 90 dias</button>. Esse dinheiro precisa de uma régua própria de recuperação, separada da cobrança do dia.` : '';
   const dAnt = r.data_anterior ? cdData(r.data_anterior).slice(0,5) : 'a leitura anterior';
   const preOnt = Number(r.pre_raw_ontem)||0, preSaiu = r.pre_ontem_saiu ? Number(r.pre_ontem_saiu.valor)||0 : 0;
   const dPre = preOnt>0 ? `<div class="d">Da lista de ${dAnt} (${cdMoeda(preOnt)}), já saíram <b class="bom">${cdMoeda(preSaiu)}</b> (${cdPct(preSaiu,preOnt)}%), pagos ou corrigidos.</div>` : '';
@@ -23438,11 +23448,12 @@ function cdGuiaHTML(){
     : `<div class="d">A comparação com o mesmo dia da semana passada aparece quando o histórico de pagamentos completar 7 dias.</div>`;
   const resumo = `<div class="cdg-resumo">
     <div class="cdg-box"><div class="cdg-eyebrow">O dia em poucas linhas</div>
-      <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p><p>${p3}</p>${p4?`<p>${p4}</p>`:''}</div></div>
+      <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p><p>${p3}</p>${p4?`<p>${p4}</p>`:''}</div>
+      <div class="cdg-nota">Os trechos sublinhados abrem a lista de clientes.</div></div>
     <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
       <div class="cdg-numeros">
-        <div class="cdg-num risk"><div class="l">Antes do bloqueio</div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, 1 a 5 dias</div>${dPre}</div>
-        <div class="cdg-num info"><div class="l">Vencido total</div><div class="v">${cdMoeda(g.todos.valor)}</div><div class="s">${cdNum(g.todos.clientes)} clientes, sem Filial 10</div>${dVenc}</div>
+        <div class="cdg-num risk clicavel" role="button" tabindex="0" onclick="cdIrLista('cobrar','pre')" onkeydown="if(event.key==='Enter')cdIrLista('cobrar','pre')" title="Abrir a lista"><div class="l">Antes do bloqueio <span class="ver">Ver lista</span></div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, 1 a 5 dias</div>${dPre}</div>
+        <div class="cdg-num info clicavel" role="button" tabindex="0" onclick="cdIrLista('cobrar','todos')" onkeydown="if(event.key==='Enter')cdIrLista('cobrar','todos')" title="Abrir a lista"><div class="l">Vencido total <span class="ver">Ver lista</span></div><div class="v">${cdMoeda(g.todos.valor)}</div><div class="s">${cdNum(g.todos.clientes)} clientes, sem Filial 10</div>${dVenc}</div>
         <div class="cdg-num ok"><div class="l">Recebido em ${cdData(g.pag.dia)}</div><div class="v">${cdMoeda(g.pag.valor)}</div><div class="s">${cdNum(g.pag.qt)} pagamentos</div>${dPag}</div>
       </div>
       <div class="cdg-nota">Vencido total soma todos os clientes com boleto vencido, inclusive quem está fora da cobrança. Antes do bloqueio conta só quem pode ser cobrado hoje.</div>
@@ -23536,8 +23547,8 @@ function cdGuiaHTML(){
   const linhasFil = marcas.map(m => {
     const fs = g.filiais.filter(f=>f.marca===m);
     const tot = fs.reduce((a,f)=>a+f.valor,0);
-    return `<tr class="marca"><td colspan="5">${cdEsc(m)} · ${cdMoeda(tot)}</td></tr>` + fs.map(f=>`<tr class="${f.pre>0?'tem-pre':''}"><td>${cdEsc(f.filial)}</td><td>${cdMoeda(f.valor)}</td><td>${cdNum(f.clientes)}</td><td>${f.pre>0 ? `<button type="button" class="cdg-prealerta" onclick="cdIrPreFilial('${cdEsc(String(f.filial).replace(/'/g,''))}')" title="Abrir a lista desta filial">
-        <div><b>${cdMoeda(f.pre)}</b> · ${cdNum(f.preClientes)} ${f.preClientes===1?'cliente':'clientes'}</div><span>${f.preResta<=1?'bloqueia amanhã':'bloqueia em até '+f.preResta+' dias'} · Cobrar</span></button>` : `<span class="cdg-sub">nada a cobrar</span>`}</td>
+    return `<tr class="marca"><td colspan="5">${cdEsc(m)} · ${cdMoeda(tot)}</td></tr>` + fs.map(f=>`<tr class="${f.pre>0?'tem-pre':''}"><td>${cdEsc(f.filial)}</td><td>${cdMoeda(f.valor)}</td><td>${cdNum(f.clientes)}</td><td class="pre">${f.pre>0 ? `<button type="button" class="cdg-prealerta" onclick="cdIrPreFilial('${cdEsc(String(f.filial).replace(/'/g,''))}')" title="Abrir a lista desta filial">
+        <div><b>${cdMoeda(f.pre)}</b> · ${cdNum(f.preClientes)} ${f.preClientes===1?'cliente':'clientes'}</div><span>${f.preResta<=1?'bloqueia amanhã':'bloqueia em até '+f.preResta+' dias'} · Cobrar</span></button>` : `<div class="cdg-prevazio"><div>R$ 0,00</div><span>nenhum inadimplente sem bloqueio</span></div>`}</td>
       <td class="bar"><div style="width:${(100*f.valor/maxFil).toFixed(1)}%"><span style="width:${f.valor>0?(100*f.pre/f.valor).toFixed(1):0}%"></span></div></td></tr>`).join('');
   }).join('');
   const v360 = `<div class="cdg-360">
@@ -23848,7 +23859,7 @@ async function cdPromessaDecidir(id, aprovar){
 
 // ---------- área de trabalho ----------
 async function cdAtvAbrir(id){
-  CD.atv.aberta = id; CD.atv.itens = null; CD.atv.filtro='tratar'; CD.atv.busca=''; CD.atv.expandido=null; CD.atv.sel=null; CD.atv.modo='foco';
+  CD.atv.aberta = id; CD.atv.ultimo = null; CD.atv.itens = null; CD.atv.filtro='tratar'; CD.atv.busca=''; CD.atv.expandido=null; CD.atv.sel=null; CD.atv.modo='foco';
   renderCobrancaDia(); window.scrollTo({top:0,behavior:'smooth'});
   await cdAtvItensCarregar();
 }
@@ -23982,6 +23993,8 @@ async function cdAtvRegistrar(itemId, situacao){
     if(!r.ok){ toast(r.motivo,'warn'); }
     else toast(r.mensagem, r.promessa==='pendente_aprovacao'?'warn':'success');
     CD.atv.expandido = null;
+    if(r.ok){ const it=(CD.atv.itens||[]).find(x=>x.id===itemId); const atv=(CD.atv.lista||[]).find(x=>x.id===CD.atv.aberta);
+      CD.atv.ultimo = { id:itemId, nome: it?.nome||'Cliente', acao: cdAtvRotuloAcao(atv?.tipo||'cobrar', situacao) }; }
     if(r.ok && CD.atv.modo!=='lista'){ const prox = cdFocoProximoId(itemId); await cdAtvItensCarregar(); if(prox) cdFocoSelecionar(prox, true); return; }
     await cdAtvItensCarregar();
   }catch(e){ toast(e.message,'error'); }
@@ -24116,6 +24129,8 @@ function cdAreaFocoHTML(){
       ${a.total!==undefined?cdSlaBarra(a):''}</div>
     <div class="cdg-area-f">${[['tratar','Para tratar'],['tratado','Feitos'],['resolvido','Resolvidos no IXC'],['todos','Todos']].map(([k,t])=>`<button type="button" class="btn sm ${A.filtro===k?'primary':''}" onclick="CD.atv.filtro='${k}';renderCobrancaDia()">${t} (${cont(k)})</button>`).join('')}
       <input type="text" placeholder="Buscar por nome" value="${cdEsc(A.busca)}" onchange="CD.atv.busca=this.value;renderCobrancaDia()"></div>
+    ${A.ultimo?`<div class="cdf-ultimo"><span>Último registro: <b>${cdEsc(A.ultimo.nome)}</b> · ${cdEsc(A.ultimo.acao)}</span>
+      <button type="button" class="btn sm" onclick="cdAtvDesfazer(${A.ultimo.id})">Desfazer <kbd>U</kbd></button></div>`:''}
     <div class="cdf-grid"><div class="cdf-fila"><div class="cdg-nota" style="margin:0 0 6px">${cdNum(vis.length)} na fila</div>${fila||'<div class="cdg-nota">Nenhum cliente neste filtro.</div>'}</div>
       <div class="cdf-card">${card}</div></div>
     <div class="cdg-nota" style="margin-top:8px">Atalhos: N copia o nome, C copia o telefone, Enter vai para o próximo, U desfaz, S pula, setas navegam.</div>
@@ -24133,6 +24148,7 @@ document.addEventListener('keydown', e=>{
     else if(k==='c' && i && i.telefone){ cdAtvCopiar(String(i.telefone), null); toast('Telefone copiado.','success'); }
     else if(k==='enter' && i){ const p=cdFocoProximoId(i.id); if(p) cdFocoSelecionar(p); }
     else if(k==='u' && i && i.situacao!=='pendente'){ cdAtvDesfazer(i.id); }
+    else if(k==='u' && CD.atv.ultimo){ cdAtvDesfazer(CD.atv.ultimo.id); }
     else if(k==='s' || e.key==='ArrowDown'){ cdFocoMover(1); }
     else if(e.key==='ArrowUp'){ cdFocoMover(-1); }
     else return;
@@ -24145,7 +24161,9 @@ async function cdAtvDesfazer(itemId){
     const r = await cdAtvRpc('radar_atv_desfazer',{p_item:itemId});
     if(!r.ok){ toast(r.motivo,'warn'); return; }
     toast('Registro desfeito: o cliente voltou para "Para tratar".'+(r.promessas_canceladas?' A promessa foi cancelada.':''),'success');
+    if(CD.atv.ultimo && CD.atv.ultimo.id===itemId) CD.atv.ultimo = null;
     await cdAtvItensCarregar();
+    if(CD.atv.modo!=='lista') cdFocoSelecionar(itemId);
   }catch(e){ toast(e.message,'error'); }
 }
 window.cdAtvDesfazer = cdAtvDesfazer;
