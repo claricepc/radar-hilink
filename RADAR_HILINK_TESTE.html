@@ -2725,6 +2725,7 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-motivo:hover{background:#e8f2fb}
 .cdg-acao.ativo{outline:2px solid #0071BC}
 .cdg-sub{opacity:.7;font-size:11px;font-weight:500}
+.cdf-ultimo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding:8px 12px;border-radius:8px;background:rgba(48,164,108,.12);border-left:4px solid #30A46C;font-size:13px}
 .cdf-prog{font-size:12.5px;margin:6px 0 10px;display:flex;flex-direction:column;gap:6px}
 .cdf-grid{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:14px;margin-top:10px}
 @media (max-width:860px){.cdf-grid{grid-template-columns:1fr}}
@@ -23858,7 +23859,7 @@ async function cdPromessaDecidir(id, aprovar){
 
 // ---------- área de trabalho ----------
 async function cdAtvAbrir(id){
-  CD.atv.aberta = id; CD.atv.itens = null; CD.atv.filtro='tratar'; CD.atv.busca=''; CD.atv.expandido=null; CD.atv.sel=null; CD.atv.modo='foco';
+  CD.atv.aberta = id; CD.atv.ultimo = null; CD.atv.itens = null; CD.atv.filtro='tratar'; CD.atv.busca=''; CD.atv.expandido=null; CD.atv.sel=null; CD.atv.modo='foco';
   renderCobrancaDia(); window.scrollTo({top:0,behavior:'smooth'});
   await cdAtvItensCarregar();
 }
@@ -23992,6 +23993,8 @@ async function cdAtvRegistrar(itemId, situacao){
     if(!r.ok){ toast(r.motivo,'warn'); }
     else toast(r.mensagem, r.promessa==='pendente_aprovacao'?'warn':'success');
     CD.atv.expandido = null;
+    if(r.ok){ const it=(CD.atv.itens||[]).find(x=>x.id===itemId); const atv=(CD.atv.lista||[]).find(x=>x.id===CD.atv.aberta);
+      CD.atv.ultimo = { id:itemId, nome: it?.nome||'Cliente', acao: cdAtvRotuloAcao(atv?.tipo||'cobrar', situacao) }; }
     if(r.ok && CD.atv.modo!=='lista'){ const prox = cdFocoProximoId(itemId); await cdAtvItensCarregar(); if(prox) cdFocoSelecionar(prox, true); return; }
     await cdAtvItensCarregar();
   }catch(e){ toast(e.message,'error'); }
@@ -24126,6 +24129,8 @@ function cdAreaFocoHTML(){
       ${a.total!==undefined?cdSlaBarra(a):''}</div>
     <div class="cdg-area-f">${[['tratar','Para tratar'],['tratado','Feitos'],['resolvido','Resolvidos no IXC'],['todos','Todos']].map(([k,t])=>`<button type="button" class="btn sm ${A.filtro===k?'primary':''}" onclick="CD.atv.filtro='${k}';renderCobrancaDia()">${t} (${cont(k)})</button>`).join('')}
       <input type="text" placeholder="Buscar por nome" value="${cdEsc(A.busca)}" onchange="CD.atv.busca=this.value;renderCobrancaDia()"></div>
+    ${A.ultimo?`<div class="cdf-ultimo"><span>Último registro: <b>${cdEsc(A.ultimo.nome)}</b> · ${cdEsc(A.ultimo.acao)}</span>
+      <button type="button" class="btn sm" onclick="cdAtvDesfazer(${A.ultimo.id})">Desfazer <kbd>U</kbd></button></div>`:''}
     <div class="cdf-grid"><div class="cdf-fila"><div class="cdg-nota" style="margin:0 0 6px">${cdNum(vis.length)} na fila</div>${fila||'<div class="cdg-nota">Nenhum cliente neste filtro.</div>'}</div>
       <div class="cdf-card">${card}</div></div>
     <div class="cdg-nota" style="margin-top:8px">Atalhos: N copia o nome, C copia o telefone, Enter vai para o próximo, U desfaz, S pula, setas navegam.</div>
@@ -24143,6 +24148,7 @@ document.addEventListener('keydown', e=>{
     else if(k==='c' && i && i.telefone){ cdAtvCopiar(String(i.telefone), null); toast('Telefone copiado.','success'); }
     else if(k==='enter' && i){ const p=cdFocoProximoId(i.id); if(p) cdFocoSelecionar(p); }
     else if(k==='u' && i && i.situacao!=='pendente'){ cdAtvDesfazer(i.id); }
+    else if(k==='u' && CD.atv.ultimo){ cdAtvDesfazer(CD.atv.ultimo.id); }
     else if(k==='s' || e.key==='ArrowDown'){ cdFocoMover(1); }
     else if(e.key==='ArrowUp'){ cdFocoMover(-1); }
     else return;
@@ -24155,7 +24161,9 @@ async function cdAtvDesfazer(itemId){
     const r = await cdAtvRpc('radar_atv_desfazer',{p_item:itemId});
     if(!r.ok){ toast(r.motivo,'warn'); return; }
     toast('Registro desfeito: o cliente voltou para "Para tratar".'+(r.promessas_canceladas?' A promessa foi cancelada.':''),'success');
+    if(CD.atv.ultimo && CD.atv.ultimo.id===itemId) CD.atv.ultimo = null;
     await cdAtvItensCarregar();
+    if(CD.atv.modo!=='lista') cdFocoSelecionar(itemId);
   }catch(e){ toast(e.message,'error'); }
 }
 window.cdAtvDesfazer = cdAtvDesfazer;
