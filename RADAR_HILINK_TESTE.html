@@ -2930,7 +2930,7 @@ body.radar-modo-atendente .topbar{display:none!important}
         <div class="nav-item" data-mod="cobrancaDia" onclick="go('cobrancaDia')">
           <span>Cobran&ccedil;a do Dia<small>dados autom&aacute;ticos do IXC, sem upload</small></span>
         </div>
-        <div class="nav-item disabled" data-mod="tecnica" onclick="go('tecnica')">
+        <div class="nav-item" data-mod="tecnica" onclick="go('tecnica')">
           <span>Sa&uacute;de da Rede<small>risco t&eacute;cnico, preven&ccedil;&atilde;o e fila NOC</small></span>
         </div>
         <div class="nav-item disabled" data-mod="carneCorreios" onclick="go('carneCorreios')">
@@ -2942,7 +2942,7 @@ body.radar-modo-atendente .topbar{display:none!important}
         <div class="nav-item" data-mod="propostas" onclick="go('propostas')">
           <span>Propostas Corporativas<small>CRM, viabilidade e proposta comercial</small></span>
         </div>
-        <div class="nav-item disabled" data-mod="acao" onclick="go('acao')">
+        <div class="nav-item" data-mod="acao" onclick="go('acao')">
           <span>Estrat&eacute;gia de Atua&ccedil;&atilde;o<small>prioridades, campanhas e plano de a&ccedil;&atilde;o</small></span>
         </div>
         <div class="nav-item" data-mod="relatorios" onclick="go('relatorios')">
@@ -10470,8 +10470,9 @@ function renderModuleError(mod,err){
 }
 function go(mod){
   // Premiação: sem base carregada, busca direto do IXC (banco) em vez de pedir upload
-  if(mod==='premiacoes' && !STATE.processed && typeof ixcCargaUsar==='function' && getRadarUser?.()){
-    if(!(IXC_CARGA && IXC_CARGA.carregando)){ toast('Buscando os dados da premiação direto do IXC...','success'); ixcCargaUsar(); }
+  // Módulos que usam a base do IXC: sem base carregada, busca direto do banco em vez de pedir upload
+  if(['premiacoes','tecnica','acao'].includes(mod) && !STATE.processed && typeof ixcCargaUsar==='function' && getRadarUser?.()){
+    if(!(IXC_CARGA && IXC_CARGA.carregando)){ toast('Buscando os dados direto do IXC...','success'); ixcCargaUsar(mod); }
     return;
   }
   if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='usuarios'&&!STATE.processed){toast('Processe a base primeiro','error');return}
@@ -24942,6 +24943,7 @@ const IXC_CARGA_TIPOS = [
   { key:'recebimentos', base:'receber_periodo',  label:'Recebimentos do período' },
   { key:'logins',       base:'logins',           label:'Conexões dos clientes (logins)' },
   { key:'alteracoes',   base:'alteracoes_plano', label:'Alterações contratuais' },
+  { key:'fibra',        base:'fibra',            label:'ONUs da fibra (sinal, temperatura, quedas)' },
 ];
 function ixcFmtDataHora(v){ if(!v) return '—'; const d=new Date(v); return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function ixcEsc(s){ return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -25019,7 +25021,7 @@ async function ixcCargaBuscar(sb, tipo, onProgresso){
   }
   return out;
 }
-async function ixcCargaUsar(){
+async function ixcCargaUsar(destino){
   const sb=getSB(); if(!sb) return;
   if(IXC_CARGA.carregando) return;
   IXC_CARGA.carregando=true; ixcCargaRender();
@@ -25039,7 +25041,7 @@ async function ixcCargaUsar(){
     renderModuleUnlocks();
     toast('Dados do IXC carregados. Analisando…','success');
     await processCampaign();
-    if(STATE.processed && typeof go==='function') go('premiacoes');
+    if(STATE.processed && typeof go==='function') go(destino||'premiacoes');
   }catch(e){ console.error(e); toast('Erro ao carregar do IXC: '+e.message,'error'); }
   finally{ IXC_CARGA.carregando=false; document.getElementById('loading').classList.remove('show'); ixcCargaRender(); }
 }
