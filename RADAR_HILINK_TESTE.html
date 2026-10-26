@@ -24108,14 +24108,10 @@ function cdAreaFocoHTML(){
         <div class="cdg-botoes">${acoes.map(s=>s==='nao_cobrar'
           ? `<button type="button" class="cdg-acao ${s} ${A.motivoAberto===i.id?'ativo':''}" onclick="CD.atv.motivoAberto=(CD.atv.motivoAberto===${i.id}?null:${i.id});renderCobrancaDia()">${cdAtvRotuloAcao(a.tipo,s)}</button>`
           : `<button type="button" class="cdg-acao ${s}" onclick="cdAtvRegistrar(${i.id},'${s}')">${cdAtvRotuloAcao(a.tipo,s)}</button>`).join('')}
-          ${i.situacao!=='pendente'
-            ? `<button type="button" class="cdg-acao desfazer" onclick="cdAtvDesfazer(${i.id})" title="Volta este cliente para Para tratar">Desfazer <kbd>U</kbd></button>`
-            : A.ultimo ? `<button type="button" class="cdg-acao desfazer" onclick="cdAtvDesfazer(${A.ultimo.id})" title="Desfaz o último registro: ${cdEsc(A.ultimo.nome)}">Desfazer último <kbd>U</kbd></button>`
-            : `<button type="button" class="cdg-acao desfazer" disabled title="Ainda não há registro para desfazer">Desfazer</button>`}</div>
+          ${i.situacao!=='pendente' ? `<button type="button" class="cdg-acao desfazer" onclick="cdAtvDesfazer(${i.id})" title="Volta este cliente para Para tratar">Desfazer <kbd>U</kbd></button>` : ''}</div>
         ${A.motivoAberto===i.id?`<div class="cdg-motivos"><span class="cdg-nota" style="margin:0">Qual o motivo?</span>${(CD_ATV_MOTIVOS[a.tipo]||CD_ATV_MOTIVOS.cobrar).map(m=>`<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'${cdEsc(m)}')">${cdEsc(m)}</button>`).join('')}<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'')">Outro (escrever na observação)</button></div>`:''}`:''}
       <div class="cdf-rodape">
         ${i.situacao!=='pendente'?`<span class="cdf-feito">Feito${i.tratado_por_nome?' por '+cdEsc(String(i.tratado_por_nome).split(' ')[0]):''}${i.tratado_em?' em '+new Date(i.tratado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}</span>`:''}
-        ${i.situacao!=='pendente'&&!i.resolvido_ixc&&a.status!=='encerrada'?`<button type="button" class="btn sm" onclick="cdAtvDesfazer(${i.id})">Desfazer <kbd>U</kbd></button>`:''}
         <span style="flex:1"></span>
         <button type="button" class="btn sm" onclick="cdFocoMover(1)">Pular <kbd>S</kbd></button>
         <button type="button" class="btn sm primary" onclick="const p=cdFocoProximoId(${i.id}); if(p) cdFocoSelecionar(p); else toast('Não há mais clientes livres para tratar.','success')">Próximo cliente <kbd>Enter</kbd></button>
