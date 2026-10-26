@@ -23895,7 +23895,7 @@ const CD_ATV_COMO = {
     'Registre o resultado: <b>Contatado</b>, <b>Sem resposta</b>, <b>Número errado</b>, <b>Prometeu pagar</b> (escolha a data) ou <b>Negociando</b>.',
     'Se registrar errado, use <b>Desfazer</b>.'],
   quebra: ['Copie o nome e abra o cliente no IXC: Contrato, aba <b>Financeiro</b>.',
-    'Veja se existe uma fatura <b>mais nova já paga</b> enquanto esta mais antiga continua aberta.',
+    'Confira: a fatura indicada como <b>já paga</b> é mais nova que o boleto em aberto. O cliente pagou fora de ordem.',
     'Se existir: troque a fatura no IXC e marque <b>Corrigido no IXC</b>.',
     'Se o cliente <b>não pagou nenhuma fatura</b> (todas abertas), não é erro de fatura, é inadimplência: marque <b>Não precisa corrigir</b> e escreva "cliente não pagou".'],
   suspeitos: ['Copie o nome e abra o título no IXC.', 'Corrija o valor ou cancele o título se estiver errado e marque <b>Corrigido no IXC</b>.', 'Se o valor estiver certo, marque <b>Não precisa corrigir</b> e diga o motivo.'],
@@ -23926,7 +23926,7 @@ function cdAtvCopiar(txt, btn){
 function cdAtvDetalhe(tipo, i){
   const d = i.detalhe||{};
   if(tipo==='cobrar') return `${d.boletos||1} boleto(s), mais antigo de ${cdData(d.vencimento_mais_antigo)}`;
-  if(tipo==='quebra') return `Contrato ${d.id_contrato}, boleto ${d.id_titulo} de ${cdData(d.vencimento)} em aberto, pago até ${cdData(d.pago_ate)}`;
+  if(tipo==='quebra') return d.ultimo_pago_venc ? `Contrato ${d.id_contrato}: boleto ${d.id_titulo} de ${cdData(d.vencimento)} está <b>em aberto</b>, mas a fatura de ${cdData(d.ultimo_pago_venc)} (mais nova) <b>já foi paga</b>${d.ultimo_pagamento?' em '+cdData(d.ultimo_pagamento):''}` : `Contrato ${d.id_contrato}, boleto ${d.id_titulo} de ${cdData(d.vencimento)} em aberto, pago até ${cdData(d.pago_ate)}`;
   if(tipo==='suspeitos') return `Título ${d.id_titulo} de ${cdData(d.vencimento)}: ${cdEsc(d.problema||'')}`;
   if(tipo==='recolhimento_atd') return `OS ${cdEsc(d.os||'')} · ${cdEsc(d.tarefa||'')} · aberta em ${cdData(d.abertura)}${d.bairro?' · '+cdEsc(d.bairro):''}`;
   if(tipo==='avencer') return `Vence em ${cdData(d.vencimento)}${d.email?' · '+cdEsc(d.email):''}`;
