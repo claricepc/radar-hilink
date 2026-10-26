@@ -113,6 +113,7 @@ async function radarLogin(){
   document.getElementById('radar-login-overlay').style.display='none';
   renderUserBadge();
   radarUpsertCurrentUser();
+  if(typeof radarAplicarPerfil==='function') radarAplicarPerfil();
 }
 
 function showLoginError(msg){
@@ -358,6 +359,7 @@ async function initRadarAuth(){
     document.getElementById('radar-login-overlay').style.display='none';
     renderUserBadge();
     radarUpsertCurrentUser();
+    if(typeof radarAplicarPerfil==='function') radarAplicarPerfil();
   }
   // Se nao tem sessao, overlay permanece visivel
 }
@@ -2535,6 +2537,211 @@ h2.section-title .info-btn{margin-left:6px}
 .cd-passos{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 2px;font-size:12px;opacity:.85}
 .cd-passos span{border:1px solid rgba(90,150,220,.45);border-radius:999px;padding:4px 10px}
 @media (max-width:760px){.cd-atalho{flex-direction:column;align-items:flex-start}}
+/* ===== Cobrança do Dia: guia de gestão (só apresentação; números vêm das mesmas listas do módulo) ===== */
+#mod-cobrancaDia{--g-bg:#0B1B2B;--g-card:#0E2236;--g-card2:#11283F;--g-line:rgba(143,163,184,.20);--g-text:#F2F5F8;--g-sub:#B4C2D0;--g-muted:#8FA3B8;--g-blue:#4DA3E0;--g-risk:#FF6B70;--g-risk-bg:rgba(229,72,77,.10);--g-warn:#FFB84D;--g-warn-bg:rgba(245,165,36,.09);--g-ok:#4CC38A;--g-ok-bg:rgba(48,164,108,.10);--g-info-bg:rgba(77,163,224,.09)}
+.cdg{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
+.cdg-status{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 14px;border:1px solid var(--g-line);border-radius:10px;background:var(--g-card);font-size:12px;color:var(--g-sub)}
+.cdg-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-weight:700;font-size:11px;letter-spacing:.02em}
+.cdg-pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.cdg-pill.ok{color:var(--g-ok);background:var(--g-ok-bg)}
+.cdg-pill.warn{color:var(--g-warn);background:var(--g-warn-bg)}
+.cdg-pill.risk{color:var(--g-risk);background:var(--g-risk-bg)}
+.cdg-status .cdg-sp{flex:1}
+.cdg-resumo{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px}
+@media (max-width:1100px){.cdg-resumo{grid-template-columns:1fr}}
+.cdg-box{background:var(--g-card);border:1px solid var(--g-line);border-radius:12px;padding:16px 18px;min-width:0}
+.cdg-eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--g-muted);margin-bottom:8px}
+.cdg-narrativa{font-size:14.5px;line-height:1.6;color:var(--g-text);max-width:78ch}
+.cdg-narrativa p+p{margin-top:8px}
+.cdg-narrativa b{color:#fff}
+.cdg-narrativa .r{color:var(--g-risk);font-weight:700}
+.cdg-numeros{display:flex;flex-direction:column;gap:8px}
+.cdg-num{background:var(--g-card2);border-radius:10px;padding:10px 14px;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:12px}
+.cdg-num .v{grid-column:2;grid-row:1 / span 2;text-align:right;margin-top:0;white-space:nowrap;overflow-wrap:normal}
+.cdg-num .l{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--g-muted)}
+.cdg-num .v{font-size:20px;font-weight:800;color:var(--g-text);line-height:1.2;font-variant-numeric:tabular-nums}
+.cdg-num .s{font-size:11.5px;color:var(--g-sub);margin-top:2px}
+.cdg-num.risk .v{color:var(--g-risk)}
+.cdg-num.ok .v{color:var(--g-ok)}
+.cdg-delta{font-weight:700}
+.cdg-delta.down{color:var(--g-ok)}
+.cdg-delta.up{color:var(--g-risk)}
+.cdg-colunas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start}
+@media (max-width:1280px){.cdg-colunas{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.cdg-colunas{grid-template-columns:1fr}}
+.cdg-col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.cdg-col-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 2px 6px;border-bottom:2px solid var(--g-line)}
+.cdg-col-h h3{font-size:13px;font-weight:800;color:var(--g-text);letter-spacing:.01em}
+.cdg-col-h span{font-size:11px;color:var(--g-muted)}
+.cdg-col.agir .cdg-col-h{border-bottom-color:#E5484D}
+.cdg-col.corrigir .cdg-col-h{border-bottom-color:#F5A524}
+.cdg-col.planejar .cdg-col-h{border-bottom-color:#4DA3E0}
+.cdg-col.atencao .cdg-col-h{border-bottom-color:#8FA3B8}
+.cdg-item{background:var(--g-card);border:1px solid var(--g-line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.cdg-item .t{display:flex;gap:8px;align-items:flex-start;font-size:13px;font-weight:700;color:var(--g-text);line-height:1.35}
+.cdg-passo{flex:0 0 auto;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;background:rgba(229,72,77,.18);color:var(--g-risk)}
+.cdg-item .n{font-size:19px;font-weight:800;color:var(--g-text);font-variant-numeric:tabular-nums;line-height:1.2}
+.cdg-item .n small{font-size:12px;font-weight:600;color:var(--g-sub);margin-left:4px}
+.cdg-item .p{font-size:12px;color:var(--g-sub);line-height:1.45}
+.cdg-item .p b{color:var(--g-text)}
+.cdg-item .c{font-size:11.5px;color:var(--g-muted);line-height:1.45}
+.cdg-item .c b{color:var(--g-sub)}
+.cdg-item button.cdg-ir{align-self:flex-start;margin-top:2px;background:transparent;border:1px solid rgba(77,163,224,.55);color:var(--g-blue);border-radius:7px;padding:5px 10px;font-size:11.5px;font-weight:700;cursor:pointer}
+.cdg-item button.cdg-ir:hover{background:rgba(77,163,224,.12)}
+.cdg-item button.cdg-ir:focus-visible{outline:2px solid var(--g-blue);outline-offset:2px}
+.cdg-item button.cdg-ir[disabled]{opacity:.5;cursor:default}
+.cdg-item.agir{border-left:3px solid #E5484D}
+.cdg-item.corrigir{border-left:3px solid #F5A524}
+.cdg-item.planejar{border-left:3px solid #4DA3E0}
+.cdg-item.vazio{opacity:.7}
+.cdg-alerta{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:var(--g-card);border:1px solid var(--g-line);font-size:12px;color:var(--g-sub);line-height:1.45}
+.cdg-alerta b{color:var(--g-text)}
+.cdg-alerta i{flex:0 0 auto;width:8px;height:8px;border-radius:50%;margin-top:5px;background:var(--g-muted)}
+.cdg-alerta.risk{background:var(--g-risk-bg);border-color:rgba(229,72,77,.35)}
+.cdg-alerta.risk i{background:var(--g-risk)}
+.cdg-alerta.warn{background:var(--g-warn-bg);border-color:rgba(245,165,36,.30)}
+.cdg-alerta.warn i{background:var(--g-warn)}
+.cdg-alerta.ok i{background:var(--g-ok)}
+.cdg-360{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px}
+@media (max-width:1100px){.cdg-360{grid-template-columns:1fr}}
+.cdg-barra{display:flex;height:18px;border-radius:6px;overflow:hidden;background:var(--g-card2);margin:4px 0 12px}
+.cdg-barra button{border:0;padding:0;cursor:pointer;min-width:3px}
+.cdg-barra button:focus-visible{outline:2px solid #fff;outline-offset:-2px}
+.cdg-leg{display:flex;flex-direction:column;gap:2px}
+.cdg-leg button{display:grid;grid-template-columns:12px minmax(0,1fr) auto auto;gap:10px;align-items:center;background:transparent;border:0;border-radius:6px;padding:7px 6px;color:var(--g-sub);font-size:12px;text-align:left;cursor:pointer}
+.cdg-leg button:hover{background:var(--g-card2)}
+.cdg-leg button:focus-visible{outline:2px solid var(--g-blue)}
+.cdg-leg i{width:12px;height:12px;border-radius:3px}
+.cdg-leg .nm{color:var(--g-text);font-weight:600}
+.cdg-leg .nm small{display:block;color:var(--g-muted);font-weight:400;font-size:11px}
+.cdg-leg .vl{font-variant-numeric:tabular-nums;color:var(--g-text);font-weight:700;text-align:right}
+.cdg-leg .pc{font-variant-numeric:tabular-nums;color:var(--g-muted);width:42px;text-align:right}
+.cdg-nota{font-size:11.5px;color:var(--g-muted);margin-top:8px;line-height:1.45}
+.cdg-tab{width:100%;border-collapse:collapse;font-size:12px}
+.cdg-tab th{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--g-muted);text-align:right;padding:6px 8px;border-bottom:1px solid var(--g-line);white-space:nowrap}
+.cdg-tab th:first-child,.cdg-tab td:first-child{text-align:left}
+.cdg-tab td{padding:7px 8px;border-bottom:1px solid rgba(143,163,184,.10);text-align:right;color:var(--g-sub);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cdg-tab td:first-child{color:var(--g-text);font-weight:600}
+.cdg-tab td.bar{width:28%;min-width:90px}
+.cdg-tab td.bar div{height:8px;border-radius:4px;background:#2B5C8A}
+.cdg-tab td.bar div span{display:block;height:100%;border-radius:4px;background:#E5484D}
+.cdg-tab tr.marca td{color:var(--g-muted);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;padding-top:12px;border-bottom:0}
+.cdg-tabwrap{overflow-x:auto}
+.cdg-estr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:1100px){.cdg-estr{grid-template-columns:1fr}}
+.cdg-estr .cdg-item .t{font-size:13.5px}
+.cdg-glos summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--g-blue);padding:2px 0}
+.cdg-glos summary:focus-visible{outline:2px solid var(--g-blue);outline-offset:2px}
+.cdg-glos dl{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr);gap:8px 16px;margin-top:12px;font-size:12px;line-height:1.5}
+@media (max-width:640px){.cdg-glos dl{grid-template-columns:1fr}}
+.cdg-glos dt{color:var(--g-text);font-weight:700}
+.cdg-glos dd{color:var(--g-sub);margin:0}
+@media (prefers-reduced-motion:reduce){#mod-cobrancaDia *{transition:none!important}}
+/* atividades da equipe */
+.cdg-botoes{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.cdg-item .cdg-botoes button.cdg-ir{margin-top:0}
+.cdg-ir.cdg-gerar{border-color:rgba(76,195,138,.55);color:var(--g-ok)}
+.cdg-ir.cdg-gerar:hover{background:rgba(48,164,108,.12)}
+.cdg-ir{background:transparent;border:1px solid rgba(77,163,224,.55);color:var(--g-blue);border-radius:7px;padding:5px 10px;font-size:11.5px;font-weight:700;cursor:pointer}
+.cdg-atv{display:flex;flex-direction:column;gap:10px}
+.cdg-atv-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 12px}
+.cdg-atv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+@media (max-width:640px){.cdg-atv-grid{grid-template-columns:1fr}}
+.cdg-atv-card{background:var(--g-card2);border:1px solid var(--g-line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.cdg-atv-card.atrasada{border-color:rgba(245,165,36,.45)}
+.cdg-atv-top{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
+.cdg-atv-top>div{min-width:0}
+.cdg-atv-tit{font-size:13.5px;font-weight:800;color:var(--g-text);overflow-wrap:anywhere}
+.cdg-atv-meta{font-size:11.5px;color:var(--g-muted);margin-top:2px}
+.cdg-atv-meta .r,.cdg-atv-nums .r,.cdg-fone.r{color:var(--g-risk)}
+.cdg-prog{display:flex;height:8px;border-radius:5px;background:rgba(143,163,184,.18);overflow:hidden}
+.cdg-sla{display:flex;flex-direction:column;gap:5px}
+.cdg-sla-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}
+.cdg-sla-pct{font-weight:700}
+.cdg-sla-chip{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.cdg-sla-chip.ok{background:rgba(48,164,108,.16);color:#1F8A57;border-color:rgba(48,164,108,.45)}
+.cdg-sla-chip.warn{background:rgba(245,165,36,.18);color:#B26F00;border-color:rgba(245,165,36,.55)}
+.cdg-sla-chip.risk{background:rgba(229,72,77,.16);color:#D1343A;border-color:rgba(229,72,77,.5)}
+.cdg-sla-chip.neutro{background:rgba(143,163,184,.16);color:#6B7F95;border-color:rgba(143,163,184,.4)}
+.cdg-slabar{position:relative;height:10px;border-radius:6px;background:rgba(143,163,184,.25)}
+.cdg-slabar.grande{height:14px}
+.cdg-slabar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;transition:width .4s}
+.cdg-sla.ok .fill{background:#30A46C}.cdg-sla.warn .fill{background:#F5A524}.cdg-sla.risk .fill{background:#E5484D}.cdg-sla.neutro .fill{background:#8FA3B8}
+.cdg-slabar .marca{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;background:#0B2545;border-radius:2px;opacity:.8}
+.cdg-sla-dica{font-size:11.5px;line-height:1.35;opacity:.85}
+.cdg-sla.risk .cdg-sla-dica{color:#D1343A;font-weight:600;opacity:1}
+.cdg-atv-card.sla-risk{border-color:rgba(229,72,77,.6);box-shadow:inset 4px 0 0 #E5484D}
+.cdg-atv-card.sla-warn{border-color:rgba(245,165,36,.6);box-shadow:inset 4px 0 0 #F5A524}
+.cdg-atv-card.sla-ok{box-shadow:inset 4px 0 0 #30A46C}
+.cdg-sla-resumo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0 10px}
+.cdg-prog.grande{height:12px}
+.cdg-prog .ok{background:#30A46C}
+.cdg-prog .info{background:#4DA3E0}
+.cdg-atv-nums{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--g-sub)}
+.cdg-atv-nums b{color:var(--g-text);font-variant-numeric:tabular-nums}
+.cdg-aprov{background:var(--g-warn-bg);border:1px solid rgba(245,165,36,.30);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--g-sub);display:flex;flex-direction:column;gap:6px}
+.cdg-aprov b{color:var(--g-text)}
+.cdg-aprov-l{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;align-items:center}
+.cdg-modal{position:fixed;inset:0;background:rgba(3,10,20,.66);display:flex;align-items:center;justify-content:center;z-index:9000;padding:16px}
+.cdg-modal-box{background:#0E2236;border:1px solid rgba(143,163,184,.3);border-radius:14px;padding:20px 22px;width:min(520px,100%);max-height:90vh;overflow:auto;color:#F2F5F8}
+.cdg-modal-box h3{font-size:16px;font-weight:800;margin:0 0 6px}
+.cdg-modal-box .cdg-nota{color:#8FA3B8}
+.cdg-modal-box .cdg-nota b{color:#F2F5F8}
+.cdg-campo{display:flex;flex-direction:column;gap:4px;font-size:11.5px;font-weight:700;color:#B4C2D0;margin-bottom:10px}
+.cdg-campo input,.cdg-campo select{background:#0B1B2B;color:#F2F5F8;border:1px solid rgba(90,150,220,.55);border-radius:7px;padding:8px 10px;font-size:13px;font-weight:500}
+.cdg-campos2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:480px){.cdg-campos2{grid-template-columns:1fr}}
+.cdg-modal-acoes{display:flex;justify-content:flex-end;gap:8px}
+.cdg-area-h{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.cdg-area-res{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid rgba(143,163,184,.2);border-radius:10px;background:#0E2236;margin-bottom:12px}
+.cdg-area-f{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
+.cdg-area-f input{background:#0B1B2B;color:#fff;border:1px solid rgba(90,150,220,.55);border-radius:6px;padding:6px 8px;margin-left:auto;min-width:180px}
+@media (max-width:640px){.cdg-area-f input{margin-left:0;width:100%}}
+.cdg-it-lista{display:flex;flex-direction:column;gap:6px}
+.cdg-it{display:grid;grid-template-columns:minmax(0,1fr) 110px 190px 170px 130px;gap:6px 12px;align-items:center;padding:10px 12px;border:1px solid rgba(143,163,184,.18);border-radius:9px;background:#0E2236}
+.cdg-it.resolvido{opacity:.75}
+.cdg-it.aberto{border-color:rgba(77,163,224,.7);box-shadow:0 0 0 1px rgba(77,163,224,.35)}
+@media (max-width:1100px){.cdg-it{grid-template-columns:minmax(0,1fr) auto}.cdg-it .cdg-fone,.cdg-it .cdg-chip{justify-self:start}}
+.cdg-it-l{min-width:0}
+.cdg-it-nome{font-size:13px;font-weight:700;color:#F2F5F8;overflow-wrap:anywhere}
+.cdg-it-nome small{font-weight:500;color:#8FA3B8;font-size:11px;margin-left:4px}
+.cdg-it-det{font-size:11.5px;color:#B4C2D0;margin-top:2px;overflow-wrap:anywhere}
+.cdg-it-v{font-size:13px;font-weight:800;color:#F2F5F8;text-align:right;font-variant-numeric:tabular-nums}
+.cdg-it-v small{display:block;font-size:11px;font-weight:500;color:#8FA3B8}
+.cdg-fone{font-size:12px;color:#B4C2D0;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cdg-mini{background:transparent;border:1px solid rgba(143,163,184,.4);color:#B4C2D0;border-radius:6px;padding:2px 7px;font-size:10.5px;font-weight:700;cursor:pointer}
+.cdg-chip{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(143,163,184,.16);color:#B4C2D0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.cdg-chip.ok{background:rgba(48,164,108,.16);color:#4CC38A}
+.cdg-chip.info{background:rgba(77,163,224,.16);color:#7CC0EE}
+.cdg-chip.warn{background:rgba(245,165,36,.14);color:#FFB84D}
+.cdg-chip.risk{background:rgba(229,72,77,.16);color:#FF8A8E}
+.cdg-it-acoes{grid-column:1 / -1;display:flex;flex-direction:column;gap:8px;padding-top:8px;border-top:1px solid rgba(143,163,184,.15)}
+.cdg-it-acoes input[type=text]{background:#0B1B2B;color:#fff;border:1px solid rgba(90,150,220,.55);border-radius:6px;padding:7px 9px;font-size:12.5px;width:100%}
+.cdg-prom{font-size:12px;color:#B4C2D0;display:flex;align-items:center;gap:8px}
+.cdg-prom input{background:#0B1B2B;color:#fff;border:1px solid rgba(90,150,220,.55);border-radius:6px;padding:5px 8px}
+.cdg-acao{border:1px solid rgba(143,163,184,.45);background:#11283F;color:#F2F5F8;border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.cdg-acao:hover{border-color:#4DA3E0}
+.cdg-acao.contatado,.cdg-acao.corrigido{border-color:rgba(76,195,138,.6);color:#4CC38A}
+.cdg-acao.prometeu,.cdg-acao.negociando{border-color:rgba(77,163,224,.6);color:#7CC0EE}
+.cdg-acao.sem_resposta,.cdg-acao.numero_errado{border-color:rgba(245,165,36,.5);color:#FFB84D}
+.cdg-acao:focus-visible,.cdg-mini:focus-visible,.cdg-ir:focus-visible{outline:2px solid #4DA3E0;outline-offset:2px}
+.cdg-it{grid-template-columns:minmax(0,1fr) 100px 190px 210px 140px}
+.cdg-chip{white-space:normal;text-overflow:clip}
+@media (max-width:1100px){.cdg-it{grid-template-columns:minmax(0,1fr) auto}}
+@media (max-width:640px){.cdg-area-h>div{flex:1 1 100%!important;order:-1}.cdg-area-h .btn{flex:1 1 auto}}
+.cdg-pessoas{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px 12px;padding:8px 10px;border:1px solid rgba(90,150,220,.35);border-radius:8px;background:#0B1B2B;font-weight:500;color:#F2F5F8}
+.cdg-pessoas small{color:#8FA3B8}
+/* modo atendente: só a área de atividades */
+body.radar-modo-atendente .sidebar nav .nav-item:not([data-mod="cobrancaDia"]),
+body.radar-modo-atendente .sidebar .nav-section,
+body.radar-modo-atendente .sidebar .nav-note,
+body.radar-modo-atendente .topbar .badge,
+body.radar-modo-atendente .topbar button{display:none!important}
+.cdg-atv-bts{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:0 0 auto}
+.cdg-mini.perigo{border-color:rgba(229,72,77,.7);color:#FF8A8E}
+body.radar-modo-atendente .topbar{display:none!important}
+.radar-tema-btn{display:block;margin:14px 12px 18px;width:calc(100% - 24px);padding:8px 10px;border-radius:8px;border:1px solid rgba(90,150,220,.45);background:transparent;color:#B4C2D0;font-size:12px;font-weight:700;cursor:pointer}
+.radar-tema-btn:hover{border-color:#4DA3E0}
 </style>
 </head>
 <body>
@@ -22883,9 +23090,10 @@ const CD_ABAS = {
   cobrar:           { titulo:'Cobrar',               fonte:'clientes_vencidos', desc:'Clientes com boleto vencido, um por linha. "Dias de atraso" conta pelo boleto mais antigo, que é o que define o bloqueio. Já exclui Filial 10 e títulos suspeitos.' },
   recolhimento_atd: { titulo:'Agendar recolhimento', fonte:'recolhimento_atd',  desc:'OS abertas de recolhimento de equipamento com tarefa ATD (agendamento ou reagendamento): contato das atendentes.' },
   quebra:           { titulo:'Quebra financeira',    fonte:'quebra',            desc:'Boleto antigo em aberto, mas o contrato já está pago até uma data posterior: o cliente pagou a fatura mais nova. Cliente recente: trocar a fatura no IXC (já sai da lista de cobrança). Contrato antigo: segue para a cobrança normal.' },
-  avencer:          { titulo:'Lembrar vencimento',   fonte:'avencer',           desc:'Clientes com boleto vencendo nos próximos 6 dias (sem Filial 10). Lista para o lembrete preventivo, antes de virar atraso.' },
+  avencer:          { titulo:'Lembrar vencimento',   fonte:'avencer',           desc:'Clientes com boleto vencendo nos próximos 6 dias (sem Filial 10). O lembrete antes do vencimento é só por e-mail: não fazemos pré-cobrança por WhatsApp por causa do custo da Meta. "Exportar e-mails" leva só quem tem e-mail útil.' },
   sem_email:        { titulo:'Cadastrar e-mail',     fonte:'sem_email',         desc:'Clientes ativos sem e-mail ou com e-mail falso/genérico. Lista para a campanha de cadastro de e-mail, que permite mandar o boleto sem custo.' },
-  suspeitos:        { titulo:'Corrigir no IXC',      fonte:'suspeitos',         desc:'Títulos em aberto com valor zerado, muito alto ou acumulando mensalidades. Corrigir no IXC antes de cobrar.' }
+  suspeitos:        { titulo:'Corrigir no IXC',      fonte:'suspeitos',         desc:'Títulos em aberto com valor zerado, muito alto ou acumulando mensalidades. Corrigir no IXC antes de cobrar.' },
+  gerados_vencidos: { titulo:'Boleto gerado vencido', fonte:'gerados_vencidos', desc:'Boletos emitidos no dia do vencimento ou depois dele, nos últimos 90 dias (sem Filial 10). O cliente não teve prazo para pagar: conferir o cadastro, a ativação ou o faturamento e ajustar o vencimento no IXC antes de cobrar.' }
 };
 const cdMoeda = v => (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const cdNum = v => (Number(v)||0).toLocaleString('pt-BR');
@@ -22908,12 +23116,13 @@ async function cdCarregar(){
   if(!session){ toast('Faça login no Radar para carregar os dados do banco','error'); return; }
   document.getElementById('loading').classList.add('show');
   try{
-    const tipos = ['resumo','clientes_vencidos','recolhimento_atd','quebra','suspeitos','avencer','sem_email'];
+    const tipos = ['resumo','clientes_vencidos','recolhimento_atd','quebra','suspeitos','avencer','sem_email','gerados_vencidos'];
     const res = await Promise.all(tipos.map(t => sb.rpc('radar_cobranca',{ p_tipo:t })));
     res.forEach((r,i)=>{ if(r.error) throw new Error(r.error.message); CD.dados[tipos[i]] = r.data; });
     CD.carregadoEm = new Date();
     try{ const u = await sb.rpc('radar_ultima_carga_titulos'); if(!u.error) CD.titulosEm = u.data ? new Date(u.data) : null; }catch(e){}
     renderCobrancaDia();
+    cdAtvCarregar();
   }catch(e){
     console.error('[Radar] Cobrança do dia',e);
     toast('Erro ao carregar do banco: '+e.message,'error');
@@ -23012,9 +23221,838 @@ function cdIrLista(aba, preset){
   const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function cdIrAba(k){ CD.aba=k; renderCobrancaDia(); const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
+// ---- Guia de gestão da Cobrança do Dia ----
+// Só apresentação. Todo número vem de CD.dados (mesmas consultas do módulo) e,
+// quando um item abre uma lista, o número é calculado com o mesmo filtro dessa lista.
+function cdPct(a, b){ return b>0 ? Math.round(100*a/b) : 0; }
+function cdHojeISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function cdGuiaDados(){
+  const r = CD.dados.resumo || {};
+  const cv = Array.isArray(CD.dados.clientes_vencidos) ? CD.dados.clientes_vencidos : [];
+  const filtroPreset = k => cdFiltrarCobrar(cv, { ...CD.f, ...CD_PRESETS[k].f, valorMin:'', valorMax:'', busca:'', soComTelefone:false });
+  const soma = l => l.reduce((a,x)=>a+(Number(x.valor)||0),0);
+  const g = { r, cv };
+  ['pre','d6_30','d31_90','d90','todos'].forEach(k => { const l = filtroPreset(k); g[k] = { linhas:l, clientes:l.length, valor:soma(l) }; });
+  g.cobraveis = cv.filter(x => !x.exclusao && x.habilitado_cobranca);
+  g.fora = cv.length - g.cobraveis.length;
+  g.motivosFora = {};
+  const rotulo = m => /confian/i.test(m) ? 'com liberação em confiança' : /recolhimento|cancelamento/i.test(m) ? 'com OS de recolhimento ou cancelamento' : /quebra/i.test(m) ? 'com fatura para trocar (quebra financeira)' : /promessa/i.test(m) ? 'com promessa de pagamento no prazo' : m;
+  cv.forEach(x => {
+    const ms = String(x.exclusao||'').split(';').map(s=>s.trim()).filter(Boolean).map(rotulo);
+    if(!x.habilitado_cobranca) ms.push('não habilitados para cobrança no IXC');
+    [...new Set(ms)].forEach(m => { g.motivosFora[m] = (g.motivosFora[m]||0)+1; });
+  });
+  g.preSemFone = g.pre.linhas.filter(x => !cdFoneOpa(x.telefone)).length;
+  // filiais e marcas (base: todos os vencidos, igual ao total)
+  const fil = {};
+  cv.forEach(x => { const k = x.filial||'Sem filial'; const o = fil[k] ||= { filial:k, marca:x.marca||'Sem marca', valor:0, clientes:0, pre:0, preClientes:0 }; o.valor += Number(x.valor)||0; o.clientes++; });
+  g.pre.linhas.forEach(x => { const o = fil[x.filial||'Sem filial']; if(o){ o.pre += Number(x.valor)||0; o.preClientes++; } });
+  g.filiais = Object.values(fil).sort((a,b)=>b.valor-a.valor);
+  g.semMarca = g.filiais.filter(f => /^Filial \d+/.test(f.marca));
+  // demais listas
+  const av = CD.dados.avencer || [], rec = CD.dados.recolhimento_atd || [], qbL = CD.dados.quebra || [], spL = CD.dados.suspeitos || [], se = CD.dados.sem_email || [];
+  const temEmail = x => x.email_util===true;
+  g.av = { clientes:av.length, valor:soma(av), hoje:av.filter(x=>x.dias_para_vencer===0).length, ate2:av.filter(x=>x.dias_para_vencer<=2).length,
+    comEmail:av.filter(temEmail).length, semEmail:av.filter(x=>!temEmail(x)).length, valorSemEmail:soma(av.filter(x=>!temEmail(x))),
+    ate2Email:av.filter(x=>x.dias_para_vencer<=2 && temEmail(x)).length };
+  g.rec = { clientes:rec.length, os:rec.reduce((t,x)=>t+String(x.os||'').split('/').filter(Boolean).length,0), mais30:rec.filter(x=>Number(x.dias_aberta)>30).length, comDebito:rec.filter(x=>Number(x.valor_vencido)>0).length };
+  const recentes = qbL.filter(x=>/^Corrigir/.test(x.tratamento||'')), antigos = qbL.filter(x=>/^Cobrar/.test(x.tratamento||''));
+  g.qb = { recentes:new Set(recentes.map(x=>x.id_contrato)).size, recentesValor:recentes.reduce((a,x)=>a+(Number(x.valor_aberto)||0),0),
+           antigos:new Set(antigos.map(x=>x.id_contrato)).size, antigosValor:antigos.reduce((a,x)=>a+(Number(x.valor_aberto)||0),0) };
+  g.sp = { qt:spL.length, vazio:spL.filter(x=>/vazio/.test(x.problema||'')).length, zerado:spL.filter(x=>/zerad/.test(x.problema||'')).length,
+           alto:spL.filter(x=>/alto/.test(x.problema||'')).length, acumulo:spL.filter(x=>/acumulo|acúmulo/.test(x.problema||'')).length };
+  const gv = Array.isArray(CD.dados.gerados_vencidos) ? CD.dados.gerados_vencidos : [];
+  const prIds = new Set(g.pre.linhas.map(x=>x.id_cliente));
+  g.gv = { qt:gv.length, valor:soma(gv), clientes:new Set(gv.map(x=>x.id_cliente)).size,
+    novos:gv.filter(x=>/novo/.test(x.tipo||'')).length, passadas:gv.filter(x=>/passada/.test(x.tipo||'')).length,
+    noPre:new Set(gv.filter(x=>prIds.has(x.id_cliente)).map(x=>x.id_cliente)).size };
+  g.se = { clientes:se.length, pct: r.email_base ? cdPct(r.email_base.com_email_util, r.email_base.clientes) : null };
+  g.pag = { qt:Number(r.pagamentos_qt)||0, valor:Number(r.pagamentos_valor)||0, atraso:Number(r.pagamentos_em_atraso)||0, dia:r.pagamentos_dia };
+  g.pag.pctAtraso = cdPct(g.pag.atraso, g.pag.qt);
+  g.delta = (r.vencido_total!=null && r.vencido_ontem!=null) ? Number(r.vencido_total)-Number(r.vencido_ontem) : null;
+  g.semana = (r.vencido_total!=null && r.vencido_semana_passada!=null) ? Number(r.vencido_total)-Number(r.vencido_semana_passada) : null;
+  g.cobravelValor = g.pre.valor + g.d6_30.valor + g.d31_90.valor + g.d90.valor;
+  g.pct90 = cdPct(g.d90.valor, g.cobravelValor);
+  g.topFilial = g.filiais[0] || null;
+  g.pctTop = g.topFilial ? cdPct(g.topFilial.valor, g.todos.valor) : 0;
+  g.leituraHoje = String(r.data||'').slice(0,10) === cdHojeISO();
+  g.cargaErros = (r.ultima_carga||[]).filter(c => c.erro && c.tipo!=='filiais');
+  g.conferido = CD.titulosEm || CD.carregadoEm;
+  return g;
+}
+
+function cdItem(o){
+  return `<div class="cdg-item ${o.tom||''} ${o.vazio?'vazio':''}">
+    <div class="t">${o.passo?`<span class="cdg-passo">${o.passo}</span>`:''}<span>${o.titulo}</span></div>
+    ${o.numero!==undefined?`<div class="n">${o.numero}${o.unid?`<small>${o.unid}</small>`:''}</div>`:''}
+    ${o.porque?`<div class="p">${o.porque}</div>`:''}
+    ${o.como?`<div class="c">${o.como}</div>`:''}
+    ${(o.acao||(o.atv&&cdPodeGerenciar()))?`<div class="cdg-botoes">${o.acao?`<button type="button" class="cdg-ir" onclick="${o.acao[1]}" ${o.acao[2]?'disabled':''}>${o.acao[0]}</button>`:''}${o.atv&&cdPodeGerenciar()?`<button type="button" class="cdg-ir cdg-gerar" onclick="cdAtvNova('${o.atv[0]}','${o.atv[1]||''}')">Gerar atividade</button>`:''}</div>`:''}
+  </div>`;
+}
+function cdAlerta(tom, html){ return `<div class="cdg-alerta ${tom}"><i></i><div>${html}</div></div>`; }
+
+function cdGuiaHTML(){
+  const g = cdGuiaDados(), r = g.r;
+  const hora = g.conferido ? g.conferido.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '-';
+  const dataLeitura = cdData(r.data);
+
+  // 1. Status da leitura
+  let pill;
+  if(!g.leituraHoje) pill = `<span class="cdg-pill risk">Dados de ${dataLeitura}, a leitura de hoje não chegou</span>`;
+  else if(g.cargaErros.length) pill = `<span class="cdg-pill warn">Leitura de hoje com erro em ${g.cargaErros.map(c=>cdEsc(c.tipo)).join(', ')}</span>`;
+  else pill = `<span class="cdg-pill ok">Leitura de hoje completa</span>`;
+  const status = `<div class="cdg-status">${pill}
+    <span>Leitura do IXC de <b>${dataLeitura}</b>. Pagamentos conferidos às <b>${hora}</b>.</span>
+    <span class="cdg-sp"></span>
+    <span>Quem pagou depois disso ainda aparece nas listas.</span>
+  </div>`;
+
+  // 2. Resumo em texto
+  const delta = g.delta===null ? '' : (Math.abs(g.delta) < 0.005 ? ' O valor está igual ao da leitura anterior.'
+    : ` Desde a leitura anterior, o vencido <span class="cdg-delta ${g.delta<0?'down':'up'}">${g.delta<0?'caiu':'subiu'} ${cdMoeda(Math.abs(g.delta))}</span>.`);
+  const p1 = `Hoje há <b>${cdMoeda(g.todos.valor)}</b> vencidos, de <b>${cdNum(g.todos.clientes)} clientes</b>.${delta}`;
+  const p2 = g.pre.clientes
+    ? `A prioridade do dia é cobrar <span class="r">${cdNum(g.pre.clientes)} clientes com 1 a 5 dias de atraso</span> (${cdMoeda(g.pre.valor)}). Depois de cerca de 5 dias úteis o IXC bloqueia a internet deles, e cada bloqueio vira ligação, desgaste e risco de cancelamento.`
+    : `Não há clientes cobráveis com 1 a 5 dias de atraso hoje.`;
+  const p3 = g.pag.qt
+    ? `No último dia carregado (${cdData(g.pag.dia)}) entraram <b>${cdMoeda(g.pag.valor)}</b> em ${cdNum(g.pag.qt)} pagamentos, e ${g.pag.pctAtraso}% deles foram pagos depois do vencimento.`
+    : `Não há pagamentos carregados do último dia.`;
+  const p4 = g.pct90>=30 ? `${g.pct90}% do valor cobrável está parado há mais de 90 dias. Esse dinheiro precisa de uma régua própria de recuperação, separada da cobrança do dia.` : '';
+  const resumo = `<div class="cdg-resumo">
+    <div class="cdg-box"><div class="cdg-eyebrow">O dia em poucas linhas</div>
+      <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p><p>${p3}</p>${p4?`<p>${p4}</p>`:''}</div></div>
+    <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
+      <div class="cdg-numeros">
+        <div class="cdg-num risk"><div class="l">Antes do bloqueio</div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, 1 a 5 dias</div></div>
+        <div class="cdg-num"><div class="l">Vencido total</div><div class="v">${cdMoeda(g.todos.valor)}</div><div class="s">${cdNum(g.todos.clientes)} clientes, sem Filial 10</div></div>
+        <div class="cdg-num ok"><div class="l">Recebido em ${cdData(g.pag.dia)}</div><div class="v">${cdMoeda(g.pag.valor)}</div><div class="s">${cdNum(g.pag.qt)} pagamentos</div></div>
+      </div>
+      <div class="cdg-nota">Vencido total soma todos os clientes com boleto vencido, inclusive quem está fora da cobrança. Antes do bloqueio conta só quem pode ser cobrado hoje.</div>
+    </div>
+  </div>`;
+
+  // 3. Quatro colunas: agir, corrigir, planejar, ficar atenta
+  const agir = [
+    cdItem({tom:'agir', passo:1, titulo:'Conferir quem pagou depois das 4h', numero:hora, unid:'última conferência',
+      porque:'Evita cobrar quem já pagou hoje cedo.', como:'Pode ser feito a cada 15 minutos. Leva cerca de 30 segundos.',
+      acao:[CD.atualizando?'Buscando no IXC...':'Atualizar pagamentos agora','cdAtualizarPagamentos()',CD.atualizando]}),
+    cdItem({tom:'agir', passo:2, titulo:'Cobrar antes do bloqueio', numero:cdMoeda(g.pre.valor), unid:cdNum(g.pre.clientes)+' clientes', vazio:!g.pre.clientes,
+      porque:'É o dinheiro mais fácil de recuperar: o cliente ainda está com a internet ligada.',
+      como:`Exportar para o OPA gera um arquivo por filial.${g.preSemFone?` <b>${cdNum(g.preSemFone)} sem celular válido</b> ficam fora do arquivo: ligar ou corrigir o cadastro.`:''}`,
+      acao:['Abrir lista',"cdIrLista('cobrar','pre')"], atv:g.pre.clientes?['cobrar','pre']:null}),
+    cdItem({tom:'agir', passo:3, titulo:'Agendar recolhimento de equipamento', numero:cdNum(g.rec.clientes), unid:'clientes, '+cdNum(g.rec.os)+' OS', vazio:!g.rec.clientes,
+      porque:'Equipamento fora de casa é patrimônio parado. Quanto mais tempo, menor a chance de recuperar.',
+      como:'Atendentes ligam para agendar ou reagendar a retirada (tarefas ATD).', acao:['Abrir lista',"cdIrLista('recolhimento_atd')"], atv:g.rec.clientes?['recolhimento_atd']:null}),
+    cdItem({tom:'agir', passo:4, titulo:'Cobrar bloqueados recentes (6 a 30 dias)', numero:cdMoeda(g.d6_30.valor), unid:cdNum(g.d6_30.clientes)+' clientes', vazio:!g.d6_30.clientes,
+      porque:'Já estão sem internet. O contato agora evita que o atraso vire cancelamento.',
+      como:'Ligar ou mandar mensagem oferecendo o desbloqueio com o pagamento.', acao:['Abrir lista',"cdIrLista('cobrar','d6_30')"], atv:g.d6_30.clientes?['cobrar','d6_30']:null})
+  ].join('');
+
+  const spPartes = [[g.sp.vazio,'sem valor na carga'],[g.sp.zerado,'zerados'],[g.sp.alto,'acima de R$ 1.500'],[g.sp.acumulo,'com acúmulo']].filter(x=>x[0]).map(x=>cdNum(x[0])+' '+x[1]).join(', ');
+  const corrigir = [
+    cdItem({tom:'corrigir', titulo:'Trocar fatura de cliente recente', numero:cdNum(g.qb.recentes), unid:'contratos, '+cdMoeda(g.qb.recentesValor), vazio:!g.qb.recentes,
+      porque:'O cliente pagou a fatura nova e a antiga ficou aberta. Não deve ser cobrado: já está fora da lista de cobrança.',
+      como:`Financeiro troca a fatura no IXC. ${cdNum(g.qb.antigos)} contratos antigos com o mesmo sintoma (${cdMoeda(g.qb.antigosValor)}) seguem na cobrança normal.`,
+      acao:['Abrir lista',"cdIrLista('quebra')"], atv:g.qb.recentes?['quebra','recentes']:null}),
+    cdItem({tom:'corrigir', titulo:'Títulos com erro de cadastro', numero:cdNum(g.sp.qt), unid:'títulos', vazio:!g.sp.qt,
+      porque: spPartes ? spPartes+'.' : 'Nada a corrigir hoje.',
+      como:'Ficam fora do total e das listas até serem corrigidos no IXC.', acao:['Abrir lista',"cdIrLista('suspeitos')"], atv:g.sp.qt?['suspeitos']:null}),
+    cdItem({tom:'corrigir', titulo:'Boleto gerado já vencido', numero:cdNum(g.gv.qt), unid:'boletos nos últimos 90 dias', vazio:!g.gv.qt,
+      porque: g.gv.qt ? `O cliente recebeu o boleto sem prazo para pagar. Indica falha de cadastro ou de faturamento.${g.gv.novos?` ${cdNum(g.gv.novos)} ${g.gv.novos===1?'é a primeira fatura de cliente novo':'são a primeira fatura de cliente novo'}.`:''}${g.gv.passadas?` ${cdNum(g.gv.passadas)} ${g.gv.passadas===1?'é mensalidade passada gerada agora':'são mensalidades passadas geradas agora'}.`:''}` : 'Nenhum boleto gerado depois do vencimento nos últimos 90 dias.',
+      como: g.gv.noPre ? `<b>${cdNum(g.gv.noPre)} ${g.gv.noPre===1?'desses clientes está':'desses clientes estão'} na lista antes do bloqueio:</b> confira antes de cobrar.` : 'Corrigir o vencimento no IXC e a causa no cadastro.',
+      acao:['Abrir lista',"cdIrLista('gerados_vencidos')"], atv:g.gv.qt?['gerados_vencidos']:null}),
+    g.semMarca.length ? cdItem({tom:'corrigir', titulo:'Filial sem marca cadastrada', numero:cdNum(g.semMarca.reduce((t,f)=>t+f.clientes,0)), unid:'clientes',
+      porque:`${g.semMarca.map(f=>cdEsc(f.filial)).join(', ')} não está no cadastro de marcas do Radar, então esses clientes não entram nas listas por marca.`,
+      como:'Definir a qual marca a filial pertence ou se deve ficar fora da cobrança.'}) : ''
+  ].join('');
+
+  const planejar = [
+    cdItem({tom:'planejar', titulo:'Lembrete por e-mail antes do vencimento', numero:cdMoeda(g.av.valor), unid:cdNum(g.av.clientes)+' clientes em 6 dias',
+      porque:`${cdNum(g.av.comEmail)} têm e-mail útil e recebem o lembrete. <b>${cdNum(g.av.semEmail)} não têm</b> (${cdMoeda(g.av.valorSemEmail)}) e ficam sem aviso.`,
+      como:'Lembrete antes do vencimento é só por e-mail: não fazemos pré-cobrança por WhatsApp por causa do custo da Meta. Use "Exportar e-mails" na lista. A atividade direciona para a equipe cadastrar o e-mail de quem vence sem e-mail.', acao:['Abrir lista',"cdIrLista('avencer')"], atv:g.av.semEmail?['sem_email','vence_sem_email']:null}),
+    cdItem({tom:'planejar', titulo:'Negociar de 31 a 90 dias', numero:cdMoeda(g.d31_90.valor), unid:cdNum(g.d31_90.clientes)+' clientes',
+      porque:'Já bloqueados, mas ainda recuperáveis com proposta de acordo.', como:'Separar da cobrança do dia e tratar com oferta de parcelamento.',
+      acao:['Abrir lista',"cdIrLista('cobrar','d31_90')"], atv:g.d31_90.clientes?['cobrar','d31_90']:null}),
+    cdItem({tom:'planejar', titulo:'Recuperar mais de 90 dias', numero:cdMoeda(g.d90.valor), unid:cdNum(g.d90.clientes)+' clientes',
+      porque:'Inadimplência antiga e possível cancelamento silencioso: o cliente parou de pagar e de usar.',
+      como:'Revisar caso a caso: recolher equipamento, negociar ou cancelar.', acao:['Abrir lista',"cdIrLista('cobrar','d90')"], atv:g.d90.clientes?['cobrar','d90']:null}),
+    cdItem({tom:'planejar', titulo:'Cadastrar e-mail', numero:g.se.pct===null?'-':g.se.pct+'%', unid:'da base com e-mail útil',
+      porque:`${cdNum(g.se.clientes)} clientes sem e-mail ou com e-mail falso.`, como:'Com e-mail, o cliente recebe o lembrete de vencimento e o boleto sem custo de envio.',
+      acao:['Abrir lista',"cdIrLista('sem_email')"], atv:g.se.clientes?['sem_email']:null})
+  ].join('');
+
+  const alertas = [];
+  if(!g.leituraHoje) alertas.push(cdAlerta('risk', `<b>Os dados são de ${dataLeitura}.</b> A leitura de hoje não chegou. Não use as listas como se fossem de hoje.`));
+  if(g.cargaErros.length) alertas.push(cdAlerta('risk', `<b>A leitura teve erro em ${g.cargaErros.map(c=>cdEsc(c.tipo)).join(', ')}.</b> Confira antes de usar as listas.`));
+  if(g.pag.qt && g.pag.pctAtraso>=50) alertas.push(cdAlerta('warn', `<b>${g.pag.pctAtraso}% dos pagamentos chegaram depois do vencimento.</b> A maioria só paga depois de cobrada.`));
+  if(g.rec.mais30) alertas.push(cdAlerta('warn', `<b>${cdNum(g.rec.mais30)} recolhimentos abertos há mais de 30 dias.</b> Quanto mais tempo, menor a chance de o equipamento voltar.`));
+  if(g.fora){
+    const mot = Object.entries(g.motivosFora).sort((a,b)=>b[1]-a[1]).map(([m,n])=>cdNum(n)+' '+cdEsc(m)).join(', ');
+    alertas.push(cdAlerta('', `<b>${cdNum(g.fora)} clientes vencidos estão fora da cobrança:</b> ${mot}. Um cliente pode ter mais de um motivo. Acompanhe se os prazos combinados estão sendo cumpridos.`));
+  }
+  if(g.topFilial && g.pctTop>=25) alertas.push(cdAlerta('', `<b>${cdEsc(g.topFilial.filial)} concentra ${g.pctTop}% do vencido</b> (${cdMoeda(g.topFilial.valor)}).`));
+  if(Number(r.devedores_fora_base_ativa)>0) alertas.push(cdAlerta('', `<b>${cdNum(r.devedores_fora_base_ativa)} devedores não estão no cadastro ativo.</b> Podem ser contratos cancelados com boleto aberto.`));
+  if(g.av.semEmail) alertas.push(cdAlerta('', `<b>${cdNum(g.av.semEmail)} clientes vencem nos próximos 6 dias sem e-mail útil.</b> Eles não recebem lembrete antes do vencimento (${cdMoeda(g.av.valorSemEmail)}).`));
+  cdAtvAlertas().forEach(a => alertas.push(a));
+  if(g.semana===null) alertas.push(cdAlerta('', 'A comparação com a semana passada aparece quando houver uma leitura de 7 dias atrás.'));
+  if(!alertas.length) alertas.push(cdAlerta('ok', 'Nada fora do normal na leitura de hoje.'));
+
+  const colunas = `<div class="cdg-colunas">
+    <div class="cdg-col agir"><div class="cdg-col-h"><h3>Fazer agora</h3><span>nesta ordem</span></div>${agir}</div>
+    <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Corrigir no IXC</h3><span>financeiro</span></div>${corrigir}</div>
+    <div class="cdg-col planejar"><div class="cdg-col-h"><h3>Planejar</h3><span>esta semana</span></div>${planejar}</div>
+    <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Ficar atenta</h3><span>${alertas.length} pontos</span></div>${alertas.join('')}</div>
+  </div>`;
+
+  // 4. Visão 360
+  const faixas = [
+    ['pre','1 a 5 dias','antes do bloqueio','#E5484D'],
+    ['d6_30','6 a 30 dias','bloqueados recentes','#F5A524'],
+    ['d31_90','31 a 90 dias','negociação','#4DA3E0'],
+    ['d90','Mais de 90 dias','recuperação','#6B7F95']
+  ];
+  const barra = faixas.map(([k,n,,c])=>`<button type="button" title="${n}: ${cdMoeda(g[k].valor)}" style="flex:${Math.max(g[k].valor,0.0001)};background:${c}" onclick="cdIrLista('cobrar','${k}')"></button>`).join('');
+  const leg = faixas.map(([k,n,s,c])=>`<button type="button" onclick="cdIrLista('cobrar','${k}')"><i style="background:${c}"></i><span class="nm">${n}<small>${s}, ${cdNum(g[k].clientes)} clientes</small></span><span class="vl">${cdMoeda(g[k].valor)}</span><span class="pc">${cdPct(g[k].valor,g.cobravelValor)}%</span></button>`).join('');
+  const maxFil = Math.max(...g.filiais.map(f=>f.valor), 1);
+  const marcas = [...new Set(g.filiais.map(f=>f.marca))];
+  const linhasFil = marcas.map(m => {
+    const fs = g.filiais.filter(f=>f.marca===m);
+    const tot = fs.reduce((a,f)=>a+f.valor,0);
+    return `<tr class="marca"><td colspan="5">${cdEsc(m)} · ${cdMoeda(tot)}</td></tr>` + fs.map(f=>`<tr><td>${cdEsc(f.filial)}</td><td>${cdMoeda(f.valor)}</td><td>${cdNum(f.clientes)}</td><td>${cdMoeda(f.pre)}</td>
+      <td class="bar"><div style="width:${(100*f.valor/maxFil).toFixed(1)}%"><span style="width:${f.valor>0?(100*f.pre/f.valor).toFixed(1):0}%"></span></div></td></tr>`).join('');
+  }).join('');
+  const v360 = `<div class="cdg-360">
+    <div class="cdg-box"><div class="cdg-eyebrow">Quanto tempo o dinheiro está parado</div>
+      <div class="cdg-barra">${barra}</div><div class="cdg-leg">${leg}</div>
+      ${cdPodeGerenciar()?`<div class="cdg-botoes" style="margin:8px 0 2px">${faixas.filter(([k])=>g[k].clientes).map(([k,n])=>`<button type="button" class="cdg-ir cdg-gerar" onclick="cdAtvNova('cobrar','${k}')">Gerar atividade: ${n}</button>`).join('')}</div>`:''}
+      <div class="cdg-nota">Clientes que podem ser cobrados (${cdNum(g.cobraveis.length)}), pelo boleto mais antigo. Clique numa faixa para abrir a lista. ${g.fora?`Os ${cdNum(g.fora)} fora da cobrança não entram aqui.`:''}</div></div>
+    <div class="cdg-box"><div class="cdg-eyebrow">Onde está o vencido</div>
+      <div class="cdg-tabwrap"><table class="cdg-tab"><thead><tr><th>Filial</th><th>Vencido</th><th>Clientes</th><th>Antes do bloqueio</th><th></th></tr></thead><tbody>${linhasFil}</tbody></table></div>
+      <div class="cdg-nota">Barra azul: vencido da filial. Parte vermelha: o que ainda dá para cobrar antes do bloqueio.</div></div>
+  </div>`;
+
+  // 5. Estratégias (regras simples sobre os números de hoje)
+  const est = [];
+  if(g.pag.qt && g.pag.pctAtraso>=50) est.push({titulo:'Lembrete por e-mail antes do vencimento', porque:`${g.pag.pctAtraso}% dos pagamentos de ${cdData(g.pag.dia)} vieram depois do vencimento.`,
+    como:`Enviar o lembrete por e-mail aos ${cdNum(g.av.ate2Email)} clientes que vencem em até 2 dias e têm e-mail útil. É o único lembrete antes do vencimento, sem custo de WhatsApp.`, acao:['Ver quem vence',"cdIrLista('avencer')"], atv:g.av.semEmail?['sem_email','vence_sem_email']:null});
+  if(g.pct90>=30) est.push({titulo:'Separar a recuperação da cobrança diária', porque:`${g.pct90}% do valor cobrável (${cdMoeda(g.d90.valor)}) tem mais de 90 dias.`,
+    como:'Montar uma régua mensal para esse grupo: recolhimento, acordo ou cancelamento. Assim a equipe do dia foca em quem ainda paga.', acao:['Ver mais de 90 dias',"cdIrLista('cobrar','d90')"], atv:g.d90.clientes?['cobrar','d90']:null});
+  if(g.pre.clientes && g.preSemFone) est.push({titulo:'Corrigir telefone de quem está para bloquear', porque:`${cdNum(g.preSemFone)} dos ${cdNum(g.pre.clientes)} clientes antes do bloqueio não têm celular válido e não recebem a mensagem do OPA.`,
+    como:'Atualizar o cadastro no primeiro contato por outro canal.', acao:['Ver a lista',"cdIrLista('cobrar','pre')"], atv:['cobrar','pre']});
+  if(g.se.pct!==null && g.se.pct<80) est.push({titulo:'Campanha de e-mail na base', porque:`Só ${g.se.pct}% dos clientes têm e-mail útil. Sem e-mail, o cliente não recebe o lembrete de vencimento: ${cdNum(g.av.semEmail)} dos que vencem nesta semana estão nessa situação.`,
+    como:'Pedir o e-mail na cobrança, no atendimento e na instalação. Cada e-mail cadastrado vira lembrete sem custo e tira um boleto da impressão.', acao:['Ver lista',"cdIrLista('sem_email')"], atv:g.se.clientes?['sem_email']:null});
+  if(g.topFilial && g.pctTop>=25) est.push({titulo:`Foco em ${cdEsc(g.topFilial.filial)}`, porque:`A filial concentra ${g.pctTop}% do vencido.`,
+    como:'Revisar com o responsável da filial a régua e os motivos de atraso.'});
+  const estr = est.length ? `<div><div class="cdg-eyebrow">Estratégias sugeridas a partir dos números de hoje</div>
+    <div class="cdg-estr">${est.slice(0,3).map(e=>cdItem({tom:'planejar', ...e})).join('')}</div></div>` : '';
+
+  // 6. Glossário
+  const glos = `<div class="cdg-box cdg-glos"><details><summary>Como ler esta página</summary><dl>
+    <dt>Antes do bloqueio</dt><dd>Clientes cujo boleto mais antigo venceu há 1 a 5 dias. Depois de cerca de 5 dias úteis o IXC bloqueia a conexão.</dd>
+    <dt>Fora da cobrança</dt><dd>Clientes com liberação em confiança, OS de recolhimento ou cancelamento aberta, quebra financeira de cliente recente, ou marcados no IXC para não participar da cobrança.</dd>
+    <dt>Quebra financeira</dt><dd>Boleto antigo em aberto com o contrato já pago até uma data posterior. Cliente com menos de 12 meses: trocar a fatura no IXC. Contrato antigo: cobrar normalmente.</dd>
+    <dt>Erro de cadastro</dt><dd>Título zerado, sem valor, acima de R$ 1.500 ou acumulando mais de 3 mensalidades. Fica fora dos totais até ser corrigido.</dd>
+    <dt>Boleto gerado já vencido</dt><dd>Boleto cuja data de emissão é igual ou posterior ao vencimento: o cliente não teve prazo para pagar. Costuma indicar erro no dia de vencimento do cadastro, na ativação ou no faturamento.</dd>
+    <dt>Filial 10</dt><dd>Clientes B2B. Nunca entram nesta apuração.</dd>
+    <dt>Horário dos dados</dt><dd>O IXC é lido às 4h, de segunda a sexta. Quem pagou depois disso só sai da lista com "Atualizar pagamentos agora".</dd>
+  </dl></details></div>`;
+
+  return `<div class="cdg">${status}${cdAtvPainelHTML()}${resumo}${colunas}${v360}${estr}${glos}</div>`;
+}
+
+// ---- Atividades da equipe: gerar a partir do painel, trabalhar na área de trabalho e acompanhar ----
+// Grava só nas tabelas novas (ixc.atividades, ixc.atividade_itens, ixc.promessas) via funções radar_atv_*.
+CD.atv = { lista:null, usuarios:[], promessas:[], aberta:null, itens:[], filtro:'tratar', busca:'', expandido:null, nova:null, erro:null };
+const CD_ATV_TIPOS = {
+  cobrar:           { nome:'Cobrança',            fonte:'clientes_vencidos', chave:x=>String(x.id_cliente) },
+  quebra:           { nome:'Trocar fatura no IXC', fonte:'quebra',            chave:x=>String(x.id_titulo) },
+  suspeitos:        { nome:'Corrigir título no IXC', fonte:'suspeitos',       chave:x=>String(x.id_titulo) },
+  recolhimento_atd: { nome:'Agendar recolhimento', fonte:'recolhimento_atd',  chave:x=>String(x.id_cliente) },
+  avencer:          { nome:'Lembrar vencimento',   fonte:'avencer',           chave:x=>x.id_cliente+'-'+x.filial_id },
+  sem_email:        { nome:'Cadastrar e-mail',     fonte:'sem_email',         chave:x=>String(x.id_cliente) },
+  gerados_vencidos: { nome:'Corrigir boleto gerado vencido', fonte:'gerados_vencidos', chave:x=>String(x.id_titulo) }
+};
+// prazo padrão (SLA) de cada tipo de atividade, em dias úteis a partir de hoje
+const CD_SLA_DIAS = { cobrar:0, quebra:1, suspeitos:1, gerados_vencidos:1, recolhimento_atd:2, avencer:0, sem_email:5 };
+const CD_SLA_PRESET = { pre:0, um:0, d6_30:1, d31_90:5, d90:5, todos:2, vence_sem_email:2 };
+function cdDiaUtil(n){ const d=new Date(); let k=0; while(k<n){ d.setDate(d.getDate()+1); if(d.getDay()!==0&&d.getDay()!==6) k++; }
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function cdSlaPadrao(tipo, preset){ const n = (tipo==='cobrar'||tipo==='sem_email') && CD_SLA_PRESET[preset]!==undefined ? CD_SLA_PRESET[preset] : (CD_SLA_DIAS[tipo]??1); return cdDiaUtil(n); }
+// SLA: verde dentro do prazo, amarelo perto de estourar ou ritmo abaixo do necessário, vermelho estourado
+function cdSla(a){
+  const tot=Number(a.total)||0, pend=Number(a.pendentes)||0, feitos=tot-pend;
+  const pctFeito = tot ? Math.round(100*feitos/tot) : 0;
+  if(a.status==='encerrada') return {c:'ok', t:'Encerrada', pctFeito, pctTempo:null, dica:''};
+  if(!a.prazo) return {c:'neutro', t:'Sem prazo definido', pctFeito, pctTempo:null, dica:'Sem prazo não há como medir atraso. Defina um prazo nas próximas atividades.'};
+  const ini = new Date(a.criado_em), fim = new Date(a.prazo+'T18:00:00'), agora = new Date();
+  const total = Math.max(fim-ini, 3600000);
+  const pctTempo = Math.max(0, Math.min(100, Math.round(100*(agora-ini)/total)));
+  const horas = Math.round((fim-agora)/3600000);
+  const falta = h => h>=24 ? Math.round(h/24)+' dia(s)' : Math.max(h,0)+'h';
+  if(!pend) return {c:'ok', t:'Tudo tratado', pctFeito, pctTempo:null, dica:'Todos os itens foram tratados. Falta só a confirmação do IXC.'};
+  if(agora>fim) return {c:'risk', t:'Prazo estourado há '+falta(-horas), pctFeito, pctTempo:100,
+    dica:`Faltam ${cdNum(pend)} itens e o prazo acabou. Fale com ${a.responsavel_nome?cdEsc(String(a.responsavel_nome).split(' ')[0]):'a equipe'} ou redistribua o que falta.`};
+  if(pctTempo>=75 || pctFeito+20 < pctTempo) return {c:'warn', t: horas<=24?'Perto do prazo: faltam '+falta(horas):'Ritmo abaixo do necessário', pctFeito, pctTempo,
+    dica:`Já passou ${pctTempo}% do prazo e ${pctFeito}% foi tratado. Acompanhe de perto: faltam ${cdNum(pend)} itens.`};
+  return {c:'ok', t:'Dentro do prazo', pctFeito, pctTempo, dica:`${pctFeito}% tratado com ${pctTempo}% do prazo usado. No ritmo certo.`};
+}
+function cdSlaBarra(a, grande){
+  const s = cdSla(a);
+  return `<div class="cdg-sla ${s.c}">
+    <div class="cdg-sla-top"><span class="cdg-sla-chip ${s.c}">${s.t}</span><span class="cdg-sla-pct">${s.pctFeito}% tratado</span></div>
+    <div class="cdg-slabar ${grande?'grande':''}" title="Barra: quanto já foi tratado. Linha escura: quanto do prazo já passou.">
+      <span class="fill" style="width:${s.pctFeito}%"></span>${s.pctTempo!==null?`<i class="marca" style="left:${s.pctTempo}%"></i>`:''}</div>
+    ${s.dica?`<div class="cdg-sla-dica">${s.dica}</div>`:''}
+  </div>`;
+}
+const CD_SITUACOES = {
+  pendente:{t:'Para tratar',c:''}, contatado:{t:'Contatado',c:'info'}, sem_resposta:{t:'Sem resposta',c:'warn'}, numero_errado:{t:'Número errado',c:'warn'},
+  prometeu:{t:'Prometeu pagar',c:'info'}, negociando:{t:'Negociando',c:'info'}, corrigido:{t:'Corrigido no IXC',c:'ok'}, nao_cobrar:{t:'Não cobrar',c:''}
+};
+function cdAtvAcoes(tipo){
+  if(tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos') return ['corrigido','nao_cobrar'];
+  if(tipo==='sem_email') return ['corrigido','sem_resposta','numero_errado'];
+  if(tipo==='recolhimento_atd') return ['contatado','sem_resposta','numero_errado','nao_cobrar'];
+  if(tipo==='avencer') return ['contatado','sem_resposta','numero_errado'];
+  return ['contatado','sem_resposta','numero_errado','prometeu','negociando','nao_cobrar'];
+}
+const cdAtvRotuloAcao = (tipo,s) => s==='corrigido' ? (tipo==='sem_email'?'E-mail cadastrado':'Corrigido no IXC') : s==='nao_cobrar' ? (tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos'?'Não precisa corrigir':'Não cobrar') : CD_SITUACOES[s].t;
+function cdHoje(){ return cdHojeISO(); }
+function cdAddDias(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function cdEhAdmin(){ try{ return typeof radarIsAdminUser==='function' && radarIsAdminUser(); }catch(e){ return false; } }
+
+async function cdAtvRpc(fn, args){
+  const sb = getSB(); if(!sb) throw new Error('Banco indisponível');
+  const { data, error } = await sb.rpc(fn, args||{});
+  if(error) throw new Error(error.message);
+  return data;
+}
+async function cdAtvCarregar(semRender){
+  try{
+    const [lista, usuarios, promessas] = await Promise.all([cdAtvRpc('radar_atv_listar',{p_dias:30}), cdAtvRpc('radar_atv_usuarios'), cdAtvRpc('radar_promessas',{})]);
+    CD.atv.lista = lista||[]; CD.atv.usuarios = usuarios||[]; CD.atv.promessas = promessas||[]; CD.atv.erro = null;
+  }catch(e){ CD.atv.erro = e.message; console.warn('[Radar] atividades', e); }
+  if(!semRender) renderCobrancaDia();
+}
+
+// ---------- painel de atividades (no topo do guia) ----------
+function cdAtvPainelHTML(){
+  if(!cdPodeGerenciar()) return '';
+  const A = CD.atv;
+  if(A.erro) return `<div class="cdg-box cdg-atv"><div class="cdg-eyebrow">Atividades da equipe</div><div class="cdg-nota">Não consegui carregar as atividades: ${cdEsc(A.erro)}. <button type="button" class="cdg-ir" onclick="cdAtvCarregar()">Tentar de novo</button></div></div>`;
+  if(A.lista===null) return `<div class="cdg-box cdg-atv"><div class="cdg-eyebrow">Atividades da equipe</div><div class="cdg-nota">Carregando atividades...</div></div>`;
+  const abertas = A.lista.filter(a=>a.status==='aberta');
+  const pend = A.promessas.filter(p=>p.situacao==='aguardando aprovação');
+  const aprov = pend.length && cdEhAdmin() ? `<div class="cdg-aprov"><b>${cdNum(pend.length)} ${pend.length===1?'promessa aguarda':'promessas aguardam'} sua aprovação</b> (clientes com 2 ou mais promessas não cumpridas).
+      ${pend.slice(0,6).map(p=>`<div class="cdg-aprov-l"><span>${cdEsc(p.nome||('Cliente '+p.id_cliente))}, ${cdMoeda(p.valor)}, até ${cdData(p.data_prometida)}. Registrada por ${cdEsc(p.registrado_por_nome||'-')}.</span>
+      <span><button type="button" class="cdg-ir" onclick="cdPromessaDecidir(${p.id},true)">Aprovar</button> <button type="button" class="cdg-ir" onclick="cdPromessaDecidir(${p.id},false)">Recusar</button></span></div>`).join('')}</div>` : '';
+  const pesoSla = a => ({risk:0,warn:1,neutro:2,ok:3})[cdSla(a).c];
+  abertas.sort((x,y)=>pesoSla(x)-pesoSla(y));
+  const cards = abertas.map(a=>{
+    const tot = Number(a.total)||0, res = Number(a.resolvidos)||0, trat = Math.max(0,(Number(a.tratados)||0)-res);
+    const atrasada = a.prazo && a.prazo < cdHoje() && Number(a.pendentes)>0;
+    const pessoas = Object.entries(a.por_pessoa||{}).sort((x,y)=>y[1]-x[1]).map(([n,q])=>cdEsc(n)+' '+q).join(', ');
+    return `<div class="cdg-atv-card sla-${cdSla(a).c}">
+      <div class="cdg-atv-top"><div><div class="cdg-atv-tit">${cdEsc(a.titulo)}</div>
+        <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||a.tipo)} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Equipe toda'}${a.prazo?` · prazo ${cdData(a.prazo)}`:''}${atrasada?' · <b class="r">atrasada</b>':''}</div></div>
+        <span class="cdg-atv-bts"><button type="button" class="btn sm primary" onclick="cdAtvAbrir(${a.id})">Abrir atividade</button>
+        <button type="button" class="cdg-mini" onclick="cdAtvRemover(${a.id}, this)" title="Tira a atividade do painel e das atendentes. Promessas registradas nela são canceladas.">Remover</button></span></div>
+      ${cdSlaBarra(a)}
+      <div class="cdg-atv-nums"><span><b>${cdNum(res)}</b> resolvidos</span><span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(a.pendentes)}</b> para tratar</span>
+        ${Number(a.valor_total)?`<span><b>${cdMoeda(a.valor_resolvido)}</b> de ${cdMoeda(a.valor_total)} recebido</span>`:''}
+        ${Number(a.promessas_no_prazo)?`<span>${cdNum(a.promessas_no_prazo)} promessas no prazo</span>`:''}
+        ${Number(a.promessas_quebradas)?`<span class="r">${cdNum(a.promessas_quebradas)} promessas não cumpridas</span>`:''}
+        ${Number(a.em_atendimento)?`<span>${cdNum(a.em_atendimento)} em atendimento agora</span>`:''}</div>
+      ${pessoas?`<div class="cdg-nota" style="margin-top:2px">Tratados por: ${pessoas}</div>`:''}
+    </div>`;
+  }).join('');
+  const encerradas = A.lista.filter(a=>a.status==='encerrada').length;
+  const slas = abertas.map(cdSla), nSla = c => slas.filter(s=>s.c===c).length;
+  const resumoSla = abertas.length ? `<div class="cdg-sla-resumo">
+      <span class="cdg-sla-chip risk">${nSla('risk')} estourada${nSla('risk')===1?'':'s'}</span>
+      <span class="cdg-sla-chip warn">${nSla('warn')} perto do prazo</span>
+      <span class="cdg-sla-chip ok">${nSla('ok')} no prazo</span>
+      <span class="cdg-nota" style="margin:0">${nSla('risk')?'Comece pelas vermelhas: fale com a responsável ou redistribua o que falta.':nSla('warn')?'Nada estourado. Acompanhe as amarelas antes que estourem.':'Tudo dentro do prazo.'}</span>
+    </div>` : '';
+  return `<div class="cdg-box cdg-atv">
+    <div class="cdg-atv-h"><div class="cdg-eyebrow" style="margin:0">Atividades da equipe</div>
+      <span class="cdg-nota" style="margin:0">${abertas.length?`${abertas.length} em andamento`:'Nenhuma atividade em andamento'}${encerradas?`, ${encerradas} encerradas nos últimos 30 dias`:''} · ${cdNum((A.usuarios||[]).filter(u=>u.perfil==='atendente').length)} atendentes
+        <button type="button" class="cdg-ir" style="margin-left:8px" onclick="cdAtendenteModal(true)">Cadastrar atendente</button></span></div>
+    ${aprov}
+    ${resumoSla}
+    ${abertas.length?`<div class="cdg-atv-grid">${cards}</div>`:`<div class="cdg-nota">Use <b>Gerar atividade</b> em qualquer item abaixo para direcionar a lista a uma ou mais atendentes. Cada atendente vê só o que foi direcionado a ela, registra o resultado de cada cliente, e o Radar confirma pelo IXC quem pagou ou foi corrigido.</div>`}
+  </div>`;
+}
+function cdAtvAlertas(){
+  const A = CD.atv, out = [];
+  if(!A.lista) return out;
+  const quebradas = A.promessas.filter(p=>p.situacao==='não cumprida');
+  if(quebradas.length) out.push(cdAlerta('warn', `<b>${cdNum(quebradas.length)} promessas de pagamento não cumpridas.</b> Esses clientes voltaram para a cobrança.`));
+  const atrasadas = A.lista.filter(a=>a.status==='aberta' && a.prazo && a.prazo < cdHoje() && Number(a.pendentes)>0);
+  if(atrasadas.length) out.push(cdAlerta('warn', `<b>${cdNum(atrasadas.length)} ${atrasadas.length===1?'atividade passou':'atividades passaram'} do prazo</b> com itens para tratar.`));
+  return out;
+}
+
+// ---------- gerar atividade ----------
+function cdAtvLinhasPara(tipo, preset){
+  const t = CD_ATV_TIPOS[tipo]; let l = Array.isArray(CD.dados[t.fonte]) ? CD.dados[t.fonte] : [];
+  if(tipo==='cobrar') l = cdFiltrarCobrar(l, { ...CD.f, ...CD_PRESETS[preset||'pre'].f, valorMin:'', valorMax:'', busca:'', soComTelefone:false });
+  if(tipo==='quebra' && preset==='recentes') l = l.filter(x=>/^Corrigir/.test(x.tratamento||''));
+  if(tipo==='sem_email' && preset==='vence_sem_email') l = (CD.dados.avencer||[]).filter(x=>x.email_util!==true);
+  return l;
+}
+function cdAtvNova(tipo, preset, daLista){
+  const linhas = daLista ? cdLinhasFiltradas() : cdAtvLinhasPara(tipo, preset);
+  const tituloBase = daLista ? (CD.aba==='cobrar' && CD_PRESETS[CD.f.preset] ? CD_PRESETS[CD.f.preset].nome : CD_ABAS[CD.aba].titulo)
+    : (tipo==='cobrar' ? CD_PRESETS[preset||'pre'].nome : preset==='vence_sem_email' ? 'Cadastrar e-mail de quem vence em 6 dias' : CD_ATV_TIPOS[tipo].nome);
+  const filtro = daLista ? (CD.filial!=='Todas'?CD.filial+' · ':'')+(CD.f.preset||'filtro personalizado') : (preset||'');
+  CD.atv.nova = { tipo, preset, linhas, titulo: tituloBase+' '+cdData(cdHoje()).slice(0,5), filtro, porFilial:false, prazo:cdSlaPadrao(tipo, daLista?CD.f.preset:preset), responsavel:'' };
+  if(!linhas.length){ toast('A lista está vazia: nada para gerar.','warn'); CD.atv.nova=null; return; }
+  cdAtvModal();
+}
+function cdAtvModal(){
+  const N = CD.atv.nova; let el = document.getElementById('cd-atv-modal');
+  if(!N){ if(el) el.remove(); return; }
+  if(!el){ el = document.createElement('div'); el.id='cd-atv-modal'; el.className='cdg-modal'; document.body.appendChild(el); }
+  const valor = N.linhas.reduce((a,x)=>a+(Number(x.valor ?? x.valor_aberto ?? x.valor_vencido)||0),0);
+  const filiais = [...new Set(N.linhas.map(x=>x.filial).filter(Boolean))];
+  const unid = (N.tipo==='quebra'||N.tipo==='suspeitos'||N.tipo==='gerados_vencidos')?'títulos':'clientes';
+  const pessoas = CD.atv.usuarios || [];
+  el.innerHTML = `<div class="cdg-modal-box" role="dialog" aria-modal="true" aria-labelledby="cd-atv-tit">
+    <h3 id="cd-atv-tit">Direcionar atividade para o atendimento</h3>
+    <p class="cdg-nota" style="margin:0 0 12px">${cdEsc(CD_ATV_TIPOS[N.tipo].nome)}: <b>${cdNum(N.linhas.length)} ${unid}</b>${valor?`, ${cdMoeda(valor)}`:''}, em ${filiais.length} ${filiais.length===1?'filial':'filiais'}. A lista é salva como está agora.</p>
+    <label class="cdg-campo">Nome da atividade<input id="cd-atv-nome" type="text" value="${cdEsc(N.titulo)}" maxlength="80"></label>
+    <div class="cdg-campo">Quem vai tratar
+      ${pessoas.length?`<div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-atv-pessoa" value="${u.id}" data-nome="${cdEsc(u.nome)}" onchange="cdAtvDivisao()"> ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${u.ultimo_login?'':' <small>· ainda não entrou</small>'}</label>`).join('')}</div>`
+        :`<div class="cdg-nota">Nenhuma atendente cadastrada. Use "Cadastrar atendente" no painel de atividades.</div>`}
+      <div class="cdg-nota" id="cd-atv-divisao" style="margin-top:6px">Marque uma ou mais atendentes. Com mais de uma, a lista é dividida igualmente e cada uma recebe a sua atividade.</div>
+    </div>
+    <label class="cdg-campo" style="max-width:220px">Prazo (SLA)<input id="cd-atv-prazo" type="date" value="${N.prazo}" min="${cdHoje()}"></label>
+    <p class="cdg-nota" style="margin:-6px 0 12px">Prazo sugerido para este tipo de atividade, até as 18h. No acompanhamento a barra fica verde no prazo, amarela perto de estourar e vermelha quando estoura.</p>
+    <p class="cdg-nota" style="margin:0 0 14px">Cada atendente vê só as atividades direcionadas a ela. Clientes que já estão em outra atividade aberta do mesmo tipo não são repetidos.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="CD.atv.nova=null;cdAtvModal()">Cancelar</button>
+      <button type="button" class="btn sm primary" id="cd-atv-criar" onclick="cdAtvCriar()">Direcionar</button></div>
+  </div>`;
+  setTimeout(()=>{ const i=document.getElementById('cd-atv-nome'); if(i) i.focus(); },30);
+}
+function cdAtvDivisao(){
+  const N = CD.atv.nova, el = document.getElementById('cd-atv-divisao'); if(!N||!el) return;
+  const sel = [...document.querySelectorAll('.cd-atv-pessoa:checked')];
+  if(!sel.length){ el.textContent='Marque uma ou mais atendentes. Com mais de uma, a lista é dividida igualmente e cada uma recebe a sua atividade.'; return; }
+  const n = N.linhas.length, base = Math.floor(n/sel.length), resto = n%sel.length;
+  el.innerHTML = sel.map((s,k)=>`<b>${s.dataset.nome}</b>: ${cdNum(base+(k<resto?1:0))}`).join(' · ');
+}
+async function cdAtvCriar(){
+  const N = CD.atv.nova; if(!N) return;
+  const nome = document.getElementById('cd-atv-nome').value.trim();
+  const prazo = document.getElementById('cd-atv-prazo').value || null;
+  const sel = [...document.querySelectorAll('.cd-atv-pessoa:checked')].map(s=>({id:s.value, nome:s.dataset.nome}));
+  if(!nome){ toast('Dê um nome para a atividade.','warn'); return; }
+  if(!sel.length){ toast('Escolha quem vai tratar.','warn'); return; }
+  const btn = document.getElementById('cd-atv-criar'); if(btn){ btn.disabled=true; btn.textContent='Direcionando...'; }
+  const chave = CD_ATV_TIPOS[N.tipo].chave;
+  // divide em partes iguais, alternando para equilibrar filial, atraso e valor
+  const partes = sel.map(()=>[]); N.linhas.forEach((x,k)=>partes[k%sel.length].push(x));
+  let criadas=0, itens=0, repetidos=0, falhas=[];
+  for(let k=0;k<sel.length;k++){
+    const p = sel[k], ls = partes[k]; if(!ls.length) continue;
+    try{
+      const r = await cdAtvRpc('radar_atv_criar', { p_tipo:N.tipo, p_titulo: sel.length>1 ? nome+' · '+p.nome : nome, p_chaves:[...new Set(ls.map(chave))],
+        p_prazo:prazo, p_responsavel:p.id, p_filtro:N.filtro });
+      if(r && r.ok){ criadas++; itens+=r.itens; repetidos+=r.ja_em_atividade||0; } else falhas.push(p.nome+': '+(r?.motivo||'não criada'));
+    }catch(e){ falhas.push(p.nome+': '+e.message); }
+  }
+  CD.atv.nova = null; cdAtvModal();
+  if(criadas) toast(`${criadas} ${criadas===1?'atividade direcionada':'atividades direcionadas'} com ${cdNum(itens)} itens${repetidos?`. ${cdNum(repetidos)} já estavam em outra atividade`:''}.`,'success');
+  if(falhas.length) toast(falhas.join(' | '),'warn');
+  await cdAtvCarregar();
+}
+// ---------- cadastro de atendentes (gestão e liderança) ----------
+function cdAtendenteModal(abrir){
+  let el = document.getElementById('cd-atd-modal');
+  if(!abrir){ if(el) el.remove(); return; }
+  if(!el){ el = document.createElement('div'); el.id='cd-atd-modal'; el.className='cdg-modal'; document.body.appendChild(el); }
+  const ja = new Set((CD.atv.usuarios||[]).map(u=>String(u.nome||'').split(' ')[0].toUpperCase()));
+  const sugest = (typeof VENDEDOR_BY_ID==='object' ? Object.values(VENDEDOR_BY_ID) : []).filter(n=>!ja.has(String(n).split(' ')[0].toUpperCase())).sort();
+  el.innerHTML = `<div class="cdg-modal-box" role="dialog" aria-modal="true" aria-labelledby="cd-atd-tit">
+    <h3 id="cd-atd-tit">Cadastrar atendente</h3>
+    <p class="cdg-nota" style="margin:0 0 12px">Cria o acesso no padrão <b>primeironome@hilink.com.br</b> com a senha inicial <b>123456</b>. No primeiro acesso a atendente cria a própria senha. Ela verá só as atividades direcionadas a ela.</p>
+    <label class="cdg-campo">Nome completo<input id="cd-atd-nome" type="text" list="cd-atd-sug" maxlength="60" placeholder="Ex.: Eduarda Lizandra"></label>
+    <datalist id="cd-atd-sug">${sugest.map(n=>`<option value="${cdEsc(n)}">`).join('')}</datalist>
+    <div id="cd-atd-res" class="cdg-nota" style="margin:0 0 12px"></div>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdAtendenteModal(false)">Fechar</button>
+      <button type="button" class="btn sm primary" id="cd-atd-criar" onclick="cdAtendenteCriar()">Cadastrar</button></div>
+  </div>`;
+  setTimeout(()=>document.getElementById('cd-atd-nome')?.focus(),30);
+}
+async function cdAtendenteCriar(){
+  const nome = (document.getElementById('cd-atd-nome')?.value||'').trim(), res = document.getElementById('cd-atd-res');
+  if(!nome){ toast('Informe o nome.','warn'); return; }
+  try{
+    const r = await cdAtvRpc('radar_atendente_criar',{p_nome:nome});
+    if(!r.ok){ res.innerHTML = cdEsc(r.motivo); return; }
+    res.innerHTML = `Acesso criado. E-mail: <b>${cdEsc(r.email)}</b> · senha inicial: <b>${cdEsc(r.senha)}</b>`;
+    document.getElementById('cd-atd-nome').value='';
+    await cdAtvCarregar(true);
+  }catch(e){ res.textContent = e.message; }
+}
+async function cdPromessaDecidir(id, aprovar){
+  try{ const r = await cdAtvRpc('radar_promessa_decidir',{p_promessa:id, p_aprovar:aprovar}); toast(r.ok?(aprovar?'Promessa aprovada.':'Promessa recusada.'):r.motivo, r.ok?'success':'warn'); }
+  catch(e){ toast(e.message,'error'); }
+  cdAtvCarregar();
+}
+
+// ---------- área de trabalho ----------
+async function cdAtvAbrir(id){
+  CD.atv.aberta = id; CD.atv.itens = null; CD.atv.filtro='tratar'; CD.atv.busca=''; CD.atv.expandido=null;
+  renderCobrancaDia(); window.scrollTo({top:0,behavior:'smooth'});
+  await cdAtvItensCarregar();
+}
+async function cdAtvItensCarregar(){
+  try{ CD.atv.itens = await cdAtvRpc('radar_atv_itens',{p_atividade:CD.atv.aberta}) || []; }
+  catch(e){ CD.atv.itens = []; toast('Erro ao carregar a atividade: '+e.message,'error'); }
+  renderCobrancaDia();
+}
+function cdAtvFechar(){ CD.atv.aberta=null; CD.atv.itens=[]; renderCobrancaDia(); cdAtvCarregar(); }
+async function cdAtvRemover(id, btn){
+  const a = (CD.atv.lista||[]).find(x=>x.id===id);
+  if(btn && !btn.dataset.confirmar){
+    btn.dataset.confirmar='1'; btn.classList.add('perigo');
+    btn.textContent = Number(a?.tratados) ? `Remover mesmo? ${cdNum(a.tratados)} já tratados` : 'Confirmar remoção';
+    setTimeout(()=>{ if(btn.isConnected){ delete btn.dataset.confirmar; btn.classList.remove('perigo'); btn.textContent='Remover'; } }, 5000);
+    return;
+  }
+  try{
+    const r = await cdAtvRpc('radar_atv_remover',{p_atividade:id});
+    if(!r.ok){ toast(r.motivo,'warn'); return; }
+    toast('Atividade removida'+(r.promessas_canceladas?`. ${cdNum(r.promessas_canceladas)} promessas canceladas: esses clientes voltam para a cobrança.`:'.'),'success');
+    if(CD.atv.aberta===id) CD.atv.aberta=null;
+    cdAtvCarregar();
+  }catch(e){ toast(e.message,'error'); }
+}
+async function cdAtvEncerrar(id){
+  const a = (CD.atv.lista||[]).find(x=>x.id===id);
+  const box = document.getElementById('cd-atv-encerrar');
+  if(box && !box.dataset.confirmar){ box.dataset.confirmar='1'; box.textContent=`Confirmar: encerrar com ${cdNum(a?.pendentes||0)} para tratar`; return; }
+  try{ await cdAtvRpc('radar_atv_encerrar',{p_atividade:id}); toast('Atividade encerrada.','success'); cdAtvFechar(); }
+  catch(e){ toast(e.message,'error'); }
+}
+async function cdAtvAtender(itemId){
+  try{
+    const r = await cdAtvRpc('radar_atv_pegar',{p_item:itemId});
+    if(!r.ok){ toast(r.motivo,'warn'); await cdAtvItensCarregar(); return; }
+    CD.atv.expandido = itemId; await cdAtvItensCarregar();
+    const el = document.getElementById('cd-it-'+itemId); if(el) el.scrollIntoView({block:'nearest',behavior:'smooth'});
+  }catch(e){ toast(e.message,'error'); }
+}
+function cdAtvProximo(){
+  const meuId = getRadarUser?.()?.id;
+  const livre = (CD.atv.itens||[]).find(i=>!i.resolvido_ixc && i.situacao==='pendente' && (!i.com_quem || i.com_quem===meuId));
+  if(!livre){ toast('Não há mais clientes livres para tratar nesta atividade.','success'); return; }
+  cdAtvAtender(livre.id);
+}
+async function cdAtvRegistrar(itemId, situacao){
+  const obs = (document.getElementById('cd-it-obs-'+itemId)?.value||'').trim();
+  let data = null;
+  if(situacao==='prometeu'){
+    data = document.getElementById('cd-it-data-'+itemId)?.value || '';
+    if(!data){ toast('Escolha a data prometida.','warn'); document.getElementById('cd-it-data-'+itemId)?.focus(); return; }
+  }
+  if(situacao==='nao_cobrar' && !obs){ toast('Escreva o motivo na observação.','warn'); document.getElementById('cd-it-obs-'+itemId)?.focus(); return; }
+  try{
+    const r = await cdAtvRpc('radar_atv_registrar',{p_item:itemId, p_situacao:situacao, p_obs:obs||null, p_data_promessa:data});
+    if(!r.ok){ toast(r.motivo,'warn'); }
+    else toast(r.mensagem, r.promessa==='pendente_aprovacao'?'warn':'success');
+    CD.atv.expandido = null; await cdAtvItensCarregar();
+  }catch(e){ toast(e.message,'error'); }
+}
+function cdAtvCopiar(txt, btn){
+  const ok = () => { if(btn){ const t=btn.textContent; btn.textContent='Copiado'; setTimeout(()=>btn.textContent=t,1200); } };
+  try{ navigator.clipboard.writeText(txt).then(ok).catch(()=>prompt('Copie o telefone:', txt)); }catch(e){ prompt('Copie o telefone:', txt); }
+}
+function cdAtvDetalhe(tipo, i){
+  const d = i.detalhe||{};
+  if(tipo==='cobrar') return `${d.boletos||1} boleto(s), mais antigo de ${cdData(d.vencimento_mais_antigo)}`;
+  if(tipo==='quebra') return `Contrato ${d.id_contrato}, boleto ${d.id_titulo} de ${cdData(d.vencimento)} em aberto, pago até ${cdData(d.pago_ate)}`;
+  if(tipo==='suspeitos') return `Título ${d.id_titulo} de ${cdData(d.vencimento)}: ${cdEsc(d.problema||'')}`;
+  if(tipo==='recolhimento_atd') return `OS ${cdEsc(d.os||'')} · ${cdEsc(d.tarefa||'')} · aberta em ${cdData(d.abertura)}${d.bairro?' · '+cdEsc(d.bairro):''}`;
+  if(tipo==='avencer') return `Vence em ${cdData(d.vencimento)}${d.email?' · '+cdEsc(d.email):''}`;
+  if(tipo==='sem_email') return `${cdEsc(d.situacao||'')}${d.email_atual?': '+cdEsc(d.email_atual):''}`;
+  if(tipo==='gerados_vencidos') return `Boleto ${d.id_titulo} emitido em ${cdData(d.emissao)} com vencimento ${cdData(d.vencimento)}${d.o_que_conferir?' · '+cdEsc(d.o_que_conferir):''}`;
+  return '';
+}
+function cdAtvEstado(i, meuId){
+  if(i.resolvido_ixc) return {k:'resolvido', t:'Resolvido no IXC', c:'ok'};
+  if(i.promessa_situacao==='não cumprida') return {k:'tratado', t:'Promessa não cumprida', c:'risk'};
+  if(i.promessa_situacao==='aguardando aprovação') return {k:'tratado', t:'Promessa aguardando aprovação', c:'warn'};
+  if(i.situacao==='prometeu' && i.promessa_data) return {k:'tratado', t:'Prometeu pagar até '+cdData(i.promessa_data), c:'info'};
+  if(i.situacao!=='pendente') return {k:'tratado', t:CD_SITUACOES[i.situacao]?.t||i.situacao, c:CD_SITUACOES[i.situacao]?.c||''};
+  if(i.com_quem && i.com_quem===meuId) return {k:'tratar', t:'Com você agora', c:'info'};
+  if(i.com_quem) return {k:'atendendo', t:'Com '+(i.com_quem_nome||'alguém'), c:'info'};
+  return {k:'tratar', t:'Para tratar', c:''};
+}
+function cdAreaHTML(){
+  const A = CD.atv, a = (A.lista||[]).find(x=>x.id===A.aberta) || {id:A.aberta, titulo:'Atividade', tipo:'cobrar'};
+  const meuId = getRadarUser?.()?.id;
+  const head = `<div class="cdg-area-h">
+      <button type="button" class="btn sm" onclick="cdAtvFechar()">${cdEhAtendente()?'Voltar às minhas atividades':'Voltar ao painel'}</button>
+      <div style="flex:1;min-width:0"><div class="cdg-atv-tit" style="font-size:17px">${cdEsc(a.titulo)}</div>
+        <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdData(a.prazo):''} · criada por ${cdEsc(a.criado_por_nome||'-')}</div></div>
+      ${a.status==='aberta'?`<button type="button" class="btn sm primary" onclick="cdAtvProximo()">Pegar o próximo cliente</button>`:''}
+      <button type="button" class="btn sm" onclick="cdAtvItensCarregar()">Atualizar</button>
+      ${cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvRemover(${a.id}, this)" title="Tira a atividade do painel e das atendentes">Remover</button>`:''}
+      ${a.status==='aberta'&&cdPodeGerenciar()?`<button type="button" class="btn sm" id="cd-atv-encerrar" onclick="cdAtvEncerrar(${a.id})" title="Só quem criou a atividade ou a gestão pode encerrar">Encerrar atividade</button>`:''}
+    </div>`;
+  if(A.itens===null) return `<div class="section compact-section">${head}<p class="cdg-nota">Carregando os clientes da atividade...</p></div>`;
+  const its = A.itens.map(i=>({...i, _e:cdAtvEstado(i, meuId)}));
+  const cont = k => its.filter(i=>k==='todos'||i._e.k===k).length;
+  const tot = its.length, res = cont('resolvido'), trat = cont('tratado');
+  const valT = its.reduce((s,i)=>s+(Number(i.valor)||0),0), valR = its.filter(i=>i._e.k==='resolvido').reduce((s,i)=>s+(Number(i.valor)||0),0);
+  const filtros = [['tratar','Para tratar'],['atendendo','Em atendimento'],['tratado','Tratados'],['resolvido','Resolvidos no IXC'],['todos','Todos']];
+  const busca = String(A.busca||'').trim().toUpperCase();
+  const vis0 = its.filter(i=>(A.filtro==='todos'||i._e.k===A.filtro||i.id===A.expandido) && (!busca || String(i.nome||'').toUpperCase().includes(busca) || String(i.id_cliente)===busca));
+  const vis = [...vis0.filter(i=>i.id===A.expandido), ...vis0.filter(i=>i.id!==A.expandido)];
+  const acoes = cdAtvAcoes(a.tipo);
+  const linhas = vis.slice(0,400).map(i=>{
+    const aberto = A.expandido===i.id && i.com_quem===meuId;
+    const fone = i.telefone ? `<span class="cdg-fone">${cdEsc(i.telefone)} <button type="button" class="cdg-mini" onclick="cdAtvCopiar('${cdEsc(String(i.telefone).replace(/'/g,''))}',this)">Copiar</button></span>` : '<span class="cdg-fone r">sem telefone</span>';
+    const podeAtender = !i.resolvido_ixc && a.status!=='encerrada' && (!i.com_quem || i.com_quem===meuId);
+    return `<div class="cdg-it ${aberto?'aberto':''} ${i._e.k}" id="cd-it-${i.id}">
+      <div class="cdg-it-l">
+        <div class="cdg-it-nome">${cdEsc(i.nome||'Cliente '+i.id_cliente)} <small>${i.id_cliente} · ${cdEsc(i.filial||'')}</small></div>
+        <div class="cdg-it-det">${cdAtvDetalhe(a.tipo,i)}${i.tentativas?` · ${i.tentativas} contato(s)`:''}${i.tratado_por_nome?` · último registro: ${cdEsc(i.tratado_por_nome)}`:''}${i.obs?` · "${cdEsc(i.obs)}"`:''}</div>
+      </div>
+      <div class="cdg-it-v">${i.valor!=null?cdMoeda(i.valor):''}${i.dias_atraso!=null&&a.tipo==='cobrar'?`<small>${i.dias_atraso} dias</small>`:''}</div>
+      ${fone}
+      <span class="cdg-chip ${i._e.c}">${cdEsc(i._e.t)}</span>
+      <span>${aberto?'':(podeAtender?`<button type="button" class="cdg-ir" onclick="cdAtvAtender(${i.id})">${i._e.k==='tratar'?'Atender':'Registrar de novo'}</button>`:'')}</span>
+      ${aberto?`<div class="cdg-it-acoes">
+        <input id="cd-it-obs-${i.id}" type="text" placeholder="Observação (o que o cliente disse)" maxlength="300" value="${cdEsc(i.obs||'')}">
+        ${acoes.includes('prometeu')?`<label class="cdg-prom">Data prometida <input id="cd-it-data-${i.id}" type="date" min="${cdHoje()}" max="${cdAddDias(10)}"></label>`:''}
+        <div class="cdg-botoes">${acoes.map(s=>`<button type="button" class="cdg-acao ${s}" onclick="cdAtvRegistrar(${i.id},'${s}')">${cdAtvRotuloAcao(a.tipo,s)}</button>`).join('')}
+          <button type="button" class="cdg-mini" onclick="CD.atv.expandido=null;renderCobrancaDia()">Fechar</button></div>
+        ${acoes.includes('prometeu')?`<div class="cdg-nota" style="margin:0">Prometeu pagar: o cliente sai da cobrança até a data (máximo 10 dias). Se a data passar do bloqueio, lance a liberação em confiança no IXC.</div>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('');
+  return `<div class="section compact-section cdg-area">${head}
+    <div class="cdg-area-res">
+      ${a.total!==undefined?cdSlaBarra(a,true):''}
+      <div class="cdg-atv-nums"><span><b>${cdNum(res)}</b> de ${cdNum(tot)} resolvidos no IXC</span><span><b>${cdNum(trat)}</b> tratados aguardando o IXC</span><span><b>${cdNum(cont('tratar'))}</b> para tratar</span>
+      ${valT?`<span><b>${cdMoeda(valR)}</b> de ${cdMoeda(valT)} recebido</span>`:''}</div>
+      <div class="cdg-nota">Resolvido no IXC quer dizer que a leitura do IXC confirmou: pagou, foi corrigido ou a OS foi encerrada. ${cdPodeGerenciar()?'Para ver pagamentos de hoje, use "Atualizar pagamentos agora" no painel.':'A confirmação chega com a leitura do IXC, que acontece de madrugada.'}</div>
+    </div>
+    <div class="cdg-area-f">${filtros.map(([k,t])=>`<button type="button" class="btn sm ${A.filtro===k?'primary':''}" onclick="CD.atv.filtro='${k}';renderCobrancaDia()">${t} (${cont(k)})</button>`).join('')}
+      <input type="text" placeholder="Buscar cliente" value="${cdEsc(A.busca)}" onchange="CD.atv.busca=this.value;renderCobrancaDia()"></div>
+    <div class="cdg-it-lista">${linhas || '<div class="cdg-nota" style="padding:14px">Nenhum cliente neste filtro.</div>'}</div>
+    ${vis.length>400?'<div class="cdg-nota">Mostrando os primeiros 400. Use a busca para achar os demais.</div>':''}
+  </div>`;
+}
+
+// ---------- perfis: gestão e liderança direcionam; atendente vê só o que é dela ----------
+function cdPodeGerenciar(){ return CD.perfil==='admin' || CD.perfil==='lider'; }
+function cdEhAtendente(){ return CD.perfil==='atendente'; }
+async function radarAplicarPerfil(){
+  const sb = getSB(); if(!sb || !getRadarUser?.()) return;
+  try{
+    const { data, error } = await sb.rpc('radar_meu_perfil');
+    if(error) throw error;
+    CD.perfil = data?.perfil || 'usuario'; CD.meuNome = data?.nome || '';
+    document.body.classList.toggle('radar-modo-atendente', CD.perfil==='atendente');
+    if(data?.trocar_senha) radarTrocarSenhaModal();
+    if(CD.perfil==='atendente'){ CD.atv.lista=null; go('cobrancaDia'); }
+    else if(document.body.dataset.activeMod==='cobrancaDia' || document.getElementById('mod-cobrancaDia')?.offsetParent) renderCobrancaDia();
+  }catch(e){ console.warn('[Radar] perfil', e.message||e); }
+}
+(function(){
+  const _go = window.go;
+  if(typeof _go==='function' && !_go._cdPerfil){
+    const g = function(mod){ return _go(CD.perfil==='atendente' ? 'cobrancaDia' : mod); };
+    g._cdPerfil = true; window.go = g;
+  }
+  setTimeout(()=>{ if(getRadarUser?.()) radarAplicarPerfil(); }, 0);
+})();
+function radarTrocarSenhaModal(){
+  let el = document.getElementById('cd-senha-modal');
+  if(!el){ el = document.createElement('div'); el.id='cd-senha-modal'; el.className='cdg-modal'; document.body.appendChild(el); }
+  el.innerHTML = `<div class="cdg-modal-box" role="dialog" aria-modal="true" aria-labelledby="cd-senha-tit">
+    <h3 id="cd-senha-tit">Crie a sua senha</h3>
+    <p class="cdg-nota" style="margin:0 0 12px">Este é o seu primeiro acesso. A senha inicial 123456 é igual para todos, por isso precisa ser trocada antes de continuar.</p>
+    <label class="cdg-campo">Nova senha (mínimo 8 caracteres)<input id="cd-senha-1" type="password" autocomplete="new-password"></label>
+    <label class="cdg-campo">Repita a nova senha<input id="cd-senha-2" type="password" autocomplete="new-password"></label>
+    <div id="cd-senha-msg" class="cdg-nota" style="margin:0 0 12px"></div>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm primary" id="cd-senha-ok" onclick="radarTrocarSenha()">Salvar senha</button></div>
+  </div>`;
+  setTimeout(()=>document.getElementById('cd-senha-1')?.focus(),30);
+}
+async function radarTrocarSenha(){
+  const a = document.getElementById('cd-senha-1').value, b = document.getElementById('cd-senha-2').value, msg = document.getElementById('cd-senha-msg');
+  if(a.length<8){ msg.textContent='Use pelo menos 8 caracteres.'; return; }
+  if(a==='12345678' || /^(\d)\1+$/.test(a) || a.includes('123456')){ msg.textContent='Escolha uma senha menos óbvia.'; return; }
+  if(a!==b){ msg.textContent='As duas senhas não são iguais.'; return; }
+  const btn = document.getElementById('cd-senha-ok'); btn.disabled=true; btn.textContent='Salvando...';
+  const { error } = await getSB().auth.updateUser({ password:a, data:{ trocar_senha:false } });
+  if(error){ msg.textContent='Não consegui salvar: '+error.message; btn.disabled=false; btn.textContent='Salvar senha'; return; }
+  document.getElementById('cd-senha-modal')?.remove();
+  toast('Senha criada.','success');
+}
+function cdAtendenteHTML(){
+  const L = CD.atv.lista;
+  const nome = (CD.meuNome||'').split(' ')[0];
+  if(L===null) return `<div class="section compact-section"><h2 class="section-title">Minhas atividades</h2><p class="cdg-nota">Carregando...</p></div>`;
+  const cards = L.map(a=>{
+    const tot=Number(a.total)||0, res=Number(a.resolvidos)||0, trat=Math.max(0,(Number(a.tratados)||0)-res);
+    const atrasada = a.prazo && a.prazo < cdHoje() && Number(a.pendentes)>0;
+    return `<div class="cdg-atv-card sla-${cdSla(a).c}">
+      <div class="cdg-atv-top"><div><div class="cdg-atv-tit">${cdEsc(a.titulo)}</div>
+        <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · direcionada por ${cdEsc(a.criado_por_nome||'-')}${a.prazo?` · prazo ${cdData(a.prazo)}`:''}${atrasada?' · <b class="r">atrasada</b>':''}</div></div>
+        <button type="button" class="btn sm primary" onclick="cdAtvAbrir(${a.id})">${Number(a.pendentes)?'Começar':'Abrir'}</button></div>
+      ${cdSlaBarra(a)}
+      <div class="cdg-atv-nums"><span><b>${cdNum(a.pendentes)}</b> para tratar</span><span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(res)}</b> resolvidos</span></div>
+    </div>`;
+  }).join('');
+  return `<div class="section compact-section cdg-area">
+    <div class="cdg-area-h"><div style="flex:1;min-width:0"><div class="cdg-atv-tit" style="font-size:18px">${nome?'Olá, '+cdEsc(nome)+'. ':''}Suas atividades</div>
+      <div class="cdg-atv-meta">Aqui aparecem só as atividades que a liderança direcionou para você.</div></div>
+      <button type="button" class="btn sm" onclick="cdAtvCarregar()">Atualizar</button></div>
+    ${L.length?`<div class="cdg-atv-grid">${cards}</div>`:`<div class="cdg-box"><div class="cdg-nota">Nenhuma atividade direcionada para você no momento. Quando a liderança enviar uma, ela aparece aqui.</div></div>`}
+    <div class="cdg-box" style="margin-top:12px"><div class="cdg-eyebrow">Como trabalhar</div><div class="cdg-nota" style="margin:0">
+      Clique em <b>Começar</b> e depois em <b>Pegar o próximo cliente</b>. Fale com o cliente e registre o resultado com um botão. Se ele prometer pagar, escolha a data (até 10 dias). Quando o IXC confirmar o pagamento ou a correção, o cliente passa para "Resolvidos" sozinho.</div></div>
+  </div>`;
+}
+
+// ===== Tema claro do Radar =====
+// O tema escuro continua no código. O tema claro converte as cores na hora em que a página abre
+// (fundos escuros viram claros, textos claros viram escuros, cores de destaque são preservadas).
+// Botão "Tema claro / escuro" no menu lateral; a escolha fica salva neste navegador.
+(function(){
+  const CHAVE='radar_tema';
+  function lerPref(){ try{ return localStorage.getItem(CHAVE)||'claro'; }catch(e){ return 'claro'; } }
+  function salvarPref(v){ try{ localStorage.setItem(CHAVE,v); }catch(e){} }
+
+  // ---------- cores ----------
+  function parseCor(s){
+    s=s.trim().toLowerCase(); let m;
+    if((m=s.match(/^#([0-9a-f]{3,8})$/))){ let h=m[1]; if(h.length===3||h.length===4) h=h.split('').map(c=>c+c).join('');
+      return {r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16),a:h.length===8?parseInt(h.slice(6,8),16)/255:1}; }
+    if((m=s.match(/^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,/]+([\d.]+%?))?\s*\)$/))){
+      let a=m[4]===undefined?1:(m[4].endsWith('%')?parseFloat(m[4])/100:parseFloat(m[4])); return {r:+m[1],g:+m[2],b:+m[3],a}; }
+    if(s==='white') return {r:255,g:255,b:255,a:1};
+    if(s==='black') return {r:0,g:0,b:0,a:1};
+    return null;
+  }
+  function hsl({r,g,b}){ r/=255;g/=255;b/=255; const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,c=mx-mn; let h=0,s=0;
+    if(c){ s=c/(1-Math.abs(2*l-1)); h = mx===r?((g-b)/c)%6 : mx===g?(b-r)/c+2 : (r-g)/c+4; h*=60; if(h<0)h+=360; } return {h,s,l,c}; }
+  function rgbDeHsl(h,s,l){ const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs((h/60)%2-1)), m=l-c/2; let r=0,g=0,b=0;
+    if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}
+    return {r:Math.round((r+m)*255),g:Math.round((g+m)*255),b:Math.round((b+m)*255)}; }
+  function txt(o,a){ return a<1 ? `rgba(${o.r},${o.g},${o.b},${+a.toFixed(3)})` : '#'+[o.r,o.g,o.b].map(v=>v.toString(16).padStart(2,'0')).join(''); }
+  // papel: 'fundo', 'borda', 'texto', 'sombra'
+  function converter(cor, papel, fundoForte){
+    const p=parseCor(cor); if(!p) return cor;
+    const {h,s,l,c}=hsl(p); const a=p.a; const neutro = c < 0.32;
+    if(papel==='sombra'){ if(l<0.2) return txt({r:15,g:23,b:42}, Math.min(a,0.10)); return cor; }
+    if(papel==='fundo'){
+      if(neutro && l<0.5){ // fundos escuros e azul-marinho viram claros, com um leve tom azulado
+        const nl = a<1 ? 0.5 : 0.985 - l*0.32; return txt(rgbDeHsl(h, Math.min(s,0.35), Math.min(nl,0.99)), a<1 ? Math.min(a*0.55,0.10) : 1); }
+      if(neutro && l>=0.85 && a<0.5){ return txt({r:15,g:23,b:42}, Math.min(a,0.06)); } // brilhos claros sobre fundo escuro
+      if(!neutro && a<0.5){ return txt(p, Math.min(a*1.1,0.16)); } // véus coloridos ficam como estão
+      return cor;
+    }
+    if(papel==='borda'){
+      if(neutro && l<0.55) return txt(rgbDeHsl(h, Math.min(s,0.3), 0.86), 1);
+      if(!neutro && a<1) return txt(p, Math.min(a+0.1,0.6));
+      if(neutro && l>=0.85 && a<1) return txt({r:15,g:23,b:42}, Math.min(a,0.12));
+      return cor;
+    }
+    // texto
+    if(fundoForte) return cor;               // texto sobre botão ou etiqueta colorida continua
+    if(neutro && l>0.55) return txt(rgbDeHsl(h, Math.min(s,0.45), 0.10 + (1-l)*0.55), a); // claro -> escuro
+    if(!neutro && l>0.6) return txt(rgbDeHsl(h, Math.min(1,s), Math.max(0.30, l-0.30)), a); // destaque claro -> mais fechado
+    return cor;
+  }
+  const RE_COR=/#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|\bwhite\b|\bblack\b/g;
+  function papelDe(prop){
+    prop=prop.trim().toLowerCase();
+    if(prop.startsWith('--')) return null; // variáveis tratadas à parte
+    if(prop==='color'||prop==='fill'||prop==='stroke'||prop==='caret-color'||prop==='-webkit-text-fill-color'||prop==='text-decoration-color') return 'texto';
+    if(prop.startsWith('background')) return 'fundo';
+    if(prop.startsWith('border')||prop.startsWith('outline')) return 'borda';
+    if(prop==='box-shadow'||prop==='text-shadow') return 'sombra';
+    return null;
+  }
+  function papelVariavel(nome){
+    nome=nome.toLowerCase();
+    if(/shadow/.test(nome)) return 'sombra';
+    if(/border|line|grid|divider/.test(nome)) return 'borda';
+    if(/(^|-)(bg|surface|panel|card|fundo)/.test(nome)) return 'fundo';
+    if(/text|muted|soft|caption|label|section|title|fg|sub/.test(nome)) return 'texto';
+    return null;
+  }
+  // variável sem nome conhecido: escura e neutra é fundo; clara e neutra é texto; colorida é destaque (texto)
+  function papelPelaCor(c){ const p=parseCor(c); if(!p) return 'texto'; const x=hsl(p); if(x.c<0.32 && x.l<0.5) return 'fundo'; if(x.c<0.32) return 'texto'; return null; }
+  function temFundoForte(decls){
+    const m = decls.match(/(?:^|;)\s*background(?:-color)?\s*:([^;]+)/i); if(!m) return false;
+    if(/linear-gradient/.test(m[1])){ const cs=m[1].match(RE_COR)||[]; return cs.some(x=>{const p=parseCor(x); return p&&hsl(p).c>=0.32&&p.a>0.6;}); }
+    const cs = m[1].match(RE_COR)||[]; return cs.some(x=>{const p=parseCor(x); return p&&hsl(p).c>=0.32&&p.a>0.6;});
+  }
+  function converterDecls(decls){
+    const forte = temFundoForte(decls);
+    return decls.replace(/(^|;|\{)(\s*)([-a-zA-Z0-9_]+)(\s*:)([^;]*)/g, (all,pre,sp,prop,colon,val)=>{
+      let papel = prop.startsWith('--') ? papelVariavel(prop) : papelDe(prop);
+      if(!papel && !prop.startsWith('--')) return all;
+      return pre+sp+prop+colon+val.replace(RE_COR, c=>{ const pp = papel || papelPelaCor(c); return pp ? converter(c, pp, forte) : c; });
+    });
+  }
+  function converterCss(css){ return css.replace(/([^{}]*)\{([^{}]*)\}/g, (all,sel,decls)=>sel+'{'+converterDecls(decls)+'}'); }
+
+  // ---------- aplicar ----------
+  const originais = new Map();
+  let observador=null;
+  function folhasAlvo(){ return [...document.querySelectorAll('style')].filter(st=>!st.dataset.temaIgnorar); }
+  function converterInline(el){
+    if(!el.getAttribute) return;
+    const st=el.getAttribute('style'); if(!st || !/#|rgb|white|black/i.test(st) || el.dataset.temaOk===st) return;
+    el.dataset.temaOrig=st; // sempre guarda a versão mais recente escrita pelo Radar
+    const nv=converterDecls(';'+st).slice(1); el.dataset.temaOk=nv; if(nv!==st) el.setAttribute('style',nv);
+  }
+  function varrer(raiz){ if(raiz.nodeType!==1) return; converterInline(raiz); raiz.querySelectorAll && raiz.querySelectorAll('[style]').forEach(converterInline); }
+  function aplicar(tema){
+    document.documentElement.dataset.radarTema = tema;
+    folhasAlvo().forEach(st=>{
+      if(!originais.has(st)) originais.set(st, st.textContent);
+      st.textContent = tema==='claro' ? converterCss(originais.get(st)) : originais.get(st);
+    });
+    if(tema==='claro'){
+      varrer(document.body);
+      if(!observador){ observador=new MutationObserver(ms=>{ ms.forEach(m=>{ if(m.type==='attributes') converterInline(m.target); else m.addedNodes.forEach(varrer); }); });
+        observador.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['style']}); }
+    }else{
+      if(observador){ observador.disconnect(); observador=null; }
+      document.querySelectorAll('[data-tema-orig]').forEach(el=>{ el.setAttribute('style', el.dataset.temaOrig); delete el.dataset.temaOk; delete el.dataset.temaOrig; });
+    }
+    const b=document.getElementById('radar-tema-btn'); if(b) b.textContent = tema==='claro' ? 'Usar tema escuro' : 'Usar tema claro';
+  }
+  window.radarTema = function(t){ t = t || (document.documentElement.dataset.radarTema==='claro'?'escuro':'claro'); salvarPref(t); aplicar(t); };
+  window.radarTemaConverter = converterCss; // para testes
+  function botao(){
+    const nav=document.querySelector('.sidebar'); if(!nav || document.getElementById('radar-tema-btn')) return;
+    const b=document.createElement('button'); b.id='radar-tema-btn'; b.type='button'; b.className='radar-tema-btn';
+    b.onclick=()=>window.radarTema(); nav.appendChild(b);
+  }
+  function iniciar(){ botao(); aplicar(lerPref()); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
+})();
+
 function renderCobrancaDia(){
   const box = document.getElementById('mod-cobrancaDia');
   if(!box) return;
+  if(CD.perfil==='atendente'){
+    box.innerHTML = CD.atv.aberta ? cdAreaHTML() : cdAtendenteHTML();
+    if(CD.atv.lista===null && !CD.atv._busy){ CD.atv._busy=true; cdAtvCarregar().finally(()=>{CD.atv._busy=false;}); }
+    return;
+  }
   const r = CD.dados.resumo;
   if(!r){
     box.innerHTML = `<div class="section compact-section">
@@ -23024,6 +24062,7 @@ function renderCobrancaDia(){
     if(!CD._tentou){ CD._tentou = true; cdCarregar(); }
     return;
   }
+  if(CD.atv && CD.atv.aberta){ box.innerHTML = cdAreaHTML(); return; }
   const faixas = r.faixas || {};
   const fx = k => faixas[k] || {valor:0,clientes:0};
   const cargaErros = (r.ultima_carga||[]).filter(c => c.erro && c.tipo!=='filiais');
@@ -23045,15 +24084,18 @@ function renderCobrancaDia(){
     corpo = linhas.map(x=>`<tr><td>${cdEsc(x.tratamento)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.id_contrato}</td><td>${cdData(x.vencimento_aberto)}</td><td>${cdMoeda(x.valor_aberto)}</td><td>${cdData(x.pago_ate)}</td><td>${cdData(x.ativacao)}</td></tr>`).join('');
   }else if(CD.aba==='avencer'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Vencimento</th><th>Faltam</th><th>Boletos</th><th>Valor</th><th>E-mail</th>';
-    corpo = linhas.slice(0,1500).map(x=>`<tr><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdData(x.vencimento)}</td><td>${x.dias_para_vencer===0?'vence hoje':x.dias_para_vencer+' dia(s)'}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${cdEsc(x.email||'')}</td></tr>`).join('');
+    corpo = linhas.slice(0,1500).map(x=>`<tr><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdData(x.vencimento)}</td><td>${x.dias_para_vencer===0?'vence hoje':x.dias_para_vencer+' dia(s)'}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.email_util?cdEsc(x.email||''):'<span style="color:#B45309;font-weight:700">sem e-mail útil</span>'}</td></tr>`).join('');
   }else if(CD.aba==='sem_email'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Situação</th><th>E-mail atual</th>';
     corpo = linhas.slice(0,1500).map(x=>`<tr><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.situacao)}</td><td>${cdEsc(x.email_atual||'')}</td></tr>`).join('');
+  }else if(CD.aba==='gerados_vencidos'){
+    cab = '<th>Tipo</th><th>Filial</th><th>Título</th><th>Cód.</th><th>Cliente</th><th>Emitido em</th><th>Vencimento</th><th>Dias depois</th><th>Valor</th><th>O que conferir</th>';
+    corpo = linhas.map(x=>`<tr><td>${cdEsc(x.tipo)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_titulo}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdData(x.emissao)}</td><td>${cdData(x.vencimento)}</td><td>${x.dias_gerado_apos_vencimento}</td><td>${cdMoeda(x.valor)}</td><td>${cdEsc(x.o_que_conferir)}</td></tr>`).join('');
   }else{
     cab = '<th>Problema</th><th>Filial</th><th>Título</th><th>Cód.</th><th>Cliente</th><th>Vencimento</th><th>Valor</th>';
     corpo = linhas.map(x=>`<tr><td>${cdEsc(x.problema)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_titulo}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdData(x.vencimento)}</td><td>${cdMoeda(x.valor)}</td></tr>`).join('');
   }
-  const podeOpa = CD.aba!=='suspeitos' && CD.aba!=='quebra';
+  const podeOpa = CD.aba!=='suspeitos' && CD.aba!=='quebra' && CD.aba!=='gerados_vencidos' && CD.aba!=='avencer';
   const semFone = podeOpa ? linhas.filter(x=>!cdFoneOpa(x.telefone)).length : 0;
   const conferido = CD.titulosEm || CD.carregadoEm;
   const contagem = k => { const fonte=CD_ABAS[k].fonte; return (CD.dados[fonte]||[]).length; };
@@ -23066,25 +24108,7 @@ function renderCobrancaDia(){
   const sp = { qt: spL.length, zerado: spL.filter(x=>/zerad/.test(x.problema||'')).length, acumulo: spL.filter(x=>/acumulo|acúmulo/.test(x.problema||'')).length };
   sp.alto = sp.qt - sp.zerado - sp.acumulo;
   box.innerHTML = `
-    <div class="section compact-section">
-      <h2 class="section-title">Cobrança do dia <span class="help">Pagamentos conferidos no IXC às ${conferido.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} de ${conferido.toLocaleDateString('pt-BR')}</span></h2>
-      ${cargaErros.length?`<div class="drop-empty" style="margin:6px 0">Atenção: a leitura de madrugada teve erro em ${cargaErros.map(c=>cdEsc(c.tipo)).join(', ')}. Confira antes de usar as listas.</div>`:''}
-      <div class="cd-faixa">Agir hoje</div>
-      <div class="cd-kpis cd-kpis-4">
-        ${cdCard({cls:'risco', label:'Antes do bloqueio (1 a 5 dias)', valor:cdMoeda(rPre.valor), sub:cdNum(rPre.clientes)+' clientes para cobrar hoje', ir:"cdIrLista('cobrar','pre')"})}
-        ${cdCard({cls:'corrigir', label:'Quebra financeira', valor:cdMoeda(qb.valor), sub:cdNum(qb.recentes)+' faturas para corrigir, '+cdNum(qb.antigos)+' para cobrar', ir:"cdIrLista('quebra')"})}
-        ${cdCard({cls:'corrigir', label:'Corrigir no IXC', valor:cdNum(sp.qt)+' títulos', sub:[[sp.zerado,'zerados'],[sp.alto,'acima de R$ 1.500'],[sp.acumulo,'com acúmulo']].filter(x=>x[0]).map(x=>cdNum(x[0])+' '+x[1]).join(', ')||'nada a corrigir', ir:"cdIrLista('suspeitos')"})}
-        ${cdCard({label:'Agendar recolhimento', valor:cdNum((CD.dados.recolhimento_atd||[]).length)+' clientes', sub:cdNum((CD.dados.recolhimento_atd||[]).reduce((t,x)=>t+String(x.os||'').split('/').filter(Boolean).length,0))+' OS abertas (agendamento e reagendamento ATD)', ir:"cdIrLista('recolhimento_atd')"})}
-      </div>
-      <div class="cd-faixa">Acompanhar</div>
-      <div class="cd-kpis cd-kpis-5">
-        ${cdCard({label:'Vencido total', valor:cdMoeda(rTodos.valor), sub:cdNum(rTodos.clientes)+' clientes, sem Filial 10', ir:"cdIrLista('cobrar','todos')"})}
-        ${cdCard({cls:'alerta', label:'Mais de 90 dias', valor:cdMoeda(r90.valor), sub:cdNum(r90.clientes)+' clientes com boleto mais antigo acima de 90 dias', ir:"cdIrLista('cobrar','d90')"})}
-        ${cdCard({cls:'bom', label:'Pagamentos de '+cdData(r.pagamentos_dia), valor:cdMoeda(r.pagamentos_valor), sub:cdNum(r.pagamentos_qt)+' pagamentos, '+cdNum(r.pagamentos_em_atraso)+' em atraso'})}
-        ${cdCard({label:'A vencer em 6 dias', valor:cdMoeda((CD.dados.avencer||[]).reduce((t,x)=>t+(Number(x.valor)||0),0)), sub:cdNum((CD.dados.avencer||[]).length)+' clientes para lembrar', ir:"cdIrLista('avencer')"})}
-        ${cdCard({label:'E-mail útil na base', valor:(r.email_base?Math.round(100*r.email_base.com_email_util/Math.max(1,r.email_base.clientes))+'%':'-'), sub:cdNum((CD.dados.sem_email||[]).length)+' clientes para cadastrar', ir:"cdIrLista('sem_email')"})}
-      </div>
-    </div>
+    ${cdGuiaHTML()}
     <div class="section compact-section" id="cd-lista">
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
         ${Object.entries(CD_ABAS).map(([k,a])=>`<button class="btn sm ${k===CD.aba?'primary':''}" onclick="CD.aba='${k}';renderCobrancaDia()">${a.titulo} (${contagem(k)})</button>`).join('')}
@@ -23093,13 +24117,15 @@ function renderCobrancaDia(){
           <select onchange="CD.filial=this.value;renderCobrancaDia()" style="margin-left:6px">${filiais.map(x=>`<option ${x===CD.filial?'selected':''}>${cdEsc(x)}</option>`).join('')}</select>
         </label>
         ${podeOpa?`<button class="btn sm primary" onclick="cdExportarOpa()">Exportar para o OPA</button>`:''}
+        ${CD.aba==='avencer'?`<button class="btn sm primary" onclick="cdExportarEmails()" title="Só clientes com e-mail útil, para o lembrete de vencimento">Exportar e-mails</button>`:''}
         <button class="btn sm" onclick="cdExportarPlanilha()">Exportar planilha</button>
+        ${cdPodeGerenciar()&&CD_ATV_TIPOS[CD.aba]&&CD.aba!=='avencer'?`<button class="btn sm" onclick="cdAtvNova(CD.aba, CD.f.preset, true)" title="Direciona para as atendentes exatamente a lista que está na tela, com os filtros">Gerar atividade com esta lista</button>`:''}
         <button class="btn sm primary" onclick="cdAtualizarPagamentos()" ${CD.atualizando?'disabled':''} title="Busca agora no IXC os títulos em aberto e tira da lista quem já pagou">${CD.atualizando?'Buscando no IXC...':'Atualizar pagamentos agora'}</button>
       </div>
       ${CD.aba==='cobrar'?cdPainelFiltros():`<div class="cd-filtros"><label>Cliente <input type="text" value="${cdEsc(CD.f.busca)}" placeholder="nome ou código" style="width:150px" onchange="cdSetFiltro('busca', this.value)"></label></div>`}
       <div class="cd-passos"><span>1. Escolha a lista e os filtros</span><span>2. Confira o resultado</span><span>3. Exporte para o OPA e suba o arquivo de cada filial</span></div>
       <p style="font-size:12px;margin:8px 0">${CD_ABAS[CD.aba].desc}</p>
-      <div class="cd-resultado"><strong>${cdNum(linhas.length)}</strong> ${CD.aba==='suspeitos'||CD.aba==='quebra'?'títulos':'clientes'} na lista, ${CD.aba==='sem_email'?'para cadastrar o e-mail':`<strong>${cdMoeda(totalValor)}</strong> ${CD.aba==='avencer'?'a vencer':'em aberto'}`}${podeOpa&&semFone?`. ${semFone} sem celular válido ficam fora do arquivo do OPA`:''}.${linhas.length>1500&&['cobrar','avencer','sem_email'].includes(CD.aba)?' Mostrando os primeiros 1.500 na tela; a exportação leva todos.':''}</div>
+      <div class="cd-resultado"><strong>${cdNum(linhas.length)}</strong> ${CD.aba==='suspeitos'||CD.aba==='quebra'||CD.aba==='gerados_vencidos'?'títulos':'clientes'} na lista, ${CD.aba==='sem_email'?'para cadastrar o e-mail':`<strong>${cdMoeda(totalValor)}</strong> ${CD.aba==='avencer'?'a vencer':'em aberto'}`}${podeOpa&&semFone?`. ${semFone} sem celular válido ficam fora do arquivo do OPA`:''}.${linhas.length>1500&&['cobrar','avencer','sem_email'].includes(CD.aba)?' Mostrando os primeiros 1.500 na tela; a exportação leva todos.':''}</div>
       <div class="tbl-wrap" style="max-height:520px"><table class="decision-table"><thead><tr>${cab}</tr></thead><tbody>${corpo||'<tr><td colspan="9">Nenhum cliente com esses filtros.</td></tr>'}</tbody></table></div>
     </div>`;
 }
@@ -23133,6 +24159,13 @@ function cdExportarOpa(){
   toast(`${nomes.length} arquivo(s) gerado(s), um por filial`,'success');
 }
 
+function cdExportarEmails(){
+  const linhas = cdLinhasFiltradas().filter(x=>x.email_util && x.email);
+  if(!linhas.length){ toast('Ninguém com e-mail útil nesta lista','warn'); return; }
+  const corpo = ['nome;email;vencimento;valor;filial', ...linhas.map(x=>[x.nome, x.email, cdData(x.vencimento), String(x.valor).replace('.',','), x.filial].map(cdCsvCampo).join(';'))].join('\r\n');
+  cdBaixar(`lembrete_email_${cdSlug(CD.filial)}_${String(CD.dados.resumo?.data||'').slice(0,10)}.csv`, corpo);
+  toast(`${linhas.length} e-mails exportados. ${cdLinhasFiltradas().length - linhas.length} clientes sem e-mail útil ficaram de fora.`,'success');
+}
 function cdExportarPlanilha(){
   const linhas = cdLinhasFiltradas();
   if(!linhas.length){ toast('Nada para exportar','warn'); return; }
@@ -23140,10 +24173,31 @@ function cdExportarPlanilha(){
   const corpo = [cols.join(';'), ...linhas.map(x=>cols.map(c=>cdCsvCampo(x[c])).join(';'))].join('\r\n');
   cdBaixar(`${cdNomeLista()}_${cdSlug(CD.filial)}_${String(CD.dados.resumo?.data||'').slice(0,10)}.csv`, corpo);
 }
-Object.assign(window, { cdCarregar, renderCobrancaDia, cdExportarOpa, cdExportarPlanilha, cdAtualizarPagamentos, cdAplicarPreset, cdSetFiltro, cdLimparFiltros, cdIrAba, cdIrLista, CD });
+Object.assign(window, { cdAtvRemover, cdAtendenteModal, cdAtendenteCriar, cdAtvDivisao, radarTrocarSenha, radarAplicarPerfil, cdAtvNova, cdAtvCriar, cdAtvModal, cdAtvAbrir, cdAtvFechar, cdAtvAtender, cdAtvProximo, cdAtvRegistrar, cdAtvEncerrar, cdAtvCopiar, cdAtvCarregar, cdAtvItensCarregar, cdPromessaDecidir, cdExportarEmails, cdCarregar, renderCobrancaDia, cdExportarOpa, cdExportarPlanilha, cdAtualizarPagamentos, cdAplicarPreset, cdSetFiltro, cdLimparFiltros, cdIrAba, cdIrLista, CD });
 
 
 </script>
+<style data-tema-ignorar="1">
+/* ===== Menu lateral no tema claro: faixa azul-marinho da Hilink, com hierarquia ===== */
+html[data-radar-tema="claro"] .sidebar{background:linear-gradient(180deg,#0B2545 0%,#0B2F57 100%)!important;border-right:0!important;color:#EAF1F9!important;box-shadow:2px 0 12px rgba(11,37,69,.18)}
+html[data-radar-tema="claro"] .sidebar .logo-box{filter:none!important;border-bottom:1px solid rgba(255,255,255,.10)!important;background-color:transparent!important;padding-bottom:16px!important;margin-bottom:6px!important}
+html[data-radar-tema="claro"] .sidebar nav{padding:0 12px!important}
+html[data-radar-tema="claro"] .sidebar .nav-group{padding:4px 0 10px;border-bottom:1px solid rgba(255,255,255,.07)}
+html[data-radar-tema="claro"] .sidebar .nav-group:last-of-type{border-bottom:0}
+html[data-radar-tema="claro"] .sidebar .nav-section{color:#8DB5DE!important;font-size:10.5px!important;font-weight:800!important;letter-spacing:.12em!important;text-transform:uppercase;padding:14px 12px 8px!important;opacity:1!important}
+html[data-radar-tema="claro"] .sidebar .nav-item{color:#EAF1F9!important;background:transparent!important;font-size:13.5px!important;font-weight:700!important;padding:10px 12px!important;border-radius:8px!important;margin-bottom:3px!important;border:0!important;box-shadow:none!important;transition:background .15s}
+html[data-radar-tema="claro"] .sidebar .nav-item small{color:rgba(234,241,249,.62)!important;font-size:11px!important;font-weight:500!important;margin-top:3px!important;opacity:1!important}
+html[data-radar-tema="claro"] .sidebar .nav-item:hover{background:rgba(255,255,255,.08)!important}
+html[data-radar-tema="claro"] .sidebar .nav-item.disabled{opacity:.55}
+html[data-radar-tema="claro"] .sidebar .nav-item.active{background:#FFFFFF!important;color:#0B2545!important;box-shadow:inset 4px 0 0 #2F9BEA,0 4px 14px rgba(0,0,0,.18)!important;opacity:1}
+html[data-radar-tema="claro"] .sidebar .nav-item.active small{color:#4F6E8F!important}
+html[data-radar-tema="claro"] .sidebar .nav-item .badge-mini{background:rgba(255,255,255,.14)!important;color:#EAF1F9!important}
+html[data-radar-tema="claro"] .sidebar .nav-item.active .badge-mini{background:#E6EEF7!important;color:#0B2545!important}
+html[data-radar-tema="claro"] .sidebar .nav-note{color:rgba(234,241,249,.45)!important;font-size:11px!important}
+html[data-radar-tema="claro"] .sidebar .radar-tema-btn{border-color:rgba(255,255,255,.25)!important;color:#EAF1F9!important;background:transparent!important}
+html[data-radar-tema="claro"] .sidebar .radar-tema-btn:hover{background:rgba(255,255,255,.08)!important}
+html[data-radar-tema="claro"] .sidebar .nav-item:focus-visible,html[data-radar-tema="claro"] .sidebar .radar-tema-btn:focus-visible{outline:2px solid #8DB5DE;outline-offset:2px}
+</style>
 </body>
 
 <script>
