@@ -2677,9 +2677,9 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-atv-info{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .cdg-atv-info span{display:flex;flex-direction:column;gap:1px;min-width:0}
 .cdg-atv-info small{font-size:10px;text-transform:uppercase;letter-spacing:.05em;opacity:.65;font-weight:700}
-.cdg-atv-info b{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cdg-atv-info b{font-size:12.5px;line-height:1.3;overflow-wrap:anywhere}
 .cdg-atv-acoes{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border-top:1px solid rgba(143,163,184,.25);padding-top:8px;margin-top:2px}
-.cdg-destaque{border-color:#E5484D!important;color:#D1343A!important;font-weight:700}
+.cdg-destaque{background:#fff!important;border:1px solid #E5484D!important;color:#D1343A!important;font-weight:700}
 .perigo-txt{color:#D1343A!important}
 .cdg-btn-perigo{background:#E5484D!important;color:#fff!important;border-color:#E5484D!important}
 .cdg-conf-lista{margin:0 0 12px;padding-left:18px;font-size:13px;line-height:1.5}
@@ -23570,7 +23570,7 @@ function cdAtvPainelHTML(){
       <div class="cdg-atv-tit">${cdEsc(a.titulo)}</div>
       <div class="cdg-atv-info">
         <span><small>Quem trata</small><b>${resp}</b></span>
-        <span><small>Prazo</small><b>${a.prazo?cdData(a.prazo)+' às 18h':'sem prazo'}</b></span>
+        <span><small>Prazo</small><b>${a.prazo?cdData(a.prazo).slice(0,5)+', 18h':'sem prazo'}</b></span>
         <span><small>Tipo</small><b>${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||a.tipo)}</b></span>
       </div>
       ${cdSlaBarra(a)}
