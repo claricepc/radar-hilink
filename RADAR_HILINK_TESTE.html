@@ -2572,6 +2572,12 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-numeros .cdg-num.info .v{color:var(--g-blue)}
 .cdg-numeros .cdg-num .l{color:var(--c)}
 .cdg-numeros .cdg-num .v{font-size:22px}
+.cdg-numeros .cdg-num.clicavel{cursor:pointer;transition:transform .12s, box-shadow .12s}
+.cdg-numeros .cdg-num.clicavel:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.cdg-numeros .cdg-num .ver{margin-left:8px;font-size:10px;border:1px solid var(--c);border-radius:999px;padding:1px 8px;letter-spacing:.02em}
+.cdg-link{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+.cdg-link:hover{text-decoration-style:solid}
+.cdg-link.r{color:var(--g-risk);font-weight:600}
 .cdg-numeros .cdg-num .d{grid-column:1 / span 2;font-size:12px;color:var(--g-sub);margin-top:8px;padding-top:7px;border-top:1px dashed color-mix(in srgb,var(--c) 35%,transparent)}
 .cdg-numeros .cdg-num .d .bom{color:var(--g-ok)} .cdg-numeros .cdg-num .d .ruim{color:var(--g-risk)}
 .cdg-delta{font-weight:700}
@@ -23308,7 +23314,7 @@ function cdCard(o){
 }
 function cdIrLista(aba, preset){
   CD.aba = aba;
-  if(aba==='cobrar' && preset){ cdAplicarPreset(preset); }
+  if(aba==='cobrar' && preset){ CD.filial='Todas'; cdAplicarPreset(preset); }
   renderCobrancaDia();
   const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -23420,14 +23426,14 @@ function cdGuiaHTML(){
   // 2. Resumo em texto
   const delta = g.delta===null ? '' : (Math.abs(g.delta) < 0.005 ? ' O valor está igual ao da leitura anterior.'
     : ` Desde a leitura anterior, o vencido <span class="cdg-delta ${g.delta<0?'down':'up'}">${g.delta<0?'caiu':'subiu'} ${cdMoeda(Math.abs(g.delta))}</span>.`);
-  const p1 = `Hoje há <b>${cdMoeda(g.todos.valor)}</b> vencidos, de <b>${cdNum(g.todos.clientes)} clientes</b>.${delta}`;
+  const p1 = `Hoje há <b>${cdMoeda(g.todos.valor)}</b> vencidos, de <button type="button" class="cdg-link " onclick="cdIrLista('cobrar','todos')" title="Abrir a lista"><b>${cdNum(g.todos.clientes)} clientes</b></button>.${delta}`;
   const p2 = g.pre.clientes
-    ? `A prioridade do dia é cobrar <span class="r">${cdNum(g.pre.clientes)} clientes com 1 a 5 dias de atraso</span> (${cdMoeda(g.pre.valor)}). Depois de cerca de 5 dias úteis o IXC bloqueia a internet deles, e cada bloqueio vira ligação, desgaste e risco de cancelamento.`
+    ? `A prioridade do dia é cobrar <button type="button" class="cdg-link r" onclick="cdIrLista('cobrar','pre')" title="Abrir a lista">${cdNum(g.pre.clientes)} clientes com 1 a 5 dias de atraso</button> (${cdMoeda(g.pre.valor)}). Depois de cerca de 5 dias úteis o IXC bloqueia a internet deles, e cada bloqueio vira ligação, desgaste e risco de cancelamento.`
     : `Não há clientes cobráveis com 1 a 5 dias de atraso hoje.`;
   const p3 = g.pag.qt
     ? `No último dia carregado (${cdData(g.pag.dia)}) entraram <b>${cdMoeda(g.pag.valor)}</b> em ${cdNum(g.pag.qt)} pagamentos, e ${g.pag.pctAtraso}% deles foram pagos depois do vencimento.`
     : `Não há pagamentos carregados do último dia.`;
-  const p4 = g.pct90>=30 ? `${g.pct90}% do valor cobrável está parado há mais de 90 dias. Esse dinheiro precisa de uma régua própria de recuperação, separada da cobrança do dia.` : '';
+  const p4 = g.pct90>=30 ? `${g.pct90}% do valor cobrável <button type="button" class="cdg-link " onclick="cdIrLista('cobrar','d90')" title="Abrir a lista">está parado há mais de 90 dias</button>. Esse dinheiro precisa de uma régua própria de recuperação, separada da cobrança do dia.` : '';
   const dAnt = r.data_anterior ? cdData(r.data_anterior).slice(0,5) : 'a leitura anterior';
   const preOnt = Number(r.pre_raw_ontem)||0, preSaiu = r.pre_ontem_saiu ? Number(r.pre_ontem_saiu.valor)||0 : 0;
   const dPre = preOnt>0 ? `<div class="d">Da lista de ${dAnt} (${cdMoeda(preOnt)}), já saíram <b class="bom">${cdMoeda(preSaiu)}</b> (${cdPct(preSaiu,preOnt)}%), pagos ou corrigidos.</div>` : '';
@@ -23438,11 +23444,12 @@ function cdGuiaHTML(){
     : `<div class="d">A comparação com o mesmo dia da semana passada aparece quando o histórico de pagamentos completar 7 dias.</div>`;
   const resumo = `<div class="cdg-resumo">
     <div class="cdg-box"><div class="cdg-eyebrow">O dia em poucas linhas</div>
-      <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p><p>${p3}</p>${p4?`<p>${p4}</p>`:''}</div></div>
+      <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p><p>${p3}</p>${p4?`<p>${p4}</p>`:''}</div>
+      <div class="cdg-nota">Os trechos sublinhados abrem a lista de clientes.</div></div>
     <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
       <div class="cdg-numeros">
-        <div class="cdg-num risk"><div class="l">Antes do bloqueio</div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, 1 a 5 dias</div>${dPre}</div>
-        <div class="cdg-num info"><div class="l">Vencido total</div><div class="v">${cdMoeda(g.todos.valor)}</div><div class="s">${cdNum(g.todos.clientes)} clientes, sem Filial 10</div>${dVenc}</div>
+        <div class="cdg-num risk clicavel" role="button" tabindex="0" onclick="cdIrLista('cobrar','pre')" onkeydown="if(event.key==='Enter')cdIrLista('cobrar','pre')" title="Abrir a lista"><div class="l">Antes do bloqueio <span class="ver">Ver lista</span></div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, 1 a 5 dias</div>${dPre}</div>
+        <div class="cdg-num info clicavel" role="button" tabindex="0" onclick="cdIrLista('cobrar','todos')" onkeydown="if(event.key==='Enter')cdIrLista('cobrar','todos')" title="Abrir a lista"><div class="l">Vencido total <span class="ver">Ver lista</span></div><div class="v">${cdMoeda(g.todos.valor)}</div><div class="s">${cdNum(g.todos.clientes)} clientes, sem Filial 10</div>${dVenc}</div>
         <div class="cdg-num ok"><div class="l">Recebido em ${cdData(g.pag.dia)}</div><div class="v">${cdMoeda(g.pag.valor)}</div><div class="s">${cdNum(g.pag.qt)} pagamentos</div>${dPag}</div>
       </div>
       <div class="cdg-nota">Vencido total soma todos os clientes com boleto vencido, inclusive quem está fora da cobrança. Antes do bloqueio conta só quem pode ser cobrado hoje.</div>
