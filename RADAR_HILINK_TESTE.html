@@ -2687,6 +2687,8 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-guia-atv{margin:0 0 10px;font-size:12.5px}
 .cdg-guia-atv summary{cursor:pointer;font-weight:700;color:#0071BC}
 .cdg-guia-atv ol{margin:8px 0 0;padding-left:20px;line-height:1.6}
+.cdg-como{border:1px solid rgba(0,113,188,.35);background:rgba(0,113,188,.06);border-radius:10px;padding:10px 14px;margin:10px 0}
+.cdg-como ol{margin:0;padding-left:20px;font-size:13px;line-height:1.6}
 .usr-topo{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,1fr);gap:12px}
 @media (max-width:860px){.usr-topo{grid-template-columns:1fr}}
 .usr-cad .cdg-campo{max-width:420px}
@@ -23887,9 +23889,33 @@ async function cdAtvRegistrar(itemId, situacao){
     CD.atv.expandido = null; await cdAtvItensCarregar();
   }catch(e){ toast(e.message,'error'); }
 }
+const CD_ATV_COMO = {
+  cobrar: ['Clique em <b>Atender</b> e ligue ou mande mensagem para o cliente.',
+    'Antes de cobrar, confira no IXC se ele não pagou hoje cedo.',
+    'Registre o resultado: <b>Contatado</b>, <b>Sem resposta</b>, <b>Número errado</b>, <b>Prometeu pagar</b> (escolha a data) ou <b>Negociando</b>.',
+    'Se registrar errado, use <b>Desfazer</b>.'],
+  quebra: ['Copie o nome e abra o cliente no IXC: Contrato, aba <b>Financeiro</b>.',
+    'Veja se existe uma fatura <b>mais nova já paga</b> enquanto esta mais antiga continua aberta.',
+    'Se existir: troque a fatura no IXC e marque <b>Corrigido no IXC</b>.',
+    'Se o cliente <b>não pagou nenhuma fatura</b> (todas abertas), não é erro de fatura, é inadimplência: marque <b>Não precisa corrigir</b> e escreva "cliente não pagou".'],
+  suspeitos: ['Copie o nome e abra o título no IXC.', 'Corrija o valor ou cancele o título se estiver errado e marque <b>Corrigido no IXC</b>.', 'Se o valor estiver certo, marque <b>Não precisa corrigir</b> e diga o motivo.'],
+  gerados_vencidos: ['Abra o boleto no IXC.', 'Corrija o vencimento (o cliente precisa de prazo para pagar) e marque <b>Corrigido no IXC</b>.', 'Se estiver certo, marque <b>Não precisa corrigir</b> e diga o motivo.'],
+  recolhimento_atd: ['Ligue para o cliente e agende a retirada do equipamento.', 'Registre o resultado. Se agendou, escreva a data na observação.'],
+  sem_email: ['Ligue ou mande mensagem pedindo o e-mail do cliente.', 'Cadastre o e-mail no IXC e marque <b>E-mail cadastrado</b>.'],
+  avencer: ['Avise o cliente do vencimento.', 'Registre o resultado.']
+};
+async function cdAtvDesfazer(itemId){
+  try{
+    const r = await cdAtvRpc('radar_atv_desfazer',{p_item:itemId});
+    if(!r.ok){ toast(r.motivo,'warn'); return; }
+    toast('Registro desfeito: o cliente voltou para "Para tratar".'+(r.promessas_canceladas?' A promessa foi cancelada.':''),'success');
+    await cdAtvItensCarregar();
+  }catch(e){ toast(e.message,'error'); }
+}
+window.cdAtvDesfazer = cdAtvDesfazer;
 function cdAtvCopiar(txt, btn){
   const ok = () => { if(btn){ const t=btn.textContent; btn.textContent='Copiado'; setTimeout(()=>btn.textContent=t,1200); } };
-  try{ navigator.clipboard.writeText(txt).then(ok).catch(()=>prompt('Copie o telefone:', txt)); }catch(e){ prompt('Copie o telefone:', txt); }
+  try{ navigator.clipboard.writeText(txt).then(ok).catch(()=>prompt('Copie:', txt)); }catch(e){ prompt('Copie:', txt); }
 }
 function cdAtvDetalhe(tipo, i){
   const d = i.detalhe||{};
@@ -23941,13 +23967,14 @@ function cdAreaHTML(){
     const podeAtender = !i.resolvido_ixc && a.status!=='encerrada' && (!i.com_quem || i.com_quem===meuId);
     return `<div class="cdg-it ${aberto?'aberto':''} ${i._e.k}" id="cd-it-${i.id}">
       <div class="cdg-it-l">
-        <div class="cdg-it-nome">${cdEsc(i.nome||'Cliente '+i.id_cliente)} <small>${i.id_cliente} · ${cdEsc(i.filial||'')}</small></div>
+        <div class="cdg-it-nome">${cdEsc(i.nome||'Cliente '+i.id_cliente)} <button type="button" class="cdg-mini" onclick="cdAtvCopiar('${cdEsc(String(i.nome||'').replace(/'/g,''))}',this)" title="Copiar o nome para buscar no IXC ou no OPA">Copiar nome</button> <small>Cód. ${i.id_cliente} <button type="button" class="cdg-mini" onclick="cdAtvCopiar('${i.id_cliente}',this)" title="Copiar o código do cliente">Copiar</button> · ${cdEsc(i.filial||'')}</small></div>
         <div class="cdg-it-det">${cdAtvDetalhe(a.tipo,i)}${i.tentativas?` · ${i.tentativas} contato(s)`:''}${i.tratado_por_nome?` · último registro: ${cdEsc(i.tratado_por_nome)}`:''}${i.obs?` · "${cdEsc(i.obs)}"`:''}</div>
       </div>
       <div class="cdg-it-v">${i.valor!=null?cdMoeda(i.valor):''}${i.dias_atraso!=null&&a.tipo==='cobrar'?`<small>${i.dias_atraso} dias</small>`:''}</div>
       ${fone}
       <span class="cdg-chip ${i._e.c}">${cdEsc(i._e.t)}</span>
-      <span>${aberto?'':(podeAtender?`<button type="button" class="cdg-ir" onclick="cdAtvAtender(${i.id})">${i._e.k==='tratar'?'Atender':'Registrar de novo'}</button>`:'')}</span>
+      <span>${aberto?'':(podeAtender?`<button type="button" class="cdg-ir" onclick="cdAtvAtender(${i.id})">${i._e.k==='tratar'?'Atender':'Registrar de novo'}</button>`:'')}
+        ${!aberto && i.situacao!=='pendente' && !i.resolvido_ixc && a.status!=='encerrada' ? `<button type="button" class="cdg-mini" onclick="cdAtvDesfazer(${i.id})" title="Apaga o registro e o cliente volta para 'Para tratar'">Desfazer</button>` : ''}</span>
       ${aberto?`<div class="cdg-it-acoes">
         <input id="cd-it-obs-${i.id}" type="text" placeholder="Observação (o que o cliente disse)" maxlength="300" value="${cdEsc(i.obs||'')}">
         ${acoes.includes('prometeu')?`<label class="cdg-prom">Data prometida <input id="cd-it-data-${i.id}" type="date" min="${cdHoje()}" max="${cdAddDias(10)}"></label>`:''}
@@ -23957,7 +23984,9 @@ function cdAreaHTML(){
       </div>`:''}
     </div>`;
   }).join('');
+  const como = CD_ATV_COMO[a.tipo];
   return `<div class="section compact-section cdg-area">${head}
+    ${como?`<div class="cdg-como"><div class="cdg-eyebrow" style="margin:0 0 4px">O que fazer em cada cliente</div><ol>${como.map(x=>`<li>${x}</li>`).join('')}</ol></div>`:''}
     <div class="cdg-area-res">
       ${a.total!==undefined?cdSlaBarra(a,true):''}
       <div class="cdg-atv-nums"><span><b>${cdNum(res)}</b> de ${cdNum(tot)} resolvidos no IXC</span><span><b>${cdNum(trat)}</b> tratados aguardando o IXC</span><span><b>${cdNum(cont('tratar'))}</b> para tratar</span>
