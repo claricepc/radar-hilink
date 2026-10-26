@@ -2695,7 +2695,9 @@ h2.section-title .info-btn{margin-left:6px}
 .usr-nums div{display:flex;flex-direction:column;border:1px solid rgba(143,163,184,.3);border-radius:8px;padding:8px 10px}
 .usr-nums b{font-size:22px}.usr-nums span{font-size:11px;opacity:.7}
 .usr-tab td small{display:block;font-size:11px;opacity:.7}
-.usr-tab .usr-acoes{white-space:nowrap}
+.usr-tab .usr-acoes{white-space:normal;min-width:230px}
+.usr-tab{table-layout:auto;width:100%}
+.usr-tab th:nth-child(4),.usr-tab td:nth-child(4){white-space:nowrap}
 .usr-tab .usr-acoes .cdg-mini{margin:2px}
 .usr-tab tr.usr-inativo td{opacity:.55}
 .cdg-prog.grande{height:12px}
