@@ -2688,6 +2688,12 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-guia-atv summary{cursor:pointer;font-weight:700;color:#0071BC}
 .cdg-guia-atv ol{margin:8px 0 0;padding-left:20px;line-height:1.6}
 .cdg-como{border:1px solid rgba(0,113,188,.35);background:rgba(0,113,188,.06);border-radius:10px;padding:10px 14px;margin:10px 0}
+.cdg-selo{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;margin:0 0 6px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid}
+.cdg-selo i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.cdg-selo.ok{background:rgba(48,164,108,.12);color:#1F8A57;border-color:rgba(48,164,108,.45)}.cdg-selo.ok i{background:#30A46C}
+.cdg-selo.warn{background:rgba(245,165,36,.14);color:#B26F00;border-color:rgba(245,165,36,.55)}.cdg-selo.warn i{background:#F5A524}
+.cdg-selo.risk{background:rgba(229,72,77,.12);color:#D1343A;border-color:rgba(229,72,77,.5)}.cdg-selo.risk i{background:#E5484D}
+.cdg-selo.neutro{background:rgba(143,163,184,.14);color:#6B7F95;border-color:rgba(143,163,184,.4)}.cdg-selo.neutro i{background:#8FA3B8}
 .cdg-como ol{margin:0;padding-left:20px;font-size:13px;line-height:1.6}
 .usr-topo{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,1fr);gap:12px}
 @media (max-width:860px){.usr-topo{grid-template-columns:1fr}}
@@ -23315,13 +23321,27 @@ function cdGuiaDados(){
   return g;
 }
 
+function cdAtvDoItem(tipo, preset){
+  return (CD.atv.lista||[]).filter(a=>a.status==='aberta' && a.tipo===tipo && String(a.filtro||'')===String(preset||''));
+}
+function cdAtvSelo(tipo, preset){
+  if(!cdPodeGerenciar()) return '';
+  const ats = cdAtvDoItem(tipo, preset); if(!ats.length) return '';
+  const tot = ats.reduce((t,a)=>t+(Number(a.total)||0),0), pend = ats.reduce((t,a)=>t+(Number(a.pendentes)||0),0);
+  const pior = ats.map(cdSla).sort((x,y)=>({risk:0,warn:1,neutro:2,ok:3}[x.c])-({risk:0,warn:1,neutro:2,ok:3}[y.c]))[0];
+  const quem = ats.length===1 ? String(ats[0].responsavel_nome||'equipe').split(' ')[0] : ats.length+' atendentes';
+  const acao = ats.length===1 ? `cdAtvAbrir(${ats[0].id})` : `document.querySelector('.cdg-atv')?.scrollIntoView({behavior:'smooth'})`;
+  return `<button type="button" class="cdg-selo ${pior.c}" onclick="${acao}" title="${cdEsc(pior.t)}. Clique para acompanhar."><i></i>Em andamento com ${cdEsc(quem)} · ${cdNum(tot-pend)}/${cdNum(tot)}</button>`;
+}
 function cdItem(o){
+  const selo = o.atv ? cdAtvSelo(o.atv[0], o.atv[1]) : '';
   return `<div class="cdg-item ${o.tom||''} ${o.vazio?'vazio':''}">
+    ${selo}
     <div class="t">${o.passo?`<span class="cdg-passo">${o.passo}</span>`:''}<span>${o.titulo}</span></div>
     ${o.numero!==undefined?`<div class="n">${o.numero}${o.unid?`<small>${o.unid}</small>`:''}</div>`:''}
     ${o.porque?`<div class="p">${o.porque}</div>`:''}
     ${o.como?`<div class="c">${o.como}</div>`:''}
-    ${(o.acao||(o.atv&&cdPodeGerenciar()))?`<div class="cdg-botoes">${o.acao?`<button type="button" class="cdg-ir" onclick="${o.acao[1]}" ${o.acao[2]?'disabled':''}>${o.acao[0]}</button>`:''}${o.atv&&cdPodeGerenciar()?`<button type="button" class="cdg-ir cdg-gerar" onclick="cdAtvNova('${o.atv[0]}','${o.atv[1]||''}')">Gerar atividade</button>`:''}</div>`:''}
+    ${(o.acao||(o.atv&&cdPodeGerenciar()))?`<div class="cdg-botoes">${o.acao?`<button type="button" class="cdg-ir" onclick="${o.acao[1]}" ${o.acao[2]?'disabled':''}>${o.acao[0]}</button>`:''}${o.atv&&cdPodeGerenciar()?`<button type="button" class="cdg-ir cdg-gerar" onclick="cdAtvNova('${o.atv[0]}','${o.atv[1]||''}')" title="${selo?'Direciona os itens que ainda não estão em nenhuma atividade':''}">${selo?'Gerar outra':'Gerar atividade'}</button>`:''}</div>`:''}
   </div>`;
 }
 function cdAlerta(tom, html){ return `<div class="cdg-alerta ${tom}"><i></i><div>${html}</div></div>`; }
