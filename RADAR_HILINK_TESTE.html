@@ -160,6 +160,7 @@ function renderUserBadge(){
 }
 
 function radarOpenUserAdmin(){
+  if(typeof go==='function' && document.getElementById('mod-usuarios')){ go('usuarios'); return; }
   if(!radarIsAdminUser()){alert('Cadastro de usuarios restrito ao usuario administrador.');return;}
   let modal=document.getElementById('radar-user-admin-modal');
   if(modal){modal.style.display='flex';radarLoadUsers();return;}
@@ -2686,6 +2687,17 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-guia-atv{margin:0 0 10px;font-size:12.5px}
 .cdg-guia-atv summary{cursor:pointer;font-weight:700;color:#0071BC}
 .cdg-guia-atv ol{margin:8px 0 0;padding-left:20px;line-height:1.6}
+.usr-topo{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,1fr);gap:12px}
+@media (max-width:860px){.usr-topo{grid-template-columns:1fr}}
+.usr-cad .cdg-campo{max-width:420px}
+.usr-cad select,.usr-cad input{width:100%}
+.usr-nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:6px}
+.usr-nums div{display:flex;flex-direction:column;border:1px solid rgba(143,163,184,.3);border-radius:8px;padding:8px 10px}
+.usr-nums b{font-size:22px}.usr-nums span{font-size:11px;opacity:.7}
+.usr-tab td small{display:block;font-size:11px;opacity:.7}
+.usr-tab .usr-acoes{white-space:nowrap}
+.usr-tab .usr-acoes .cdg-mini{margin:2px}
+.usr-tab tr.usr-inativo td{opacity:.55}
 .cdg-prog.grande{height:12px}
 .cdg-prog .ok{background:#30A46C}
 .cdg-prog .info{background:#4DA3E0}
@@ -2827,6 +2839,9 @@ body.radar-modo-atendente .topbar{display:none!important}
         </div>
         <div class="nav-item" data-mod="propostas" onclick="go('propostas')">
           <span>Propostas Corporativas<small>CRM, viabilidade e proposta comercial</small></span>
+        </div>
+        <div class="nav-item" data-mod="usuarios" onclick="go('usuarios')" style="display:none">
+          <span>Usu&aacute;rios e acessos<small>cadastrar, redefinir senha, permiss&otilde;es</small></span>
         </div>
         <div class="nav-item" data-mod="cobrancaDia" onclick="go('cobrancaDia')">
           <span>Cobran&ccedil;a do Dia<small>dados autom&aacute;ticos do IXC, sem upload</small></span>
@@ -8206,6 +8221,7 @@ body.radar-modo-atendente .topbar{display:none!important}
   
 
   <div class="module" id="mod-cobrancaDia"></div>
+  <div class="module" id="mod-usuarios"></div>
 
   <!-- ====================== MÓDULO: CARNÊ CORREIOS ====================== -->
   <div class="module" id="mod-carneCorreios">
@@ -10344,7 +10360,7 @@ function renderModuleError(mod,err){
   console.error('[Radar] Erro ao renderizar módulo',mod,err);
 }
 function go(mod){
-  if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&!STATE.processed){toast('Processe a base primeiro','error');return}
+  if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='usuarios'&&!STATE.processed){toast('Processe a base primeiro','error');return}
   if((mod==='segmentacao'||mod==='disparo')&&!STATE.campaign){toast('Mapeie uma campanha primeiro','error');mod='mapear'}
   if(!document.getElementById('mod-'+mod)){toast('Módulo não encontrado: '+mod,'error');return}
   document.querySelector(`.nav-item[data-mod="${mod}"]`)?.classList.remove('disabled');
@@ -10374,6 +10390,7 @@ function go(mod){
                 relatorios:['Relatorios Personalizados','Cartas, LOA e documentos timbrados com campos editaveis'],
                 propostas:['Propostas Corporativas','Geração assistida de proposta comercial a partir do CRM e viabilidade'],
                 acao:['Estratégia de Atuação','Prioridades automáticas, campanhas e plano de ação operacional'],
+                usuarios:['Usuários e acessos','Cadastro de usuários do Radar, redefinição de senha e permissões'],
                 cobrancaDia:['Cobrança do Dia','Inadimplência, pré-bloqueio, recolhimento e títulos suspeitos direto do banco (leitura do IXC às 4h)'],
                 historico:['Histórico de Campanhas','Campanhas mapeadas anteriormente'],
                 carneCorreios:['Envio Correios — Carnê','Formata os boletos para envio via Correios e-Carta. Alertas de banco, endereço, SLA e sequência.']};
@@ -10411,6 +10428,7 @@ function go(mod){
     if(mod==='mapear'){if(STATE.campaign)renderMapPreview();}
     if(mod==='historico') renderHistorico();
     if(mod==='cobrancaDia') renderCobrancaDia();
+    if(mod==='usuarios') renderUsuarios();
   }catch(err){
     console.error('[RADAR] Erro no módulo',mod,err);
     renderModuleError(mod,err);
@@ -23951,6 +23969,152 @@ function cdAreaHTML(){
   </div>`;
 }
 
+// ---------- Usuários e acessos (admin: tudo; líder: cadastra atendentes e redefine senha delas) ----------
+const USR = { lista:null, erro:null, busca:'', perfil:'todos', inativos:false, msg:'' };
+const USR_PERFIS = { admin:'Gestão (acesso total)', lider:'Liderança do atendimento', atendente:'Atendente', usuario:'Usuário do Radar' };
+const USR_PERFIL_DESC = {
+  admin:'Vê e altera tudo no Radar, inclusive usuários.',
+  lider:'Vê o painel de atividades da equipe, direciona atividades, cadastra atendentes e redefine a senha delas.',
+  atendente:'Vê só as atividades direcionadas a ela. Não vê nenhum outro módulo.',
+  usuario:'Vê os módulos do Radar, mas não o painel de atividades nem o cadastro de usuários.'
+};
+async function usrCarregar(){
+  try{ USR.lista = await cdAtvRpc('radar_usr_listar') || []; USR.erro=null; }
+  catch(e){ USR.erro = e.message; USR.lista = []; }
+  renderUsuarios();
+}
+function usrSugerirEmail(nome){
+  const p = String(nome||'').trim().split(/\s+/)[0]||'';
+  return p ? p.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')+'@hilink.com.br' : '';
+}
+function renderUsuarios(){
+  const box = document.getElementById('mod-usuarios'); if(!box) return;
+  if(!cdPodeGerenciar()){ box.innerHTML = `<div class="section compact-section"><h2 class="section-title">Usuários e acessos</h2><p class="cdg-nota">Acesso restrito à gestão e à liderança do atendimento.</p></div>`; return; }
+  if(USR.lista===null){ box.innerHTML = `<div class="section compact-section"><h2 class="section-title">Usuários e acessos</h2><p class="cdg-nota">Carregando usuários...</p></div>`; usrCarregar(); return; }
+  const admin = CD.perfil==='admin';
+  const busca = USR.busca.trim().toUpperCase();
+  const lista = USR.lista.filter(u => (USR.inativos || u.status==='ativo') && (USR.perfil==='todos' || u.perfil===USR.perfil)
+    && (!busca || String(u.nome||'').toUpperCase().includes(busca) || String(u.email||'').toUpperCase().includes(busca)));
+  const ativos = USR.lista.filter(u=>u.status==='ativo'), nunca = ativos.filter(u=>!u.ultimo_acesso).length, trocar = ativos.filter(u=>u.trocar_senha).length;
+  const conta = p => ativos.filter(u=>u.perfil===p).length;
+  const linhas = lista.map(u=>{
+    const ult = u.ultimo_acesso ? new Date(u.ultimo_acesso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : 'nunca entrou';
+    const sit = u.status!=='ativo' ? '<span class="cdg-sla-chip neutro">Inativo</span>' : !u.ultimo_acesso ? '<span class="cdg-sla-chip warn">Nunca entrou</span>' : u.trocar_senha ? '<span class="cdg-sla-chip warn">Precisa criar a senha</span>' : '<span class="cdg-sla-chip ok">Ativo</span>';
+    const em = encodeURIComponent(u.email);
+    const acoes = !u.pode_editar ? '<span class="cdg-nota" style="margin:0">só a gestão altera</span>' : `
+      <button type="button" class="cdg-mini" onclick="usrSenhaModal('${em}')">Redefinir senha</button>
+      ${admin&&!u.admin_sistema?`<button type="button" class="cdg-mini" onclick="usrEditarModal('${em}')">Editar</button>
+      ${u.status==='ativo'?`<button type="button" class="cdg-mini" onclick="usrSituacao('${em}','inativo')">Desativar</button>`:`<button type="button" class="cdg-mini" onclick="usrSituacao('${em}','ativo')">Reativar</button>`}
+      <button type="button" class="cdg-mini perigo-txt" onclick="usrExcluirModal('${em}')">Excluir</button>`:''}`;
+    return `<tr class="${u.status!=='ativo'?'usr-inativo':''}"><td><b>${cdEsc(u.nome||'-')}</b><small>${cdEsc(u.email)}</small></td>
+      <td>${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}${u.admin_sistema?' <small>(administradora do sistema)</small>':''}</td><td>${sit}</td><td>${ult}</td><td class="usr-acoes">${acoes}</td></tr>`;
+  }).join('');
+  const perfisCad = admin ? ['atendente','lider','usuario'] : ['atendente'];
+  box.innerHTML = `<div class="section compact-section usr">
+    <h2 class="section-title">Usuários e acessos</h2>
+    <div class="usr-topo">
+      <div class="cdg-box usr-cad">
+        <div class="cdg-eyebrow">Cadastrar usuário</div>
+        <label class="cdg-campo">Nome completo<input id="usr-nome" type="text" maxlength="60" placeholder="Ex.: Eduarda Lizandra" oninput="const e=document.getElementById('usr-email'); if(e && !e.dataset.mexeu) e.value=usrSugerirEmail(this.value)"></label>
+        <label class="cdg-campo">E-mail de acesso<input id="usr-email" type="text" maxlength="80" placeholder="primeironome@hilink.com.br" oninput="this.dataset.mexeu=1"></label>
+        <label class="cdg-campo">Perfil<select id="usr-perfil" onchange="document.getElementById('usr-perfil-desc').textContent=USR_PERFIL_DESC[this.value]">${perfisCad.map(p=>`<option value="${p}">${USR_PERFIS[p]}</option>`).join('')}</select></label>
+        <div class="cdg-nota" id="usr-perfil-desc" style="margin:-4px 0 10px">${USR_PERFIL_DESC[perfisCad[0]]}</div>
+        <label class="cdg-campo">Senha inicial<input id="usr-senha" type="text" value="123456" maxlength="40"></label>
+        <div class="cdg-nota" style="margin:-4px 0 12px">No primeiro acesso o Radar obriga a pessoa a criar a própria senha.</div>
+        <button type="button" class="btn sm primary" id="usr-criar" onclick="usrCriar()">Cadastrar</button>
+        <div id="usr-res" class="cdg-nota" style="margin-top:10px">${USR.msg||''}</div>
+      </div>
+      <div class="cdg-box usr-res">
+        <div class="cdg-eyebrow">Equipe com acesso</div>
+        <div class="usr-nums">
+          <div><b>${conta('lider')}</b><span>liderança</span></div><div><b>${conta('atendente')}</b><span>atendentes</span></div>
+          ${admin?`<div><b>${conta('usuario')}</b><span>usuários</span></div><div><b>${conta('admin')}</b><span>gestão</span></div>`:''}
+        </div>
+        ${nunca?`<div class="cdg-alerta warn" style="margin-top:10px"><i></i><div><b>${cdNum(nunca)} ${nunca===1?'pessoa ativa nunca entrou':'pessoas ativas nunca entraram'} no Radar.</b> Passe o e-mail e a senha inicial para elas.</div></div>`:''}
+        ${trocar&&trocar!==nunca?`<div class="cdg-nota" style="margin-top:8px">${cdNum(trocar)} ainda precisam criar a própria senha.</div>`:''}
+        <details class="cdg-guia-atv" style="margin-top:10px"><summary>O que cada perfil vê</summary><ul class="cdg-conf-lista" style="margin-top:6px">
+          ${Object.entries(USR_PERFIL_DESC).map(([k,d])=>`<li><b>${USR_PERFIS[k]}:</b> ${d}</li>`).join('')}</ul></details>
+        ${!admin?'<div class="cdg-nota" style="margin-top:8px">Como liderança, você cadastra atendentes e redefine a senha delas. Mudanças de perfil e exclusões são feitas pela gestão.</div>':''}
+      </div>
+    </div>
+    <div class="cdg-area-f" style="margin-top:12px">
+      <input type="text" placeholder="Buscar por nome ou e-mail" value="${cdEsc(USR.busca)}" oninput="USR.busca=this.value;clearTimeout(USR.t);USR.t=setTimeout(renderUsuarios,300)">
+      <select onchange="USR.perfil=this.value;renderUsuarios()"><option value="todos">Todos os perfis</option>${Object.entries(USR_PERFIS).filter(([k])=>admin||k!=='admin'&&k!=='usuario').map(([k,t])=>`<option value="${k}" ${USR.perfil===k?'selected':''}>${t}</option>`).join('')}</select>
+      <label class="cd-chk"><input type="checkbox" ${USR.inativos?'checked':''} onchange="USR.inativos=this.checked;renderUsuarios()"> Mostrar inativos</label>
+      <button type="button" class="btn sm" onclick="USR.lista=null;renderUsuarios()">Atualizar</button>
+    </div>
+    ${USR.erro?`<div class="cdg-alerta risk"><i></i><div>${cdEsc(USR.erro)}</div></div>`:''}
+    <div class="tbl-wrap" style="max-height:560px"><table class="decision-table usr-tab"><thead><tr><th>Pessoa</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th>Ações</th></tr></thead>
+      <tbody>${linhas||'<tr><td colspan="5">Nenhum usuário com esses filtros.</td></tr>'}</tbody></table></div>
+  </div>`;
+}
+async function usrCriar(){
+  const nome = document.getElementById('usr-nome').value.trim(), email = document.getElementById('usr-email').value.trim(),
+        perfil = document.getElementById('usr-perfil').value, senha = document.getElementById('usr-senha').value.trim();
+  if(!nome){ toast('Informe o nome.','warn'); return; }
+  const b = document.getElementById('usr-criar'); b.disabled=true; b.textContent='Cadastrando...';
+  try{
+    const r = await cdAtvRpc('radar_usr_criar',{p_nome:nome, p_email:email||null, p_perfil:perfil, p_senha:senha||'123456'});
+    USR.msg = r.ok ? `<b>Acesso criado.</b> E-mail: <b>${cdEsc(r.email)}</b> · senha inicial: <b>${cdEsc(r.senha)}</b>. Passe esses dados para a pessoa.` : `<span class="r">${cdEsc(r.motivo)}</span>`;
+    if(r.ok){ USR.lista=null; toast('Usuário cadastrado.','success'); CD.atv.usuarios=null; cdAtvCarregar(true); }
+  }catch(e){ USR.msg = `<span class="r">${cdEsc(e.message)}</span>`; }
+  renderUsuarios();
+}
+function usrAchar(em){ const e=decodeURIComponent(em); return (USR.lista||[]).find(u=>u.email===e); }
+function usrSenhaModal(em){
+  const u = usrAchar(em); if(!u) return;
+  cdModal(`<h3>Redefinir senha</h3>
+    <p class="cdg-nota" style="margin:0 0 10px"><b>${cdEsc(u.nome)}</b> · ${cdEsc(u.email)}</p>
+    <label class="cdg-campo">Nova senha provisória<input id="usr-nova-senha" type="text" value="123456" maxlength="40"></label>
+    <p class="cdg-nota" style="margin:-6px 0 14px">A pessoa entra com essa senha e o Radar pede para ela criar uma nova na hora.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+      <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="usrSenha('${em}')">Redefinir</button></div>`);
+}
+async function usrSenha(em){
+  const s = document.getElementById('usr-nova-senha').value.trim();
+  try{ const r = await cdAtvRpc('radar_usr_senha',{p_email:decodeURIComponent(em), p_senha:s||'123456'});
+    cdModal(null);
+    if(r.ok){ USR.msg = `<b>Senha redefinida.</b> ${cdEsc(r.email)} · senha provisória: <b>${cdEsc(r.senha)}</b>.`; toast('Senha redefinida.','success'); USR.lista=null; }
+    else toast(r.motivo,'warn');
+  }catch(e){ toast(e.message,'error'); }
+  renderUsuarios();
+}
+function usrEditarModal(em){
+  const u = usrAchar(em); if(!u) return;
+  cdModal(`<h3>Editar usuário</h3>
+    <p class="cdg-nota" style="margin:0 0 10px">${cdEsc(u.email)}</p>
+    <label class="cdg-campo">Nome<input id="usr-ed-nome" type="text" value="${cdEsc(u.nome||'')}" maxlength="60"></label>
+    <label class="cdg-campo">Perfil<select id="usr-ed-perfil" onchange="document.getElementById('usr-ed-desc').textContent=USR_PERFIL_DESC[this.value]">${Object.entries(USR_PERFIS).filter(([k])=>k!=='admin').map(([k,t])=>`<option value="${k}" ${u.perfil===k?'selected':''}>${t}</option>`).join('')}</select></label>
+    <div class="cdg-nota" id="usr-ed-desc" style="margin:-4px 0 14px">${USR_PERFIL_DESC[u.perfil]||''}</div>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+      <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="usrEditar('${em}')">Salvar</button></div>`);
+}
+async function usrEditar(em){
+  try{ await cdAtvRpc('radar_usr_editar',{p_email:decodeURIComponent(em), p_nome:document.getElementById('usr-ed-nome').value, p_perfil:document.getElementById('usr-ed-perfil').value, p_status:null});
+    cdModal(null); toast('Usuário atualizado.','success'); USR.lista=null; renderUsuarios(); }
+  catch(e){ toast(e.message,'error'); }
+}
+async function usrSituacao(em, st){
+  try{ await cdAtvRpc('radar_usr_editar',{p_email:decodeURIComponent(em), p_nome:null, p_perfil:null, p_status:st});
+    toast(st==='ativo'?'Acesso reativado.':'Acesso desativado: a pessoa não consegue mais entrar.','success'); USR.lista=null; renderUsuarios(); }
+  catch(e){ toast(e.message,'error'); }
+}
+function usrExcluirModal(em){
+  const u = usrAchar(em); if(!u) return;
+  cdModal(`<h3>Excluir usuário?</h3>
+    <p class="cdg-nota" style="margin:0 0 8px"><b>${cdEsc(u.nome)}</b> · ${cdEsc(u.email)}</p>
+    <ul class="cdg-conf-lista"><li>A pessoa perde o acesso ao Radar na hora.</li><li>Sai da lista de usuários e não aparece mais para direcionar atividades.</li>
+      <li>O que ela já registrou nas atividades continua no histórico.</li></ul>
+    <p class="cdg-nota" style="margin:0 0 14px">Se for afastamento temporário, prefira <b>Desativar</b>: dá para reativar depois.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+      <button type="button" class="btn sm cdg-btn-perigo" id="cd-conf-ok" onclick="usrExcluir('${em}')">Sim, excluir</button></div>`);
+}
+async function usrExcluir(em){
+  try{ await cdAtvRpc('radar_usr_excluir',{p_email:decodeURIComponent(em)}); cdModal(null); toast('Usuário excluído.','success'); USR.lista=null; renderUsuarios(); }
+  catch(e){ toast(e.message,'error'); }
+}
+Object.assign(window, { renderUsuarios, usrCriar, usrSenhaModal, usrSenha, usrEditarModal, usrEditar, usrSituacao, usrExcluirModal, usrExcluir, usrSugerirEmail, USR, USR_PERFIL_DESC });
+
 // ---------- perfis: gestão e liderança direcionam; atendente vê só o que é dela ----------
 function cdPodeGerenciar(){ return CD.perfil==='admin' || CD.perfil==='lider'; }
 function cdEhAtendente(){ return CD.perfil==='atendente'; }
@@ -23961,6 +24125,7 @@ async function radarAplicarPerfil(){
     if(error) throw error;
     CD.perfil = data?.perfil || 'usuario'; CD.meuNome = data?.nome || '';
     document.body.classList.toggle('radar-modo-atendente', CD.perfil==='atendente');
+    const navU = document.querySelector('.nav-item[data-mod="usuarios"]'); if(navU) navU.style.display = cdPodeGerenciar() ? '' : 'none';
     if(data?.trocar_senha) radarTrocarSenhaModal();
     if(CD.perfil==='atendente'){ CD.atv.lista=null; go('cobrancaDia'); }
     else if(document.body.dataset.activeMod==='cobrancaDia' || document.getElementById('mod-cobrancaDia')?.offsetParent) renderCobrancaDia();
