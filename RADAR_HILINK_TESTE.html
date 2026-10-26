@@ -423,7 +423,7 @@ body{font-family:'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif;background
 .main{padding:20px 28px;overflow-x:hidden;min-width:0;width:100%;max-width:none}
 .topbar{background:#fff;border-radius:10px;padding:16px 22px;border:1px solid #e5e7eb;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 /* Oculta topbar global quando premiações está ativa — usa header próprio */
-body[data-active-mod="premiacoes"] .topbar{display:none!important}
+body[data-active-mod="premiacoes"] #global-filters{display:none!important}
 body[data-active-mod="setup"] .topbar{
   background:linear-gradient(180deg,#101f33 0%,#0c1829 100%);
   border:1px solid #263a54;
@@ -2863,6 +2863,15 @@ body.radar-modo-atendente .topbar{display:none!important}
 .sidebar .nav-hub .nav-item > span{text-transform:uppercase;letter-spacing:.02em}
 .sidebar .nav-hub .nav-item > span small{text-transform:none;letter-spacing:0}
 #page-title{text-transform:uppercase}
+</style>
+<style>
+/* Premiação no padrão visual da Cobrança do Dia (mesmos tokens de cor) */
+#mod-premiacoes{color:var(--g-text)}
+#mod-premiacoes .section,#mod-premiacoes .compact-section,#mod-premiacoes .prem-exec-panel,#mod-premiacoes .prem-tab-intro,#mod-premiacoes .prem-tabs-nav{background:var(--g-card)!important;border:1px solid var(--g-line)!important;box-shadow:none!important}
+#mod-premiacoes .prem-exec-card,#mod-premiacoes .prem-exec-status,#mod-premiacoes .prem-exec-mini,#mod-premiacoes .prem-exec-money,#mod-premiacoes .prem-upgrade-card{background:var(--g-card2)!important}
+#mod-premiacoes table th{background:var(--g-card2)!important;color:var(--g-muted)!important}
+#mod-premiacoes table td{border-color:var(--g-line)!important}
+#prem-tab-geral > .prem-tab-intro{display:none!important}
 </style>
 </head>
 <body>
@@ -7407,11 +7416,12 @@ body.radar-modo-atendente .topbar{display:none!important}
     }
   </style>
   <div class="module" id="mod-premiacoes">
-      <div id="ixc-carga-card"><p class="ixc-carga-nota">Carregando situação dos dados do IXC…</p></div>
+      <div id="prem-barra" class="cdg" style="margin-bottom:14px"></div>
+      <div id="ixc-carga-card" style="display:none"><p class="ixc-carga-nota">Carregando situação dos dados do IXC…</p></div>
 
 
     <!-- -- HEADER EXECUTIVO -- -->
-    <div class="prem-exec-header" id="prem-exec-header">
+    <div class="prem-exec-header" id="prem-exec-header" style="display:none">
       <div class="prem-exec-header-left">
         <div class="prem-exec-header-title">Premiações</div>
         <div class="prem-exec-header-sub" id="prem-period-label">Apuração de vendas por ativação, pagamento e motivo de inclusão</div>
@@ -7439,7 +7449,7 @@ body.radar-modo-atendente .topbar{display:none!important}
       </div>
     </div>
 
-    <div style="margin:10px 0 12px;padding:10px 14px;border:1px solid rgba(56,168,255,.26);border-radius:10px;background:#0c1a2b;color:#cfe0f5;font-size:11px;line-height:1.45">
+    <div style="display:none">
       <b style="color:#f8fbff">Leitura rápida:</b>
       ranking de <b style="color:#42b8ff">upgrade do dia</b> usa <b>Alterações Contratuais</b>.
       Ranking <b style="color:#42b8ff">geral de vendas do dia</b> usa <b>Base de Clientes e Contratos</b> + <b>Cobrança e Recebimentos</b> + <b>Alterações Contratuais</b> + <b>Conexões dos Clientes / Logins</b>.
@@ -10473,7 +10483,7 @@ function go(mod){
   });
   const titles={setup:['RADAR HILINK','Central de leitura dos relatórios Hilink para diagnóstico, premiações, rede, campanhas e auditoria.'],
                 comercial:['Comercial','Mensalidade média, planos e oportunidades — base completa'],
-                premiacoes:['Premiações','Apuração de vendas por ativação, pagamento e motivo de inclusão'],
+                premiacoes:['Premiação','Vendas, upgrades e atendimento do time direto do IXC. A planilha da equipe é só conferência até 31/12/2026.'],
                 precificacao:['Precificação','Ticket real por plano, PF/PJ e alertas de desconto'],
                 isencoes:['Isenções','Auditoria de contratos isentos, justificativa e vigência'],
                 tecnica:['Saúde da Rede','Diagnóstico técnico: sinal, quedas, sessão, POP e fila de tratativa'],
@@ -17430,6 +17440,72 @@ function premGuiaRender(c){
 }
 window.premDivAbrir = premDivAbrir;
 
+
+// ===== Barra de período e situação dos dados da Premiação (padrão Cobrança do Dia) =====
+function premIso(d){ return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+function premPeriodoDatas(k){
+  const h=new Date(); h.setHours(12,0,0,0);
+  const seg=d=>{ const x=new Date(d); const w=(x.getDay()+6)%7; x.setDate(x.getDate()-w); return x; };
+  if(k==='hoje') return [premIso(h), premIso(h)];
+  if(k==='ontem'){ const o=new Date(h); o.setDate(o.getDate()-1); return [premIso(o), premIso(o)]; }
+  if(k==='semana'){ const a=seg(h), b=new Date(a); b.setDate(a.getDate()+6); return [premIso(a), premIso(b)]; }
+  if(k==='semana_passada'){ const a=seg(h); a.setDate(a.getDate()-7); const b=new Date(a); b.setDate(a.getDate()+6); return [premIso(a), premIso(b)]; }
+  if(k==='mes') return [premIso(new Date(h.getFullYear(),h.getMonth(),1,12)), premIso(new Date(h.getFullYear(),h.getMonth()+1,0,12))];
+  if(k==='mes_passado') return [premIso(new Date(h.getFullYear(),h.getMonth()-1,1,12)), premIso(new Date(h.getFullYear(),h.getMonth(),0,12))];
+  return null;
+}
+function premAplicarDatas(de, ate){
+  [['gf-data-de',de],['gf-data-ate',ate],['gf-data-de-prem',de],['gf-data-ate-prem',ate]].forEach(([id,v])=>{ const el=document.getElementById(id); if(el) el.value=v; });
+  const fil=document.getElementById('prem-barra-filial')?.value;
+  if(fil){ ['gf-filial','gf-filial-prem'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=fil; }); }
+  refreshActiveModule();
+}
+function premPeriodo(k){
+  STATE.premPeriodo = k;
+  if(k==='personalizado'){ premBarraRender(); return; }
+  const d = premPeriodoDatas(k); if(d) premAplicarDatas(d[0], d[1]);
+  premBarraRender();
+}
+function premPeriodoAtual(){
+  const de=document.getElementById('gf-data-de')?.value, ate=document.getElementById('gf-data-ate')?.value;
+  if(STATE.premPeriodo) return STATE.premPeriodo;
+  for(const k of ['hoje','ontem','semana','semana_passada','mes','mes_passado']){ const d=premPeriodoDatas(k); if(d[0]===de && d[1]===ate) return k; }
+  return 'personalizado';
+}
+function premBarraRender(){
+  const box=document.getElementById('prem-barra'); if(!box) return;
+  const k=premPeriodoAtual();
+  const de=document.getElementById('gf-data-de')?.value||'', ate=document.getElementById('gf-data-ate')?.value||'';
+  const filOpts=document.getElementById('gf-filial')?.innerHTML||'<option>Todas</option>';
+  const filVal=document.getElementById('gf-filial')?.value||'Todas';
+  const st=(typeof IXC_CARGA!=='undefined' && IXC_CARGA.status)||{}; const tipos=st.tipos||{};
+  const dh=v=>v?new Date(v).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+  const ixcEm = tipos.contratos_todos ? dh(tipos.contratos_todos.atualizado_em) : '';
+  const planEm = (typeof PREM_DIV!=='undefined' && PREM_DIV.dados && PREM_DIV.dados.planilha_lida_em) ? dh(PREM_DIV.dados.planilha_lida_em) : '';
+  const andamento = typeof ixcCargaEmAndamento==='function' && ixcCargaEmAndamento(st);
+  const chips=[['hoje','Hoje'],['ontem','Ontem'],['semana','Esta semana'],['semana_passada','Semana passada'],['mes','Este mês'],['mes_passado','Mês passado'],['personalizado','Personalizado']]
+    .map(([v,t])=>`<button type="button" class="btn sm ${k===v?'primary':''}" onclick="premPeriodo('${v}')">${t}</button>`).join('');
+  box.innerHTML=`<div class="cdg-status" style="flex-direction:column;align-items:stretch;gap:10px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px">
+        <b style="margin-right:6px">Apuração</b>${chips}
+        <span class="cdg-sp" style="flex:1"></span>
+        <label style="display:flex;align-items:center;gap:6px">Filial <select id="prem-barra-filial" onchange="premAplicarDatas(document.getElementById('gf-data-de').value, document.getElementById('gf-data-ate').value)">${filOpts}</select></label>
+      </div>
+      ${k==='personalizado'?`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">De <input type="date" id="prem-barra-de" value="${de}"> até <input type="date" id="prem-barra-ate" value="${ate}">
+        <button type="button" class="btn sm primary" onclick="premAplicarDatas(document.getElementById('prem-barra-de').value, document.getElementById('prem-barra-ate').value)">Aplicar</button></div>`:''}
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px">
+        <span>Período: <b>${de?cdData(de):'-'}</b> a <b>${ate?cdData(ate):'-'}</b>${k==='semana'||k==='semana_passada'?' (segunda a domingo)':''}.</span>
+        <span>${ixcEm?`Dados do IXC de <b>${ixcEm}</b>.`:'Buscando dados do IXC...'}</span>
+        ${planEm?`<span>Planilha da equipe lida em <b>${planEm}</b>.</span>`:''}
+        <span class="cdg-sp" style="flex:1"></span>
+        ${cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="ixcCargaAtualizar()" ${andamento?'disabled':''}>${andamento?'Lendo o IXC (cerca de 20 min)...':'Atualizar dados do IXC'}</button>`:''}
+      </div>
+    </div>
+    ${cdAlerta('warn','<b>Planilha da equipe:</b> até <b>31/12/2026</b> ela é usada só como conferência extra, para achar diferenças com o IXC. A partir de 01/01/2027 a premiação é paga somente com base nos dados do IXC e do Radar. Quem quiser pode continuar com a planilha para controle pessoal, mas ela não vale para pagamento.')}`;
+  const sel=document.getElementById('prem-barra-filial'); if(sel) sel.value=filVal;
+}
+Object.assign(window,{premPeriodo, premAplicarDatas, premBarraRender});
+
 function renderPremiacoesGeral(){
   _syncPremFiltrosMirror();
   const alertas=document.getElementById('prem-geral-alertas');
@@ -17768,6 +17844,7 @@ function renderPremiacoesGeral(){
     pesquisa:()=>openDrill('Participação em pesquisa',meta.clienteAvaliacoes||[],opaAtendimentoCols()),
     criticos:()=>openDrill('Sinais críticos do atendimento',meta.criticosRows||[],opaAtendimentoCols())
   };
+  try{ premBarraRender(); }catch(e){}
   try{ premGuiaRender({maps, meta, qtd, vendasAprovadas, valorVendas, premioVendasAprovado, valorAtendimento, emRevisao, valorEmRevisao, naoPagar}); }catch(e){ console.warn('[Radar] guia premiação', e); }
   document.querySelectorAll('#prem-tab-geral [data-prem-geral]').forEach(el=>el.onclick=()=>{const h=handlers[el.dataset.premGeral];if(h)h();});
   document.querySelectorAll('#prem-tab-geral [data-prem-geral-att]').forEach(el=>el.onclick=()=>{
@@ -24807,7 +24884,7 @@ async function ixcCargaRender(){
   try{ await ixcCargaStatus(); }catch(e){ el.innerHTML = `<p class="ixc-carga-nota">Entre no Radar para carregar os dados do IXC. (${ixcEsc(e.message)})</p>`; return; }
   if(!IXC_CARGA.status){ el.innerHTML = '<p class="ixc-carga-nota">Entre no Radar para carregar os dados direto do IXC.</p>'; return; }
   if(IXC_CARGA.status && IXC_CARGA.status.sem_acesso){ el.style.display='none'; return; }
-  el.innerHTML = ixcCargaCardHTML();
+  el.innerHTML = ixcCargaCardHTML(); try{ premBarraRender(); }catch(e){}
   clearTimeout(IXC_CARGA.timer);
   if(ixcCargaEmAndamento(IXC_CARGA.status)) IXC_CARGA.timer = setTimeout(ixcCargaRender, 30000);
 }
