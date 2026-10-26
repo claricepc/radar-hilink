@@ -23758,7 +23758,7 @@ function cdAtvRemoverModal(id){
     <p class="cdg-nota" style="margin:0 0 8px"><b>${cdEsc(a.titulo)}</b></p>
     <ul class="cdg-conf-lista">
       <li>Some do painel e da tela de ${a.responsavel_nome?cdEsc(String(a.responsavel_nome).split(' ')[0]):'quem estava tratando'}.</li>
-      <li>${trat?`${cdNum(trat)} itens já tratados ficam guardados no histórico.`:'Nenhum item foi tratado ainda.'}</li>
+      <li>${trat?`${cdNum(trat)} ${trat===1?'item já tratado fica guardado':'itens já tratados ficam guardados'} no histórico.`:'Nenhum item foi tratado ainda.'}</li>
       <li>Promessas de pagamento registradas nela são canceladas e esses clientes voltam para a cobrança.</li>
     </ul>
     <p class="cdg-nota" style="margin:0 0 14px">Se o trabalho terminou, prefira <b>Encerrar</b>. Remover é para atividade criada por engano.</p>
