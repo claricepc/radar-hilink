@@ -16597,6 +16597,55 @@ function premAtendimentoAvatar(nome){
   const k=premAtendimentoKey(nome);
   return k?PREM_AVATAR_ATENDIMENTO[k]||'':'';
 }
+
+// ===== Fotos do time: gestão troca clicando na foto (salvo no banco, vale para todos) =====
+const PREM_AVATAR_PADRAO = Object.assign({}, PREM_AVATAR_ATENDIMENTO);
+async function premAvataresCarregar(){
+  try{ const sb=getSB(); if(!sb || !getRadarUser?.()) return;
+    const r = await sb.rpc('radar_avatar_listar'); if(r.error) return;
+    Object.assign(PREM_AVATAR_ATENDIMENTO, r.data||{});
+    if(STATE.activeMod==='premiacoes' && STATE.processed) refreshActiveModule();
+  }catch(e){}
+}
+function premAvatarRedimensionar(file){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader(); fr.onerror=()=>rej(new Error('Não consegui ler o arquivo.'));
+    fr.onload=()=>{ const img=new Image(); img.onerror=()=>rej(new Error('Arquivo não é uma imagem.'));
+      img.onload=()=>{ const t=240, c=document.createElement('canvas'); c.width=t; c.height=t; const ctx=c.getContext('2d');
+        const lado=Math.min(img.width,img.height), sx=(img.width-lado)/2, sy=(img.height-lado)/2;
+        ctx.drawImage(img,sx,sy,lado,lado,0,0,t,t); res(c.toDataURL('image/jpeg',0.85)); };
+      img.src=fr.result; };
+    fr.readAsDataURL(file);
+  });
+}
+function premAvatarTrocar(chave){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=async()=>{
+    const f=inp.files&&inp.files[0]; if(!f) return;
+    try{ const url=await premAvatarRedimensionar(f);
+      const r=await getSB().rpc('radar_avatar_salvar',{p_chave:chave, p_imagem:url}); if(r.error) throw new Error(r.error.message);
+      PREM_AVATAR_ATENDIMENTO[chave]=url; toast('Foto de '+(PREM_TIME_ATENDIMENTO[chave]||chave)+' atualizada.','success');
+      if(STATE.processed) refreshActiveModule();
+    }catch(e){ toast(e.message,'error'); }
+  };
+  inp.click();
+}
+document.addEventListener('click', ev=>{
+  try{
+    if(typeof cdPodeGerenciar!=='function' || !cdPodeGerenciar()) return;
+    const av = ev.target.closest('#mod-premiacoes [class*="avatar"]'); if(!av) return;
+    let chave = premAtendimentoKey(av.querySelector('img')?.alt || '');
+    if(!chave){ let el=av.parentElement; for(let i=0;i<6 && el && !chave;i++){ chave=premAtendimentoKey(el.textContent||''); el=el.parentElement; } }
+    if(!chave) return;
+    ev.preventDefault(); ev.stopPropagation();
+    premAvatarTrocar(chave);
+  }catch(e){}
+}, true);
+const _premAvCss=document.createElement('style'); _premAvCss.dataset.temaIgnorar='1';
+_premAvCss.textContent='body.radar-pode-foto #mod-premiacoes [class*="avatar"]{cursor:pointer}body.radar-pode-foto #mod-premiacoes [class*="avatar"]:hover{outline:2px dashed #0071BC;outline-offset:2px}';
+document.head.appendChild(_premAvCss);
+window.premAvatarTrocar=premAvatarTrocar;
+
 function isOpaNaCompetencia(r){
   if(!getGlobalDateRange().ativo)return true;
   return !!(r&&r._date&&isDateWithinGlobalRange(r._date));
@@ -24696,6 +24745,7 @@ async function radarAplicarPerfil(){
     if(error) throw error;
     CD.perfil = data?.perfil || 'usuario'; CD.meuNome = data?.nome || ''; CD.modulos = Array.isArray(data?.modulos) ? data.modulos : [];
     document.body.classList.toggle('radar-modo-atendente', CD.perfil==='atendente'); try{ radarAplicarModulos(); }catch(e){}
+    document.body.classList.toggle('radar-pode-foto', cdPodeGerenciar()); try{ premAvataresCarregar(); }catch(e){}
     const navU = document.querySelector('.nav-item[data-mod="usuarios"]'); if(navU) navU.style.display = cdPodeGerenciar() ? '' : 'none';
     if(data?.trocar_senha) radarTrocarSenhaModal();
     if(CD.perfil==='atendente'){ CD.atv.lista=null; go('cobrancaDia'); }
