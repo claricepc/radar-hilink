@@ -2698,6 +2698,7 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-motivo{border:1px solid rgba(0,113,188,.45);background:#fff;color:#005399;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer}
 .cdg-motivo:hover{background:#e8f2fb}
 .cdg-acao.ativo{outline:2px solid #0071BC}
+.cdg-sub{opacity:.7;font-size:11px;font-weight:500}
 .cdg-como ol{margin:0;padding-left:20px;font-size:13px;line-height:1.6}
 .usr-topo{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,1fr);gap:12px}
 @media (max-width:860px){.usr-topo{grid-template-columns:1fr}}
@@ -23477,7 +23478,7 @@ function cdGuiaHTML(){
   const linhasFil = marcas.map(m => {
     const fs = g.filiais.filter(f=>f.marca===m);
     const tot = fs.reduce((a,f)=>a+f.valor,0);
-    return `<tr class="marca"><td colspan="5">${cdEsc(m)} · ${cdMoeda(tot)}</td></tr>` + fs.map(f=>`<tr><td>${cdEsc(f.filial)}</td><td>${cdMoeda(f.valor)}</td><td>${cdNum(f.clientes)}</td><td>${cdMoeda(f.pre)}</td>
+    return `<tr class="marca"><td colspan="5">${cdEsc(m)} · ${cdMoeda(tot)}</td></tr>` + fs.map(f=>`<tr><td>${cdEsc(f.filial)}</td><td>${cdMoeda(f.valor)}</td><td>${cdNum(f.clientes)}</td><td>${cdMoeda(f.pre)}${f.preClientes?`<small class="cdg-sub"> · ${cdNum(f.preClientes)} ${f.preClientes===1?'cliente':'clientes'}</small>`:''}</td>
       <td class="bar"><div style="width:${(100*f.valor/maxFil).toFixed(1)}%"><span style="width:${f.valor>0?(100*f.pre/f.valor).toFixed(1):0}%"></span></div></td></tr>`).join('');
   }).join('');
   const v360 = `<div class="cdg-360">
