@@ -2674,6 +2674,18 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-atv-card.sla-warn{border-color:rgba(245,165,36,.6);box-shadow:inset 4px 0 0 #F5A524}
 .cdg-atv-card.sla-ok{box-shadow:inset 4px 0 0 #30A46C}
 .cdg-sla-resumo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0 10px}
+.cdg-atv-info{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cdg-atv-info span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.cdg-atv-info small{font-size:10px;text-transform:uppercase;letter-spacing:.05em;opacity:.65;font-weight:700}
+.cdg-atv-info b{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cdg-atv-acoes{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border-top:1px solid rgba(143,163,184,.25);padding-top:8px;margin-top:2px}
+.cdg-destaque{border-color:#E5484D!important;color:#D1343A!important;font-weight:700}
+.perigo-txt{color:#D1343A!important}
+.cdg-btn-perigo{background:#E5484D!important;color:#fff!important;border-color:#E5484D!important}
+.cdg-conf-lista{margin:0 0 12px;padding-left:18px;font-size:13px;line-height:1.5}
+.cdg-guia-atv{margin:0 0 10px;font-size:12.5px}
+.cdg-guia-atv summary{cursor:pointer;font-weight:700;color:#0071BC}
+.cdg-guia-atv ol{margin:8px 0 0;padding-left:20px;line-height:1.6}
 .cdg-prog.grande{height:12px}
 .cdg-prog .ok{background:#30A46C}
 .cdg-prog .info{background:#4DA3E0}
@@ -23551,20 +23563,29 @@ function cdAtvPainelHTML(){
   abertas.sort((x,y)=>pesoSla(x)-pesoSla(y));
   const cards = abertas.map(a=>{
     const tot = Number(a.total)||0, res = Number(a.resolvidos)||0, trat = Math.max(0,(Number(a.tratados)||0)-res);
-    const atrasada = a.prazo && a.prazo < cdHoje() && Number(a.pendentes)>0;
+    const sla = cdSla(a);
     const pessoas = Object.entries(a.por_pessoa||{}).sort((x,y)=>y[1]-x[1]).map(([n,q])=>cdEsc(n)+' '+q).join(', ');
-    return `<div class="cdg-atv-card sla-${cdSla(a).c}">
-      <div class="cdg-atv-top"><div><div class="cdg-atv-tit">${cdEsc(a.titulo)}</div>
-        <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||a.tipo)} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Equipe toda'}${a.prazo?` · prazo ${cdData(a.prazo)}`:''}${atrasada?' · <b class="r">atrasada</b>':''}</div></div>
-        <span class="cdg-atv-bts"><button type="button" class="btn sm primary" onclick="cdAtvAbrir(${a.id})">Abrir atividade</button>
-        <button type="button" class="cdg-mini" onclick="cdAtvRemover(${a.id}, this)" title="Tira a atividade do painel e das atendentes. Promessas registradas nela são canceladas.">Remover</button></span></div>
+    const resp = a.responsavel_nome ? cdEsc(a.responsavel_nome) : 'Equipe toda';
+    return `<div class="cdg-atv-card sla-${sla.c}" id="cd-atv-card-${a.id}">
+      <div class="cdg-atv-tit">${cdEsc(a.titulo)}</div>
+      <div class="cdg-atv-info">
+        <span><small>Quem trata</small><b>${resp}</b></span>
+        <span><small>Prazo</small><b>${a.prazo?cdData(a.prazo)+' às 18h':'sem prazo'}</b></span>
+        <span><small>Tipo</small><b>${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||a.tipo)}</b></span>
+      </div>
       ${cdSlaBarra(a)}
-      <div class="cdg-atv-nums"><span><b>${cdNum(res)}</b> resolvidos</span><span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(a.pendentes)}</b> para tratar</span>
+      <div class="cdg-atv-nums"><span><b>${cdNum(a.pendentes)}</b> para tratar</span><span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(res)}</b> resolvidos no IXC</span>
         ${Number(a.valor_total)?`<span><b>${cdMoeda(a.valor_resolvido)}</b> de ${cdMoeda(a.valor_total)} recebido</span>`:''}
-        ${Number(a.promessas_no_prazo)?`<span>${cdNum(a.promessas_no_prazo)} promessas no prazo</span>`:''}
         ${Number(a.promessas_quebradas)?`<span class="r">${cdNum(a.promessas_quebradas)} promessas não cumpridas</span>`:''}
         ${Number(a.em_atendimento)?`<span>${cdNum(a.em_atendimento)} em atendimento agora</span>`:''}</div>
-      ${pessoas?`<div class="cdg-nota" style="margin-top:2px">Tratados por: ${pessoas}</div>`:''}
+      ${pessoas?`<div class="cdg-nota" style="margin:0">Tratados por: ${pessoas}</div>`:''}
+      <div class="cdg-atv-acoes">
+        <button type="button" class="btn sm primary" onclick="cdAtvAbrir(${a.id})" title="Ver os clientes desta atividade e o que já foi registrado">Abrir atividade</button>
+        <button type="button" class="btn sm ${sla.c==='risk'?'cdg-destaque':''}" onclick="cdAtvTrocarModal(${a.id})" title="Passa a atividade para outra atendente e, se quiser, dá um novo prazo">Trocar responsável</button>
+        <span style="flex:1"></span>
+        <button type="button" class="cdg-mini" onclick="cdAtvEncerrarModal(${a.id})" title="Use quando o trabalho terminou. Fica no histórico.">Encerrar</button>
+        <button type="button" class="cdg-mini perigo-txt" onclick="cdAtvRemoverModal(${a.id})" title="Use quando a atividade foi criada por engano">Remover</button>
+      </div>
     </div>`;
   }).join('');
   const encerradas = A.lista.filter(a=>a.status==='encerrada').length;
@@ -23579,6 +23600,13 @@ function cdAtvPainelHTML(){
     <div class="cdg-atv-h"><div class="cdg-eyebrow" style="margin:0">Atividades da equipe</div>
       <span class="cdg-nota" style="margin:0">${abertas.length?`${abertas.length} em andamento`:'Nenhuma atividade em andamento'}${encerradas?`, ${encerradas} encerradas nos últimos 30 dias`:''} · ${cdNum((A.usuarios||[]).filter(u=>u.perfil==='atendente').length)} atendentes
         <button type="button" class="cdg-ir" style="margin-left:8px" onclick="cdAtendenteModal(true)">Cadastrar atendente</button></span></div>
+    <details class="cdg-guia-atv"><summary>Como usar este painel</summary>
+      <ol>
+        <li><b>Direcionar:</b> nos quadros abaixo (Fazer agora, Corrigir no IXC, Planejar), clique em <b>Gerar atividade</b>, escolha a atendente e o prazo.</li>
+        <li><b>Acompanhar pela cor:</b> <span class="cdg-sla-chip ok">verde</span> no prazo, <span class="cdg-sla-chip warn">amarelo</span> perto de estourar ou ritmo lento, <span class="cdg-sla-chip risk">vermelho</span> prazo estourado. A barra é o quanto já foi tratado; a linha escura é o quanto do prazo já passou.</li>
+        <li><b>Agir:</b> se ficou vermelho, fale com a atendente ou use <b>Trocar responsável</b>. Quando terminar, clique em <b>Encerrar</b>. <b>Remover</b> é só para atividade criada por engano.</li>
+      </ol>
+    </details>
     ${aprov}
     ${resumoSla}
     ${abertas.length?`<div class="cdg-atv-grid">${cards}</div>`:`<div class="cdg-nota">Use <b>Gerar atividade</b> em qualquer item abaixo para direcionar a lista a uma ou mais atendentes. Cada atendente vê só o que foi direcionado a ela, registra o resultado de cada cliente, e o Radar confirma pelo IXC quem pagou ou foi corrigido.</div>`}
@@ -23715,7 +23743,77 @@ async function cdAtvItensCarregar(){
   renderCobrancaDia();
 }
 function cdAtvFechar(){ CD.atv.aberta=null; CD.atv.itens=[]; renderCobrancaDia(); cdAtvCarregar(); }
+function cdModal(html){
+  let el = document.getElementById('cd-conf-modal');
+  if(!html){ if(el) el.remove(); return null; }
+  if(!el){ el = document.createElement('div'); el.id='cd-conf-modal'; el.className='cdg-modal'; document.body.appendChild(el);
+    el.addEventListener('click', e=>{ if(e.target===el) cdModal(null); }); }
+  el.innerHTML = `<div class="cdg-modal-box" role="dialog" aria-modal="true">${html}</div>`;
+  return el;
+}
+function cdAtvRemoverModal(id){
+  const a = (CD.atv.lista||[]).find(x=>x.id===id); if(!a) return;
+  const trat = Number(a.tratados)||0;
+  cdModal(`<h3>Remover esta atividade?</h3>
+    <p class="cdg-nota" style="margin:0 0 8px"><b>${cdEsc(a.titulo)}</b></p>
+    <ul class="cdg-conf-lista">
+      <li>Some do painel e da tela de ${a.responsavel_nome?cdEsc(String(a.responsavel_nome).split(' ')[0]):'quem estava tratando'}.</li>
+      <li>${trat?`${cdNum(trat)} itens já tratados ficam guardados no histórico.`:'Nenhum item foi tratado ainda.'}</li>
+      <li>Promessas de pagamento registradas nela são canceladas e esses clientes voltam para a cobrança.</li>
+    </ul>
+    <p class="cdg-nota" style="margin:0 0 14px">Se o trabalho terminou, prefira <b>Encerrar</b>. Remover é para atividade criada por engano.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+      <button type="button" class="btn sm cdg-btn-perigo" id="cd-conf-ok" onclick="cdAtvRemover(${id})">Sim, remover</button></div>`);
+}
+function cdAtvEncerrarModal(id){
+  const a = (CD.atv.lista||[]).find(x=>x.id===id); if(!a) return;
+  const pend = Number(a.pendentes)||0;
+  cdModal(`<h3>Encerrar esta atividade?</h3>
+    <p class="cdg-nota" style="margin:0 0 8px"><b>${cdEsc(a.titulo)}</b></p>
+    <ul class="cdg-conf-lista">
+      <li>Sai do painel e da tela da atendente, e fica no histórico dos últimos 30 dias.</li>
+      <li>${pend?`<b>${cdNum(pend)} itens ainda não foram tratados.</b> Eles podem entrar numa nova atividade.`:'Todos os itens foram tratados.'}</li>
+    </ul>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+      <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="cdAtvEncerrar(${id}, true)">Sim, encerrar</button></div>`);
+}
+function cdAtvTrocarModal(id){
+  const a = (CD.atv.lista||[]).find(x=>x.id===id); if(!a) return;
+  const pessoas = (CD.atv.usuarios||[]).filter(u=>u.perfil==='atendente');
+  cdModal(`<h3>Trocar responsável</h3>
+    <p class="cdg-nota" style="margin:0 0 10px"><b>${cdEsc(a.titulo)}</b>. Hoje com ${cdEsc(a.responsavel_nome||'ninguém')}, ${cdNum(a.pendentes)} itens para tratar.</p>
+    <div class="cdg-campo">Passar para
+      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="radio" name="cd-troca-p" value="${u.id}" ${u.id===a.responsavel?'disabled':''}> ${cdEsc(u.nome)}${u.id===a.responsavel?' (atual)':''}</label>`).join('')}</div></div>
+    <label class="cdg-campo" style="max-width:220px">Novo prazo<input id="cd-troca-prazo" type="date" min="${cdHoje()}" value="${a.prazo && a.prazo>=cdHoje() ? a.prazo : cdHoje()}"></label>
+    <p class="cdg-nota" style="margin:-6px 0 14px">O que já foi tratado continua registrado. A nova responsável vê a atividade na hora.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+      <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="cdAtvTrocar(${id})">Trocar</button></div>`);
+}
+async function cdAtvTrocar(id){
+  const sel = document.querySelector('input[name="cd-troca-p"]:checked');
+  if(!sel){ toast('Escolha quem vai tratar.','warn'); return; }
+  const prazo = document.getElementById('cd-troca-prazo')?.value || null;
+  const b = document.getElementById('cd-conf-ok'); if(b){ b.disabled=true; b.textContent='Trocando...'; }
+  try{
+    const r = await cdAtvRpc('radar_atv_trocar_responsavel',{p_atividade:id, p_responsavel:sel.value, p_prazo:prazo});
+    if(!r.ok){ toast(r.motivo,'warn'); if(b){ b.disabled=false; b.textContent='Trocar'; } return; }
+    cdModal(null); toast('Atividade passada para '+r.responsavel+'.','success'); cdAtvCarregar();
+  }catch(e){ toast(e.message,'error'); if(b){ b.disabled=false; b.textContent='Trocar'; } }
+}
 async function cdAtvRemover(id, btn){
+  const b = document.getElementById('cd-conf-ok'); if(b){ b.disabled=true; b.textContent='Removendo...'; }
+  try{
+    const r = await cdAtvRpc('radar_atv_remover',{p_atividade:id});
+    if(!r.ok){ toast(r.motivo,'warn'); cdModal(null); cdAtvCarregar(); return; }
+    cdModal(null);
+    CD.atv.lista = (CD.atv.lista||[]).filter(x=>x.id!==id);
+    if(CD.atv.aberta===id){ CD.atv.aberta=null; }
+    renderCobrancaDia();
+    toast('Atividade removida'+(r.promessas_canceladas?`. ${cdNum(r.promessas_canceladas)} promessas canceladas: esses clientes voltam para a cobrança.`:'.'),'success');
+    cdAtvCarregar();
+  }catch(e){ toast('Não consegui remover: '+e.message,'error'); if(b){ b.disabled=false; b.textContent='Sim, remover'; } }
+}
+async function cdAtvRemoverAntigo(id, btn){
   const a = (CD.atv.lista||[]).find(x=>x.id===id);
   if(btn && !btn.dataset.confirmar){
     btn.dataset.confirmar='1'; btn.classList.add('perigo');
@@ -23731,11 +23829,13 @@ async function cdAtvRemover(id, btn){
     cdAtvCarregar();
   }catch(e){ toast(e.message,'error'); }
 }
-async function cdAtvEncerrar(id){
+async function cdAtvEncerrar(id, confirmado){
+  if(!confirmado){ cdAtvEncerrarModal(id); return; }
   const a = (CD.atv.lista||[]).find(x=>x.id===id);
-  const box = document.getElementById('cd-atv-encerrar');
+  const box = null;
   if(box && !box.dataset.confirmar){ box.dataset.confirmar='1'; box.textContent=`Confirmar: encerrar com ${cdNum(a?.pendentes||0)} para tratar`; return; }
-  try{ await cdAtvRpc('radar_atv_encerrar',{p_atividade:id}); toast('Atividade encerrada.','success'); cdAtvFechar(); }
+  try{ await cdAtvRpc('radar_atv_encerrar',{p_atividade:id}); cdModal(null);
+    CD.atv.lista = (CD.atv.lista||[]).filter(x=>x.id!==id); toast('Atividade encerrada.','success'); cdAtvFechar(); }
   catch(e){ toast(e.message,'error'); }
 }
 async function cdAtvAtender(itemId){
@@ -23801,7 +23901,8 @@ function cdAreaHTML(){
         <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdData(a.prazo):''} · criada por ${cdEsc(a.criado_por_nome||'-')}</div></div>
       ${a.status==='aberta'?`<button type="button" class="btn sm primary" onclick="cdAtvProximo()">Pegar o próximo cliente</button>`:''}
       <button type="button" class="btn sm" onclick="cdAtvItensCarregar()">Atualizar</button>
-      ${cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvRemover(${a.id}, this)" title="Tira a atividade do painel e das atendentes">Remover</button>`:''}
+      ${a.status==='aberta'&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
+      ${cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvRemoverModal(${a.id})" title="Para atividade criada por engano">Remover</button>`:''}
       ${a.status==='aberta'&&cdPodeGerenciar()?`<button type="button" class="btn sm" id="cd-atv-encerrar" onclick="cdAtvEncerrar(${a.id})" title="Só quem criou a atividade ou a gestão pode encerrar">Encerrar atividade</button>`:''}
     </div>`;
   if(A.itens===null) return `<div class="section compact-section">${head}<p class="cdg-nota">Carregando os clientes da atividade...</p></div>`;
@@ -24174,6 +24275,7 @@ function cdExportarPlanilha(){
   cdBaixar(`${cdNomeLista()}_${cdSlug(CD.filial)}_${String(CD.dados.resumo?.data||'').slice(0,10)}.csv`, corpo);
 }
 Object.assign(window, { cdAtvRemover, cdAtendenteModal, cdAtendenteCriar, cdAtvDivisao, radarTrocarSenha, radarAplicarPerfil, cdAtvNova, cdAtvCriar, cdAtvModal, cdAtvAbrir, cdAtvFechar, cdAtvAtender, cdAtvProximo, cdAtvRegistrar, cdAtvEncerrar, cdAtvCopiar, cdAtvCarregar, cdAtvItensCarregar, cdPromessaDecidir, cdExportarEmails, cdCarregar, renderCobrancaDia, cdExportarOpa, cdExportarPlanilha, cdAtualizarPagamentos, cdAplicarPreset, cdSetFiltro, cdLimparFiltros, cdIrAba, cdIrLista, CD });
+Object.assign(window, { cdModal, cdAtvRemoverModal, cdAtvEncerrarModal, cdAtvTrocarModal, cdAtvTrocar, cdAtvRemover, cdAtvEncerrar });
 
 
 </script>
