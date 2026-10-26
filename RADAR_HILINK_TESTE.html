@@ -2540,7 +2540,7 @@ h2.section-title .info-btn{margin-left:6px}
 .cd-passos span{border:1px solid rgba(90,150,220,.45);border-radius:999px;padding:4px 10px}
 @media (max-width:760px){.cd-atalho{flex-direction:column;align-items:flex-start}}
 /* ===== Cobrança do Dia: guia de gestão (só apresentação; números vêm das mesmas listas do módulo) ===== */
-#mod-cobrancaDia{--g-bg:#0B1B2B;--g-card:#0E2236;--g-card2:#11283F;--g-line:rgba(143,163,184,.20);--g-text:#F2F5F8;--g-sub:#B4C2D0;--g-muted:#8FA3B8;--g-blue:#4DA3E0;--g-risk:#FF6B70;--g-risk-bg:rgba(229,72,77,.10);--g-warn:#FFB84D;--g-warn-bg:rgba(245,165,36,.09);--g-ok:#4CC38A;--g-ok-bg:rgba(48,164,108,.10);--g-info-bg:rgba(77,163,224,.09)}
+#mod-cobrancaDia,#mod-premiacoes{--g-bg:#0B1B2B;--g-card:#0E2236;--g-card2:#11283F;--g-line:rgba(143,163,184,.20);--g-text:#F2F5F8;--g-sub:#B4C2D0;--g-muted:#8FA3B8;--g-blue:#4DA3E0;--g-risk:#FF6B70;--g-risk-bg:rgba(229,72,77,.10);--g-warn:#FFB84D;--g-warn-bg:rgba(245,165,36,.09);--g-ok:#4CC38A;--g-ok-bg:rgba(48,164,108,.10);--g-info-bg:rgba(77,163,224,.09)}
 .cdg{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
 .cdg-status{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 14px;border:1px solid var(--g-line);border-radius:10px;background:var(--g-card);font-size:12px;color:var(--g-sub)}
 .cdg-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-weight:700;font-size:11px;letter-spacing:.02em}
@@ -7457,6 +7457,7 @@ body.radar-modo-atendente .topbar{display:none!important}
 
     <!-- -- ABA: VISÃO GERAL -- -->
     <div class="prem-tab-pane active" id="prem-tab-geral">
+      <div id="prem-guia" class="cdg" style="margin-bottom:16px"></div>
       <div class="prem-tab-intro">
         <div>
           <small>Vis&atilde;o Geral</small>
@@ -17341,6 +17342,94 @@ function premRenderCommercialEvolution(data){
     </div>
   </div>`;
 }
+
+// ===== Guia da Premiação: mesma linguagem da Cobrança do Dia =====
+const PREM_DIV = { dados:null, carregando:false, erro:null };
+async function premDivCarregar(){
+  if(PREM_DIV.carregando) return; PREM_DIV.carregando = true;
+  try{ const sb=getSB(); const r = await sb.rpc('radar_premiacao_divergencias',{p_meses:3}); if(r.error) throw r.error; PREM_DIV.dados = r.data||{}; PREM_DIV.erro=null; }
+  catch(e){ PREM_DIV.erro = e.message||String(e); }
+  finally{ PREM_DIV.carregando = false; if(PREM_GUIA_ULT) premGuiaRender(PREM_GUIA_ULT); }
+}
+let PREM_GUIA_ULT = null;
+function premDivAbrir(filtro){
+  const ls = ((PREM_DIV.dados||{}).linhas||[]).filter(x=>!filtro || x.situacao.startsWith(filtro));
+  const rows = ls.map(x=>({ 'Mês':cdData(x.competencia).slice(3), 'Atendente (planilha)':x.colaborador, 'Cód. cliente':x.id_cliente, 'Cliente':x.cliente||'', 'Serviço':x.servico,
+    'Status na planilha':x.pago||'', 'Valor a receber':x.valor_receber!=null?brl(x.valor_receber):'', 'Contrato IXC':x.contrato||'', 'Ativação IXC':x.ativ?cdData(x.ativ):'', 'Vendedora no IXC':x.colab_ixc||'', 'Situação':x.situacao }));
+  openDrill('Planilha x Sistema'+(filtro?': '+filtro:''), rows, ['Mês','Situação','Atendente (planilha)','Cód. cliente','Cliente','Serviço','Status na planilha','Valor a receber','Contrato IXC','Ativação IXC','Vendedora no IXC'],
+    {action:'Conferir com a atendente. Se o IXC estiver certo, corrigir a planilha; se a planilha estiver certa, corrigir o vendedor ou a data no IXC.'});
+}
+function premGuiaRender(c){
+  PREM_GUIA_ULT = c;
+  const box = document.getElementById('prem-guia'); if(!box) return;
+  const brlS = v => (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const nf = v => (Number(v)||0).toLocaleString('pt-BR');
+  const folha = (c.premioVendasAprovado||0) + (c.valorAtendimento||0);
+  // líder do período pelo prêmio aprovado em vendas
+  const porVend = {};
+  (c.vendasAprovadas||[]).forEach(r=>{ const n = premAtendimentoNome?.(r['Vendedor Nome']||r['Vendedor']) || r['Vendedor Nome'] || r['Vendedor'] || ''; if(!n) return;
+    const o = porVend[n] ||= {nome:n, qt:0, premio:0}; o.qt++; o.premio += Number(r['Valor aprovado']||r['Valor premiação']||0); });
+  const rk = Object.values(porVend).sort((a,b)=>b.premio-a.premio || b.qt-a.qt);
+  const lider = rk[0], segundo = rk[1];
+  // divergências planilha x sistema (mês atual e anterior)
+  if(!PREM_DIV.dados && !PREM_DIV.carregando && !PREM_DIV.erro) premDivCarregar();
+  const res = (PREM_DIV.dados||{}).resumo||[];
+  const conta = k => res.filter(x=>x.situacao.startsWith(k)).reduce((a,x)=>a+Number(x.qt||0),0);
+  const confere = conta('Confere'), soPlan = conta('Na planilha')+conta('IXC: ativação em nome')+conta('IXC: vendedor'), soIxc = conta('No IXC');
+  const totPlan = confere + soPlan, pctDiv = totPlan ? Math.round(100*soPlan/totPlan) : 0;
+  const divTxt = PREM_DIV.carregando ? 'Conferindo a planilha com o IXC...' : PREM_DIV.erro ? 'Não foi possível conferir a planilha agora.' :
+    totPlan ? `Na planilha da equipe, <button type="button" class="cdg-link r" onclick="premDivAbrir('')">${nf(soPlan)} lançamentos (${pctDiv}%) não batem com o IXC</button> nos últimos 3 meses, e ${nf(soIxc)} ativações do IXC não foram lançadas. A planilha segue como conferência até 31/12.` : '';
+  const p1 = `As vendas aprovadas somam <b>${brlS(c.valorVendas)}</b> em receita e geram <b>${brlS(c.premioVendasAprovado)}</b> de prêmio. Com o prêmio de atendimento (${brlS(c.valorAtendimento)}), a folha prevista é de <b>${brlS(folha)}</b>.`;
+  const p2 = c.emRevisao ? `Antes de fechar, <button type="button" class="cdg-link r" data-prem-geral="revisao">${nf(c.emRevisao)} eventos estão em revisão</button> (${brlS(c.valorEmRevisao)}). Cada um precisa de decisão: pagar ou não pagar.` : `Não há eventos em revisão: a folha está pronta para conferência final.`;
+  const p3 = lider ? `Quem lidera é <b>${cdEsc(lider.nome)}</b>, com ${nf(lider.qt)} vendas aprovadas (${brlS(lider.premio)})${segundo?`, seguida de ${cdEsc(segundo.nome)} (${brlS(segundo.premio)})`:''}.` : '';
+  const numeros = `<div class="cdg-numeros">
+    <div class="cdg-num info"><div class="l">Folha prevista</div><div class="v">${brlS(folha)}</div><div class="s">vendas ${brlS(c.premioVendasAprovado)} + atendimento ${brlS(c.valorAtendimento)}</div></div>
+    <div class="cdg-num risk clicavel" data-prem-geral="revisao" role="button" tabindex="0"><div class="l">Em revisão <span class="ver">Ver lista</span></div><div class="v">${nf(c.emRevisao)}</div><div class="s">${brlS(c.valorEmRevisao)} aguardando decisão</div></div>
+    <div class="cdg-num ok clicavel" data-prem-geral="aprovadas" role="button" tabindex="0"><div class="l">Resultado comercial <span class="ver">Ver ranking</span></div><div class="v">${brlS(c.valorVendas)}</div><div class="s">${nf((c.vendasAprovadas||[]).length)} vendas aprovadas</div></div>
+  </div>`;
+  const item = o => `<div class="cdg-item ${o.tom||''}">
+      <div class="t">${o.passo?`<span class="cdg-passo">${o.passo}</span>`:''}<span>${o.titulo}</span></div>
+      ${o.numero!==undefined?`<div class="n">${o.numero}${o.unid?`<small>${o.unid}</small>`:''}</div>`:''}
+      ${o.porque?`<div class="p">${o.porque}</div>`:''}${o.como?`<div class="c">${o.como}</div>`:''}
+      ${o.botao?`<div class="cdg-botoes">${o.botao}</div>`:''}</div>`;
+  const btn = (t, attr) => `<button type="button" class="cdg-ir" ${attr}>${t}</button>`;
+  const agir = [
+    item({tom:'agir', passo:1, titulo:'Decidir os eventos em revisão', numero:nf(c.emRevisao), unid:'eventos', porque:`${brlS(c.valorEmRevisao)} só entram na folha depois da decisão.`, como:'Abrir a fila e marcar pagar ou não pagar, um por um.', botao:btn('Abrir a fila','data-prem-geral="revisao"')}),
+    lider ? item({tom:'agir', passo:2, titulo:'Conferir o 1º lugar antes de anunciar', numero:cdEsc(lider.nome.split(' ')[0]), porque:'O prêmio do 1º lugar sai daqui: confira se as vendas dela estão no IXC.', como:'Abrir o ranking e checar as vendas da líder.', botao:btn('Ver ranking','data-prem-geral="aprovadas"')}) : ''
+  ].join('');
+  const corrigir = [
+    totPlan ? item({tom:'corrigir', titulo:'Planilha da equipe x IXC', numero:nf(soPlan), unid:'não batem', porque:`${pctDiv}% dos lançamentos da planilha não têm a mesma ativação no IXC: risco de pagar o que não deve.`, como:'Talitha confere com cada atendente e corrige a planilha ou o IXC.', botao:btn('Ver divergências',`onclick="premDivAbrir('')"`)}) : '',
+    totPlan && soIxc ? item({tom:'corrigir', titulo:'Ativações que ninguém lançou', numero:nf(soIxc), unid:'no IXC', porque:'Estão no IXC em nome da atendente, mas fora da planilha. Pode ser venda esquecida ou regra que exclui.', como:'Confirmar com a atendente se deve entrar.', botao:btn('Ver lista',`onclick="premDivAbrir('No IXC')"`)}) : '',
+    item({tom:'corrigir', titulo:'Não pagar', numero:nf(c.naoPagar), unid:'eventos', porque:'Vendas reprovadas, anuladas ou reativações fora da regra.', botao:btn('Ver motivos','data-prem-geral="naopagar"')})
+  ].join('');
+  const planejar = [
+    item({tom:'planejar', titulo:'Fechar a folha do mês', numero:brlS(folha), porque:'Valor previsto com o que já está aprovado hoje.', como:'Fechar depois de zerar a fila de revisão.'}),
+    item({tom:'planejar', titulo:'Premiação semanal', porque:'Semana de segunda a domingo. O 1º lugar da semana sai do ranking de vendas aprovadas.', como:'Conferir toda segunda, depois da leitura das 5h.'})
+  ].join('');
+  const at = [];
+  const fant = (c.meta?.fantasmaRows||[]).length, curtos = (c.meta?.curtosRows||[]).length;
+  if(fant) at.push(cdAlerta('warn', `<button type="button" class="cdg-link" data-prem-geral="fantasmas">${nf(fant)} ${fant===1?'atendimento fantasma':'atendimentos fantasma'}</button>: a IA tratou e a pessoa só encerrou.`));
+  if(curtos) at.push(cdAlerta('warn', `<button type="button" class="cdg-link" data-prem-geral="curtos">${nf(curtos)} ${curtos===1?'atendimento':'atendimentos'} abaixo de 60s</button>.`));
+  if(totPlan && conta('IXC: ativação em nome')) at.push(cdAlerta('risk', `${nf(conta('IXC: ativação em nome'))} ${conta('IXC: ativação em nome')===1?'venda da planilha está':'vendas da planilha estão'} no IXC em nome de outra atendente.`));
+  if(!at.length) at.push(cdAlerta('ok','Nada fora do normal no período.'));
+  box.innerHTML = `
+    <div class="cdg-resumo">
+      <div class="cdg-box"><div class="cdg-eyebrow">O período em poucas linhas</div>
+        <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p>${p3?`<p>${p3}</p>`:''}${divTxt?`<p>${divTxt}</p>`:''}</div>
+        <div class="cdg-nota">Os trechos sublinhados abrem a lista.</div></div>
+      <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o período</div>${numeros}</div>
+    </div>
+    <div class="cdg-colunas">
+      <div class="cdg-col agir"><div class="cdg-col-h"><h3>Fazer agora</h3><span>nesta ordem</span></div>${agir}</div>
+      <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Corrigir</h3><span>antes de pagar</span></div>${corrigir}</div>
+      <div class="cdg-col planejar"><div class="cdg-col-h"><h3>Planejar</h3><span>fechamento</span></div>${planejar}</div>
+      <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Ficar atenta</h3><span>${at.length} pontos</span></div>${at.join('')}</div>
+    </div>`;
+  // liga os botões do guia aos mesmos atalhos da Visão Geral
+  box.querySelectorAll('[data-prem-geral]').forEach(el=>{ el.onclick = ()=>{ const alvo = document.querySelector(`#prem-tab-geral .prem-exec-card[data-prem-geral="${el.dataset.premGeral}"], #prem-tab-geral .prem-exec-status[data-prem-geral="${el.dataset.premGeral}"]`); if(alvo && alvo.onclick) alvo.onclick(); }; });
+}
+window.premDivAbrir = premDivAbrir;
+
 function renderPremiacoesGeral(){
   _syncPremFiltrosMirror();
   const alertas=document.getElementById('prem-geral-alertas');
@@ -17679,6 +17768,7 @@ function renderPremiacoesGeral(){
     pesquisa:()=>openDrill('Participação em pesquisa',meta.clienteAvaliacoes||[],opaAtendimentoCols()),
     criticos:()=>openDrill('Sinais críticos do atendimento',meta.criticosRows||[],opaAtendimentoCols())
   };
+  try{ premGuiaRender({maps, meta, qtd, vendasAprovadas, valorVendas, premioVendasAprovado, valorAtendimento, emRevisao, valorEmRevisao, naoPagar}); }catch(e){ console.warn('[Radar] guia premiação', e); }
   document.querySelectorAll('#prem-tab-geral [data-prem-geral]').forEach(el=>el.onclick=()=>{const h=handlers[el.dataset.premGeral];if(h)h();});
   document.querySelectorAll('#prem-tab-geral [data-prem-geral-att]').forEach(el=>el.onclick=()=>{
     const nome=el.dataset.premGeralAtt;
