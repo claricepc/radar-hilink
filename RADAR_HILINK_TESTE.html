@@ -2694,6 +2694,10 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-selo.warn{background:rgba(245,165,36,.14);color:#B26F00;border-color:rgba(245,165,36,.55)}.cdg-selo.warn i{background:#F5A524}
 .cdg-selo.risk{background:rgba(229,72,77,.12);color:#D1343A;border-color:rgba(229,72,77,.5)}.cdg-selo.risk i{background:#E5484D}
 .cdg-selo.neutro{background:rgba(143,163,184,.14);color:#6B7F95;border-color:rgba(143,163,184,.4)}.cdg-selo.neutro i{background:#8FA3B8}
+.cdg-motivos{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0}
+.cdg-motivo{border:1px solid rgba(0,113,188,.45);background:#fff;color:#005399;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer}
+.cdg-motivo:hover{background:#e8f2fb}
+.cdg-acao.ativo{outline:2px solid #0071BC}
 .cdg-como ol{margin:0;padding-left:20px;font-size:13px;line-height:1.6}
 .usr-topo{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,1fr);gap:12px}
 @media (max-width:860px){.usr-topo{grid-template-columns:1fr}}
@@ -23924,6 +23928,22 @@ const CD_ATV_COMO = {
   sem_email: ['Ligue ou mande mensagem pedindo o e-mail do cliente.', 'Cadastre o e-mail no IXC e marque <b>E-mail cadastrado</b>.'],
   avencer: ['Avise o cliente do vencimento.', 'Registre o resultado.']
 };
+const CD_ATV_MOTIVOS = {
+  quebra: ['Cliente não pagou nenhuma fatura', 'Fatura já foi trocada', 'Pagamento antecipado combinado', 'Pagou as duas faturas'],
+  suspeitos: ['Valor está correto', 'Já foi corrigido', 'Título será cancelado pelo financeiro'],
+  gerados_vencidos: ['Vencimento está correto', 'Já foi corrigido', 'Cliente já pagou'],
+  cobrar: ['Já pagou', 'Pediu cancelamento', 'Prazo combinado com a liderança', 'Cliente em contestação'],
+  recolhimento_atd: ['Equipamento já devolvido', 'Cliente vai reativar', 'Cliente se recusa a devolver']
+};
+async function cdAtvMotivo(itemId, motivo){
+  const campo = document.getElementById('cd-it-obs-'+itemId);
+  const extra = (campo?.value||'').trim();
+  if(!motivo && !extra){ toast('Escreva o motivo na observação.','warn'); campo?.focus(); return; }
+  if(campo) campo.value = motivo ? (extra ? motivo+'. '+extra : motivo) : extra;
+  CD.atv.motivoAberto = null;
+  await cdAtvRegistrar(itemId, 'nao_cobrar');
+}
+window.cdAtvMotivo = cdAtvMotivo;
 async function cdAtvDesfazer(itemId){
   try{
     const r = await cdAtvRpc('radar_atv_desfazer',{p_item:itemId});
@@ -24031,8 +24051,11 @@ function cdAreaHTML(){
       ${aberto?`<div class="cdg-it-acoes">
         <input id="cd-it-obs-${i.id}" type="text" placeholder="Observação (o que o cliente disse)" maxlength="300" value="${cdEsc(i.obs||'')}">
         ${acoes.includes('prometeu')?`<label class="cdg-prom">Data prometida <input id="cd-it-data-${i.id}" type="date" min="${cdHoje()}" max="${cdAddDias(10)}"></label>`:''}
-        <div class="cdg-botoes">${acoes.map(s=>`<button type="button" class="cdg-acao ${s}" onclick="cdAtvRegistrar(${i.id},'${s}')">${cdAtvRotuloAcao(a.tipo,s)}</button>`).join('')}
+        <div class="cdg-botoes">${acoes.map(s=>s==='nao_cobrar'
+          ? `<button type="button" class="cdg-acao ${s} ${CD.atv.motivoAberto===i.id?'ativo':''}" onclick="CD.atv.motivoAberto=(CD.atv.motivoAberto===${i.id}?null:${i.id});renderCobrancaDia()">${cdAtvRotuloAcao(a.tipo,s)}</button>`
+          : `<button type="button" class="cdg-acao ${s}" onclick="cdAtvRegistrar(${i.id},'${s}')">${cdAtvRotuloAcao(a.tipo,s)}</button>`).join('')}
           <button type="button" class="cdg-mini" onclick="cdAtvSoltar(${i.id})" title="Desiste deste cliente agora: ele volta para a fila, sem registro">Devolver para a fila</button></div>
+        ${CD.atv.motivoAberto===i.id?`<div class="cdg-motivos"><span class="cdg-nota" style="margin:0">Qual o motivo?</span>${(CD_ATV_MOTIVOS[a.tipo]||CD_ATV_MOTIVOS.cobrar).map(m=>`<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'${cdEsc(m)}')">${cdEsc(m)}</button>`).join('')}<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'')">Outro (escrever na observação)</button></div>`:''}
         ${acoes.includes('prometeu')?`<div class="cdg-nota" style="margin:0">Prometeu pagar: o cliente sai da cobrança até a data (máximo 10 dias). Se a data passar do bloqueio, lance a liberação em confiança no IXC.</div>`:''}
       </div>`:''}
     </div>`;
