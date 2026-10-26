@@ -26627,12 +26627,12 @@ function ccIxcResumo(){
   const semLinha=(CC_IXC.boletos||[]).filter(b=>!b['Linha digitável']).length;
   if(e.status==='buscando'||e.status==='pedido')return `Buscando no IXC... ${e.prontos||0} de ${e.contratos??'?'} contratos prontos.`;
   if(e.erro)return `<span style="color:#ef4444">Última busca no IXC com erro: ${String(e.erro).slice(0,160)}</span>`;
-  return `Fonte: <b>IXC direto</b> · atualizado em <b>${ccIxcQuando()}</b> · OS abertas de entrega de carnê: <b>${abertas}</b> · boletos em aberto: <b>${(CC_IXC.boletos||[]).length}</b> · sem Pix: <b>${semPix}</b> · sem linha digitável: <b>${semLinha}</b>`;
+  return `Fonte: <b>IXC direto</b> · atualizado em <b>${ccIxcQuando()}</b> · OS abertas de entrega de carnê: <b>${abertas}</b> · boletos em aberto: <b>${(CC_IXC.boletos||[]).length}</b> · sem Pix: <b>${semPix}</b> · sem linha digitável: <b>${semLinha}</b>${CC_IXC.naoImpressos?` · <span style="color:#f59e0b">${CC_IXC.naoImpressos} boleto(s) desses contratos ainda não impressos no IXC (ficam fora do carnê, como no Query Builder)</span>`:''}`;
 }
 async function ccIxcCarregarDados(){
   const sb=getSB(); const r=await sb.rpc('radar_correios_dados'); if(r.error)throw r.error;
   const d=r.data||{};
-  CC_IXC.os=d.os||[]; CC_IXC.boletos=(d.boletos||[]).map(b=>({...b})); CC_IXC.execucao=d.execucao||null; CC_IXC.ativo=true;
+  CC_IXC.os=d.os||[]; CC_IXC.boletos=(d.boletos||[]).map(b=>({...b})); CC_IXC.execucao=d.execucao||null; CC_IXC.naoImpressos=Number(d.nao_impressos)||0; CC_IXC.ativo=true;
   ccIxcInfo(ccIxcResumo());
 }
 async function ccIxcAbrir(){
