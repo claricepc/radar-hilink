@@ -23881,7 +23881,7 @@ function cdSla(a){
   const pctTempo = Math.max(0, Math.min(100, Math.round(100*(agora-ini)/total)));
   const horas = Math.round((fim-agora)/3600000);
   const falta = h => h>=24 ? Math.round(h/24)+' dia(s)' : Math.max(h,0)+'h';
-  if(!pend && agu) return {c:'warn', t:'Aguardando clientes', pctFeito, pctAgu, pctTempo:null, dica:`Tudo foi trabalhado, mas ${cdNum(agu)} ${agu===1?'cliente ainda não respondeu':'clientes ainda não responderam'}. Cobre o retorno.`};
+  if(!pend && agu) return {c:'warn', t:'Em andamento', pctFeito, pctAgu, pctTempo:null, dica:`Tudo foi trabalhado, mas ${cdNum(agu)} ${agu===1?'cliente ainda não respondeu':'clientes ainda não responderam'}. Cobre o retorno.`};
   if(!pend) return {c:'ok', t:'Tudo tratado', pctFeito, pctTempo:null, dica:'Todos os itens foram tratados. Falta só a confirmação do IXC.'};
   if(agora>fim) return {c:'risk', t:'Prazo estourado há '+falta(-horas), pctFeito, pctAgu, pctTempo:100,
     dica:`Faltam ${cdNum(pend)} itens e o prazo acabou. Fale com ${a.responsavel_nome?cdEsc(String(a.responsavel_nome).split(' ')[0]):'a equipe'} ou redistribua o que falta.`};
@@ -23892,15 +23892,15 @@ function cdSla(a){
 function cdSlaBarra(a, grande){
   const s = cdSla(a);
   return `<div class="cdg-sla ${s.c}">
-    <div class="cdg-sla-top"><span class="cdg-sla-chip ${s.c}">${s.t}</span><span class="cdg-sla-pct">${s.pctFeito}% tratado${s.pctAgu?` · ${s.pctAgu}% aguardando cliente`:''}</span></div>
+    <div class="cdg-sla-top"><span class="cdg-sla-chip ${s.c}">${s.t}</span><span class="cdg-sla-pct">${s.pctFeito}% tratado${s.pctAgu?` · ${s.pctAgu}% em andamento`:''}</span></div>
     <div class="cdg-slabar ${grande?'grande':''}" title="Barra: quanto já foi tratado. Linha escura: quanto do prazo já passou.">
-      <span class="fill" style="width:${s.pctFeito}%"></span>${s.pctAgu?`<span class="aguard" style="left:${s.pctFeito}%;width:${s.pctAgu}%" title="Aguardando retorno do cliente"></span>`:''}${s.pctTempo!==null?`<i class="marca" style="left:${s.pctTempo}%"></i>`:''}</div>
+      <span class="fill" style="width:${s.pctFeito}%"></span>${s.pctAgu?`<span class="aguard" style="left:${s.pctFeito}%;width:${s.pctAgu}%" title="Em andamento: a atendente já agiu e espera o retorno"></span>`:''}${s.pctTempo!==null?`<i class="marca" style="left:${s.pctTempo}%"></i>`:''}</div>
     ${s.dica?`<div class="cdg-sla-dica">${s.dica}</div>`:''}
   </div>`;
 }
 const CD_SITUACOES = {
   pendente:{t:'Para tratar',c:''}, contatado:{t:'Contatado',c:'info'}, sem_resposta:{t:'Sem resposta',c:'warn'}, numero_errado:{t:'Número errado',c:'warn'},
-  prometeu:{t:'Prometeu pagar',c:'info'}, negociando:{t:'Negociando',c:'info'}, corrigido:{t:'Corrigido no IXC',c:'ok'}, nao_cobrar:{t:'Não cobrar',c:''}, aguardando:{t:'Aguardando cliente',c:'warn'}
+  prometeu:{t:'Prometeu pagar',c:'info'}, negociando:{t:'Negociando',c:'info'}, corrigido:{t:'Corrigido no IXC',c:'ok'}, nao_cobrar:{t:'Não cobrar',c:''}, aguardando:{t:'Em andamento',c:'warn'}
 };
 function cdAtvAcoes(tipo){
   if(tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos') return ['corrigido','aguardando','nao_cobrar'];
@@ -23909,7 +23909,7 @@ function cdAtvAcoes(tipo){
   if(tipo==='avencer') return ['contatado','sem_resposta','numero_errado'];
   return ['contatado','sem_resposta','numero_errado','prometeu','negociando','nao_cobrar'];
 }
-const cdAtvRotuloAcao = (tipo,s) => s==='aguardando' ? 'Aguardando cliente' : s==='corrigido' ? (tipo==='sem_email'?'E-mail cadastrado':'Corrigido no IXC') : s==='nao_cobrar' ? (tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos'?'Não precisa corrigir':'Não cobrar') : CD_SITUACOES[s].t;
+const cdAtvRotuloAcao = (tipo,s) => s==='aguardando' ? 'Em andamento' : s==='corrigido' ? (tipo==='sem_email'?'E-mail cadastrado':'Corrigido no IXC') : s==='nao_cobrar' ? (tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos'?'Não precisa corrigir':'Não cobrar') : CD_SITUACOES[s].t;
 
 // ---------- início da tarefa e movimento ----------
 function cdHorasDesde(d){ return d ? (Date.now()-new Date(d).getTime())/3600000 : null; }
@@ -23945,6 +23945,27 @@ async function cdAtvIniciar(id, silencioso){
   }catch(e){ if(!silencioso) toast(e.message,'error'); }
 }
 window.cdAtvIniciar = cdAtvIniciar;
+
+// ---------- Em andamento: etiquetas do que a atendente fez ----------
+const CD_ANDAMENTO = ['Liguei','Liguei e não atendeu','Chamei no WhatsApp','Mandei e-mail','Cliente vai retornar','Aguardando outro setor'];
+function cdAndamentoBotao(id){
+  const ab = CD.atv.andAberto===id;
+  return `<button type="button" class="cdg-acao aguardando ${ab?'ativo':''}" onclick="CD.atv.andAberto=(CD.atv.andAberto===${id}?null:${id});CD.atv.andSel=[];CD.atv.motivoAberto=null;renderCobrancaDia()" title="Você já agiu e está esperando o cliente ou outro setor">Em andamento</button>`;
+}
+function cdAndamentoPainel(id){
+  if(CD.atv.andAberto!==id) return '';
+  const sel = CD.atv.andSel||[];
+  return `<div class="cdg-motivos"><span class="cdg-nota" style="margin:0">O que você fez? (pode marcar mais de um)</span>
+    ${CD_ANDAMENTO.map(t=>`<button type="button" class="cdg-motivo" style="${sel.includes(t)?'background:#0071BC;color:#fff;border-color:#0071BC':''}" onclick="cdAndamentoToggle('${t}')">${t}</button>`).join('')}
+    <button type="button" class="btn sm primary" onclick="cdAtvRegistrar(${id},'aguardando')">Salvar em andamento</button></div>`;
+}
+function cdAndamentoToggle(t){
+  const keep = document.getElementById('cd-it-obs-'+CD.atv.andAberto)?.value||'';
+  const s = new Set(CD.atv.andSel||[]); s.has(t)?s.delete(t):s.add(t); CD.atv.andSel=[...s];
+  renderCobrancaDia();
+  const el = document.getElementById('cd-it-obs-'+CD.atv.andAberto); if(el && keep) el.value = keep;
+}
+window.cdAndamentoToggle = cdAndamentoToggle;
 function cdHoje(){ return cdHojeISO(); }
 function cdAddDias(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function cdEhAdmin(){ try{ return typeof radarIsAdminUser==='function' && radarIsAdminUser(); }catch(e){ return false; } }
@@ -23990,7 +24011,7 @@ function cdAtvPainelHTML(){
       </div>
       <div class="cdg-ini-linha">${cdIniciadaSelo(a)}</div>
       ${cdSlaBarra(a)}
-      <div class="cdg-atv-nums"><span><b>${cdNum(a.pendentes)}</b> para tratar</span>${Number(a.aguardando)?`<span style="color:#b45309"><b>${cdNum(a.aguardando)}</b> aguardando cliente</span>`:''}<span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(res)}</b> resolvidos no IXC</span>
+      <div class="cdg-atv-nums"><span><b>${cdNum(a.pendentes)}</b> para tratar</span>${Number(a.aguardando)?`<span style="color:#b45309"><b>${cdNum(a.aguardando)}</b> em andamento</span>`:''}<span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(res)}</b> resolvidos no IXC${Number(a.resolvidos_cliente)?` <small>(${cdNum(a.resolvidos_equipe)} pela equipe, ${cdNum(a.resolvidos_cliente)} sem ação)</small>`:''}</span>
         ${Number(a.valor_total)?`<span><b>${cdMoeda(a.valor_resolvido)}</b> de ${cdMoeda(a.valor_total)} recebido</span>`:''}
         ${Number(a.promessas_quebradas)?`<span class="r">${cdNum(a.promessas_quebradas)} promessas não cumpridas</span>`:''}
         ${Number(a.em_atendimento)?`<span>${cdNum(a.em_atendimento)} em atendimento agora</span>`:''}</div>
@@ -24020,7 +24041,7 @@ function cdAtvPainelHTML(){
       <ol>
         <li><b>Direcionar:</b> nos quadros abaixo (Fazer agora, Corrigir no IXC, Planejar), clique em <b>Gerar atividade</b>, escolha a atendente e o prazo.</li>
         <li><b>Acompanhar pela cor:</b> <span class="cdg-sla-chip ok">verde</span> no prazo, <span class="cdg-sla-chip warn">amarelo</span> perto de estourar ou ritmo lento, <span class="cdg-sla-chip risk">vermelho</span> prazo estourado. A barra é o quanto já foi tratado; a linha escura é o quanto do prazo já passou.</li>
-        <li><b>Início e movimento:</b> cada atividade mostra se a responsável já <b>iniciou</b> e há quanto tempo foi o <b>último registro</b>. "Não iniciada" ou "Sem movimento" pede uma conversa. A parte listrada da barra são clientes <b>aguardando retorno</b>: o trabalho foi feito, falta o cliente responder.</li>
+        <li><b>Início e movimento:</b> cada atividade mostra se a responsável já <b>iniciou</b> e há quanto tempo foi o <b>último registro</b>. "Não iniciada" ou "Sem movimento" pede uma conversa. A parte listrada da barra são clientes <b>em andamento</b> (a atendente já ligou ou chamou no WhatsApp e espera o retorno). Clientes que o IXC resolveu sem nenhum registro da atendente aparecem como <b>resolvidos sem ação da equipe</b> e não contam para o desempenho dela.</li>
         <li><b>Agir:</b> se ficou vermelho, fale com a atendente ou use <b>Trocar responsável</b>. Quando terminar, clique em <b>Encerrar</b>. <b>Remover</b> é só para atividade criada por engano.</li>
       </ol>
     </details>
@@ -24282,13 +24303,14 @@ async function cdAtvRegistrar(itemId, situacao){
     data = document.getElementById('cd-it-data-'+itemId)?.value || '';
     if(!data){ toast('Escolha a data prometida.','warn'); document.getElementById('cd-it-data-'+itemId)?.focus(); return; }
   }
-  if(situacao==='aguardando' && !obs){ toast('Escreva na observação o que você pediu ao cliente (ex.: mandei mensagem pedindo nova data).','warn'); document.getElementById('cd-it-obs-'+itemId)?.focus(); return; }
+  const acoesSel = situacao==='aguardando' ? [...(CD.atv.andSel||[])] : null;
+  if(situacao==='aguardando' && !obs && !(acoesSel&&acoesSel.length)){ toast('Marque o que você fez (ex.: Liguei, Chamei no WhatsApp).','warn'); return; }
   if(situacao==='nao_cobrar' && !obs){ toast('Escreva o motivo na observação.','warn'); document.getElementById('cd-it-obs-'+itemId)?.focus(); return; }
   try{
-    const r = await cdAtvRpc('radar_atv_registrar',{p_item:itemId, p_situacao:situacao, p_obs:obs||null, p_data_promessa:data});
+    const r = await cdAtvRpc('radar_atv_registrar',{p_item:itemId, p_situacao:situacao, p_obs:obs||null, p_data_promessa:data, p_acoes:acoesSel});
     if(!r.ok){ toast(r.motivo,'warn'); }
     else toast(r.mensagem, r.promessa==='pendente_aprovacao'?'warn':'success');
-    CD.atv.expandido = null;
+    CD.atv.expandido = null; if(r.ok){ CD.atv.andAberto=null; CD.atv.andSel=[]; }
     if(r.ok){ const it=(CD.atv.itens||[]).find(x=>x.id===itemId); const atv=(CD.atv.lista||[]).find(x=>x.id===CD.atv.aberta);
       CD.atv.ultimo = { id:itemId, nome: it?.nome||'Cliente', acao: cdAtvRotuloAcao(atv?.tipo||'cobrar', situacao) }; }
     if(r.ok && CD.atv.modo!=='lista'){ const prox = cdFocoProximoId(itemId); await cdAtvItensCarregar(); if(prox) cdFocoSelecionar(prox, true); return; }
@@ -24374,7 +24396,7 @@ function cdAreaFocoHTML(){
     return `<button type="button" id="cd-foco-item-${x.id}" class="cdf-q ${x.id===A.sel?'sel':''} ${feito?'feito':''}" onclick="cdFocoSelecionar(${x.id})">
       <span class="nm">${cdEsc(x.nome||'Cliente '+x.id_cliente)}</span>
       <span class="sb">${cdEsc(x.filial||'')} · ${cdEsc(x._e.t)}</span>
-      ${x._e.k==='resolvido'?'<span class="ok">Resolvido no IXC</span>':x._e.k==='aguardando'?'<span class="em" style="background:#fef3c7;color:#92400e;border-color:#fcd34d">Aguardando cliente</span>':feito?'<span class="ok feito">Feito</span>':x._e.k==='atendendo'?'<span class="em">Em atendimento</span>':''}</button>`;
+      ${x._e.k==='resolvido'?(x._e.sozinho?'<span class="ok" style="background:#f1f5f9;color:#475569;border-color:#cbd5e1">Resolvido sem ação</span>':'<span class="ok">Resolvido no IXC</span>'):x._e.k==='aguardando'?'<span class="em" style="background:#fef3c7;color:#92400e;border-color:#fcd34d">Em andamento</span>':feito?'<span class="ok feito">Feito</span>':x._e.k==='atendendo'?'<span class="em">Em atendimento</span>':''}</button>`;
   }).join('');
   const acoes = cdAtvAcoes(a.tipo);
   const pos = i ? vis.findIndex(x=>x.id===i.id)+1 : 0;
@@ -24394,16 +24416,16 @@ function cdAreaFocoHTML(){
         <div class="cdf-campo"><small>Telefone</small><b>${fone?cdEsc(fone):'<span class="r">sem telefone</span>'}</b>${fone?`<button type="button" class="cdg-mini" onclick="cdAtvCopiar('${cdEsc(fone.replace(/'/g,''))}',this)">Copiar <kbd>C</kbd></button>`:''}</div>
         <div class="cdf-campo"><small>Valor</small><b>${i.valor!=null?cdMoeda(i.valor):'-'}</b></div>
       </div>
-      ${i.obs?`<div class="cdf-obs">Último registro${i.tratado_por_nome?' de '+cdEsc(i.tratado_por_nome):''}: "${cdEsc(i.obs)}"</div>`:''}
+      ${(i.obs||(i.acoes&&i.acoes.length))?`<div class="cdf-obs">Último registro${i.tratado_por_nome?' de '+cdEsc(i.tratado_por_nome):''}: ${i.acoes&&i.acoes.length?'<b>'+cdEsc(i.acoes.join(', '))+'</b>':''}${i.obs?' "'+cdEsc(i.obs)+'"':''}</div>`:''}
       ${comOutra?`<div class="cdg-alerta warn"><i></i><div>${cdEsc(i.com_quem_nome||'Outra pessoa')} está atendendo este cliente agora.</div></div>`:''}
-      ${i.resolvido_ixc?`<div class="cdg-alerta ok"><i></i><div>O IXC já confirmou: este cliente está resolvido.</div></div>`:''}
+      ${i.resolvido_ixc?`<div class="cdg-alerta ${i._e.sozinho?'':'ok'}"><i></i><div>${i._e.sozinho?'O IXC mostrou este cliente resolvido <b>sem registro da equipe</b> (o cliente resolveu sozinho ou foi resolvido fora da atividade). Fica na lista para a métrica, mas não conta como desempenho da atendente.':'O IXC confirmou: resolvido depois da ação da equipe.'}${i.resolvido_em?' Detectado em '+cdHoraTxt(i.resolvido_em)+'.':''}</div></div>`:''}
       ${!travado?`<input id="cd-it-obs-${i.id}" class="cdf-input" type="text" placeholder="Observação (o que o cliente disse)" maxlength="300" value="">
         ${acoes.includes('prometeu')?`<label class="cdg-prom">Data prometida <input id="cd-it-data-${i.id}" type="date" min="${cdHoje()}" max="${cdAddDias(10)}"></label>`:''}
-        <div class="cdg-botoes">${acoes.map(s=>s==='nao_cobrar'
+        <div class="cdg-botoes">${acoes.map(s=>s==='aguardando' ? cdAndamentoBotao(i.id) : s==='nao_cobrar'
           ? `<button type="button" class="cdg-acao ${s} ${A.motivoAberto===i.id?'ativo':''}" onclick="CD.atv.motivoAberto=(CD.atv.motivoAberto===${i.id}?null:${i.id});renderCobrancaDia()">${cdAtvRotuloAcao(a.tipo,s)}</button>`
           : `<button type="button" class="cdg-acao ${s}" onclick="cdAtvRegistrar(${i.id},'${s}')">${cdAtvRotuloAcao(a.tipo,s)}</button>`).join('')}
           ${i.situacao!=='pendente' ? `<button type="button" class="cdg-acao desfazer" onclick="cdAtvDesfazer(${i.id})" title="Volta este cliente para Para tratar">Desfazer <kbd>U</kbd></button>` : ''}</div>
-        ${A.motivoAberto===i.id?`<div class="cdg-motivos"><span class="cdg-nota" style="margin:0">Qual o motivo?</span>${(CD_ATV_MOTIVOS[a.tipo]||CD_ATV_MOTIVOS.cobrar).map(m=>`<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'${cdEsc(m)}')">${cdEsc(m)}</button>`).join('')}<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'')">Outro (escrever na observação)</button></div>`:''}`:''}
+        ${A.motivoAberto===i.id?`<div class="cdg-motivos"><span class="cdg-nota" style="margin:0">Qual o motivo?</span>${(CD_ATV_MOTIVOS[a.tipo]||CD_ATV_MOTIVOS.cobrar).map(m=>`<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'${cdEsc(m)}')">${cdEsc(m)}</button>`).join('')}<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'')">Outro (escrever na observação)</button></div>`:''}${cdAndamentoPainel(i.id)}`:''}
       <div class="cdf-rodape">
         ${i.situacao!=='pendente'?`<span class="cdf-feito">Feito${i.tratado_por_nome?' por '+cdEsc(String(i.tratado_por_nome).split(' ')[0]):''}${i.tratado_em?' em '+new Date(i.tratado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}</span>`:''}
         <span style="flex:1"></span>
@@ -24421,9 +24443,9 @@ function cdAreaFocoHTML(){
       ${a.status==='aberta'&&ger?`<button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
       ${ger?`<button type="button" class="btn sm" onclick="cdAtvRemoverModal(${a.id})">Remover</button>`:''}
     </div>
-    ${cdIniciarFaixa(a)}<div class="cdf-prog"><div><b>${cdNum(feitos)}</b> de ${cdNum(its.length)} feitos · <b>${cdNum(cont('tratar'))}</b> pendentes${cont('aguardando')?` · <b>${cdNum(cont('aguardando'))}</b> aguardando cliente`:''}${pessoas?` · Feitos por pessoa: ${pessoas}`:''}</div>
+    ${cdIniciarFaixa(a)}<div class="cdf-prog"><div><b>${cdNum(feitos)}</b> de ${cdNum(its.length)} feitos · <b>${cdNum(cont('tratar'))}</b> pendentes${cont('aguardando')?` · <b>${cdNum(cont('aguardando'))}</b> em andamento`:''}${pessoas?` · Feitos por pessoa: ${pessoas}`:''}</div>
       ${a.total!==undefined?cdSlaBarra(a):''}</div>
-    <div class="cdg-area-f">${[['tratar','Para tratar'],['aguardando','Aguardando cliente'],['tratado','Feitos'],['resolvido','Resolvidos no IXC'],['todos','Todos']].map(([k,t])=>`<button type="button" class="btn sm ${A.filtro===k?'primary':''}" onclick="CD.atv.filtro='${k}';renderCobrancaDia()">${t} (${cont(k)})</button>`).join('')}
+    <div class="cdg-area-f">${[['tratar','Para tratar'],['aguardando','Em andamento'],['tratado','Feitos'],['resolvido','Resolvidos no IXC'],['todos','Todos']].map(([k,t])=>`<button type="button" class="btn sm ${A.filtro===k?'primary':''}" onclick="CD.atv.filtro='${k}';renderCobrancaDia()">${t} (${cont(k)})</button>`).join('')}
       <input type="text" placeholder="Buscar por nome" value="${cdEsc(A.busca)}" onchange="CD.atv.busca=this.value;renderCobrancaDia()"></div>
     ${A.ultimo?`<div class="cdf-ultimo"><span>Último registro: <b>${cdEsc(A.ultimo.nome)}</b> · ${cdEsc(A.ultimo.acao)}</span>
       <button type="button" class="btn sm" onclick="cdAtvDesfazer(${A.ultimo.id})">Desfazer <kbd>U</kbd></button></div>`:''}
@@ -24513,11 +24535,12 @@ function cdAtvDetalhe(tipo, i){
 }
 function cdPegoVencido(i){ return !!i.pego_em && (Date.now() - new Date(i.pego_em).getTime()) > 30*60000; }
 function cdAtvEstado(i, meuId){
-  if(i.resolvido_ixc) return {k:'resolvido', t:'Resolvido no IXC', c:'ok'};
+  if(i.resolvido_ixc){ const sozinho = i.resolvido_origem ? i.resolvido_origem==='cliente' : i.situacao==='pendente';
+    return sozinho ? {k:'resolvido', t:'Resolvido sem ação da equipe', c:'', sozinho:true} : {k:'resolvido', t:'Resolvido no IXC após ação'+(i.tratado_por_nome?' de '+String(i.tratado_por_nome).split(' ')[0]:''), c:'ok'}; }
   if(i.promessa_situacao==='não cumprida') return {k:'tratado', t:'Promessa não cumprida', c:'risk'};
   if(i.promessa_situacao==='aguardando aprovação') return {k:'tratado', t:'Promessa aguardando aprovação', c:'warn'};
   if(i.situacao==='prometeu' && i.promessa_data) return {k:'tratado', t:'Prometeu pagar até '+cdData(i.promessa_data), c:'info'};
-  if(i.situacao==='aguardando') return {k:'aguardando', t:'Aguardando cliente'+(i.tratado_em?' desde '+new Date(i.tratado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''), c:'warn'};
+  if(i.situacao==='aguardando') return {k:'aguardando', t:'Em andamento'+(i.acoes&&i.acoes.length?': '+i.acoes.join(', '):'')+(i.tratado_em?' desde '+new Date(i.tratado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''), c:'warn'};
   if(i.situacao!=='pendente') return {k:'tratado', t:CD_SITUACOES[i.situacao]?.t||i.situacao, c:CD_SITUACOES[i.situacao]?.c||''};
   if(i.com_quem && cdPegoVencido(i)) return {k:'tratar', t:'Para tratar', c:''};
   if(i.com_quem && i.com_quem===meuId) return {k:'tratar', t:'Com você agora', c:'info'};
@@ -24542,7 +24565,7 @@ function cdAreaListaHTML(){
   const cont = k => its.filter(i=>k==='todos'||i._e.k===k).length;
   const tot = its.length, res = cont('resolvido'), trat = cont('tratado');
   const valT = its.reduce((s,i)=>s+(Number(i.valor)||0),0), valR = its.filter(i=>i._e.k==='resolvido').reduce((s,i)=>s+(Number(i.valor)||0),0);
-  const filtros = [['tratar','Para tratar'],['atendendo','Em atendimento'],['aguardando','Aguardando cliente'],['tratado','Tratados'],['resolvido','Resolvidos no IXC'],['todos','Todos']];
+  const filtros = [['tratar','Para tratar'],['atendendo','Em atendimento'],['aguardando','Em andamento'],['tratado','Tratados'],['resolvido','Resolvidos no IXC'],['todos','Todos']];
   const busca = String(A.busca||'').trim().toUpperCase();
   const vis0 = its.filter(i=>(A.filtro==='todos'||i._e.k===A.filtro||i.id===A.expandido) && (!busca || String(i.nome||'').toUpperCase().includes(busca) || String(i.id_cliente)===busca));
   const vis = [...vis0.filter(i=>i.id===A.expandido), ...vis0.filter(i=>i.id!==A.expandido)];
@@ -24564,11 +24587,11 @@ function cdAreaListaHTML(){
       ${aberto?`<div class="cdg-it-acoes">
         <input id="cd-it-obs-${i.id}" type="text" placeholder="Observação (o que o cliente disse)" maxlength="300" value="${cdEsc(i.obs||'')}">
         ${acoes.includes('prometeu')?`<label class="cdg-prom">Data prometida <input id="cd-it-data-${i.id}" type="date" min="${cdHoje()}" max="${cdAddDias(10)}"></label>`:''}
-        <div class="cdg-botoes">${acoes.map(s=>s==='nao_cobrar'
+        <div class="cdg-botoes">${acoes.map(s=>s==='aguardando' ? cdAndamentoBotao(i.id) : s==='nao_cobrar'
           ? `<button type="button" class="cdg-acao ${s} ${CD.atv.motivoAberto===i.id?'ativo':''}" onclick="CD.atv.motivoAberto=(CD.atv.motivoAberto===${i.id}?null:${i.id});renderCobrancaDia()">${cdAtvRotuloAcao(a.tipo,s)}</button>`
           : `<button type="button" class="cdg-acao ${s}" onclick="cdAtvRegistrar(${i.id},'${s}')">${cdAtvRotuloAcao(a.tipo,s)}</button>`).join('')}
           <button type="button" class="cdg-mini" onclick="cdAtvSoltar(${i.id})" title="Desiste deste cliente agora: ele volta para a fila, sem registro">Devolver para a fila</button></div>
-        ${CD.atv.motivoAberto===i.id?`<div class="cdg-motivos"><span class="cdg-nota" style="margin:0">Qual o motivo?</span>${(CD_ATV_MOTIVOS[a.tipo]||CD_ATV_MOTIVOS.cobrar).map(m=>`<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'${cdEsc(m)}')">${cdEsc(m)}</button>`).join('')}<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'')">Outro (escrever na observação)</button></div>`:''}
+        ${CD.atv.motivoAberto===i.id?`<div class="cdg-motivos"><span class="cdg-nota" style="margin:0">Qual o motivo?</span>${(CD_ATV_MOTIVOS[a.tipo]||CD_ATV_MOTIVOS.cobrar).map(m=>`<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'${cdEsc(m)}')">${cdEsc(m)}</button>`).join('')}<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'')">Outro (escrever na observação)</button></div>`:''}${cdAndamentoPainel(i.id)}
         ${acoes.includes('prometeu')?`<div class="cdg-nota" style="margin:0">Prometeu pagar: o cliente sai da cobrança até a data (máximo 10 dias). Se a data passar do bloqueio, lance a liberação em confiança no IXC.</div>`:''}
       </div>`:''}
     </div>`;
@@ -24849,7 +24872,7 @@ function cdAtendenteHTML(){
         <button type="button" class="btn sm primary" onclick="${a.iniciada_em?'':'cdAtvIniciar('+a.id+',true)'};cdAtvAbrir(${a.id})">${!a.iniciada_em?'Iniciar tarefa':Number(a.pendentes)?'Continuar':'Abrir'}</button></div>
       <div class="cdg-ini-linha">${cdIniciadaSelo(a)}</div>
       ${cdSlaBarra(a)}
-      <div class="cdg-atv-nums"><span><b>${cdNum(a.pendentes)}</b> para tratar</span>${Number(a.aguardando)?`<span style="color:#b45309"><b>${cdNum(a.aguardando)}</b> aguardando cliente</span>`:''}<span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(res)}</b> resolvidos</span></div>
+      <div class="cdg-atv-nums"><span><b>${cdNum(a.pendentes)}</b> para tratar</span>${Number(a.aguardando)?`<span style="color:#b45309"><b>${cdNum(a.aguardando)}</b> em andamento</span>`:''}<span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(res)}</b> resolvidos</span></div>
     </div>`;
   }).join('');
   return `<div class="section compact-section cdg-area">
@@ -24858,7 +24881,7 @@ function cdAtendenteHTML(){
       <button type="button" class="btn sm" onclick="cdAtvCarregar()">Atualizar</button></div>
     ${L.length?`<div class="cdg-atv-grid">${cards}</div>`:`<div class="cdg-box"><div class="cdg-nota">Nenhuma atividade direcionada para você no momento. Quando a liderança enviar uma, ela aparece aqui.</div></div>`}
     <div class="cdg-box" style="margin-top:12px"><div class="cdg-eyebrow">Como trabalhar</div><div class="cdg-nota" style="margin:0">
-      Clique em <b>Iniciar tarefa</b> e trate um cliente por vez. Se você falou com o cliente e está esperando a resposta dele, use <b>Aguardando cliente</b> e escreva o que pediu: assim a liderança sabe que a tarefa está andando. Fale com o cliente e registre o resultado com um botão. Se ele prometer pagar, escolha a data (até 10 dias). Quando o IXC confirmar o pagamento ou a correção, o cliente passa para "Resolvidos" sozinho.</div></div>
+      Clique em <b>Iniciar tarefa</b> e trate um cliente por vez. Se você já agiu e está esperando o cliente, clique em <b>Em andamento</b> e marque o que fez (Liguei, Chamei no WhatsApp...): assim a liderança vê que a tarefa está andando. Fale com o cliente e registre o resultado com um botão. Se ele prometer pagar, escolha a data (até 10 dias). Quando o IXC confirmar o pagamento ou a correção, o cliente passa para "Resolvidos" sozinho.</div></div>
   </div>`;
 }
 
