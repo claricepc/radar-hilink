@@ -24449,6 +24449,7 @@ async function radarAplicarPerfil(){
     const navU = document.querySelector('.nav-item[data-mod="usuarios"]'); if(navU) navU.style.display = cdPodeGerenciar() ? '' : 'none';
     if(data?.trocar_senha) radarTrocarSenhaModal();
     if(CD.perfil==='atendente'){ CD.atv.lista=null; go('cobrancaDia'); }
+    else if(!CD._abriuInicio && document.querySelector('.nav-item.active')?.dataset.mod==='setup'){ CD._abriuInicio = true; go('cobrancaDia'); }
     else if(document.body.dataset.activeMod==='cobrancaDia' || document.getElementById('mod-cobrancaDia')?.offsetParent) renderCobrancaDia();
   }catch(e){ console.warn('[Radar] perfil', e.message||e); }
 }
