@@ -25020,7 +25020,7 @@ html[data-radar-tema="claro"] .sidebar .nav-item:focus-visible,html[data-radar-t
     return txt || 'Nao identificado';
   }
   function ruHasAvatar(nome){
-    return typeof premAtendimentoAvatar === 'function' && !!premAtendimentoAvatar(nome);
+    return typeof isPremAtendimento === "function" ? isPremAtendimento(nome) : (typeof premAtendimentoAvatar === "function" && !!premAtendimentoAvatar(nome));
   }
   function ruAvatar(nome){
     var initials = String(nome||'?').split(/\s+/).filter(Boolean).slice(0,2).map(function(x){return x.charAt(0);}).join('');
