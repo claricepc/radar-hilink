@@ -23919,6 +23919,24 @@ async function cdAtvSoltar(itemId){
   catch(e){ toast(e.message,'error'); }
 }
 window.cdAtvSoltar = cdAtvSoltar;
+// Atualiza sozinho a cada 60s: atividade removida ou encerrada some da tela de todos
+setInterval(async ()=>{
+  try{
+    const box = document.getElementById('mod-cobrancaDia');
+    if(!box || !box.offsetParent || !getRadarUser?.() || CD.atv.lista===null) return;
+    if(document.getElementById('cd-conf-modal') || document.getElementById('cd-atv-modal')) return;
+    const ae = document.activeElement; if(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) return;
+    const lista = await cdAtvRpc('radar_atv_listar',{p_dias:30});
+    const abertaAntes = CD.atv.aberta;
+    CD.atv.lista = lista || [];
+    if(abertaAntes){
+      const a = CD.atv.lista.find(x=>x.id===abertaAntes);
+      if(!a || a.status!=='aberta'){ CD.atv.aberta=null; CD.atv.itens=[]; CD.atv.expandido=null; renderCobrancaDia();
+        toast('Esta atividade foi removida ou encerrada pela liderança.','warn'); return; }
+      if(!CD.atv.expandido){ CD.atv.itens = await cdAtvRpc('radar_atv_itens',{p_atividade:abertaAntes}) || []; renderCobrancaDia(); }
+    } else renderCobrancaDia();
+  }catch(e){ /* silencioso */ }
+}, 60000);
 function cdAtvCopiar(txt, btn){
   const ok = () => { if(btn){ const t=btn.textContent; btn.textContent='Copiado'; setTimeout(()=>btn.textContent=t,1200); } };
   try{ navigator.clipboard.writeText(txt).then(ok).catch(()=>prompt('Copie:', txt)); }catch(e){ prompt('Copie:', txt); }
