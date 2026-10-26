@@ -24078,7 +24078,7 @@ function cdAreaFocoHTML(){
     return `<button type="button" id="cd-foco-item-${x.id}" class="cdf-q ${x.id===A.sel?'sel':''} ${feito?'feito':''}" onclick="cdFocoSelecionar(${x.id})">
       <span class="nm">${cdEsc(x.nome||'Cliente '+x.id_cliente)}</span>
       <span class="sb">${cdEsc(x.filial||'')} · ${cdEsc(x._e.t)}</span>
-      ${feito?'<span class="ok">Feito</span>':x._e.k==='atendendo'?'<span class="em">Com outra</span>':''}</button>`;
+      ${feito?'<span class="ok">Feito</span>':x._e.k==='atendendo'?'<span class="em">Em atendimento</span>':''}</button>`;
   }).join('');
   const acoes = cdAtvAcoes(a.tipo);
   const pos = i ? vis.findIndex(x=>x.id===i.id)+1 : 0;
