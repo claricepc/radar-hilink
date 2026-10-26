@@ -2872,6 +2872,9 @@ body.radar-modo-atendente .topbar{display:none!important}
 #mod-premiacoes table th{background:var(--g-card2)!important;color:var(--g-muted)!important}
 #mod-premiacoes table td{border-color:var(--g-line)!important}
 #prem-tab-geral > .prem-tab-intro{display:none!important}
+.prem-chip{border:1.5px solid var(--g-line);background:transparent;color:var(--g-text);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.prem-chip:hover{border-color:#0071BC}
+.prem-chip.on{background:#0071BC;border-color:#0071BC;color:#fff}
 </style>
 </head>
 <body>
@@ -17484,7 +17487,7 @@ function premBarraRender(){
   const planEm = (typeof PREM_DIV!=='undefined' && PREM_DIV.dados && PREM_DIV.dados.planilha_lida_em) ? dh(PREM_DIV.dados.planilha_lida_em) : '';
   const andamento = typeof ixcCargaEmAndamento==='function' && ixcCargaEmAndamento(st);
   const chips=[['hoje','Hoje'],['ontem','Ontem'],['semana','Esta semana'],['semana_passada','Semana passada'],['mes','Este mês'],['mes_passado','Mês passado'],['personalizado','Personalizado']]
-    .map(([v,t])=>`<button type="button" class="btn sm ${k===v?'primary':''}" onclick="premPeriodo('${v}')">${t}</button>`).join('');
+    .map(([v,t])=>`<button type="button" class="prem-chip ${k===v?'on':''}" onclick="premPeriodo('${v}')">${t}</button>`).join('');
   box.innerHTML=`<div class="cdg-status" style="flex-direction:column;align-items:stretch;gap:10px">
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px">
         <b style="margin-right:6px">Apuração</b>${chips}
