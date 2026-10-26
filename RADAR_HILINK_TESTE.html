@@ -2572,6 +2572,8 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-numeros .cdg-num.info .v{color:var(--g-blue)}
 .cdg-numeros .cdg-num .l{color:var(--c)}
 .cdg-numeros .cdg-num .v{font-size:22px}
+.cdg-numeros .cdg-num .d{grid-column:1 / span 2;font-size:12px;color:var(--g-sub);margin-top:8px;padding-top:7px;border-top:1px dashed color-mix(in srgb,var(--c) 35%,transparent)}
+.cdg-numeros .cdg-num .d .bom{color:var(--g-ok)} .cdg-numeros .cdg-num .d .ruim{color:var(--g-risk)}
 .cdg-delta{font-weight:700}
 .cdg-delta.down{color:var(--g-ok)}
 .cdg-delta.up{color:var(--g-risk)}
@@ -23416,14 +23418,22 @@ function cdGuiaHTML(){
     ? `No último dia carregado (${cdData(g.pag.dia)}) entraram <b>${cdMoeda(g.pag.valor)}</b> em ${cdNum(g.pag.qt)} pagamentos, e ${g.pag.pctAtraso}% deles foram pagos depois do vencimento.`
     : `Não há pagamentos carregados do último dia.`;
   const p4 = g.pct90>=30 ? `${g.pct90}% do valor cobrável está parado há mais de 90 dias. Esse dinheiro precisa de uma régua própria de recuperação, separada da cobrança do dia.` : '';
+  const dAnt = r.data_anterior ? cdData(r.data_anterior).slice(0,5) : 'a leitura anterior';
+  const preOnt = Number(r.pre_raw_ontem)||0, preSaiu = r.pre_ontem_saiu ? Number(r.pre_ontem_saiu.valor)||0 : 0;
+  const dPre = preOnt>0 ? `<div class="d">Da lista de ${dAnt} (${cdMoeda(preOnt)}), já saíram <b class="bom">${cdMoeda(preSaiu)}</b> (${cdPct(preSaiu,preOnt)}%), pagos ou corrigidos.</div>` : '';
+  const varTxt = (v, quando) => v==null ? '' : Math.abs(v)<1 ? `igual a ${quando}` : v<0 ? `<b class="bom">${cdMoeda(-v)} a menos</b> que em ${quando}` : `<b class="ruim">${cdMoeda(v)} a mais</b> que em ${quando}`;
+  const dVenc = g.delta!=null ? `<div class="d">${varTxt(g.delta, dAnt)}${g.semana!=null?` · ${varTxt(g.semana,'7 dias atrás')}`:''}.</div>` : '';
+  const pSem = Number(r.pagamentos_semana_passada_qt)||0, pSemV = Number(r.pagamentos_semana_passada_valor)||0;
+  const dPag = pSem>0 ? `<div class="d">${(()=>{ const v=g.pag.valor-pSemV; return Math.abs(v)<1?'Igual ao mesmo dia da semana passada':v>0?`<b class="bom">${cdMoeda(v)} a mais</b> que no mesmo dia da semana passada`:`<b class="ruim">${cdMoeda(-v)} a menos</b> que no mesmo dia da semana passada`; })()} (${cdMoeda(pSemV)}).</div>`
+    : `<div class="d">A comparação com o mesmo dia da semana passada aparece quando o histórico de pagamentos completar 7 dias.</div>`;
   const resumo = `<div class="cdg-resumo">
     <div class="cdg-box"><div class="cdg-eyebrow">O dia em poucas linhas</div>
       <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p><p>${p3}</p>${p4?`<p>${p4}</p>`:''}</div></div>
     <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
       <div class="cdg-numeros">
-        <div class="cdg-num risk"><div class="l">Antes do bloqueio</div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, 1 a 5 dias</div></div>
-        <div class="cdg-num info"><div class="l">Vencido total</div><div class="v">${cdMoeda(g.todos.valor)}</div><div class="s">${cdNum(g.todos.clientes)} clientes, sem Filial 10</div></div>
-        <div class="cdg-num ok"><div class="l">Recebido em ${cdData(g.pag.dia)}</div><div class="v">${cdMoeda(g.pag.valor)}</div><div class="s">${cdNum(g.pag.qt)} pagamentos</div></div>
+        <div class="cdg-num risk"><div class="l">Antes do bloqueio</div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, 1 a 5 dias</div>${dPre}</div>
+        <div class="cdg-num info"><div class="l">Vencido total</div><div class="v">${cdMoeda(g.todos.valor)}</div><div class="s">${cdNum(g.todos.clientes)} clientes, sem Filial 10</div>${dVenc}</div>
+        <div class="cdg-num ok"><div class="l">Recebido em ${cdData(g.pag.dia)}</div><div class="v">${cdMoeda(g.pag.valor)}</div><div class="s">${cdNum(g.pag.qt)} pagamentos</div>${dPag}</div>
       </div>
       <div class="cdg-nota">Vencido total soma todos os clientes com boleto vencido, inclusive quem está fora da cobrança. Antes do bloqueio conta só quem pode ser cobrado hoje.</div>
     </div>
