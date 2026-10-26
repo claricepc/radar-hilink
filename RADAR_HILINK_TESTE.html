@@ -24040,7 +24040,7 @@ function cdAreaHTML(){
     const podeAtender = !i.resolvido_ixc && a.status!=='encerrada' && (!i.com_quem || i.com_quem===meuId);
     return `<div class="cdg-it ${aberto?'aberto':''} ${i._e.k}" id="cd-it-${i.id}">
       <div class="cdg-it-l">
-        <div class="cdg-it-nome">${cdEsc(i.nome||'Cliente '+i.id_cliente)} <button type="button" class="cdg-mini" onclick="cdAtvCopiar('${cdEsc(String(i.nome||'').replace(/'/g,''))}',this)" title="Copiar o nome para buscar no IXC ou no OPA">Copiar nome</button> <small>Cód. ${i.id_cliente} <button type="button" class="cdg-mini" onclick="cdAtvCopiar('${i.id_cliente}',this)" title="Copiar o código do cliente">Copiar</button> · ${cdEsc(i.filial||'')}</small></div>
+        <div class="cdg-it-nome">${cdEsc(i.nome||'Cliente '+i.id_cliente)} <button type="button" class="cdg-mini" onclick="cdAtvCopiar('${cdEsc(String(i.nome||'').replace(/'/g,''))}',this)" title="Copiar o nome para buscar no IXC ou no OPA">Copiar nome</button> <small>Cód. ${i.id_cliente} · ${cdEsc(i.filial||'')}</small></div>
         <div class="cdg-it-det">${cdAtvDetalhe(a.tipo,i)}${i.tentativas?` · ${i.tentativas} contato(s)`:''}${i.tratado_por_nome?` · último registro: ${cdEsc(i.tratado_por_nome)}`:''}${i.obs?` · "${cdEsc(i.obs)}"`:''}</div>
       </div>
       <div class="cdg-it-v">${i.valor!=null?cdMoeda(i.valor):''}${i.dias_atraso!=null&&a.tipo==='cobrar'?`<small>${i.dias_atraso} dias</small>`:''}</div>
