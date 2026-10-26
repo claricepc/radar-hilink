@@ -23913,6 +23913,12 @@ async function cdAtvDesfazer(itemId){
   }catch(e){ toast(e.message,'error'); }
 }
 window.cdAtvDesfazer = cdAtvDesfazer;
+async function cdAtvSoltar(itemId){
+  try{ const r = await cdAtvRpc('radar_atv_soltar',{p_item:itemId}); if(!r.ok){ toast(r.motivo,'warn'); return; }
+    CD.atv.expandido = null; toast('Cliente devolvido para a fila, sem registro.','success'); await cdAtvItensCarregar(); }
+  catch(e){ toast(e.message,'error'); }
+}
+window.cdAtvSoltar = cdAtvSoltar;
 function cdAtvCopiar(txt, btn){
   const ok = () => { if(btn){ const t=btn.textContent; btn.textContent='Copiado'; setTimeout(()=>btn.textContent=t,1200); } };
   try{ navigator.clipboard.writeText(txt).then(ok).catch(()=>prompt('Copie:', txt)); }catch(e){ prompt('Copie:', txt); }
@@ -23979,7 +23985,7 @@ function cdAreaHTML(){
         <input id="cd-it-obs-${i.id}" type="text" placeholder="Observação (o que o cliente disse)" maxlength="300" value="${cdEsc(i.obs||'')}">
         ${acoes.includes('prometeu')?`<label class="cdg-prom">Data prometida <input id="cd-it-data-${i.id}" type="date" min="${cdHoje()}" max="${cdAddDias(10)}"></label>`:''}
         <div class="cdg-botoes">${acoes.map(s=>`<button type="button" class="cdg-acao ${s}" onclick="cdAtvRegistrar(${i.id},'${s}')">${cdAtvRotuloAcao(a.tipo,s)}</button>`).join('')}
-          <button type="button" class="cdg-mini" onclick="CD.atv.expandido=null;renderCobrancaDia()">Fechar</button></div>
+          <button type="button" class="cdg-mini" onclick="cdAtvSoltar(${i.id})" title="Desiste deste cliente agora: ele volta para a fila, sem registro">Devolver para a fila</button></div>
         ${acoes.includes('prometeu')?`<div class="cdg-nota" style="margin:0">Prometeu pagar: o cliente sai da cobrança até a data (máximo 10 dias). Se a data passar do bloqueio, lance a liberação em confiança no IXC.</div>`:''}
       </div>`:''}
     </div>`;
