@@ -2565,6 +2565,15 @@ h2.section-title .info-btn{margin-left:6px}
 .cdg-num .s{font-size:11.5px;color:var(--g-sub);margin-top:2px}
 .cdg-num.risk .v{color:var(--g-risk)}
 .cdg-num.ok .v{color:var(--g-ok)}
+/* molduras dos números que guiam o dia */
+.cdg-numeros .cdg-num{--c:var(--g-blue);border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent);border-left:6px solid var(--c);background:color-mix(in srgb,var(--c) 9%,var(--g-card));padding:12px 16px}
+.cdg-numeros .cdg-num.risk{--c:var(--g-risk)}
+.cdg-numeros .cdg-num.ok{--c:var(--g-ok)}
+.cdg-numeros .cdg-num.info .v{color:var(--g-blue)}
+.cdg-numeros .cdg-num .l{color:var(--c)}
+.cdg-numeros .cdg-num .v{font-size:22px}
+.cdg-numeros .cdg-num .d{grid-column:1 / span 2;font-size:12px;color:var(--g-sub);margin-top:8px;padding-top:7px;border-top:1px dashed color-mix(in srgb,var(--c) 35%,transparent)}
+.cdg-numeros .cdg-num .d .bom{color:var(--g-ok)} .cdg-numeros .cdg-num .d .ruim{color:var(--g-risk)}
 .cdg-delta{font-weight:700}
 .cdg-delta.down{color:var(--g-ok)}
 .cdg-delta.up{color:var(--g-risk)}
@@ -23409,14 +23418,22 @@ function cdGuiaHTML(){
     ? `No último dia carregado (${cdData(g.pag.dia)}) entraram <b>${cdMoeda(g.pag.valor)}</b> em ${cdNum(g.pag.qt)} pagamentos, e ${g.pag.pctAtraso}% deles foram pagos depois do vencimento.`
     : `Não há pagamentos carregados do último dia.`;
   const p4 = g.pct90>=30 ? `${g.pct90}% do valor cobrável está parado há mais de 90 dias. Esse dinheiro precisa de uma régua própria de recuperação, separada da cobrança do dia.` : '';
+  const dAnt = r.data_anterior ? cdData(r.data_anterior).slice(0,5) : 'a leitura anterior';
+  const preOnt = Number(r.pre_raw_ontem)||0, preSaiu = r.pre_ontem_saiu ? Number(r.pre_ontem_saiu.valor)||0 : 0;
+  const dPre = preOnt>0 ? `<div class="d">Da lista de ${dAnt} (${cdMoeda(preOnt)}), já saíram <b class="bom">${cdMoeda(preSaiu)}</b> (${cdPct(preSaiu,preOnt)}%), pagos ou corrigidos.</div>` : '';
+  const varTxt = (v, quando) => v==null ? '' : Math.abs(v)<1 ? `igual a ${quando}` : v<0 ? `<b class="bom">${cdMoeda(-v)} a menos</b> que em ${quando}` : `<b class="ruim">${cdMoeda(v)} a mais</b> que em ${quando}`;
+  const dVenc = g.delta!=null ? `<div class="d">${varTxt(g.delta, dAnt)}${g.semana!=null?` · ${varTxt(g.semana,'7 dias atrás')}`:''}.</div>` : '';
+  const pSem = Number(r.pagamentos_semana_passada_qt)||0, pSemV = Number(r.pagamentos_semana_passada_valor)||0;
+  const dPag = pSem>0 ? `<div class="d">${(()=>{ const v=g.pag.valor-pSemV; return Math.abs(v)<1?'Igual ao mesmo dia da semana passada':v>0?`<b class="bom">${cdMoeda(v)} a mais</b> que no mesmo dia da semana passada`:`<b class="ruim">${cdMoeda(-v)} a menos</b> que no mesmo dia da semana passada`; })()} (${cdMoeda(pSemV)}).</div>`
+    : `<div class="d">A comparação com o mesmo dia da semana passada aparece quando o histórico de pagamentos completar 7 dias.</div>`;
   const resumo = `<div class="cdg-resumo">
     <div class="cdg-box"><div class="cdg-eyebrow">O dia em poucas linhas</div>
       <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p><p>${p3}</p>${p4?`<p>${p4}</p>`:''}</div></div>
     <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
       <div class="cdg-numeros">
-        <div class="cdg-num risk"><div class="l">Antes do bloqueio</div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, 1 a 5 dias</div></div>
-        <div class="cdg-num"><div class="l">Vencido total</div><div class="v">${cdMoeda(g.todos.valor)}</div><div class="s">${cdNum(g.todos.clientes)} clientes, sem Filial 10</div></div>
-        <div class="cdg-num ok"><div class="l">Recebido em ${cdData(g.pag.dia)}</div><div class="v">${cdMoeda(g.pag.valor)}</div><div class="s">${cdNum(g.pag.qt)} pagamentos</div></div>
+        <div class="cdg-num risk"><div class="l">Antes do bloqueio</div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, 1 a 5 dias</div>${dPre}</div>
+        <div class="cdg-num info"><div class="l">Vencido total</div><div class="v">${cdMoeda(g.todos.valor)}</div><div class="s">${cdNum(g.todos.clientes)} clientes, sem Filial 10</div>${dVenc}</div>
+        <div class="cdg-num ok"><div class="l">Recebido em ${cdData(g.pag.dia)}</div><div class="v">${cdMoeda(g.pag.valor)}</div><div class="s">${cdNum(g.pag.qt)} pagamentos</div>${dPag}</div>
       </div>
       <div class="cdg-nota">Vencido total soma todos os clientes com boleto vencido, inclusive quem está fora da cobrança. Antes do bloqueio conta só quem pode ser cobrado hoje.</div>
     </div>
@@ -23569,13 +23586,16 @@ const CD_SLA_PRESET = { pre:0, um:0, d6_30:1, d31_90:5, d90:5, todos:2, vence_se
 function cdDiaUtil(n){ const d=new Date(); let k=0; while(k<n){ d.setDate(d.getDate()+1); if(d.getDay()!==0&&d.getDay()!==6) k++; }
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function cdSlaPadrao(tipo, preset){ const n = (tipo==='cobrar'||tipo==='sem_email') && CD_SLA_PRESET[preset]!==undefined ? CD_SLA_PRESET[preset] : (CD_SLA_DIAS[tipo]??1); return cdDiaUtil(n); }
+function cdPrazoFim(a){ return new Date(a.prazo+'T'+(a.prazo_hora||'18:00')+':00'); }
+function cdPrazoTxt(a, curto){ if(!a.prazo) return ''; const h=(a.prazo_hora||'18:00').replace(':00','h').replace(':','h'); return (curto?cdData(a.prazo).slice(0,5):cdData(a.prazo))+', '+h; }
+function cdPrazoEstourou(a){ return !!a.prazo && cdPrazoFim(a) < new Date() && Number(a.pendentes)>0; }
 // SLA: verde dentro do prazo, amarelo perto de estourar ou ritmo abaixo do necessário, vermelho estourado
 function cdSla(a){
   const tot=Number(a.total)||0, pend=Number(a.pendentes)||0, feitos=tot-pend;
   const pctFeito = tot ? Math.round(100*feitos/tot) : 0;
   if(a.status==='encerrada') return {c:'ok', t:'Encerrada', pctFeito, pctTempo:null, dica:''};
   if(!a.prazo) return {c:'neutro', t:'Sem prazo definido', pctFeito, pctTempo:null, dica:'Sem prazo não há como medir atraso. Defina um prazo nas próximas atividades.'};
-  const ini = new Date(a.criado_em), fim = new Date(a.prazo+'T18:00:00'), agora = new Date();
+  const ini = new Date(a.criado_em), fim = cdPrazoFim(a), agora = new Date();
   const total = Math.max(fim-ini, 3600000);
   const pctTempo = Math.max(0, Math.min(100, Math.round(100*(agora-ini)/total)));
   const horas = Math.round((fim-agora)/3600000);
@@ -23648,7 +23668,7 @@ function cdAtvPainelHTML(){
       <div class="cdg-atv-tit">${cdEsc(a.titulo)}</div>
       <div class="cdg-atv-info">
         <span><small>Quem trata</small><b>${resp}</b></span>
-        <span><small>Prazo</small><b>${a.prazo?cdData(a.prazo).slice(0,5)+', 18h':'sem prazo'}</b></span>
+        <span><small>Prazo</small><b>${a.prazo?cdPrazoTxt(a,true):'sem prazo'}</b></span>
         <span><small>Tipo</small><b>${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||a.tipo)}</b></span>
       </div>
       ${cdSlaBarra(a)}
@@ -23695,7 +23715,7 @@ function cdAtvAlertas(){
   if(!A.lista) return out;
   const quebradas = A.promessas.filter(p=>p.situacao==='não cumprida');
   if(quebradas.length) out.push(cdAlerta('warn', `<b>${cdNum(quebradas.length)} promessas de pagamento não cumpridas.</b> Esses clientes voltaram para a cobrança.`));
-  const atrasadas = A.lista.filter(a=>a.status==='aberta' && a.prazo && a.prazo < cdHoje() && Number(a.pendentes)>0);
+  const atrasadas = A.lista.filter(a=>a.status==='aberta' && cdPrazoEstourou(a));
   if(atrasadas.length) out.push(cdAlerta('warn', `<b>${cdNum(atrasadas.length)} ${atrasadas.length===1?'atividade passou':'atividades passaram'} do prazo</b> com itens para tratar.`));
   return out;
 }
@@ -23734,8 +23754,9 @@ function cdAtvModal(){
         :`<div class="cdg-nota">Nenhuma atendente cadastrada. Use "Cadastrar atendente" no painel de atividades.</div>`}
       <div class="cdg-nota" id="cd-atv-divisao" style="margin-top:6px">Marque uma ou mais atendentes. Com mais de uma, a lista é dividida igualmente e cada uma recebe a sua atividade.</div>
     </div>
-    <label class="cdg-campo" style="max-width:220px">Prazo (SLA)<input id="cd-atv-prazo" type="date" value="${N.prazo}" min="${cdHoje()}"></label>
-    <p class="cdg-nota" style="margin:-6px 0 12px">Prazo sugerido para este tipo de atividade, até as 18h. No acompanhamento a barra fica verde no prazo, amarela perto de estourar e vermelha quando estoura.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><label class="cdg-campo" style="max-width:200px">Prazo (SLA): dia<input id="cd-atv-prazo" type="date" value="${N.prazo}" min="${cdHoje()}"></label>
+    <label class="cdg-campo" style="max-width:130px">Até as<input id="cd-atv-hora" type="time" value="18:00" step="900"></label></div>
+    <p class="cdg-nota" style="margin:-6px 0 12px">Dia sugerido para este tipo de atividade. O horário padrão é 18h; mude se precisar de entrega antes. No acompanhamento a barra fica verde no prazo, amarela perto de estourar e vermelha quando estoura.</p>
     <p class="cdg-nota" style="margin:0 0 14px">Cada atendente vê só as atividades direcionadas a ela. Clientes que já estão em outra atividade aberta do mesmo tipo não são repetidos.</p>
     <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="CD.atv.nova=null;cdAtvModal()">Cancelar</button>
       <button type="button" class="btn sm primary" id="cd-atv-criar" onclick="cdAtvCriar()">Direcionar</button></div>
@@ -23753,6 +23774,8 @@ async function cdAtvCriar(){
   const N = CD.atv.nova; if(!N) return;
   const nome = document.getElementById('cd-atv-nome').value.trim();
   const prazo = document.getElementById('cd-atv-prazo').value || null;
+  const hora = document.getElementById('cd-atv-hora')?.value || '18:00';
+  if(prazo && new Date(prazo+'T'+hora+':00') < new Date()){ toast('Esse horário já passou. Escolha um prazo no futuro.','warn'); return; }
   const sel = [...document.querySelectorAll('.cd-atv-pessoa:checked')].map(s=>({id:s.value, nome:s.dataset.nome}));
   if(!nome){ toast('Dê um nome para a atividade.','warn'); return; }
   if(!sel.length){ toast('Escolha quem vai tratar.','warn'); return; }
@@ -23766,6 +23789,7 @@ async function cdAtvCriar(){
     try{
       const r = await cdAtvRpc('radar_atv_criar', { p_tipo:N.tipo, p_titulo: sel.length>1 ? nome+' · '+p.nome : nome, p_chaves:[...new Set(ls.map(chave))],
         p_prazo:prazo, p_responsavel:p.id, p_filtro:N.filtro });
+      if(r && r.ok && hora!=='18:00'){ try{ await cdAtvRpc('radar_atv_definir_hora',{p_atividade:r.id, p_hora:hora}); }catch(e){} }
       if(r && r.ok){ criadas++; itens+=r.itens; repetidos+=r.ja_em_atividade||0; } else falhas.push(p.nome+': '+(r?.motivo||'não criada'));
     }catch(e){ falhas.push(p.nome+': '+e.message); }
   }
@@ -23857,12 +23881,13 @@ function cdAtvEncerrarModal(id){
 }
 function cdAtvTrocarModal(id){
   const a = (CD.atv.lista||[]).find(x=>x.id===id); if(!a) return;
-  const pessoas = (CD.atv.usuarios||[]).filter(u=>u.perfil==='atendente');
+  const pessoas = (CD.atv.usuarios||[]);
   cdModal(`<h3>Trocar responsável</h3>
     <p class="cdg-nota" style="margin:0 0 10px"><b>${cdEsc(a.titulo)}</b>. Hoje com ${cdEsc(a.responsavel_nome||'ninguém')}, ${cdNum(a.pendentes)} itens para tratar.</p>
     <div class="cdg-campo">Passar para
-      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="radio" name="cd-troca-p" value="${u.id}" ${u.id===a.responsavel?'disabled':''}> ${cdEsc(u.nome)}${u.id===a.responsavel?' (atual)':''}</label>`).join('')}</div></div>
-    <label class="cdg-campo" style="max-width:220px">Novo prazo<input id="cd-troca-prazo" type="date" min="${cdHoje()}" value="${a.prazo && a.prazo>=cdHoje() ? a.prazo : cdHoje()}"></label>
+      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="radio" name="cd-troca-p" value="${u.id}" ${u.id===a.responsavel?'disabled':''}> ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${u.id===a.responsavel?' (atual)':''}</label>`).join('')}</div></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><label class="cdg-campo" style="max-width:200px">Novo prazo: dia<input id="cd-troca-prazo" type="date" min="${cdHoje()}" value="${a.prazo && a.prazo>=cdHoje() ? a.prazo : cdHoje()}"></label>
+    <label class="cdg-campo" style="max-width:130px">Até as<input id="cd-troca-hora" type="time" step="900" value="${a.prazo_hora||'18:00'}"></label></div>
     <p class="cdg-nota" style="margin:-6px 0 14px">O que já foi tratado continua registrado. A nova responsável vê a atividade na hora.</p>
     <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
       <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="cdAtvTrocar(${id})">Trocar</button></div>`);
@@ -23874,6 +23899,7 @@ async function cdAtvTrocar(id){
   const b = document.getElementById('cd-conf-ok'); if(b){ b.disabled=true; b.textContent='Trocando...'; }
   try{
     const r = await cdAtvRpc('radar_atv_trocar_responsavel',{p_atividade:id, p_responsavel:sel.value, p_prazo:prazo});
+    if(r.ok){ try{ await cdAtvRpc('radar_atv_definir_hora',{p_atividade:id, p_hora:document.getElementById('cd-troca-hora')?.value||'18:00'}); }catch(e){} }
     if(!r.ok){ toast(r.motivo,'warn'); if(b){ b.disabled=false; b.textContent='Trocar'; } return; }
     cdModal(null); toast('Atividade passada para '+r.responsavel+'.','success'); cdAtvCarregar();
   }catch(e){ toast(e.message,'error'); if(b){ b.disabled=false; b.textContent='Trocar'; } }
@@ -23995,8 +24021,13 @@ function cdFocoProximoId(depoisDe){
 async function cdFocoSelecionar(id, semRender){
   const A = CD.atv; A.sel = id; A.motivoAberto = null;
   const i = (A.itens||[]).find(x=>x.id===id); const meuId = getRadarUser?.()?.id;
-  if(i && !i.resolvido_ixc && i.situacao==='pendente' && !i.com_quem){
-    try{ const r = await cdAtvRpc('radar_atv_pegar',{p_item:id}); if(r.ok){ i.com_quem = meuId; i.com_quem_nome = CD.meuNome; } }catch(e){}
+  // só quem executa a atividade "pega" o cliente; a gestão só olha
+  const atv = (A.lista||[]).find(x=>x.id===A.aberta);
+  const executa = cdEhAtendente() || (atv && atv.responsavel===meuId);
+  if(executa && i && !i.resolvido_ixc && i.situacao==='pendente' && (!i.com_quem || i.com_quem===meuId || cdPegoVencido(i))){
+    try{ const r = await cdAtvRpc('radar_atv_pegar',{p_item:id});
+      if(r.ok){ (A.itens||[]).forEach(x=>{ if(x.id!==id && x.com_quem===meuId && x.situacao==='pendente'){ x.com_quem=null; x.com_quem_nome=null; } });
+        i.com_quem = meuId; i.com_quem_nome = CD.meuNome; i.pego_em = new Date().toISOString(); } }catch(e){}
   }
   renderCobrancaDia();
   setTimeout(()=>document.getElementById('cd-foco-item-'+id)?.scrollIntoView({block:'nearest'}),30);
@@ -24062,7 +24093,7 @@ function cdAreaFocoHTML(){
     <div class="cdg-area-h">
       <button type="button" class="btn sm" onclick="cdAtvFechar()">${cdEhAtendente()?'Voltar às minhas atividades':'Voltar ao painel'}</button>
       <div style="flex:1;min-width:0"><div class="cdg-atv-tit" style="font-size:17px">${cdEsc(a.titulo)}</div>
-        <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdData(a.prazo):''}</div></div>
+        <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdPrazoTxt(a):''}</div></div>
       <button type="button" class="btn sm" onclick="cdAtvItensCarregar()">Atualizar</button>
       <button type="button" class="btn sm" onclick="CD.atv.modo='lista';renderCobrancaDia()" title="Ver todos os clientes numa lista">Ver em lista</button>
       ${a.status==='aberta'&&ger?`<button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
@@ -24153,12 +24184,14 @@ function cdAtvDetalhe(tipo, i){
   if(tipo==='gerados_vencidos') return `Boleto ${d.id_titulo} emitido em ${cdData(d.emissao)} com vencimento ${cdData(d.vencimento)}${d.o_que_conferir?' · '+cdEsc(d.o_que_conferir):''}`;
   return '';
 }
+function cdPegoVencido(i){ return !!i.pego_em && (Date.now() - new Date(i.pego_em).getTime()) > 30*60000; }
 function cdAtvEstado(i, meuId){
   if(i.resolvido_ixc) return {k:'resolvido', t:'Resolvido no IXC', c:'ok'};
   if(i.promessa_situacao==='não cumprida') return {k:'tratado', t:'Promessa não cumprida', c:'risk'};
   if(i.promessa_situacao==='aguardando aprovação') return {k:'tratado', t:'Promessa aguardando aprovação', c:'warn'};
   if(i.situacao==='prometeu' && i.promessa_data) return {k:'tratado', t:'Prometeu pagar até '+cdData(i.promessa_data), c:'info'};
   if(i.situacao!=='pendente') return {k:'tratado', t:CD_SITUACOES[i.situacao]?.t||i.situacao, c:CD_SITUACOES[i.situacao]?.c||''};
+  if(i.com_quem && cdPegoVencido(i)) return {k:'tratar', t:'Para tratar', c:''};
   if(i.com_quem && i.com_quem===meuId) return {k:'tratar', t:'Com você agora', c:'info'};
   if(i.com_quem) return {k:'atendendo', t:'Com '+(i.com_quem_nome||'alguém'), c:'info'};
   return {k:'tratar', t:'Para tratar', c:''};
@@ -24169,7 +24202,7 @@ function cdAreaListaHTML(){
   const head = `<div class="cdg-area-h">
       <button type="button" class="btn sm" onclick="cdAtvFechar()">${cdEhAtendente()?'Voltar às minhas atividades':'Voltar ao painel'}</button>
       <div style="flex:1;min-width:0"><div class="cdg-atv-tit" style="font-size:17px">${cdEsc(a.titulo)}</div>
-        <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdData(a.prazo):''} · criada por ${cdEsc(a.criado_por_nome||'-')}</div></div>
+        <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdPrazoTxt(a):''} · criada por ${cdEsc(a.criado_por_nome||'-')}</div></div>
       ${a.status==='aberta'?`<button type="button" class="btn sm primary" onclick="cdAtvProximo()">Pegar o próximo cliente</button>`:''}
       <button type="button" class="btn sm" onclick="cdAtvItensCarregar()">Atualizar</button>
       ${a.status==='aberta'&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
@@ -24428,10 +24461,10 @@ function cdAtendenteHTML(){
   if(L===null) return `<div class="section compact-section"><h2 class="section-title">Minhas atividades</h2><p class="cdg-nota">Carregando...</p></div>`;
   const cards = L.map(a=>{
     const tot=Number(a.total)||0, res=Number(a.resolvidos)||0, trat=Math.max(0,(Number(a.tratados)||0)-res);
-    const atrasada = a.prazo && a.prazo < cdHoje() && Number(a.pendentes)>0;
+    const atrasada = cdPrazoEstourou(a);
     return `<div class="cdg-atv-card sla-${cdSla(a).c}">
       <div class="cdg-atv-top"><div><div class="cdg-atv-tit">${cdEsc(a.titulo)}</div>
-        <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · direcionada por ${cdEsc(a.criado_por_nome||'-')}${a.prazo?` · prazo ${cdData(a.prazo)}`:''}${atrasada?' · <b class="r">atrasada</b>':''}</div></div>
+        <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · direcionada por ${cdEsc(a.criado_por_nome||'-')}${a.prazo?` · prazo ${cdPrazoTxt(a)}`:''}${atrasada?' · <b class="r">atrasada</b>':''}</div></div>
         <button type="button" class="btn sm primary" onclick="cdAtvAbrir(${a.id})">${Number(a.pendentes)?'Começar':'Abrir'}</button></div>
       ${cdSlaBarra(a)}
       <div class="cdg-atv-nums"><span><b>${cdNum(a.pendentes)}</b> para tratar</span><span><b>${cdNum(trat)}</b> tratados</span><span><b>${cdNum(res)}</b> resolvidos</span></div>
