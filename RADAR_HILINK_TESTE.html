@@ -23919,6 +23919,15 @@ async function cdAtvSoltar(itemId){
   catch(e){ toast(e.message,'error'); }
 }
 window.cdAtvSoltar = cdAtvSoltar;
+// Se outra aba do mesmo navegador entrar com outro usuário, esta aba recarrega para não misturar acessos
+window.addEventListener('storage', e=>{
+  if(!e.key || !/auth-token/.test(e.key)) return;
+  try{
+    const novo = e.newValue ? (JSON.parse(e.newValue)?.user?.email||'') : '';
+    const atual = getRadarUser?.()?.email || '';
+    if(novo.toLowerCase() !== atual.toLowerCase()){ toast('Outra aba entrou com outro usuário. Recarregando...','warn'); setTimeout(()=>location.reload(), 1200); }
+  }catch(err){ location.reload(); }
+});
 // Atualiza sozinho a cada 60s: atividade removida ou encerrada some da tela de todos
 setInterval(async ()=>{
   try{
