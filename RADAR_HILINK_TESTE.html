@@ -2933,7 +2933,7 @@ body.radar-modo-atendente .topbar{display:none!important}
         <div class="nav-item" data-mod="tecnica" onclick="go('tecnica')">
           <span>Sa&uacute;de da Rede<small>risco t&eacute;cnico, preven&ccedil;&atilde;o e fila NOC</small></span>
         </div>
-        <div class="nav-item disabled" data-mod="carneCorreios" onclick="go('carneCorreios')">
+        <div class="nav-item" data-mod="carneCorreios" onclick="go('carneCorreios')">
           <span>Envio Correios<small>carn&ecirc; de boletos via e-Carta</small></span>
         </div>
         <div class="nav-item" data-mod="premiacoes" onclick="go('premiacoes')">
@@ -8350,6 +8350,7 @@ body.radar-modo-atendente .topbar{display:none!important}
                 style="width:100%;padding:9px 11px;border:1px solid var(--radar-blue,#2563eb);border-radius:6px;font-size:14px;font-weight:700;background:var(--radar-bg2,#0f172a);color:var(--radar-text,#f1f5f9)"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();processarCarneCorreios()}">
             </label>
+            <div id="cc-ixc-info" style="margin:0 0 7px;font-size:12px;line-height:1.45;font-weight:700;color:#93c5fd">Fonte: IXC direto (sem planilha). Carregando...</div>
             <div id="cc-os-filter-info" style="margin-top:7px;font-size:11px;line-height:1.45;color:var(--radar-soft,#94a3b8)">
               Primeiro o Radar localiza as OS por assunto, remove status Finalizada/Cancelada e só depois cruza com Recebimentos.
             </div>
@@ -8396,6 +8397,7 @@ body.radar-modo-atendente .topbar{display:none!important}
 
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
             <button class="btn-primary" onclick="processarCarneCorreios()" style="white-space:nowrap;font-size:13px;padding:7px 18px">Aplicar Filtro</button>
+            <button type="button" id="cc-ixc-btn" class="btn sm" onclick="ccIxcBuscar()" style="white-space:nowrap;font-weight:800" title="Busca no IXC as OS de entrega de carnê, os boletos, endereço e o Pix de cada boleto">Buscar do IXC agora</button>
             <button type="button" class="btn sm primary" onclick="openAnalysisHelp('carneCorreios')" title="Resumo rápido do fluxo do Radar e do EDI Correios">
               Entenda esta aba
             </button>
@@ -10539,7 +10541,7 @@ function go(mod){
     if(mod==='propostas')renderPropostas();
     if(mod==='relatorios')renderRelatoriosPersonalizados();
     if(mod==='acao')renderAcao();
-    if(mod==='carneCorreios'){if(!STATE.raw?.carneBoletos?.length){toast('Carregue RADAR HILINK | CORREIOS no Setup primeiro','warn');return;}renderCarneCorreios();}
+    if(mod==='carneCorreios'){ccIxcAbrir();}
     if(mod==='mapear'){if(STATE.campaign)renderMapPreview();}
     if(mod==='historico') renderHistorico();
     if(mod==='cobrancaDia') renderCobrancaDia();
@@ -26522,7 +26524,9 @@ function renderCarneCorreios(){
 
   if(!raw.length){
     document.getElementById('cc-preview-tbody').innerHTML=
-      '<tr><td colspan="6" style="text-align:center;padding:24px;color:#ef4444">Carregue o relatório <b>RADAR HILINK | CORREIOS</b> no Setup primeiro.</td></tr>';
+      (CC_IXC.ativo
+        ? '<tr><td colspan="6" style="text-align:center;padding:24px;color:#f59e0b"><b>Nenhuma OS de entrega de carnê em aberto no IXC.</b><br><span style="font-size:12px;color:var(--radar-soft,#94a3b8)">Quando houver OS "TEC | ENTREGA DE CARNE" aberta, clique em <b>Buscar do IXC agora</b>.</span></td></tr>'
+        : '<tr><td colspan="6" style="text-align:center;padding:24px;color:#ef4444">Clique em <b>Buscar do IXC agora</b> para trazer os carnês direto do IXC.</td></tr>');
     return;
   }
 
@@ -26559,7 +26563,83 @@ function renderCarneCorreios(){
   processarCarneCorreios();
 }
 
+
+// ===== CORREIOS direto do IXC (OS, boletos, endereço e Pix via API) =====
+const CC_IXC={ativo:false,os:[],boletos:[],execucao:null,buscando:false,timer:null};
+function ccIxcQuando(){
+  const e=CC_IXC.execucao; const d=e&&(e.fim_em||e.pedido_em);
+  return d?new Date(d).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'sem leitura';
+}
+function ccIxcInfo(html){const el=document.getElementById('cc-ixc-info');if(el)el.innerHTML=html;}
+function ccIxcResumo(){
+  const e=CC_IXC.execucao||{};
+  const abertas=(CC_IXC.os||[]).filter(o=>!/finaliz|cancel/i.test(o.Status||'')).length;
+  const semPix=(CC_IXC.boletos||[]).filter(b=>!b.QRCODE).length;
+  const semLinha=(CC_IXC.boletos||[]).filter(b=>!b['Linha digitável']).length;
+  if(e.status==='buscando'||e.status==='pedido')return `Buscando no IXC... ${e.prontos||0} de ${e.contratos??'?'} contratos prontos.`;
+  if(e.erro)return `<span style="color:#ef4444">Última busca no IXC com erro: ${String(e.erro).slice(0,160)}</span>`;
+  return `Fonte: <b>IXC direto</b> · atualizado em <b>${ccIxcQuando()}</b> · OS abertas de entrega de carnê: <b>${abertas}</b> · boletos em aberto: <b>${(CC_IXC.boletos||[]).length}</b> · sem Pix: <b>${semPix}</b> · sem linha digitável: <b>${semLinha}</b>`;
+}
+async function ccIxcCarregarDados(){
+  const sb=getSB(); const r=await sb.rpc('radar_correios_dados'); if(r.error)throw r.error;
+  const d=r.data||{};
+  CC_IXC.os=d.os||[]; CC_IXC.boletos=(d.boletos||[]).map(b=>({...b})); CC_IXC.execucao=d.execucao||null; CC_IXC.ativo=true;
+  ccIxcInfo(ccIxcResumo());
+}
+async function ccIxcAbrir(){
+  if(STATE.raw?.carneBoletos?.length&&!CC_IXC.ativo){renderCarneCorreios();return;}
+  try{
+    if(!CC_IXC.ativo){ccIxcInfo('Fonte: IXC direto. Carregando a última leitura...');await ccIxcCarregarDados();}
+    renderCarneCorreios();
+    const e=CC_IXC.execucao;
+    if(e&&(e.status==='buscando'||e.status==='pedido'))ccIxcAcompanhar();
+  }catch(err){console.error('[Correios IXC]',err);ccIxcInfo('<span style="color:#ef4444">Não consegui ler os dados do IXC: '+(err.message||err)+'</span>');}
+}
+async function ccIxcBuscar(){
+  if(CC_IXC.buscando)return;
+  const btn=document.getElementById('cc-ixc-btn');
+  try{
+    CC_IXC.buscando=true; if(btn){btn.disabled=true;btn.textContent='Buscando no IXC...';}
+    const sb=getSB(); const r=await sb.rpc('radar_correios_buscar'); if(r.error)throw r.error;
+    toast('Buscando OS, boletos e Pix direto do IXC. Leva de 1 a 3 minutos.','success');
+    ccIxcInfo('Buscando no IXC... aguarde.');
+    ccIxcAcompanhar();
+  }catch(err){
+    CC_IXC.buscando=false; if(btn){btn.disabled=false;btn.textContent='Buscar do IXC agora';}
+    toast('Erro ao buscar no IXC: '+(err.message||err),'error');
+  }
+}
+function ccIxcAcompanhar(){
+  clearTimeout(CC_IXC.timer);
+  const btn=document.getElementById('cc-ixc-btn');
+  const inicio=Date.now();
+  const passo=async()=>{
+    try{
+      const sb=getSB(); const r=await sb.rpc('radar_correios_status'); if(r.error)throw r.error;
+      CC_IXC.execucao=r.data||null; ccIxcInfo(ccIxcResumo());
+      const st=CC_IXC.execucao?.status;
+      if(st==='concluido'||CC_IXC.execucao?.erro||Date.now()-inicio>8*60*1000){
+        CC_IXC.buscando=false; if(btn){btn.disabled=false;btn.textContent='Buscar do IXC agora';}
+        await ccIxcCarregarDados();
+        if(STATE.activeMod==='carneCorreios')renderCarneCorreios();
+        if(st==='concluido')toast('Correios atualizado direto do IXC','success');
+        else if(Date.now()-inicio>8*60*1000)toast('A busca no IXC está demorando. Mostrando o que já chegou.','warn');
+        return;
+      }
+    }catch(err){console.warn('[Correios IXC] status',err);}
+    CC_IXC.timer=setTimeout(passo,4000);
+  };
+  CC_IXC.timer=setTimeout(passo,3000);
+}
+window.ccIxcBuscar=ccIxcBuscar;
+function ccOsSource(){
+  if(CC_IXC.ativo)return CC_IXC.os||[];
+  return STATE.raw.comodato||[];
+}
 function ccGetBoletosSource(){
+  if(CC_IXC.ativo){
+    return {rows:CC_IXC.boletos||[],label:'IXC direto (atualizado '+ccIxcQuando()+')',key:'ixc'};
+  }
   if(STATE.raw?.carneBoletos?.length){
     return {rows:STATE.raw.carneBoletos,label:'RADAR HILINK | CORREIOS',key:'carneBoletos'};
   }
@@ -27243,7 +27323,19 @@ function processarCarneCorreios(){
   const nomeKey=r=>String(r[CC._colNome]||r['Cliente']||r['Nome']||'');
 
   // -- Filtro por Assunto OS ---------------------------------------------
-  const osRaw=STATE.raw.comodato||[];
+  const osRaw=ccOsSource();
+  if(CC_IXC.ativo&&!osRaw.some(os=>!/finaliz|cancel/i.test(String(os.Status||'')))){
+    document.getElementById('cc-preview-tbody').innerHTML=
+      `<tr><td colspan="10" style="text-align:center;padding:28px;color:#22c55e">
+        <b style="font-size:14px">Nenhuma OS de entrega de carnê em aberto no IXC</b><br><br>
+        <span style="color:var(--radar-soft,#94a3b8)">Leitura de ${ccIxcQuando()}. Quando a equipe abrir uma OS <b>TEC | ENTREGA DE CARNE</b>, clique em <b>Buscar do IXC agora</b>.</span>
+      </td></tr>`;
+    const osInfo=document.getElementById('cc-os-filter-info');
+    if(osInfo)osInfo.innerHTML=`OS de entrega de carnê no IXC: <b>${osRaw.length}</b> no histórico, <b>0</b> em aberto.`;
+    CC.clientes=[]; CC.filtered=[];
+    ccSetCorreiosExportButtonsDisabled(true);
+    return;
+  }
   if(!assuntoFiltro){
     document.getElementById('cc-preview-tbody').innerHTML=
       `<tr><td colspan="10" style="text-align:center;padding:28px;color:#f59e0b">
@@ -27910,7 +28002,7 @@ function _renderCorreiosPreview(lista){
   const colVenc=CC._colVenc||'Data do vencimento';
 
   // -- Dashboard KPIs ----------------------------------------------------
-  const osRaw=STATE.raw.comodato||[];
+  const osRaw=ccOsSource();
   const assuntoFiltro=ccNormTxt(document.getElementById('cc-assunto-os')?.value||'');
   const osLayout=ccDetectOsLayout(osRaw,assuntoFiltro);
   const nOsLocalizadas=assuntoFiltro&&osRaw.length?
