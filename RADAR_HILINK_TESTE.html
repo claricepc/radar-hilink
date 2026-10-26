@@ -2842,6 +2842,22 @@ body.radar-modo-atendente .topbar{display:none!important}
 .radar-tema-btn{display:block;margin:14px 12px 18px;width:calc(100% - 24px);padding:8px 10px;border-radius:8px;border:1px solid rgba(90,150,220,.45);background:transparent;color:#B4C2D0;font-size:12px;font-weight:700;cursor:pointer}
 .radar-tema-btn:hover{border-color:#4DA3E0}
 </style>
+<style data-tema-ignorar="1">
+#ixc-carga-card{border:1px solid #c7d7ea;border-left:4px solid #0071BC;border-radius:10px;padding:14px 16px;margin:14px 0;background:#f6faff}
+#ixc-carga-card .ixc-carga-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+#ixc-carga-card h3{margin:0 0 4px;font-size:15px;color:#0b2545}
+#ixc-carga-card p{margin:0;font-size:12.5px;color:#475569}
+#ixc-carga-card .ixc-carga-acoes{display:flex;gap:8px;flex-wrap:wrap}
+#ixc-carga-card .ixc-carga-lista{list-style:none;margin:10px 0 6px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px}
+#ixc-carga-card .ixc-carga-lista li{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:7px 9px;font-size:12px;display:flex;flex-direction:column;gap:2px}
+#ixc-carga-card .ixc-carga-lista strong{font-size:13px;color:#0b2545}
+#ixc-carga-card .ixc-carga-lista em{font-style:normal;color:#64748b;font-size:11px}
+#ixc-carga-card .ixc-carga-nota{font-size:11.5px;color:#64748b}
+#ixc-carga-card .ixc-carga-erro{color:#b91c1c;font-size:12px;margin-top:4px}
+#ixc-carga-card .ixc-carga-acoes{align-items:flex-end}
+#ixc-carga-card .ixc-carga-data{display:flex;flex-direction:column;font-size:11px;color:#475569;gap:2px}
+#ixc-carga-card .ixc-carga-data input{padding:6px 8px;border:1px solid #c7d7ea;border-radius:6px}
+</style>
 </head>
 <body>
 <!-- ===================== TELA DE LOGIN ===================== -->
@@ -2901,7 +2917,7 @@ body.radar-modo-atendente .topbar{display:none!important}
         <div class="nav-item disabled" data-mod="carneCorreios" onclick="go('carneCorreios')">
           <span>Envio Correios<small>carn&ecirc; de boletos via e-Carta</small></span>
         </div>
-        <div class="nav-item disabled" data-mod="premiacoes" onclick="go('premiacoes')">
+        <div class="nav-item" data-mod="premiacoes" onclick="go('premiacoes')">
           <span>Premia&ccedil;&atilde;o<small>folha, vendas, atendimento e ranking</small></span>
         </div>
         <div class="nav-item" data-mod="propostas" onclick="go('propostas')">
@@ -7385,6 +7401,8 @@ body.radar-modo-atendente .topbar{display:none!important}
     }
   </style>
   <div class="module" id="mod-premiacoes">
+      <div id="ixc-carga-card"><p class="ixc-carga-nota">Carregando situação dos dados do IXC…</p></div>
+
 
     <!-- -- HEADER EXECUTIVO -- -->
     <div class="prem-exec-header" id="prem-exec-header">
@@ -10430,6 +10448,11 @@ function renderModuleError(mod,err){
   console.error('[Radar] Erro ao renderizar módulo',mod,err);
 }
 function go(mod){
+  // Premiação: sem base carregada, busca direto do IXC (banco) em vez de pedir upload
+  if(mod==='premiacoes' && !STATE.processed && typeof ixcCargaUsar==='function' && getRadarUser?.()){
+    if(!(IXC_CARGA && IXC_CARGA.carregando)){ toast('Buscando os dados da premiação direto do IXC...','success'); ixcCargaUsar(); }
+    return;
+  }
   if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='usuarios'&&!STATE.processed){toast('Processe a base primeiro','error');return}
   if((mod==='segmentacao'||mod==='disparo')&&!STATE.campaign){toast('Mapeie uma campanha primeiro','error');mod='mapear'}
   if(!document.getElementById('mod-'+mod)){toast('Módulo não encontrado: '+mod,'error');return}
@@ -24632,6 +24655,119 @@ function cdAtendenteHTML(){
   function iniciar(){ botao(); aplicar(lerPref()); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 })();
+
+// ===== Carregar relatórios direto do IXC (Premiação) =====
+// Preenche os mesmos relatórios do upload (contratos, recebimentos, logins, alterações) com os dados do banco.
+// A lógica de cada módulo não muda: o Radar recebe as linhas com os mesmos nomes de coluna dos CSVs do IXC.
+const IXC_CARGA = { status:null, carregando:false };
+const IXC_CARGA_TIPOS = [
+  { key:'contratos',    base:'contratos_todos',  label:'Contratos (todos os status)' },
+  { key:'recebimentos', base:'receber_periodo',  label:'Recebimentos do período' },
+  { key:'logins',       base:'logins',           label:'Conexões dos clientes (logins)' },
+  { key:'alteracoes',   base:'alteracoes_plano', label:'Alterações contratuais' },
+];
+function ixcFmtDataHora(v){ if(!v) return '—'; const d=new Date(v); return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function ixcEsc(s){ return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function ixcCargaStatus(){
+  const sb=getSB(); if(!sb) return null;
+  const { data:{ session } } = await sb.auth.getSession(); if(!session) return null;
+  const r = await sb.rpc('radar_carga_status'); if(r.error) throw new Error(r.error.message);
+  IXC_CARGA.status = r.data || {};
+  return IXC_CARGA.status;
+}
+function ixcCargaEmAndamento(st){
+  const ult = st && st.ultima_atividade ? new Date(st.ultima_atividade) : null;
+  return !!(ult && (Date.now()-ult.getTime()) < 120000);
+}
+function ixcCargaCardHTML(){
+  const st = IXC_CARGA.status || {};
+  const tipos = st.tipos || {};
+  const andamento = ixcCargaEmAndamento(st);
+  const ped = st.ultimo_pedido;
+  const linhas = IXC_CARGA_TIPOS.map(t=>{
+    const x = tipos[t.base];
+    return `<li><span>${t.label}</span><strong>${x ? Number(x.registros).toLocaleString('pt-BR')+' linhas' : 'ainda não carregado'}</strong><em>${x ? 'atualizado em '+ixcFmtDataHora(x.atualizado_em) : ''}</em></li>`;
+  }).join('');
+  const per = ped && ped.parametros ? `Recebimentos com vencimento de ${new Date(ped.parametros.venc_de+'T12:00').toLocaleDateString('pt-BR')} a ${new Date(ped.parametros.venc_ate+'T12:00').toLocaleDateString('pt-BR')}.` : '';
+  const erros = (st.erros||[]).length ? `<p class="ixc-carga-erro">Erro na última leitura: ${ixcEsc(st.erros[0].erro)}</p>` : '';
+  const pronto = IXC_CARGA_TIPOS.slice(0,3).every(t=>tipos[t.base] && tipos[t.base].registros>0);
+  return `
+    <div class="ixc-carga-head">
+      <div>
+        <h3>Carregar direto do IXC</h3>
+        <p>Contratos, recebimentos, logins e alterações saem do IXC sem exportar CSV. OPA e Histórico de Pagamentos continuam por upload. Para fechar a premiação de um mês, use do 1º dia do mês das ativações até pelo menos 45 dias depois do fim desse mês.</p>
+      </div>
+      <div class="ixc-carga-acoes">
+        <label class="ixc-carga-data">Vencimentos de<input type="date" id="ixc-venc-de" value="${IXC_CARGA.de||ixcPadraoDe()}"></label>
+        <label class="ixc-carga-data">até<input type="date" id="ixc-venc-ate" value="${IXC_CARGA.ate||ixcPadraoAte()}"></label>
+        <button class="btn outline" type="button" onclick="ixcCargaAtualizar()" ${andamento||IXC_CARGA.carregando?'disabled':''}>${andamento?'Leitura do IXC em andamento…':'Atualizar dados do IXC'}</button>
+        <button class="btn" type="button" onclick="ixcCargaUsar()" ${!pronto||andamento||IXC_CARGA.carregando?'disabled':''}>Usar dados do IXC</button>
+      </div>
+    </div>
+    <ul class="ixc-carga-lista">${linhas}</ul>
+    <p class="ixc-carga-nota">${andamento?'O IXC está sendo lido agora. Leva cerca de 20 minutos; esta área se atualiza sozinha. ':''}${per}${ped?' Último pedido por '+ixcEsc(ped.pedido_por_nome||'')+' em '+ixcFmtDataHora(ped.pedido_em)+'.':''}</p>
+    ${erros}`;
+}
+async function ixcCargaRender(){
+  const el = document.getElementById('ixc-carga-card'); if(!el) return;
+  try{ await ixcCargaStatus(); }catch(e){ el.innerHTML = `<p class="ixc-carga-nota">Entre no Radar para carregar os dados do IXC. (${ixcEsc(e.message)})</p>`; return; }
+  if(!IXC_CARGA.status){ el.innerHTML = '<p class="ixc-carga-nota">Entre no Radar para carregar os dados direto do IXC.</p>'; return; }
+  if(IXC_CARGA.status && IXC_CARGA.status.sem_acesso){ el.style.display='none'; return; }
+  el.innerHTML = ixcCargaCardHTML();
+  clearTimeout(IXC_CARGA.timer);
+  if(ixcCargaEmAndamento(IXC_CARGA.status)) IXC_CARGA.timer = setTimeout(ixcCargaRender, 30000);
+}
+function ixcPadraoDe(){ const h=new Date(); return new Date(h.getFullYear(), h.getMonth()-2, 1).toISOString().slice(0,10); }
+function ixcPadraoAte(){ return new Date(Date.now()+45*86400000).toISOString().slice(0,10); }
+async function ixcCargaAtualizar(){
+  const sb=getSB(); if(!sb) return;
+  const de = document.getElementById('ixc-venc-de')?.value || ixcPadraoDe();
+  const ate = document.getElementById('ixc-venc-ate')?.value || ixcPadraoAte();
+  if(de > ate){ toast('A data inicial precisa ser antes da final.','warn'); return; }
+  IXC_CARGA.de = de; IXC_CARGA.ate = ate;
+  const r = await sb.rpc('radar_carga_solicitar',{ p_pacote:'premiacao', p_venc_de:de, p_venc_ate:ate });
+  if(r.error){ toast(r.error.message,'error'); return; }
+  toast('Leitura do IXC iniciada. Leva cerca de 20 minutos.','success');
+  setTimeout(ixcCargaRender, 8000);
+}
+async function ixcCargaBuscar(sb, tipo, onProgresso){
+  const out=[]; const lim=5000;
+  for(let off=0; off<200000; off+=lim){
+    const r = await sb.rpc('radar_carga_dados',{ p_tipo:tipo, p_offset:off, p_limit:lim });
+    if(r.error) throw new Error(tipo+': '+r.error.message);
+    const rows = r.data || [];
+    out.push(...rows); onProgresso && onProgresso(out.length);
+    if(rows.length < lim) break;
+  }
+  return out;
+}
+async function ixcCargaUsar(){
+  const sb=getSB(); if(!sb) return;
+  if(IXC_CARGA.carregando) return;
+  IXC_CARGA.carregando=true; ixcCargaRender();
+  document.getElementById('loading').classList.add('show');
+  try{
+    for(const t of IXC_CARGA_TIPOS){
+      const rows = await ixcCargaBuscar(sb, t.key);
+      if(!rows.length) continue;
+      const nome = `IXC direto (banco) · ${rows.length.toLocaleString('pt-BR')} linhas`;
+      STATE.raw[t.key] = rows; STATE.files[t.key] = nome;
+      if(t.key==='alteracoes' && typeof processAlteracoesRows==='function'){
+        if(STATE.processed) STATE.processed.alteracoes = processAlteracoesRows(rows);
+      }
+      setUploadCardLoaded(t.key, rows.length);
+    }
+    const bp=document.getElementById('btn-process'); if(bp) bp.disabled = !hasAnyRawReport();
+    renderModuleUnlocks();
+    toast('Dados do IXC carregados. Analisando…','success');
+    await processCampaign();
+  }catch(e){ console.error(e); toast('Erro ao carregar do IXC: '+e.message,'error'); }
+  finally{ IXC_CARGA.carregando=false; document.getElementById('loading').classList.remove('show'); ixcCargaRender(); }
+}
+window.ixcCargaAtualizar=ixcCargaAtualizar; window.ixcCargaUsar=ixcCargaUsar; window.ixcCargaRender=ixcCargaRender;
+document.addEventListener('DOMContentLoaded', ()=>setTimeout(ixcCargaRender, 1500));
+(function(){ const orig = window.radarAplicarPerfil; if(typeof orig==='function'){ window.radarAplicarPerfil = async function(){ const r = await orig.apply(this, arguments); try{ ixcCargaRender(); }catch(e){} return r; }; } })();
 
 function renderCobrancaDia(){
   const box = document.getElementById('mod-cobrancaDia');
