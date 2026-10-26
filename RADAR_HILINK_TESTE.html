@@ -684,6 +684,7 @@ canvas{display:block;width:100%!important;max-width:100%!important;min-width:0!i
 .upload-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0}
 .row-action{border:1px solid #dbeafe;background:#fff;color:#0071BC;border-radius:7px;padding:6px 8px;font-size:11px;font-weight:800;cursor:pointer}
 .row-action:hover{background:#eef6fd}
+.upload-row.step:not(.loaded) .row-action{visibility:hidden}
 .upload-action-bar{position:sticky;bottom:0;z-index:20;margin-top:12px;background:rgba(255,255,255,.96);border:1px solid #dbeafe;border-left:4px solid #0071BC;border-radius:12px;padding:10px 12px;box-shadow:0 -4px 18px rgba(15,23,42,.06);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center}
 .upload-action-bar strong{display:block;font-size:13px;color:#0f172a;margin-bottom:2px}
 .upload-action-bar span{display:block;font-size:11.5px;color:#64748b;line-height:1.3}
