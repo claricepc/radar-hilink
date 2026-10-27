@@ -23170,11 +23170,12 @@ function ensureActiveModuleVisible(){
   if(!box)return;
   document.querySelectorAll('.module').forEach(el=>{
     const active=el.id==='mod-'+mod;
-    el.classList.toggle('active',active);
-    el.hidden=false;
-    el.style.display=active?'block':'none';
-    el.style.visibility=active?'visible':'';
-    el.style.opacity=active?'1':'';
+    if(el.classList.contains('active')!==active)el.classList.toggle('active',active);
+    if(el.hidden)el.hidden=false;
+    const display=active?'block':'none', visibility=active?'visible':'', opacity=active?'1':'';
+    if(el.style.display!==display)el.style.display=display;
+    if(el.style.visibility!==visibility)el.style.visibility=visibility;
+    if(el.style.opacity!==opacity)el.style.opacity=opacity;
   });
 }
 
@@ -23478,7 +23479,7 @@ function renderClientSheet(index){
 </script>
 <script>
 // ====================== MÓDULO: COBRANÇA DO DIA (dados do banco, leitura diária do IXC) ======================
-const CD = { dados:{}, aba:'cobrar', filial:'Todas', carregadoEm:null, titulosEm:null, atualizando:false, selecaoExcluidos:new Set(), exportacoesOpa:new Map(), exportandoOpa:false,
+const CD = { dados:{}, aba:'cobrar', filial:'Todas', carregadoEm:null, titulosEm:null, atualizando:false, carregando:false, erro:null, selecaoExcluidos:new Set(), exportacoesOpa:new Map(), exportandoOpa:false,
   f:{ diasMin:1, diasMax:5, boletosMin:'', boletosMax:'', valorMin:'', valorMax:'', busca:'', incluirExcluidos:false, soComTelefone:false, preset:'pre' } };
 const CD_PRESETS = {
   pre:    { nome:'Antes do bloqueio (1 a 5 dias)', f:{diasMin:1, diasMax:5, boletosMin:'', boletosMax:'', incluirExcluidos:false} },
@@ -23511,26 +23512,53 @@ function cdFoneOpa(raw){
   return `${n.slice(0,2)} ${n.slice(2,7)}-${n.slice(7)}`;
 }
 
+function cdAguardarConsulta(tarefa, ms, controle){
+  let timer;
+  const prazo=new Promise((_,reject)=>{
+    timer=setTimeout(()=>{
+      reject(new Error('A consulta demorou mais que o esperado. Tente novamente em alguns instantes.'));
+      controle.abort();
+    },ms);
+  });
+  return Promise.race([tarefa,prazo]).finally(()=>clearTimeout(timer));
+}
 async function cdCarregar(){
+  if(CD.carregando)return;
   const sb = getSB();
   if(!sb){ toast('Banco indisponível','error'); return; }
-  const { data:{ session } } = await sb.auth.getSession();
-  if(!session){ toast('Faça login no Radar para carregar os dados do banco','error'); return; }
-  document.getElementById('loading').classList.add('show');
+  CD.carregando=true; CD.erro=null; CD._tentou=true;
+  const controle=new AbortController();
+  renderCobrancaDia();
   try{
+    const { data:{ session }, error:sessionError } = await cdAguardarConsulta(sb.auth.getSession(),15000,controle);
+    if(sessionError)throw sessionError;
+    if(!session)throw new Error('Faça login no Radar para carregar os dados do banco.');
     const tipos = ['resumo','clientes_vencidos','recolhimento_atd','quebra','suspeitos','avencer','sem_email','gerados_vencidos'];
-    const res = await Promise.all(tipos.map(t => sb.rpc('radar_cobranca',{ p_tipo:t })));
-    res.forEach((r,i)=>{ if(r.error) throw new Error(r.error.message); CD.dados[tipos[i]] = r.data; });
+    const res=new Array(tipos.length); let proximo=0;
+    const buscar=async()=>{
+      while(proximo<tipos.length&&!controle.signal.aborted){
+        const i=proximo++;
+        const r=await sb.rpc('radar_cobranca',{p_tipo:tipos[i]}).abortSignal(controle.signal);
+        if(r.error)throw new Error(r.error.message);
+        res[i]=r;
+      }
+    };
+    await cdAguardarConsulta(Promise.all([buscar(),buscar()]),30000,controle);
+    // Publica um conjunto completo: uma falha nunca mistura cargas de datas diferentes.
+    CD.dados=Object.fromEntries(tipos.map((t,i)=>[t,res[i].data]));
     CD.carregadoEm = new Date();
-    try{ const u = await sb.rpc('radar_ultima_carga_titulos'); if(!u.error) CD.titulosEm = u.data ? new Date(u.data) : null; }catch(e){}
-    try{ await cdExportacoesOpaCarregar(sb); }catch(e){ console.warn('[Radar] Histórico OPA',e); toast('Dados carregados, mas não consegui consultar o histórico de exportações para o OPA.','warn'); }
     renderCobrancaDia();
+    await Promise.all([
+      (async()=>{try{ const u = await cdAguardarConsulta(sb.rpc('radar_ultima_carga_titulos').abortSignal(controle.signal),10000,controle); if(!u.error) CD.titulosEm = u.data ? new Date(u.data) : null; }catch(e){}})(),
+      (async()=>{try{ await cdAguardarConsulta(cdExportacoesOpaCarregar(sb,controle.signal),10000,controle); }catch(e){ console.warn('[Radar] Histórico OPA',e); toast('Dados carregados, mas não consegui consultar o histórico de exportações para o OPA.','warn'); }})()
+    ]);
     cdAtvCarregar();
   }catch(e){
+    controle.abort(); CD.erro=e.message||String(e);
     console.error('[Radar] Cobrança do dia',e);
-    toast('Erro ao carregar do banco: '+e.message,'error');
+    toast('Erro ao carregar do banco: '+CD.erro,'error');
   }finally{
-    document.getElementById('loading').classList.remove('show');
+    CD.carregando=false; renderCobrancaDia();
   }
 }
 
@@ -23617,9 +23645,10 @@ function cdSelecaoAtualizar(){
   document.querySelectorAll('#cd-lista [data-cd-exige-selecao]').forEach(el=>{ el.disabled=!selecionadas.length || (el.hasAttribute('data-cd-exportar-opa') && CD.exportandoOpa); });
 }
 function cdExportacaoOpaChave(x){ return JSON.stringify([String(x.filial||''),String(x.id_cliente)]); }
-async function cdExportacoesOpaCarregar(sb=getSB()){
+async function cdExportacoesOpaCarregar(sb=getSB(),sinal){
   if(!sb) throw new Error('Banco indisponível');
-  const r=await sb.rpc('radar_cobranca_exportacoes_opa');
+  const consulta=sb.rpc('radar_cobranca_exportacoes_opa');
+  const r=await (sinal?consulta.abortSignal(sinal):consulta);
   if(r.error) throw new Error(r.error.message);
   CD.exportacoesOpa=new Map((r.data||[]).map(x=>[cdExportacaoOpaChave(x),x]));
 }
@@ -25249,8 +25278,8 @@ function renderCobrancaDia(){
   if(!r){
     box.innerHTML = `<div class="section compact-section">
       <h2 class="section-title">Cobrança do dia</h2>
-      <p style="margin:8px 0 14px">Buscando os dados de hoje...</p>
-      <button class="btn primary" onclick="cdCarregar()">Tentar de novo</button></div>`;
+      <p role="status" style="margin:8px 0 14px">${CD.erro?cdEsc(CD.erro):'Buscando os dados de cobrança. Você pode acessar os outros módulos enquanto aguarda.'}</p>
+      <button class="btn primary" onclick="cdCarregar()" ${CD.carregando?'disabled':''}>${CD.carregando?'Carregando...':'Tentar de novo'}</button></div>`;
     if(!CD._tentou){ CD._tentou = true; cdCarregar(); }
     return;
   }
@@ -25301,6 +25330,8 @@ function renderCobrancaDia(){
   const sp = { qt: spL.length, zerado: spL.filter(x=>/zerad/.test(x.problema||'')).length, acumulo: spL.filter(x=>/acumulo|acúmulo/.test(x.problema||'')).length };
   sp.alto = sp.qt - sp.zerado - sp.acumulo;
   box.innerHTML = `
+    ${CD.erro?`<div role="alert" class="section compact-section">Não foi possível atualizar: ${cdEsc(CD.erro)} Os dados anteriores foram mantidos. <button class="btn sm" onclick="cdCarregar()">Tentar novamente</button></div>`:''}
+    ${CD.carregando?'<div role="status" class="section compact-section">Consultando os dados de cobrança e o histórico de exportações...</div>':''}
     ${cdGuiaHTML()}
     <div class="section compact-section" id="cd-lista">
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
