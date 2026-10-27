@@ -17450,8 +17450,8 @@ function premRepeticoesAbrir(soMesmoServicoPago=false){
     }));
   });
   openDrill(soMesmoServicoPago?'Mesmo serviço marcado PAGO em mais de um mês':'Comissões: cliente repetido entre meses',rows,
-    ['Cód. cliente','Cliente','Mês do lançamento','Atendente na planilha','Serviço','Status na planilha','Aba da planilha','Linha da planilha','Motivo da revisão','Meses encontrados','O que conferir'],
-    {action:'Histórico completo da planilha importada, independente do filtro semanal. Cada linha informa a aba e a linha para conferência. Repetição não comprova pagamento duplicado; nenhum prêmio foi aprovado ou bloqueado automaticamente por esta consulta.'});
+    ['Cód. cliente','Cliente','Mês do lançamento','Atendente na planilha','Serviço','Status na planilha','Aba da planilha','Linha da planilha','Motivo da revisão','Meses encontrados','O que conferir'].map(k=>({k,label:k})),
+    {contextOnly:true,action:'Histórico completo da planilha importada, independente do filtro semanal. Cada linha informa a aba e a linha para conferência. Repetição não comprova pagamento duplicado; nenhum prêmio foi aprovado ou bloqueado automaticamente por esta consulta.'});
 }
 async function premDivCarregar(){
   if(PREM_DIV.carregando) return; PREM_DIV.carregando = true;
@@ -17464,8 +17464,8 @@ function premDivAbrir(filtro){
   const ls = ((PREM_DIV.dados||{}).linhas||[]).filter(x=>!filtro || x.situacao.startsWith(filtro));
   const rows = ls.map(x=>({ 'Mês':cdData(x.competencia).slice(3), 'Atendente (planilha)':x.colaborador, 'Cód. cliente':x.id_cliente, 'Cliente':x.cliente||'', 'Serviço':x.servico,
     'Status na planilha':x.pago||'', 'Valor importado (conferir)':x.valor_receber!=null?brl(x.valor_receber):'', 'Contrato IXC':x.contrato||'', 'Ativação IXC':x.ativ?cdData(x.ativ):'', 'Atendente no contrato IXC':x.colab_ixc||'', 'Situação':x.situacao }));
-  openDrill('Planilha x Sistema'+(filtro?': '+filtro:''), rows, ['Mês','Situação','Atendente (planilha)','Cód. cliente','Cliente','Serviço','Status na planilha','Contrato IXC','Ativação IXC','Atendente no contrato IXC'],
-    {action:'Comparação dos últimos 3 meses por ID do cliente e mês da ativação. Em reativação, conferir quem realizou o evento: o vendedor do contrato pode ser outra pessoa. A divergência não prova erro nem pagamento duplicado. Conferir planilha e IXC antes de corrigir qualquer dado.'});
+  openDrill('Planilha x Sistema'+(filtro?': '+filtro:''), rows, ['Mês','Situação','Atendente (planilha)','Cód. cliente','Cliente','Serviço','Status na planilha','Contrato IXC','Ativação IXC','Atendente no contrato IXC'].map(k=>({k,label:k})),
+    {contextOnly:true,action:'Comparação dos últimos 3 meses por ID do cliente e mês da ativação. Em reativação, conferir quem realizou o evento: o vendedor do contrato pode ser outra pessoa. A divergência não prova erro nem pagamento duplicado. Conferir planilha e IXC antes de corrigir qualquer dado.'});
 }
 function premGuiaRender(c){
   PREM_GUIA_ULT = c;
@@ -23272,7 +23272,7 @@ function openDrill(title, rows, cols, opts){
     };
   }
   const allCols = buildDrillCols(rows, cols);
-  DRILL_STATE = {title, sub:opts.sub || (rows.length + ' registros'), action:opts.action || '', contextHtml:opts.contextHtml || '', rows, allCols, cols:allCols.filter(c=>c.visible!==false), filtered:rows, sort:null};
+  DRILL_STATE = {title, sub:opts.sub || (rows.length + ' registros'), action:opts.action || '', contextHtml:opts.contextHtml || '', contextOnly:opts.contextOnly===true, rows, allCols, cols:allCols.filter(c=>c.visible!==false), filtered:rows, sort:null};
   document.getElementById('dd-title').textContent = title;
   document.getElementById('dd-sub').textContent = DRILL_STATE.sub;
   const aEl = document.getElementById('dd-action');
@@ -23386,6 +23386,10 @@ function drillSources(){
   return src.length?src:['Base já processada no navegador'];
 }
 function renderDrillContext(){
+  const box=document.getElementById('dd-context');
+  if(DRILL_STATE.contextOnly&&!DRILL_STATE.contextHtml)box.style.setProperty('display','none','important');
+  else box.style.removeProperty('display');
+  if(DRILL_STATE.contextOnly){box.innerHTML=DRILL_STATE.contextHtml;return;}
   const f=drillFacts();
   const sources=drillSources();
   document.getElementById('dd-context').innerHTML=`
