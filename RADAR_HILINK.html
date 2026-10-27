@@ -17420,6 +17420,39 @@ function premRenderCommercialEvolution(data){
 
 // ===== Guia da Premiação: mesma linguagem da Cobrança do Dia =====
 const PREM_DIV = { dados:null, carregando:false, erro:null };
+const PREM_REPET = { dados:null, carregando:false, erro:null };
+async function premRepeticoesCarregar(){
+  if(PREM_REPET.carregando) return; PREM_REPET.carregando=true;
+  try{
+    const sb=getSB(); if(!sb) throw new Error('Banco indisponível');
+    const r=await sb.rpc('radar_premiacao_repeticoes'); if(r.error) throw r.error;
+    PREM_REPET.dados=r.data||{}; PREM_REPET.erro=null;
+  }catch(e){ PREM_REPET.erro=e.message||String(e); }
+  finally{ PREM_REPET.carregando=false; if(PREM_GUIA_ULT) premGuiaRender(PREM_GUIA_ULT); }
+}
+function premRepeticoesAbrir(soMesmoServicoPago=false){
+  if(!PREM_REPET.dados){
+    toast(PREM_REPET.erro?'Não consegui consultar o histórico. Tentando novamente.':'Consultando os lançamentos da planilha...','warn');
+    premRepeticoesCarregar(); return;
+  }
+  const grupos=(PREM_REPET.dados.grupos||[]).filter(g=>!soMesmoServicoPago||g.mesmo_servico_pago);
+  const rows=grupos.flatMap(g=>{
+    const motivo=g.mesmo_servico_pago?'Mesmo serviço marcado PAGO em meses distintos':
+      g.meses_marcados_pagos>1?'Cliente marcado PAGO em meses distintos':
+      g.meses_marcados_pagos>0?'Cliente marcado PAGO e lançado em outro mês':'Cliente lançado em meses distintos';
+    return (g.lancamentos||[]).map(l=>({
+      'Decisão':'VALIDAR','Motivo da revisão':motivo,'Cód. cliente':g.id_cliente,'Cliente':g.cliente||'',
+      'Mês do lançamento':cdData(l.competencia).slice(3),'Atendente na planilha':l.colaborador||'',
+      'Serviço':l.servico||'','Status na planilha':l.pago||'Não informado','Filial':l.filial||'',
+      'Aba da planilha':l.aba||'','Linha da planilha':l.linha,
+      'Meses encontrados':g.competencias,
+      'O que conferir':'Comparação por ID do cliente, não por contrato ou evento. Conferir se é a mesma venda, nova venda/upgrade ou lançamento transferido de mês. PAGO é uma marcação da planilha; confirmar a folha e o comprovante antes de concluir duplicidade.'
+    }));
+  });
+  openDrill(soMesmoServicoPago?'Mesmo serviço marcado PAGO em mais de um mês':'Comissões: cliente repetido entre meses',rows,
+    ['Cód. cliente','Cliente','Mês do lançamento','Atendente na planilha','Serviço','Status na planilha','Aba da planilha','Linha da planilha','Motivo da revisão','Meses encontrados','O que conferir'],
+    {action:'Histórico completo da planilha importada, independente do filtro semanal. Cada linha informa a aba e a linha para conferência. Repetição não comprova pagamento duplicado; nenhum prêmio foi aprovado ou bloqueado automaticamente por esta consulta.'});
+}
 async function premDivCarregar(){
   if(PREM_DIV.carregando) return; PREM_DIV.carregando = true;
   try{ const sb=getSB(); const r = await sb.rpc('radar_premiacao_divergencias',{p_meses:3}); if(r.error) throw r.error; PREM_DIV.dados = r.data||{}; PREM_DIV.erro=null; }
@@ -17430,9 +17463,9 @@ let PREM_GUIA_ULT = null;
 function premDivAbrir(filtro){
   const ls = ((PREM_DIV.dados||{}).linhas||[]).filter(x=>!filtro || x.situacao.startsWith(filtro));
   const rows = ls.map(x=>({ 'Mês':cdData(x.competencia).slice(3), 'Atendente (planilha)':x.colaborador, 'Cód. cliente':x.id_cliente, 'Cliente':x.cliente||'', 'Serviço':x.servico,
-    'Status na planilha':x.pago||'', 'Valor a receber':x.valor_receber!=null?brl(x.valor_receber):'', 'Contrato IXC':x.contrato||'', 'Ativação IXC':x.ativ?cdData(x.ativ):'', 'Vendedora no IXC':x.colab_ixc||'', 'Situação':x.situacao }));
-  openDrill('Planilha x Sistema'+(filtro?': '+filtro:''), rows, ['Mês','Situação','Atendente (planilha)','Cód. cliente','Cliente','Serviço','Status na planilha','Valor a receber','Contrato IXC','Ativação IXC','Vendedora no IXC'],
-    {action:'Conferir com a atendente. Se o IXC estiver certo, corrigir a planilha; se a planilha estiver certa, corrigir o vendedor ou a data no IXC.'});
+    'Status na planilha':x.pago||'', 'Valor importado (conferir)':x.valor_receber!=null?brl(x.valor_receber):'', 'Contrato IXC':x.contrato||'', 'Ativação IXC':x.ativ?cdData(x.ativ):'', 'Atendente no contrato IXC':x.colab_ixc||'', 'Situação':x.situacao }));
+  openDrill('Planilha x Sistema'+(filtro?': '+filtro:''), rows, ['Mês','Situação','Atendente (planilha)','Cód. cliente','Cliente','Serviço','Status na planilha','Contrato IXC','Ativação IXC','Atendente no contrato IXC'],
+    {action:'Comparação dos últimos 3 meses por ID do cliente e mês da ativação. Em reativação, conferir quem realizou o evento: o vendedor do contrato pode ser outra pessoa. A divergência não prova erro nem pagamento duplicado. Conferir planilha e IXC antes de corrigir qualquer dado.'});
 }
 function premGuiaRender(c){
   PREM_GUIA_ULT = c;
@@ -17448,6 +17481,7 @@ function premGuiaRender(c){
   const lider = rk[0], segundo = rk[1];
   // divergências planilha x sistema (mês atual e anterior)
   if(!PREM_DIV.dados && !PREM_DIV.carregando && !PREM_DIV.erro) premDivCarregar();
+  if(!PREM_REPET.dados && !PREM_REPET.carregando && !PREM_REPET.erro) premRepeticoesCarregar();
   const res = (PREM_DIV.dados||{}).resumo||[];
   const conta = k => res.filter(x=>x.situacao.startsWith(k)).reduce((a,x)=>a+Number(x.qt||0),0);
   const confere = conta('Confere'), soPlan = conta('Na planilha')+conta('IXC: ativação em nome')+conta('IXC: vendedor'), soIxc = conta('No IXC');
@@ -17474,6 +17508,11 @@ function premGuiaRender(c){
   ].join('');
   const corrigir = [
     totPlan ? item({tom:'corrigir', titulo:'Planilha da equipe x IXC', numero:nf(soPlan), unid:'não batem', porque:`${pctDiv}% dos lançamentos da planilha não têm a mesma ativação no IXC: risco de pagar o que não deve.`, como:'Talitha confere com cada atendente e corrige a planilha ou o IXC.', botao:btn('Ver divergências',`onclick="premDivAbrir('')"`)}) : '',
+    item({tom:'corrigir', titulo:'Comissões: repetições entre meses',
+      numero:PREM_REPET.dados?nf(PREM_REPET.dados.clientes_repetidos):'—', unid:PREM_REPET.dados?'clientes para conferir':'',
+      porque:PREM_REPET.erro?'Não foi possível consultar o histórico agora.':PREM_REPET.dados?`Histórico completo da planilha. Clientes com o mesmo serviço marcado PAGO em meses diferentes: ${nf(PREM_REPET.dados.mesmo_servico_pago)}.`:'Consultando o histórico da planilha...',
+      como:'Mostra mês, atendente, serviço, status, aba e linha. Cliente repetido não significa comissão paga duas vezes.',
+      botao:btn(PREM_REPET.erro?'Tentar novamente':'Ver repetições',`onclick="premRepeticoesAbrir()"`)+(PREM_REPET.dados?.mesmo_servico_pago?btn('Mesmo serviço marcado PAGO',`onclick="premRepeticoesAbrir(true)"`):'')}),
     totPlan && soIxc ? item({tom:'corrigir', titulo:'Ativações que ninguém lançou', numero:nf(soIxc), unid:'no IXC', porque:'Estão no IXC em nome da atendente, mas fora da planilha. Pode ser venda esquecida ou regra que exclui.', como:'Confirmar com a atendente se deve entrar.', botao:btn('Ver lista',`onclick="premDivAbrir('No IXC')"`)}) : '',
     item({tom:'corrigir', titulo:'Não pagar', numero:nf(c.naoPagar), unid:'eventos', porque:'Vendas reprovadas, anuladas ou reativações fora da regra.', botao:btn('Ver motivos','data-prem-geral="naopagar"')})
   ].join('');
@@ -17485,7 +17524,7 @@ function premGuiaRender(c){
   const fant = (c.meta?.fantasmaRows||[]).length, curtos = (c.meta?.curtosRows||[]).length;
   if(fant) at.push(cdAlerta('warn', `<button type="button" class="cdg-link" data-prem-geral="fantasmas">${nf(fant)} ${fant===1?'atendimento fantasma':'atendimentos fantasma'}</button>: a IA tratou e a pessoa só encerrou.`));
   if(curtos) at.push(cdAlerta('warn', `<button type="button" class="cdg-link" data-prem-geral="curtos">${nf(curtos)} ${curtos===1?'atendimento':'atendimentos'} abaixo de 60s</button>.`));
-  if(totPlan && conta('IXC: ativação em nome')) at.push(cdAlerta('risk', `${nf(conta('IXC: ativação em nome'))} ${conta('IXC: ativação em nome')===1?'venda da planilha está':'vendas da planilha estão'} no IXC em nome de outra atendente.`));
+  if(totPlan && conta('IXC: ativação em nome')) at.push(cdAlerta('risk', `<button type="button" class="cdg-link r" onclick="premDivAbrir('IXC: ativação em nome')">Ver ${nf(conta('IXC: ativação em nome'))} ${conta('IXC: ativação em nome')===1?'venda':'vendas'} com atendente divergente</button>. Comparação dos últimos 3 meses; a lista mostra o mês e os nomes na planilha e no IXC.`));
   if(!at.length) at.push(cdAlerta('ok','Nada fora do normal no período.'));
   box.innerHTML = `
     <div class="cdg-resumo">
@@ -17504,6 +17543,7 @@ function premGuiaRender(c){
   box.querySelectorAll('[data-prem-geral]').forEach(el=>{ el.onclick = ()=>{ const alvo = document.querySelector(`#prem-tab-geral .prem-exec-card[data-prem-geral="${el.dataset.premGeral}"], #prem-tab-geral .prem-exec-status[data-prem-geral="${el.dataset.premGeral}"]`); if(alvo && alvo.onclick) alvo.onclick(); }; });
 }
 window.premDivAbrir = premDivAbrir;
+window.premRepeticoesAbrir = premRepeticoesAbrir;
 
 
 // ===== Barra de período e situação dos dados da Premiação (padrão Cobrança do Dia) =====
