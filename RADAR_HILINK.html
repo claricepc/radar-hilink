@@ -17507,7 +17507,7 @@ function premGuiaRender(c){
     lider ? item({tom:'agir', passo:2, titulo:'Conferir o 1º lugar antes de anunciar', numero:cdEsc(lider.nome.split(' ')[0]), porque:'O prêmio do 1º lugar sai daqui: confira se as vendas dela estão no IXC.', como:'Abrir o ranking e checar as vendas da líder.', botao:btn('Ver ranking','data-prem-geral="aprovadas"')}) : ''
   ].join('');
   const corrigir = [
-    totPlan ? item({tom:'corrigir', titulo:'Planilha da equipe x IXC', numero:nf(soPlan), unid:'não batem', porque:`${pctDiv}% dos lançamentos da planilha não têm a mesma ativação no IXC: risco de pagar o que não deve.`, como:'Talitha confere com cada atendente e corrige a planilha ou o IXC.', botao:btn('Ver divergências',`onclick="premDivAbrir('')"`)}) : '',
+    totPlan ? item({tom:'corrigir', titulo:'Planilha da equipe x IXC', numero:nf(soPlan), unid:'não batem', porque:`${pctDiv}% dos lançamentos da planilha não têm a mesma ativação no IXC: conferir antes de pagar.`, como:'Talitha confere com cada atendente e corrige no IXC o que for confirmado como erro. A planilha serve apenas para conferência até 31/12/2026.', botao:btn('Ver divergências',`onclick="premDivAbrir('')"`)}) : '',
     item({tom:'corrigir', titulo:'Comissões: repetições entre meses',
       numero:PREM_REPET.dados?nf(PREM_REPET.dados.clientes_repetidos):'—', unid:PREM_REPET.dados?'clientes para conferir':'',
       porque:PREM_REPET.erro?'Não foi possível consultar o histórico agora.':PREM_REPET.dados?`Histórico completo da planilha. Clientes com o mesmo serviço marcado PAGO em meses diferentes: ${nf(PREM_REPET.dados.mesmo_servico_pago)}.`:'Consultando o histórico da planilha...',
