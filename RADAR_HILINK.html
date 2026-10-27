@@ -23434,7 +23434,7 @@ function renderClientSheet(index){
 </script>
 <script>
 // ====================== MÓDULO: COBRANÇA DO DIA (dados do banco, leitura diária do IXC) ======================
-const CD = { dados:{}, aba:'cobrar', filial:'Todas', carregadoEm:null, titulosEm:null, atualizando:false, selecaoExcluidos:new Set(),
+const CD = { dados:{}, aba:'cobrar', filial:'Todas', carregadoEm:null, titulosEm:null, atualizando:false, selecaoExcluidos:new Set(), exportacoesOpa:new Map(), exportandoOpa:false,
   f:{ diasMin:1, diasMax:5, boletosMin:'', boletosMax:'', valorMin:'', valorMax:'', busca:'', incluirExcluidos:false, soComTelefone:false, preset:'pre' } };
 const CD_PRESETS = {
   pre:    { nome:'Antes do bloqueio (1 a 5 dias)', f:{diasMin:1, diasMax:5, boletosMin:'', boletosMax:'', incluirExcluidos:false} },
@@ -23479,6 +23479,7 @@ async function cdCarregar(){
     res.forEach((r,i)=>{ if(r.error) throw new Error(r.error.message); CD.dados[tipos[i]] = r.data; });
     CD.carregadoEm = new Date();
     try{ const u = await sb.rpc('radar_ultima_carga_titulos'); if(!u.error) CD.titulosEm = u.data ? new Date(u.data) : null; }catch(e){}
+    try{ await cdExportacoesOpaCarregar(sb); }catch(e){ console.warn('[Radar] Histórico OPA',e); toast('Dados carregados, mas não consegui consultar o histórico de exportações para o OPA.','warn'); }
     renderCobrancaDia();
     cdAtvCarregar();
   }catch(e){
@@ -23569,7 +23570,38 @@ function cdSelecaoAtualizar(){
     todos.disabled=!linhas.length;
   }
   document.querySelectorAll('#cd-lista .cd-selecao-cliente').forEach(el=>{ el.checked=!CD.selecaoExcluidos.has(el.dataset.chave); });
-  document.querySelectorAll('#cd-lista [data-cd-exige-selecao]').forEach(el=>{ el.disabled=!selecionadas.length; });
+  document.querySelectorAll('#cd-lista [data-cd-exige-selecao]').forEach(el=>{ el.disabled=!selecionadas.length || (el.hasAttribute('data-cd-exportar-opa') && CD.exportandoOpa); });
+}
+function cdExportacaoOpaChave(x){ return JSON.stringify([String(x.filial||''),String(x.id_cliente)]); }
+async function cdExportacoesOpaCarregar(sb=getSB()){
+  if(!sb) throw new Error('Banco indisponível');
+  const r=await sb.rpc('radar_cobranca_exportacoes_opa');
+  if(r.error) throw new Error(r.error.message);
+  CD.exportacoesOpa=new Map((r.data||[]).map(x=>[cdExportacaoOpaChave(x),x]));
+}
+function cdExportacaoOpaEtiqueta(chave){
+  const e=CD.exportacoesOpa.get(chave); if(!e) return '';
+  const d=new Date(e.exportado_em);
+  const dia=d.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit'});
+  const quando=d.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
+  const texto=`Exportado em ${dia} por ${e.exportado_por_nome} · cobrança no OPA`;
+  const detalhe=`Arquivo gerado em ${quando}: ${e.arquivo}. Não confirma importação no OPA nem envio da cobrança.`;
+  return `<span class="pill" style="display:inline-block;margin-top:4px;white-space:normal;line-height:1.4;font-size:10px;border-radius:4px;background:#e0f2fe;color:#075985;border:1px solid #7dd3fc" title="${cdEsc(detalhe)}">${cdEsc(texto)}</span>`;
+}
+function cdExportacaoOpaObs(x){
+  const chave=cdExportacaoOpaChave(x);
+  return `${cdEsc(x.exclusao||(!x.habilitado_cobranca?'não participa da cobrança no IXC':''))}<div class="cd-exportacao-opa-obs" data-chave="${cdEsc(chave)}">${cdExportacaoOpaEtiqueta(chave)}</div>`;
+}
+async function cdExportacaoOpaRegistrar(linhas, arquivo, filtro, lote){
+  const sb=getSB(); if(!sb) throw new Error('Banco indisponível');
+  const r=await sb.rpc('radar_cobranca_registrar_exportacao_opa',{
+    p_lote:lote, p_arquivo:arquivo, p_filtro:filtro,
+    p_clientes:linhas.map(x=>({filial:String(x.filial||''),id_cliente:String(x.id_cliente)}))
+  });
+  if(r.error) throw new Error(r.error.message);
+  if(!Array.isArray(r.data)||!r.data.length) throw new Error('Histórico não confirmado pelo banco');
+  r.data.forEach(x=>CD.exportacoesOpa.set(cdExportacaoOpaChave(x),x));
+  document.querySelectorAll('#cd-lista .cd-exportacao-opa-obs').forEach(el=>{ el.innerHTML=cdExportacaoOpaEtiqueta(el.dataset.chave); });
 }
 // mesmo filtro da lista, usado também pelos cartões (o número do cartão é sempre o da lista que ele abre)
 function cdResumoPreset(k){
@@ -25191,7 +25223,7 @@ function renderCobrancaDia(){
   let cab='', corpo='';
   if(CD.aba==='cobrar'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Boletos</th><th>Valor</th><th>Dias de atraso</th><th>Mais antigo</th><th>Obs.</th>';
-    corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.dias_atraso}</td><td>${cdData(x.vencimento_mais_antigo)}</td><td>${cdEsc(x.exclusao||(!x.habilitado_cobranca?'não participa da cobrança no IXC':''))}</td></tr>`).join('');
+    corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.dias_atraso}</td><td>${cdData(x.vencimento_mais_antigo)}</td><td>${cdExportacaoOpaObs(x)}</td></tr>`).join('');
   }else if(CD.aba==='recolhimento_atd'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>OS</th><th>Tarefa</th><th>Aberta em</th><th>Dias</th><th>Vencido</th>';
     corpo = linhas.map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.os)}</td><td>${cdEsc(x.tarefa)}</td><td>${cdData(x.abertura)}</td><td>${x.dias_aberta}</td><td>${Number(x.valor_vencido)>0?cdMoeda(x.valor_vencido):''}</td></tr>`).join('');
@@ -25233,7 +25265,7 @@ function renderCobrancaDia(){
         <label style="font-size:12px">Filial
           <select onchange="CD.filial=this.value;renderCobrancaDia()" style="margin-left:6px">${filiais.map(x=>`<option ${x===CD.filial?'selected':''}>${cdEsc(x)}</option>`).join('')}</select>
         </label>
-        ${podeOpa?`<button class="btn sm primary" data-cd-exige-selecao onclick="cdExportarOpa()">Exportar para o OPA</button>`:''}
+        ${podeOpa?`<button class="btn sm primary" data-cd-exige-selecao data-cd-exportar-opa onclick="cdExportarOpa()">${CD.exportandoOpa?'Registrando exportação...':'Exportar para o OPA'}</button>`:''}
         ${CD.aba==='avencer'?`<button class="btn sm primary" data-cd-exige-selecao onclick="cdExportarEmails()" title="Só clientes selecionados com e-mail útil, para o lembrete de vencimento">Exportar e-mails</button>`:''}
         <button class="btn sm" data-cd-exige-selecao onclick="cdExportarPlanilha()">Exportar planilha</button>
         ${cdPodeGerenciar()&&CD_ATV_TIPOS[CD.aba]&&CD.aba!=='avencer'?`<button class="btn sm" data-cd-exige-selecao onclick="cdAtvNova(CD.aba, CD.f.preset, true)" title="Direciona para as atendentes somente os clientes selecionados nesta lista">Gerar atividade com esta lista</button>`:''}
@@ -25260,23 +25292,37 @@ const cdSlug = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replac
 const cdNomeLista = () => CD.aba==='cobrar' ? (CD_PRESETS[CD.f.preset]?cdSlug(CD_PRESETS[CD.f.preset].nome):'cobranca_filtrada') : CD.aba;
 
 // OPA: um arquivo por filial (NandoNet e Pablom saem por linhas próprias e nunca se misturam com a Hilink)
-function cdExportarOpa(){
+async function cdExportarOpa(){
+  if(CD.exportandoOpa) return;
   const linhas = cdLinhasSelecionadas();
   if(!linhas.length){ toast('Selecione pelo menos um cliente para exportar.','warn'); return; }
   const grupos = {};
   linhas.forEach(x=>{
     const fone = cdFoneOpa(x.telefone);
     if(!fone || !x.nome) return;
-    (grupos[x.filial] ||= new Map()).set(fone, x.nome);
+    (grupos[x.filial] ||= new Map()).set(fone, x);
   });
   const nomes = Object.keys(grupos);
   if(!nomes.length){ toast('Nenhum contato com celular válido','warn'); return; }
   const data = String(CD.dados.resumo?.data||'').slice(0,10);
-  nomes.forEach((fil,i)=>{
-    const corpo = ['name,whatsapp', ...[...grupos[fil]].map(([fone,nome])=>`${cdCsvCampo(nome)},${fone}`)].join('\r\n');
-    setTimeout(()=>cdBaixar(`${cdSlug(fil)}_${cdNomeLista()}_${data}.csv`, corpo), i*400);
-  });
-  toast(`${nomes.length} arquivo(s) gerado(s), um por filial`,'success');
+  const paraCobranca=CD.aba==='cobrar', filtro=cdNomeLista(), lote=crypto.randomUUID();
+  let gerados=0, falhasHistorico=0;
+  CD.exportandoOpa=true; cdSelecaoAtualizar();
+  try{
+    for(const fil of nomes){
+      const corpo = ['name,whatsapp', ...[...grupos[fil]].map(([fone,x])=>`${cdCsvCampo(x.nome)},${fone}`)].join('\r\n');
+      const arquivo=`${cdSlug(fil)}_${filtro}_${data}.csv`;
+      cdBaixar(arquivo, corpo); gerados++;
+      if(paraCobranca){
+        try{ await cdExportacaoOpaRegistrar([...grupos[fil].values()],arquivo,filtro,lote); }
+        catch(e){ falhasHistorico++; console.warn('[Radar] Registro da exportação OPA',e); }
+      }
+      if(gerados<nomes.length) await new Promise(resolve=>setTimeout(resolve,400));
+    }
+    toast(`${gerados} arquivo(s) gerado(s), um por filial`,'success');
+    if(falhasHistorico) toast('Arquivo gerado, mas o histórico de exportação não foi salvo em '+falhasHistorico+' filial(is). Não há confirmação de envio no OPA.','warn');
+  }catch(e){ console.error('[Radar] Exportação OPA',e); toast('Não consegui gerar todos os arquivos. Confira os downloads antes de tentar novamente.','error'); }
+  finally{ CD.exportandoOpa=false; cdSelecaoAtualizar(); }
 }
 
 function cdExportarEmails(){
