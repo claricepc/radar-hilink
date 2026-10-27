@@ -23434,7 +23434,7 @@ function renderClientSheet(index){
 </script>
 <script>
 // ====================== MÓDULO: COBRANÇA DO DIA (dados do banco, leitura diária do IXC) ======================
-const CD = { dados:{}, aba:'cobrar', filial:'Todas', carregadoEm:null, titulosEm:null, atualizando:false,
+const CD = { dados:{}, aba:'cobrar', filial:'Todas', carregadoEm:null, titulosEm:null, atualizando:false, selecaoExcluidos:new Set(),
   f:{ diasMin:1, diasMax:5, boletosMin:'', boletosMax:'', valorMin:'', valorMax:'', busca:'', incluirExcluidos:false, soComTelefone:false, preset:'pre' } };
 const CD_PRESETS = {
   pre:    { nome:'Antes do bloqueio (1 a 5 dias)', f:{diasMin:1, diasMax:5, boletosMin:'', boletosMax:'', incluirExcluidos:false} },
@@ -23534,6 +23534,42 @@ function cdLinhasFiltradas(){
   if(busca) l = l.filter(r => String(r.nome||'').toUpperCase().includes(busca) || String(r.id_cliente)===busca);
   if(CD.aba!=='cobrar') return l;
   return cdFiltrarCobrar(l, CD.f);
+}
+function cdSelecaoChave(x){
+  return JSON.stringify([CD.aba, String(x.filial||''), String(x.id_cliente ?? x.id_contrato ?? x.id_titulo ?? x.os ?? x.nome ?? '')]);
+}
+function cdLinhasSelecionadas(linhas=cdLinhasFiltradas()){
+  return linhas.filter(x=>!CD.selecaoExcluidos.has(cdSelecaoChave(x)));
+}
+function cdSelecaoCheckbox(x){
+  const chave=cdSelecaoChave(x), checked=!CD.selecaoExcluidos.has(chave);
+  return `<td style="width:36px;text-align:center"><input type="checkbox" class="cd-selecao-cliente" data-chave="${cdEsc(chave)}" aria-label="Selecionar ${cdEsc(x.nome||'cliente '+x.id_cliente)}" ${checked?'checked':''} onchange="cdSelecionarCliente(this.dataset.chave,this.checked)"></td>`;
+}
+function cdSelecionarCliente(chave, selecionado){
+  if(selecionado) CD.selecaoExcluidos.delete(chave); else CD.selecaoExcluidos.add(chave);
+  cdSelecaoAtualizar();
+}
+function cdSelecionarTodos(selecionado){
+  cdLinhasFiltradas().forEach(x=>{
+    const chave=cdSelecaoChave(x);
+    if(selecionado) CD.selecaoExcluidos.delete(chave); else CD.selecaoExcluidos.add(chave);
+  });
+  cdSelecaoAtualizar();
+}
+function cdSelecaoAtualizar(){
+  const linhas=cdLinhasFiltradas(), selecionadas=cdLinhasSelecionadas(linhas);
+  const total=selecionadas.reduce((s,x)=>s+(Number(x.valor ?? x.valor_aberto ?? x.valor_vencido)||0),0);
+  const rotulo=['suspeitos','quebra','gerados_vencidos'].includes(CD.aba)?'títulos':'clientes';
+  const resumo=document.getElementById('cd-selecao-resumo');
+  if(resumo) resumo.textContent=`${cdNum(selecionadas.length)} de ${cdNum(linhas.length)} ${rotulo} selecionados · ${cdMoeda(total)}`;
+  const todos=document.getElementById('cd-selecao-todos');
+  if(todos){
+    todos.checked=linhas.length>0 && selecionadas.length===linhas.length;
+    todos.indeterminate=selecionadas.length>0 && selecionadas.length<linhas.length;
+    todos.disabled=!linhas.length;
+  }
+  document.querySelectorAll('#cd-lista .cd-selecao-cliente').forEach(el=>{ el.checked=!CD.selecaoExcluidos.has(el.dataset.chave); });
+  document.querySelectorAll('#cd-lista [data-cd-exige-selecao]').forEach(el=>{ el.disabled=!selecionadas.length; });
 }
 // mesmo filtro da lista, usado também pelos cartões (o número do cartão é sempre o da lista que ele abre)
 function cdResumoPreset(k){
@@ -24070,7 +24106,7 @@ function cdAtvLinhasPara(tipo, preset){
   return l;
 }
 function cdAtvNova(tipo, preset, daLista){
-  const linhas = daLista ? cdLinhasFiltradas() : cdAtvLinhasPara(tipo, preset);
+  const linhas = daLista ? cdLinhasSelecionadas() : cdAtvLinhasPara(tipo, preset);
   const tituloBase = daLista ? (CD.aba==='cobrar' && CD_PRESETS[CD.f.preset] ? CD_PRESETS[CD.f.preset].nome : CD_ABAS[CD.aba].titulo)
     : (tipo==='cobrar' ? CD_PRESETS[preset||'pre'].nome : preset==='vence_sem_email' ? 'Cadastrar e-mail de quem vence em 6 dias' : CD_ATV_TIPOS[tipo].nome);
   const filtro = daLista ? (CD.filial!=='Todas'?CD.filial+' · ':'')+(CD.f.preset||'filtro personalizado') : (preset||'');
@@ -25155,26 +25191,27 @@ function renderCobrancaDia(){
   let cab='', corpo='';
   if(CD.aba==='cobrar'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Boletos</th><th>Valor</th><th>Dias de atraso</th><th>Mais antigo</th><th>Obs.</th>';
-    corpo = linhas.slice(0,1500).map(x=>`<tr><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.dias_atraso}</td><td>${cdData(x.vencimento_mais_antigo)}</td><td>${cdEsc(x.exclusao||(!x.habilitado_cobranca?'não participa da cobrança no IXC':''))}</td></tr>`).join('');
+    corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.dias_atraso}</td><td>${cdData(x.vencimento_mais_antigo)}</td><td>${cdEsc(x.exclusao||(!x.habilitado_cobranca?'não participa da cobrança no IXC':''))}</td></tr>`).join('');
   }else if(CD.aba==='recolhimento_atd'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>OS</th><th>Tarefa</th><th>Aberta em</th><th>Dias</th><th>Vencido</th>';
-    corpo = linhas.map(x=>`<tr><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.os)}</td><td>${cdEsc(x.tarefa)}</td><td>${cdData(x.abertura)}</td><td>${x.dias_aberta}</td><td>${Number(x.valor_vencido)>0?cdMoeda(x.valor_vencido):''}</td></tr>`).join('');
+    corpo = linhas.map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.os)}</td><td>${cdEsc(x.tarefa)}</td><td>${cdData(x.abertura)}</td><td>${x.dias_aberta}</td><td>${Number(x.valor_vencido)>0?cdMoeda(x.valor_vencido):''}</td></tr>`).join('');
   }else if(CD.aba==='quebra'){
     cab = '<th>Tratamento</th><th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Contrato</th><th>Boleto aberto</th><th>Valor</th><th>Pago até</th><th>Ativação</th>';
-    corpo = linhas.map(x=>`<tr><td>${cdEsc(x.tratamento)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.id_contrato}</td><td>${cdData(x.vencimento_aberto)}</td><td>${cdMoeda(x.valor_aberto)}</td><td>${cdData(x.pago_ate)}</td><td>${cdData(x.ativacao)}</td></tr>`).join('');
+    corpo = linhas.map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.tratamento)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.id_contrato}</td><td>${cdData(x.vencimento_aberto)}</td><td>${cdMoeda(x.valor_aberto)}</td><td>${cdData(x.pago_ate)}</td><td>${cdData(x.ativacao)}</td></tr>`).join('');
   }else if(CD.aba==='avencer'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Vencimento</th><th>Faltam</th><th>Boletos</th><th>Valor</th><th>E-mail</th>';
-    corpo = linhas.slice(0,1500).map(x=>`<tr><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdData(x.vencimento)}</td><td>${x.dias_para_vencer===0?'vence hoje':x.dias_para_vencer+' dia(s)'}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.email_util?cdEsc(x.email||''):'<span style="color:#B45309;font-weight:700">sem e-mail útil</span>'}</td></tr>`).join('');
+    corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdData(x.vencimento)}</td><td>${x.dias_para_vencer===0?'vence hoje':x.dias_para_vencer+' dia(s)'}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.email_util?cdEsc(x.email||''):'<span style="color:#B45309;font-weight:700">sem e-mail útil</span>'}</td></tr>`).join('');
   }else if(CD.aba==='sem_email'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Situação</th><th>E-mail atual</th>';
-    corpo = linhas.slice(0,1500).map(x=>`<tr><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.situacao)}</td><td>${cdEsc(x.email_atual||'')}</td></tr>`).join('');
+    corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.situacao)}</td><td>${cdEsc(x.email_atual||'')}</td></tr>`).join('');
   }else if(CD.aba==='gerados_vencidos'){
     cab = '<th>Tipo</th><th>Filial</th><th>Título</th><th>Cód.</th><th>Cliente</th><th>Emitido em</th><th>Vencimento</th><th>Dias depois</th><th>Valor</th><th>O que conferir</th>';
-    corpo = linhas.map(x=>`<tr><td>${cdEsc(x.tipo)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_titulo}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdData(x.emissao)}</td><td>${cdData(x.vencimento)}</td><td>${x.dias_gerado_apos_vencimento}</td><td>${cdMoeda(x.valor)}</td><td>${cdEsc(x.o_que_conferir)}</td></tr>`).join('');
+    corpo = linhas.map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.tipo)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_titulo}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdData(x.emissao)}</td><td>${cdData(x.vencimento)}</td><td>${x.dias_gerado_apos_vencimento}</td><td>${cdMoeda(x.valor)}</td><td>${cdEsc(x.o_que_conferir)}</td></tr>`).join('');
   }else{
     cab = '<th>Problema</th><th>Filial</th><th>Título</th><th>Cód.</th><th>Cliente</th><th>Vencimento</th><th>Valor</th>';
-    corpo = linhas.map(x=>`<tr><td>${cdEsc(x.problema)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_titulo}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdData(x.vencimento)}</td><td>${cdMoeda(x.valor)}</td></tr>`).join('');
+    corpo = linhas.map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.problema)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_titulo}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdData(x.vencimento)}</td><td>${cdMoeda(x.valor)}</td></tr>`).join('');
   }
+  cab = '<th style="width:36px;text-align:center"><input id="cd-selecao-todos" type="checkbox" aria-label="Selecionar todos os clientes desta lista filtrada" onchange="cdSelecionarTodos(this.checked)"></th>'+cab;
   const podeOpa = CD.aba!=='suspeitos' && CD.aba!=='quebra' && CD.aba!=='gerados_vencidos' && CD.aba!=='avencer';
   const semFone = podeOpa ? linhas.filter(x=>!cdFoneOpa(x.telefone)).length : 0;
   const conferido = CD.titulosEm || CD.carregadoEm;
@@ -25196,18 +25233,20 @@ function renderCobrancaDia(){
         <label style="font-size:12px">Filial
           <select onchange="CD.filial=this.value;renderCobrancaDia()" style="margin-left:6px">${filiais.map(x=>`<option ${x===CD.filial?'selected':''}>${cdEsc(x)}</option>`).join('')}</select>
         </label>
-        ${podeOpa?`<button class="btn sm primary" onclick="cdExportarOpa()">Exportar para o OPA</button>`:''}
-        ${CD.aba==='avencer'?`<button class="btn sm primary" onclick="cdExportarEmails()" title="Só clientes com e-mail útil, para o lembrete de vencimento">Exportar e-mails</button>`:''}
-        <button class="btn sm" onclick="cdExportarPlanilha()">Exportar planilha</button>
-        ${cdPodeGerenciar()&&CD_ATV_TIPOS[CD.aba]&&CD.aba!=='avencer'?`<button class="btn sm" onclick="cdAtvNova(CD.aba, CD.f.preset, true)" title="Direciona para as atendentes exatamente a lista que está na tela, com os filtros">Gerar atividade com esta lista</button>`:''}
+        ${podeOpa?`<button class="btn sm primary" data-cd-exige-selecao onclick="cdExportarOpa()">Exportar para o OPA</button>`:''}
+        ${CD.aba==='avencer'?`<button class="btn sm primary" data-cd-exige-selecao onclick="cdExportarEmails()" title="Só clientes selecionados com e-mail útil, para o lembrete de vencimento">Exportar e-mails</button>`:''}
+        <button class="btn sm" data-cd-exige-selecao onclick="cdExportarPlanilha()">Exportar planilha</button>
+        ${cdPodeGerenciar()&&CD_ATV_TIPOS[CD.aba]&&CD.aba!=='avencer'?`<button class="btn sm" data-cd-exige-selecao onclick="cdAtvNova(CD.aba, CD.f.preset, true)" title="Direciona para as atendentes somente os clientes selecionados nesta lista">Gerar atividade com esta lista</button>`:''}
         <button class="btn sm primary" onclick="cdAtualizarPagamentos()" ${CD.atualizando?'disabled':''} title="Busca agora no IXC os títulos em aberto e tira da lista quem já pagou">${CD.atualizando?'Buscando no IXC...':'Atualizar pagamentos agora'}</button>
       </div>
       ${CD.aba==='cobrar'?cdPainelFiltros():`<div class="cd-filtros"><label>Cliente <input type="text" value="${cdEsc(CD.f.busca)}" placeholder="nome ou código" style="width:150px" onchange="cdSetFiltro('busca', this.value)"></label></div>`}
       <div class="cd-passos"><span>1. Escolha a lista e os filtros</span><span>2. Confira o resultado</span><span>3. Exporte para o OPA e suba o arquivo de cada filial</span></div>
       <p style="font-size:12px;margin:8px 0">${CD_ABAS[CD.aba].desc}</p>
       <div class="cd-resultado"><strong>${cdNum(linhas.length)}</strong> ${CD.aba==='suspeitos'||CD.aba==='quebra'||CD.aba==='gerados_vencidos'?'títulos':'clientes'} na lista, ${CD.aba==='sem_email'?'para cadastrar o e-mail':`<strong>${cdMoeda(totalValor)}</strong> ${CD.aba==='avencer'?'a vencer':'em aberto'}`}${podeOpa&&semFone?`. ${semFone} sem celular válido ficam fora do arquivo do OPA`:''}.${linhas.length>1500&&['cobrar','avencer','sem_email'].includes(CD.aba)?' Mostrando os primeiros 1.500 na tela; a exportação leva todos.':''}</div>
-      <div class="tbl-wrap" style="max-height:520px"><table class="decision-table"><thead><tr>${cab}</tr></thead><tbody>${corpo||'<tr><td colspan="9">Nenhum cliente com esses filtros.</td></tr>'}</tbody></table></div>
+      <div class="cd-filtros" style="margin-bottom:10px"><strong id="cd-selecao-resumo" role="status" aria-live="polite"></strong><button type="button" class="btn sm" onclick="cdSelecionarTodos(true)">Selecionar todos</button><button type="button" class="btn sm" onclick="cdSelecionarTodos(false)">Desmarcar todos</button><span>Exportação e atividade: somente selecionados.</span></div>
+      <div class="tbl-wrap" style="max-height:520px"><table class="decision-table"><thead><tr>${cab}</tr></thead><tbody>${corpo||'<tr><td colspan="11">Nenhum cliente com esses filtros.</td></tr>'}</tbody></table></div>
     </div>`;
+  cdSelecaoAtualizar();
 }
 
 function cdBaixar(nome, texto){
@@ -25222,7 +25261,8 @@ const cdNomeLista = () => CD.aba==='cobrar' ? (CD_PRESETS[CD.f.preset]?cdSlug(CD
 
 // OPA: um arquivo por filial (NandoNet e Pablom saem por linhas próprias e nunca se misturam com a Hilink)
 function cdExportarOpa(){
-  const linhas = cdLinhasFiltradas();
+  const linhas = cdLinhasSelecionadas();
+  if(!linhas.length){ toast('Selecione pelo menos um cliente para exportar.','warn'); return; }
   const grupos = {};
   linhas.forEach(x=>{
     const fone = cdFoneOpa(x.telefone);
@@ -25240,14 +25280,15 @@ function cdExportarOpa(){
 }
 
 function cdExportarEmails(){
-  const linhas = cdLinhasFiltradas().filter(x=>x.email_util && x.email);
+  const selecionadas = cdLinhasSelecionadas();
+  const linhas = selecionadas.filter(x=>x.email_util && x.email);
   if(!linhas.length){ toast('Ninguém com e-mail útil nesta lista','warn'); return; }
   const corpo = ['nome;email;vencimento;valor;filial', ...linhas.map(x=>[x.nome, x.email, cdData(x.vencimento), String(x.valor).replace('.',','), x.filial].map(cdCsvCampo).join(';'))].join('\r\n');
   cdBaixar(`lembrete_email_${cdSlug(CD.filial)}_${String(CD.dados.resumo?.data||'').slice(0,10)}.csv`, corpo);
-  toast(`${linhas.length} e-mails exportados. ${cdLinhasFiltradas().length - linhas.length} clientes sem e-mail útil ficaram de fora.`,'success');
+  toast(`${linhas.length} e-mails exportados. ${selecionadas.length - linhas.length} clientes selecionados sem e-mail útil ficaram de fora.`,'success');
 }
 function cdExportarPlanilha(){
-  const linhas = cdLinhasFiltradas();
+  const linhas = cdLinhasSelecionadas();
   if(!linhas.length){ toast('Nada para exportar','warn'); return; }
   const cols = Object.keys(linhas[0]);
   const corpo = [cols.join(';'), ...linhas.map(x=>cols.map(c=>cdCsvCampo(x[c])).join(';'))].join('\r\n');
