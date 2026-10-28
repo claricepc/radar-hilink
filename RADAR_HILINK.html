@@ -2795,6 +2795,7 @@ kbd{font-family:inherit;font-size:10px;border:1px solid currentColor;border-radi
 .cdg-modal-box .cdg-nota b{color:#F2F5F8}
 .cdg-campo{display:flex;flex-direction:column;gap:4px;font-size:11.5px;font-weight:700;color:#B4C2D0;margin-bottom:10px}
 .cdg-campo input,.cdg-campo select{background:#0B1B2B;color:#F2F5F8;border:1px solid rgba(90,150,220,.55);border-radius:7px;padding:8px 10px;font-size:13px;font-weight:500}
+#cd-prorroga-motivo{box-sizing:border-box;width:100%;resize:vertical;background:#0B1B2B;color:#F2F5F8;border:1px solid rgba(90,150,220,.55);border-radius:7px;padding:8px 10px;font:inherit;min-height:80px}
 .cdg-campos2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:480px){.cdg-campos2{grid-template-columns:1fr}}
 .cdg-modal-acoes{display:flex;justify-content:flex-end;gap:8px}
@@ -24163,6 +24164,7 @@ function cdAtvPainelHTML(){
       ${pessoas?`<div class="cdg-nota" style="margin:0">Tratados por: ${pessoas}</div>`:''}
       <div class="cdg-atv-acoes">
         <button type="button" class="btn sm primary" onclick="cdAtvAbrir(${a.id})" title="Ver os clientes desta atividade e o que já foi registrado">Abrir atividade</button>
+        <button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})" title="Define um novo prazo com justificativa registrada no histórico">Prorrogar prazo</button>
         <button type="button" class="btn sm ${sla.c==='risk'?'cdg-destaque':''}" onclick="cdAtvTrocarModal(${a.id})" title="Passa a atividade para outra atendente e, se quiser, dá um novo prazo">Trocar responsável</button>
         <span style="flex:1"></span>
         <button type="button" class="cdg-mini" onclick="cdAtvEncerrarModal(${a.id})" title="Use quando o trabalho terminou. Fica no histórico.">Encerrar</button>
@@ -24377,6 +24379,51 @@ function cdAtvTrocarModal(id){
     <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
       <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="cdAtvTrocar(${id})">Trocar</button></div>`);
 }
+function cdAtvProrrogarModal(id){
+  if(!cdPodeGerenciar()){toast('Somente gestores e liderança podem prorrogar tarefas.','warn');return;}
+  const a=(CD.atv.lista||[]).find(x=>x.id===id);if(!a||a.status!=='aberta')return;
+  const hoje=cdHoje(), dia=new Date((a.prazo&&a.prazo>hoje?a.prazo:hoje)+'T12:00:00');dia.setDate(dia.getDate()+1);
+  const sugestao=[dia.getFullYear(),String(dia.getMonth()+1).padStart(2,'0'),String(dia.getDate()).padStart(2,'0')].join('-');
+  CD.atv.prorrogacao={id,prazo:a.prazo||null,hora:a.prazo_hora||'18:00'};
+  cdModal(`<h3>Prorrogar prazo</h3>
+    <p class="cdg-nota"><b>${cdEsc(a.titulo)}</b><br>Prazo atual: ${a.prazo?cdEsc(cdPrazoTxt(a)):'sem prazo definido'}.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><label class="cdg-campo" style="max-width:200px">Nova data<input id="cd-prorroga-dia" type="date" min="${hoje}" value="${sugestao}" required></label>
+    <label class="cdg-campo" style="max-width:130px">Até as<input id="cd-prorroga-hora" type="time" value="${cdEsc(a.prazo_hora||'18:00')}" required></label></div>
+    <label class="cdg-campo">Justificativa obrigatória<textarea id="cd-prorroga-motivo" rows="3" maxlength="2000" required placeholder="Por que esta tarefa precisa de mais prazo?"></textarea></label>
+    <p class="cdg-nota">O prazo anterior, o novo prazo, a justificativa e quem autorizou ficarão no histórico. Os itens feitos e a responsável serão mantidos.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button><button type="button" class="btn sm primary" id="cd-prorroga-salvar" onclick="cdAtvProrrogar(${id})">Confirmar prorrogação</button></div>`);
+}
+async function cdAtvProrrogar(id){
+  if(!cdPodeGerenciar())return;
+  const antes=CD.atv.prorrogacao,b=document.getElementById('cd-prorroga-salvar');if(!antes||antes.id!==id||!b||b.disabled)return;
+  const prazo=document.getElementById('cd-prorroga-dia')?.value||'',hora=document.getElementById('cd-prorroga-hora')?.value||'';
+  const motivo=(document.getElementById('cd-prorroga-motivo')?.value||'').trim();
+  if(!motivo||motivo.length>2000){toast('Informe a justificativa, com até 2.000 caracteres.','warn');return;}
+  const novo=new Date(prazo+'T'+hora+':00');
+  if(!prazo||!hora||isNaN(novo)||novo<=new Date()){toast('Escolha uma data e um horário no futuro.','warn');return;}
+  if(antes.prazo&&novo<=new Date(antes.prazo+'T'+antes.hora+':00')){toast('O novo prazo deve ser maior que o prazo atual.','warn');return;}
+  b.disabled=true;b.textContent='Salvando...';
+  try{
+    const r=await cdAtvRpc('radar_atv_prorrogar',{p_atividade:id,p_prazo:prazo,p_hora:hora,p_justificativa:motivo,p_prazo_anterior:antes.prazo,p_hora_anterior:antes.hora});
+    if(!r.ok){toast(r.motivo||'Não foi possível prorrogar.','warn');return;}
+    const a=(CD.atv.lista||[]).find(x=>x.id===id);if(a){a.prazo=r.prazo;a.prazo_hora=r.prazo_hora;}
+    CD.atv.prorrogacao=null;cdModal(null);renderCobrancaDia();toast('Prazo prorrogado. Justificativa registrada no histórico.','success');await cdAtvCarregar();
+  }catch(e){toast('Não foi possível prorrogar: '+e.message,'error');}
+  finally{if(b.isConnected){b.disabled=false;b.textContent='Confirmar prorrogação';}}
+}
+async function cdAtvPrazosModal(id){
+  const a=(CD.atv.lista||[]).find(x=>x.id===id);if(!a)return;
+  cdModal(`<h3>Histórico de prazos</h3><p role="status">Consultando: ${cdEsc(a.titulo)}</p><div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Fechar</button></div>`);
+  const modal=document.getElementById('cd-conf-modal'),conteudo=modal.innerHTML;
+  try{
+    const eventos=await cdAtvRpc('radar_atv_prorrogacoes',{p_atividade:id});
+    if(!modal.isConnected||modal.innerHTML!==conteudo)return;
+    cdModal(`<h3>Histórico de prazos</h3><p class="cdg-nota"><b>${cdEsc(a.titulo)}</b></p>
+      ${eventos.length?eventos.map(e=>`<div style="padding:12px 0;border-bottom:1px solid var(--g-line,#dbe4ee)"><b>${cdEsc(e.por_nome||'Gestão')}</b> · ${cdEsc(new Date(e.em).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}))}<p style="white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0">${cdEsc(e.descricao)}</p></div>`).join(''):'<p>Nenhuma prorrogação registrada para esta tarefa.</p>'}
+      <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Fechar</button></div>`);
+  }catch(e){if(modal.isConnected&&modal.innerHTML===conteudo){cdModal(null);toast(e.message,'error');}}
+}
+Object.assign(window,{cdAtvProrrogarModal,cdAtvProrrogar,cdAtvPrazosModal});
 async function cdAtvTrocar(id){
   const sel = document.querySelector('input[name="cd-troca-p"]:checked');
   if(!sel){ toast('Escolha quem vai tratar.','warn'); return; }
@@ -24585,7 +24632,8 @@ function cdAreaFocoHTML(){
         <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdPrazoTxt(a):''}</div></div>
       <button type="button" class="btn sm" onclick="cdAtvItensCarregar()">Atualizar</button>
       <button type="button" class="btn sm" onclick="CD.atv.modo='lista';renderCobrancaDia()" title="Ver todos os clientes numa lista">Ver em lista</button>
-      ${a.status==='aberta'&&ger?`<button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
+      ${a.status==='aberta'&&ger?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
+      <button type="button" class="btn sm" onclick="cdAtvPrazosModal(${a.id})">Histórico de prazos</button>
       ${ger?`<button type="button" class="btn sm" onclick="cdAtvRemoverModal(${a.id})">Remover</button>`:''}
     </div>
     ${cdIniciarFaixa(a)}<div class="cdf-prog"><div><b>${cdNum(feitos)}</b> de ${cdNum(its.length)} feitos · <b>${cdNum(cont('tratar'))}</b> pendentes${cont('aguardando')?` · <b>${cdNum(cont('aguardando'))}</b> em andamento`:''}${pessoas?` · Feitos por pessoa: ${pessoas}`:''}</div>
@@ -24702,7 +24750,8 @@ function cdAreaListaHTML(){
         <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdPrazoTxt(a):''} · criada por ${cdEsc(a.criado_por_nome||'-')}</div></div>
       ${a.status==='aberta'?`<button type="button" class="btn sm primary" onclick="cdAtvProximo()">Pegar o próximo cliente</button>`:''}
       <button type="button" class="btn sm" onclick="cdAtvItensCarregar()">Atualizar</button>
-      ${a.status==='aberta'&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
+      ${a.status==='aberta'&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
+      <button type="button" class="btn sm" onclick="cdAtvPrazosModal(${a.id})">Histórico de prazos</button>
       ${cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvRemoverModal(${a.id})" title="Para atividade criada por engano">Remover</button>`:''}
       ${a.status==='aberta'&&cdPodeGerenciar()?`<button type="button" class="btn sm" id="cd-atv-encerrar" onclick="cdAtvEncerrar(${a.id})" title="Só quem criou a atividade ou a gestão pode encerrar">Encerrar atividade</button>`:''}
     </div>`;
