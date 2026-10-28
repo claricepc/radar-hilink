@@ -26906,6 +26906,11 @@ async function ccIxcAbrir(){
     renderCarneCorreios();
     const e=CC_IXC.execucao;
     if(e&&(e.status==='buscando'||e.status==='pedido'))ccIxcAcompanhar();
+    else{
+      // leitura com mais de 15 min: busca sozinha no IXC, sem depender do clique
+      const ult=e&&(e.fim_em||e.pedido_em);
+      if(!ult||(Date.now()-new Date(ult).getTime())>15*60000){ toast('Atualizando os Correios direto do IXC...','success'); ccIxcBuscar(); }
+    }
   }catch(err){console.error('[Correios IXC]',err);ccIxcInfo('<span style="color:#ef4444">Não consegui ler os dados do IXC: '+(err.message||err)+'</span>');}
 }
 async function ccIxcBuscar(){
