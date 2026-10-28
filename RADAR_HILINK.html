@@ -11133,7 +11133,7 @@ function buildPremiacaoHistoryAudit(rawContracts,cols){
     };
   };
 }
-async function processCampaign(){
+async function processCampaign(destino){
   document.getElementById('loading').classList.add('show');
   await new Promise(r=>setTimeout(r,50));
   try{
@@ -11164,7 +11164,8 @@ async function processCampaign(){
     renderGlobalFilters();
     document.getElementById('bm-seg').textContent='-';
     document.getElementById('bm-disp').textContent='-';
-    if(hasBase&&(hasLogins||hasFibra))go('tecnica');
+    if(destino)go(destino);
+    else if(hasBase&&(hasLogins||hasFibra))go('tecnica');
     else if(hasTech&&!hasBase)go('tecnica');
     else if(hasAcs&&!hasBase)go('tecnica');
     else if(hasAtivos)go('tecnica');
@@ -18801,19 +18802,21 @@ function currentPremiacoesFilter(opts={}){
   const dtIni=document.getElementById('prem-dtini')?.value||'';
   const dtFim=document.getElementById('prem-dtfim')?.value||'';
   const globalRange=getGlobalDateRange();
+  const inicio=dtIni?new Date(dtIni+'T00:00:00'):null;
+  const fim=dtFim?new Date(dtFim+'T23:59:59'):null;
+  // As escolhas da tela permanecem iguais durante este cruzamento.
+  const filtros=[
+    ['prem-decisao','Decisão premiação'],['prem-status','Status premiação'],
+    ['prem-vendedor','Vendedor'],['prem-motivo','Motivo de inclusão'],
+    ['prem-validacao','Validação histórico premiação'],['prem-risco','Risco auditoria premiação'],
+    ['prem-evidencia','Evidência pagamento premiação'],['prem-filial','Filial']
+  ].map(([id,campo])=>({campo,valores:new Set(genericCheckedValues(id))}));
   return rows.filter(r=>{
     const ativ=premDataAtivacaoRow(r);
     if(globalRange.ativo&&!isDateWithinGlobalRange(ativ))return false;
-    if(dtIni&&(!ativ||ativ<new Date(dtIni+'T00:00:00')))return false;
-    if(dtFim&&(!ativ||ativ>new Date(dtFim+'T23:59:59')))return false;
-    if(!genericFilterHas('prem-decisao',r['Decisão premiação']))return false;
-    if(!genericFilterHas('prem-status',r['Status premiação']))return false;
-    if(!genericFilterHas('prem-vendedor',r['Vendedor']))return false;
-    if(!genericFilterHas('prem-motivo',r['Motivo de inclusão']))return false;
-    if(!genericFilterHas('prem-validacao',r['Validação histórico premiação']))return false;
-    if(!genericFilterHas('prem-risco',r['Risco auditoria premiação']))return false;
-    if(!genericFilterHas('prem-evidencia',r['Evidência pagamento premiação']))return false;
-    if(!genericFilterHas('prem-filial',filialNome(r.Filial)))return false;
+    if(inicio&&(!ativ||ativ<inicio))return false;
+    if(fim&&(!ativ||ativ>fim))return false;
+    if(filtros.some(f=>f.valores.size&&!f.valores.has(String((f.campo==='Filial'?filialNome(r.Filial):r[f.campo])||''))))return false;
     if(q&&!['Cliente','ID Contrato','Login','Vendedor ID','Vendedor Nome','Vendedor','Decisão premiação','Leitura simples','Motivo validação manual','Motivo de inclusão','Motivo sugerido pelo histórico','Validação histórico premiação','Status premiação','Plano Nome','Bairro','Cidade','Filial'].some(c=>String(r[c]||'').toLowerCase().includes(q)))return false;
     return true;
   });
@@ -25257,8 +25260,7 @@ async function ixcCargaUsar(destino){
     const bp=document.getElementById('btn-process'); if(bp) bp.disabled = !hasAnyRawReport();
     renderModuleUnlocks();
     toast('Dados do IXC carregados. Analisando…','success');
-    await processCampaign();
-    if(STATE.processed && typeof go==='function') go(destino||'premiacoes');
+    await processCampaign(destino||'premiacoes');
   }catch(e){ console.error(e); toast('Erro ao carregar do IXC: '+e.message,'error'); }
   finally{ IXC_CARGA.carregando=false; document.getElementById('loading').classList.remove('show'); ixcCargaRender(); }
 }
