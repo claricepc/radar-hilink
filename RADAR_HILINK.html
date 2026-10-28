@@ -11519,6 +11519,7 @@ function parseClientRating(v){
   return null;
 }
 function premSafeRating(v){
+  if(v===null||v===undefined||v==='')return null;
   const n=Number(v);
   return Number.isFinite(n)&&n>=0&&n<=5?n:null;
 }
@@ -17250,7 +17251,7 @@ function renderPremOpaAuditCompact(meta,handlers){
   };
 }
 function premAvg(arr,selector){
-  const vals=(arr||[]).map(selector).map(Number).filter(Number.isFinite);
+  const vals=(arr||[]).map(selector).filter(v=>v!==null&&v!==undefined&&v!=='').map(Number).filter(Number.isFinite);
   return vals.length?vals.reduce((s,v)=>s+v,0)/vals.length:null;
 }
 function premRatingAvg(arr,selector){
@@ -25239,6 +25240,8 @@ const IXC_CARGA_TIPOS = [
   { key:'logins',       base:'logins',           label:'Conexões dos clientes (logins)' },
   { key:'alteracoes',   base:'alteracoes_plano', label:'Alterações contratuais' },
   { key:'fibra',        base:'fibra',            label:'ONUs da fibra (sinal, temperatura, quedas)' },
+  { key:'comodato',     base:'os',               label:'Ordens de Serviço abertas' },
+  { key:'opa',          base:'opa',              label:'Atendimentos do OPA (últimos 120 dias)' },
 ];
 function ixcFmtDataHora(v){ if(!v) return '—'; const d=new Date(v); return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function ixcEsc(s){ return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -25270,7 +25273,7 @@ function ixcCargaCardHTML(){
     <div class="ixc-carga-head">
       <div>
         <h3>Carregar direto do IXC</h3>
-        <p>Contratos, recebimentos, logins e alterações saem do IXC sem exportar CSV. OPA e Histórico de Pagamentos continuam por upload. Para fechar a premiação de um mês, use do 1º dia do mês das ativações até pelo menos 45 dias depois do fim desse mês.</p>
+        <p>Contratos, recebimentos, logins, alterações, ONUs da fibra e Ordens de Serviço saem do IXC, e os atendimentos saem do OPA, sem exportar CSV. ACS e Histórico de Pagamentos continuam por upload. Para fechar a premiação de um mês, use do 1º dia do mês das ativações até pelo menos 45 dias depois do fim desse mês.</p>
       </div>
       <div class="ixc-carga-acoes">
         <label class="ixc-carga-data">Vencimentos de<input type="date" id="ixc-venc-de" value="${IXC_CARGA.de||ixcPadraoDe()}"></label>

@@ -17567,8 +17567,7 @@ function premBarraRender(){
         ${cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="ixcCargaAtualizar()" ${andamento?'disabled':''}>${andamento?'Lendo o IXC (cerca de 20 min)...':'Atualizar dados do IXC'}</button>`:''}
       </div>
     </div>
-    ${cdAlerta('warn','<b>Planilha da equipe:</b> até <b>31/12/2026</b> ela é usada só como conferência extra, para achar diferenças com o IXC. A partir de 01/01/2027 a premiação é paga somente com base nos dados do IXC e do Radar. Quem quiser pode continuar com a planilha para controle pessoal, mas ela não vale para pagamento.')}
-    ${(STATE.raw?.opa||[]).some(r=>r&&r.Fonte==='API OPA')?cdAlerta('info','<b>Atendimento direto do OPA:</b> volume, avaliação do cliente, avaliação da Rai, motivos e etiquetas vêm automáticos da API do OPA. <b>TME e TMA reais ainda não</b>: a API não informa quando a atendente assumiu nem o tempo em espera. Até isso ser liberado pelo OPA, o tempo mostrado é o tempo total do atendimento (abertura até encerramento), que inclui fila e horário fora do expediente. Para premiar por TME, suba o relatório do OPA em Carregar Relatórios.'):''}`;
+    ${cdAlerta('warn','<b>Planilha da equipe:</b> até <b>31/12/2026</b> ela é usada só como conferência extra, para achar diferenças com o IXC. A partir de 01/01/2027 a premiação é paga somente com base nos dados do IXC e do Radar. Quem quiser pode continuar com a planilha para controle pessoal, mas ela não vale para pagamento.')}`;
   const sel=document.getElementById('prem-barra-filial'); if(sel) sel.value=filVal;
 }
 Object.assign(window,{premPeriodo, premAplicarDatas, premBarraRender});
