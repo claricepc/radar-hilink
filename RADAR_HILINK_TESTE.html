@@ -11512,6 +11512,7 @@ function parseClientRating(v){
   return null;
 }
 function premSafeRating(v){
+  if(v===null||v===undefined||v==='')return null;
   const n=Number(v);
   return Number.isFinite(n)&&n>=0&&n<=5?n:null;
 }
@@ -17243,7 +17244,7 @@ function renderPremOpaAuditCompact(meta,handlers){
   };
 }
 function premAvg(arr,selector){
-  const vals=(arr||[]).map(selector).map(Number).filter(Number.isFinite);
+  const vals=(arr||[]).map(selector).filter(v=>v!==null&&v!==undefined&&v!=='').map(Number).filter(Number.isFinite);
   return vals.length?vals.reduce((s,v)=>s+v,0)/vals.length:null;
 }
 function premRatingAvg(arr,selector){
