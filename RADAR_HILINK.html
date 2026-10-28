@@ -25262,8 +25262,21 @@ async function ixcCargaStatus(){
 }
 function ixcCargaEmAndamento(st){
   const ult = st && st.ultima_atividade ? new Date(st.ultima_atividade) : null;
-  return !!(ult && (Date.now()-ult.getTime()) < 120000);
+  const ped = st && st.ultima_atualizacao ? new Date(st.ultima_atualizacao.pedido_em) : null;
+  return !!((ult && (Date.now()-ult.getTime()) < 120000) || (ped && (Date.now()-ped.getTime()) < 20*60000));
 }
+async function radarAtualizarTudo(){
+  const sb=getSB(); if(!sb) return;
+  const de = document.getElementById('ixc-venc-de')?.value || ixcPadraoDe();
+  const ate = document.getElementById('ixc-venc-ate')?.value || ixcPadraoAte();
+  if(de > ate){ toast('A data inicial precisa ser antes da final.','warn'); return; }
+  IXC_CARGA.de = de; IXC_CARGA.ate = ate;
+  const r = await sb.rpc('radar_atualizar_tudo',{ p_venc_de:de, p_venc_ate:ate });
+  if(r.error){ toast(r.error.message,'error'); return; }
+  toast('Atualização pedida: IXC, OPA e planilha. Leva cerca de 20 minutos.','success');
+  setTimeout(ixcCargaRender, 8000);
+}
+window.radarAtualizarTudo=radarAtualizarTudo;
 function ixcCargaCardHTML(){
   const st = IXC_CARGA.status || {};
   const tipos = st.tipos || {};
@@ -25272,25 +25285,25 @@ function ixcCargaCardHTML(){
   const linhas = IXC_CARGA_TIPOS.map(t=>{
     const x = tipos[t.base];
     return `<li><span>${t.label}</span><strong>${x ? Number(x.registros).toLocaleString('pt-BR')+' linhas' : 'ainda não carregado'}</strong><em>${x ? 'atualizado em '+ixcFmtDataHora(x.atualizado_em) : ''}</em></li>`;
-  }).join('');
+  }).join('') + (()=>{ const x = tipos.planilha; return `<li><span>Planilha da equipe (premiação)</span><strong>${x ? Number(x.registros).toLocaleString('pt-BR')+' linhas' : 'ainda não carregada'}</strong><em>${x ? 'atualizada em '+ixcFmtDataHora(x.atualizado_em) : ''}</em></li>`; })();
   const per = ped && ped.parametros ? `Recebimentos com vencimento de ${new Date(ped.parametros.venc_de+'T12:00').toLocaleDateString('pt-BR')} a ${new Date(ped.parametros.venc_ate+'T12:00').toLocaleDateString('pt-BR')}.` : '';
   const erros = (st.erros||[]).length ? `<p class="ixc-carga-erro">Erro na última leitura: ${ixcEsc(st.erros[0].erro)}</p>` : '';
   const pronto = IXC_CARGA_TIPOS.slice(0,3).every(t=>tipos[t.base] && tipos[t.base].registros>0);
   return `
     <div class="ixc-carga-head">
       <div>
-        <h3>Carregar direto do IXC</h3>
-        <p>Contratos, recebimentos, logins, alterações, ONUs da fibra e Ordens de Serviço saem do IXC, e os atendimentos saem do OPA, sem exportar CSV. ACS e Histórico de Pagamentos continuam por upload. Para fechar a premiação de um mês, use do 1º dia do mês das ativações até pelo menos 45 dias depois do fim desse mês.</p>
+        <h3>Dados automáticos: IXC, OPA e planilha</h3>
+        <p>Contratos, recebimentos, logins, alterações, ONUs da fibra e Ordens de Serviço saem do IXC, e os atendimentos saem do OPA, sem exportar CSV. A planilha da equipe é lida quando você clica em Atualizar todos os dados. ACS e Histórico de Pagamentos continuam por upload. Para fechar a premiação de um mês, use do 1º dia do mês das ativações até pelo menos 45 dias depois do fim desse mês.</p>
       </div>
       <div class="ixc-carga-acoes">
         <label class="ixc-carga-data">Vencimentos de<input type="date" id="ixc-venc-de" value="${IXC_CARGA.de||ixcPadraoDe()}"></label>
         <label class="ixc-carga-data">até<input type="date" id="ixc-venc-ate" value="${IXC_CARGA.ate||ixcPadraoAte()}"></label>
-        <button class="btn outline" type="button" onclick="ixcCargaAtualizar()" ${andamento||IXC_CARGA.carregando?'disabled':''}>${andamento?'Leitura do IXC em andamento…':'Atualizar dados do IXC'}</button>
-        <button class="btn" type="button" onclick="ixcCargaUsar()" ${!pronto||andamento||IXC_CARGA.carregando?'disabled':''}>Usar dados do IXC</button>
+        <button class="btn outline" type="button" onclick="radarAtualizarTudo()" ${andamento||IXC_CARGA.carregando?'disabled':''}>${andamento?'Atualização em andamento…':'Atualizar todos os dados'}</button>
+        <button class="btn" type="button" onclick="ixcCargaUsar()" ${!pronto||andamento||IXC_CARGA.carregando?'disabled':''}>Usar dados atualizados</button>
       </div>
     </div>
     <ul class="ixc-carga-lista">${linhas}</ul>
-    <p class="ixc-carga-nota">${andamento?'O IXC está sendo lido agora. Leva cerca de 20 minutos; esta área se atualiza sozinha. ':''}${per}${ped?' Último pedido por '+ixcEsc(ped.pedido_por_nome||'')+' em '+ixcFmtDataHora(ped.pedido_em)+'.':''}</p>
+    <p class="ixc-carga-nota">${andamento?'IXC, OPA e planilha estão sendo lidos agora. Leva cerca de 20 minutos; esta área se atualiza sozinha. Depois clique em Usar dados atualizados. ':''}${st.ultima_atualizacao?'Última atualização completa pedida por '+ixcEsc(st.ultima_atualizacao.pedido_por_nome||'')+' em '+ixcFmtDataHora(st.ultima_atualizacao.pedido_em)+'. ':''}${per}${ped?' Último pedido por '+ixcEsc(ped.pedido_por_nome||'')+' em '+ixcFmtDataHora(ped.pedido_em)+'.':''}</p>
     ${erros}`;
 }
 async function ixcCargaRender(){
