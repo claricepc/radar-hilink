@@ -2499,6 +2499,12 @@ h2.section-title .info-btn{margin-left:6px}
 .cc-alert-box.warn{background:#fffbeb;border-color:#f59e0b;color:#78350f}
 .cc-alert-box.info{background:#eff6ff;border-color:#3b82f6;color:#1e40af}
 #cc-btn-export:not([disabled]){opacity:1!important}
+#radar-atualizar-fixo{position:fixed;right:16px;bottom:16px;z-index:9000;background:#fff;border:1px solid #d6dee8;border-radius:10px;box-shadow:0 6px 20px rgba(15,23,42,.18);padding:8px 10px;display:flex;flex-direction:column;align-items:stretch;gap:4px;font-family:var(--radar-font,inherit);max-width:240px}
+#radar-atualizar-fixo button{border:0;border-radius:7px;background:#0b5cad;color:#fff;font-weight:800;font-size:12px;padding:8px 12px;cursor:pointer}
+#radar-atualizar-fixo button.novo{background:#15803d}
+#radar-atualizar-fixo button:disabled{background:#94a3b8;cursor:default}
+#radar-atualizar-fixo .info{font-size:10px;color:#475569;text-align:center;line-height:1.25}
+@media print{#radar-atualizar-fixo{display:none}}
 </style>
 <style>
 .cd-atalho{display:flex;align-items:center;gap:18px;justify-content:space-between;margin:0 0 14px;padding:18px 20px;border-radius:12px;cursor:pointer;
@@ -25357,12 +25363,51 @@ async function ixcCargaUsar(destino){
     }
     const bp=document.getElementById('btn-process'); if(bp) bp.disabled = !hasAnyRawReport();
     renderModuleUnlocks();
+    IXC_CARGA.usadoEm = Date.now();
     toast('Dados do IXC carregados. Analisando…','success');
     await processCampaign(destino||'premiacoes');
   }catch(e){ console.error(e); toast('Erro ao carregar do IXC: '+e.message,'error'); }
   finally{ IXC_CARGA.carregando=false; document.getElementById('loading').classList.remove('show'); ixcCargaRender(); }
 }
 window.ixcCargaAtualizar=ixcCargaAtualizar; window.ixcCargaUsar=ixcCargaUsar; window.ixcCargaRender=ixcCargaRender;
+/* Botão fixo: Atualizar todos os dados (IXC, OPA e planilha) com registro da última leitura */
+function radarFixoUltimaLeitura(st){
+  const ts = Object.values((st&&st.tipos)||{}).map(x=>x&&x.atualizado_em?new Date(x.atualizado_em).getTime():0).filter(Boolean);
+  return ts.length ? new Date(Math.max(...ts)) : null;
+}
+async function radarFixoRender(){
+  let el = document.getElementById('radar-atualizar-fixo');
+  if(!el){ el=document.createElement('div'); el.id='radar-atualizar-fixo'; document.body.appendChild(el); }
+  clearTimeout(window._radarFixoTimer);
+  window._radarFixoTimer = setTimeout(radarFixoRender, 60000);
+  let st=null;
+  try{ st = await ixcCargaStatus(); }catch(e){ st=null; }
+  if(!st || st.sem_acesso){ el.style.display='none'; return; }
+  el.style.display='';
+  const andamento = ixcCargaEmAndamento(st);
+  const ult = radarFixoUltimaLeitura(st);
+  const ped = st.ultima_atualizacao;
+  const novos = !andamento && ult && (!IXC_CARGA.usadoEm || ult.getTime() > IXC_CARGA.usadoEm + 60000) && ped && new Date(ped.pedido_em).getTime() > (IXC_CARGA.usadoEm||0);
+  const quem = ped && ped.pedido_por_nome ? ' por '+ixcEsc(String(ped.pedido_por_nome).split(' ')[0]) : '';
+  let botao;
+  if(IXC_CARGA.carregando) botao = `<button type="button" disabled>Carregando no Radar…</button>`;
+  else if(andamento) botao = `<button type="button" disabled>Atualizando… leva cerca de 20 min</button>`;
+  else if(novos) botao = `<button type="button" class="novo" onclick="radarFixoCarregar()">Carregar dados novos</button>`;
+  else botao = `<button type="button" onclick="radarFixoAtualizar()">Atualizar todos os dados</button>`;
+  el.innerHTML = `${botao}<div class="info">${andamento && ped ? 'Pedido às '+new Date(ped.pedido_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+quem : 'Última leitura: '+(ult?ixcFmtDataHora(ult):'—')+(ped&&!andamento?quem:'')}</div>`;
+  if(andamento){ clearTimeout(window._radarFixoTimer); window._radarFixoTimer = setTimeout(radarFixoRender, 30000); }
+}
+async function radarFixoAtualizar(){
+  await radarAtualizarTudo();
+  setTimeout(radarFixoRender, 3000);
+}
+async function radarFixoCarregar(){
+  await ixcCargaUsar(STATE.activeMod && STATE.activeMod!=='setup' ? STATE.activeMod : 'premiacoes');
+  radarFixoRender();
+}
+window.radarFixoRender=radarFixoRender; window.radarFixoAtualizar=radarFixoAtualizar; window.radarFixoCarregar=radarFixoCarregar;
+document.addEventListener('DOMContentLoaded', ()=>setTimeout(radarFixoRender, 2500));
+
 document.addEventListener('DOMContentLoaded', ()=>setTimeout(ixcCargaRender, 1500));
 (function(){ const orig = window.radarAplicarPerfil; if(typeof orig==='function'){ window.radarAplicarPerfil = async function(){ const r = await orig.apply(this, arguments); try{ ixcCargaRender(); }catch(e){} return r; }; } })();
 
