@@ -17601,6 +17601,9 @@ function renderPremiacoesGeral(){
   const pontosAtencao=qtd(meta.fantasmaRows)+qtd(meta.curtosRows)+qtd(meta.reabertura24Rows)+qtd(meta.criticosRows)+qtd(meta.suspeitosRows);
   const tme=premAvg((meta.human||[]).filter(r=>r._opaPremiavel),r=>r._tmePremiacaoSec);
   const nota=premRatingAvg(meta.clienteAvaliacoes||[],r=>r._avaliacaoCliente);
+  const tmaVals=(meta.human||[]).filter(r=>r._opaPremiavel).map(r=>r._atendSec).filter(v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))).map(Number).sort((x,y)=>x-y);
+  const tma=tmaVals.length?(tmaVals.length%2?tmaVals[(tmaVals.length-1)/2]:(tmaVals[tmaVals.length/2-1]+tmaVals[tmaVals.length/2])/2):null;
+  const usaTma=tme===null&&tma!==null;
   const taxaPesquisa=qtd(meta.human)?qtd(meta.clienteAvaliacoes)/qtd(meta.human)*100:0;
   const validPct=Number(meta.volumeBruto||0)?Math.round((Number(meta.volumeValidado||0)/Number(meta.volumeBruto||0))*100):0;
   const hasData=qtd(maps.ranking)||qtd(meta.base);
@@ -17643,7 +17646,7 @@ function renderPremiacoesGeral(){
   </div>`;
   desempenho.innerHTML=`<div class="prem-exec-mini-kpis">
     <div class="prem-exec-mini" data-prem-geral="volume"><small>Volume</small><strong>${Number(meta.volumeBruto||0).toLocaleString('pt-BR')}</strong><span>atendimentos brutos</span><div class="trend">${validPct}% válidos</div></div>
-    <div class="prem-exec-mini" data-prem-geral="tme"><small>TME</small><strong>${tme===null?'--':fmtDuration(tme)}</strong><span>tempo médio</span><div class="trend">${tme!==null&&tme<=59?'meta':'atenção'}</div></div>
+    ${usaTma?`<div class="prem-exec-mini" data-prem-geral="tme"><small>TMA</small><strong>${fmtDuration(tma)}</strong><span>tempo de atendimento (mediana)</span><div class="trend">abertura até encerramento</div></div>`:`<div class="prem-exec-mini" data-prem-geral="tme"><small>TME</small><strong>${tme===null?'--':fmtDuration(tme)}</strong><span>tempo médio</span><div class="trend">${tme!==null&&tme<=59?'meta':'atenção'}</div></div>`}
     <div class="prem-exec-mini" data-prem-geral="cliente"><small>Avaliação</small><strong>${nota===null?'--':nota.toFixed(2)}</strong><span>nota média</span><div class="trend">${nota!==null&&nota>=4.5?'meta':'atenção'}</div></div>
   </div>`;
   statusBox.innerHTML=`<div class="prem-status-donut-layout">
