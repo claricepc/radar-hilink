@@ -424,6 +424,7 @@ body{font-family:'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif;background
 .topbar{background:#fff;border-radius:10px;padding:16px 22px;border:1px solid #e5e7eb;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 /* Oculta topbar global quando premiações está ativa — usa header próprio */
 body[data-active-mod="premiacoes"] #global-filters{display:none!important}
+body[data-active-mod="oportunidades"] #global-filters{display:none!important}
 body[data-active-mod="setup"] .topbar{
   background:linear-gradient(180deg,#101f33 0%,#0c1829 100%);
   border:1px solid #263a54;
@@ -2546,7 +2547,7 @@ h2.section-title .info-btn{margin-left:6px}
 .cd-passos span{border:1px solid rgba(90,150,220,.45);border-radius:999px;padding:4px 10px}
 @media (max-width:760px){.cd-atalho{flex-direction:column;align-items:flex-start}}
 /* ===== Cobrança do Dia: guia de gestão (só apresentação; números vêm das mesmas listas do módulo) ===== */
-#mod-cobrancaDia,#mod-premiacoes{--g-bg:#0B1B2B;--g-card:#0E2236;--g-card2:#11283F;--g-line:rgba(143,163,184,.20);--g-text:#F2F5F8;--g-sub:#B4C2D0;--g-muted:#8FA3B8;--g-blue:#4DA3E0;--g-risk:#FF6B70;--g-risk-bg:rgba(229,72,77,.10);--g-warn:#FFB84D;--g-warn-bg:rgba(245,165,36,.09);--g-ok:#4CC38A;--g-ok-bg:rgba(48,164,108,.10);--g-info-bg:rgba(77,163,224,.09)}
+#mod-cobrancaDia,#mod-premiacoes,#mod-oportunidades{--g-bg:#0B1B2B;--g-card:#0E2236;--g-card2:#11283F;--g-line:rgba(143,163,184,.20);--g-text:#F2F5F8;--g-sub:#B4C2D0;--g-muted:#8FA3B8;--g-blue:#4DA3E0;--g-risk:#FF6B70;--g-risk-bg:rgba(229,72,77,.10);--g-warn:#FFB84D;--g-warn-bg:rgba(245,165,36,.09);--g-ok:#4CC38A;--g-ok-bg:rgba(48,164,108,.10);--g-info-bg:rgba(77,163,224,.09)}
 .cdg{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
 .cdg-status{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 14px;border:1px solid var(--g-line);border-radius:10px;background:var(--g-card);font-size:12px;color:var(--g-sub)}
 .cdg-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-weight:700;font-size:11px;letter-spacing:.02em}
@@ -2957,6 +2958,9 @@ body.radar-modo-atendente .topbar{display:none!important}
         </div>
         <div class="nav-item" data-mod="premiacoes" onclick="go('premiacoes')">
           <span>Premia&ccedil;&atilde;o<small>folha, vendas, atendimento e ranking</small></span>
+        </div>
+        <div class="nav-item" data-mod="oportunidades" onclick="go('oportunidades')">
+          <span>Oportunidades<small>upgrade e reativa&ccedil;&atilde;o para disparo no OPA</small></span>
         </div>
         <div class="nav-item" data-mod="propostas" onclick="go('propostas')">
           <span>Propostas Corporativas<small>CRM, viabilidade e proposta comercial</small></span>
@@ -8353,6 +8357,7 @@ body.radar-modo-atendente .topbar{display:none!important}
   
 
   <div class="module" id="mod-cobrancaDia"></div>
+  <div class="module" id="mod-oportunidades"></div>
   <div class="module" id="mod-usuarios"></div>
 
   <!-- ====================== MÓDULO: CARNÊ CORREIOS ====================== -->
@@ -10500,7 +10505,7 @@ function go(mod){
     if(!(IXC_CARGA && IXC_CARGA.carregando)){ toast('Buscando os dados direto do IXC...','success'); ixcCargaUsar(mod); }
     return;
   }
-  if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='usuarios'&&!STATE.processed){toast('Processe a base primeiro','error');return}
+  if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='oportunidades'&&mod!=='usuarios'&&!STATE.processed){toast('Processe a base primeiro','error');return}
   if((mod==='segmentacao'||mod==='disparo')&&!STATE.campaign){toast('Mapeie uma campanha primeiro','error');mod='mapear'}
   if(!document.getElementById('mod-'+mod)){toast('Módulo não encontrado: '+mod,'error');return}
   document.querySelector(`.nav-item[data-mod="${mod}"]`)?.classList.remove('disabled');
@@ -10531,6 +10536,7 @@ function go(mod){
                 propostas:['Propostas Corporativas','Geração assistida de proposta comercial a partir do CRM e viabilidade'],
                 acao:['Estratégia de Atuação','Prioridades automáticas, campanhas e plano de ação operacional'],
                 usuarios:['Usuários e acessos','Cadastro de usuários do Radar, redefinição de senha e permissões'],
+                oportunidades:['OPORTUNIDADES','Upgrade e reativação a partir da carteira de clientes, prontos para disparo em massa no OPA'],
                 cobrancaDia:['Cobrança do Dia','Inadimplência, pré-bloqueio, recolhimento e títulos suspeitos direto do banco (leitura do IXC às 4h)'],
                 historico:['Histórico de Campanhas','Campanhas mapeadas anteriormente'],
                 carneCorreios:['Envio Correios — Carnê','Formata os boletos para envio via Correios e-Carta. Alertas de banco, endereço, SLA e sequência.']};
@@ -10549,6 +10555,7 @@ function go(mod){
   try{
     if(mod==='comercial') renderComercial();
     if(mod==='premiacoes') renderPremiacoes();
+    if(mod==='oportunidades') renderOportunidades();
     if(mod==='precificacao') renderPrecificacao();
     if(mod==='isencoes') renderIsencoes();
     if(mod==='tecnica') renderTecnica();
@@ -25435,6 +25442,223 @@ async function radarFixoCarregar(){
 }
 window.radarFixoRender=radarFixoRender; window.radarFixoAtualizar=radarFixoAtualizar; window.radarFixoCarregar=radarFixoCarregar;
 document.addEventListener('DOMContentLoaded', ()=>setTimeout(radarFixoRender, 2500));
+
+/* ===================== OPORTUNIDADES (upgrade e reativação para disparo no OPA) =====================
+   Módulo isolado: lê só do banco (radar_oportunidades) e não altera nenhum outro módulo. */
+const OP = { dados:null, resultado:null, carregando:false, erro:null, aba:'upgrade',
+  f:{ marca:'Todas', filial:'Todas', oferta:'Todas', prioridade:'Todas', pediu:false, busca:'' },
+  sel:new Set(), limite:100, exportando:false };
+const OP_TAXA = 0.05; // conversão de referência para estimar receita (5%)
+const OP_MSG = {
+  upgrade:{
+    '300MB':'Olá, {nome}! Aqui é da {marca}. Seu plano pode passar para 300 mega por R$ 79,90 por mês. Para mudar, é só responder SIM aqui que a nossa equipe faz a troca.',
+    '600MB':'Olá, {nome}! Aqui é da {marca}. Seu plano pode passar para 600 mega por R$ 99,90 por mês. Para mudar, é só responder SIM aqui que a nossa equipe faz a troca.',
+    '1 GIGA':'Olá, {nome}! Aqui é da {marca}. Seu plano pode passar para 1 giga por R$ 149,90 por mês. Para mudar, é só responder SIM aqui que a nossa equipe faz a troca.'
+  },
+  reativacao:{
+    '300MB':'Olá, {nome}! Aqui é da {marca}. Você pode voltar a ter a nossa internet com 300 mega por R$ 79,90 por mês. Se quiser voltar, responda SIM aqui que a nossa equipe te ajuda.',
+    '600MB':'Olá, {nome}! Aqui é da {marca}. Você pode voltar a ter a nossa internet com 600 mega por R$ 99,90 por mês. Se quiser voltar, responda SIM aqui que a nossa equipe te ajuda.'
+  }
+};
+const opLista = () => (OP.dados && OP.dados[OP.aba]) || [];
+const opChave = x => OP.aba+':'+(x.contrato||x.cliente);
+function opFiltradas(){
+  const f = OP.f, b = f.busca.trim().toLowerCase();
+  return opLista().filter(x =>
+    (f.marca==='Todas' || x.marca===f.marca) && (f.filial==='Todas' || x.filial===f.filial) &&
+    (f.oferta==='Todas' || x.oferta===f.oferta) && (f.prioridade==='Todas' || x.prioridade===f.prioridade) &&
+    (!f.pediu || x.pediu_upgrade) &&
+    (!b || String(x.nome||'').toLowerCase().includes(b) || String(x.cliente).includes(b) || String(x.plano||'').toLowerCase().includes(b)));
+}
+async function opCarregar(recalcular){
+  const sb = getSB(); if(!sb || OP.carregando) return;
+  OP.carregando = true; OP.erro = null; renderOportunidades();
+  try{
+    const r = await sb.rpc('radar_oportunidades', { p_recalcular: !!recalcular });
+    if(r.error) throw new Error(r.error.message);
+    OP.dados = r.data || {}; OP.sel.clear(); OP.limite = 100;
+    try{ const s = await sb.rpc('radar_oportunidades_resultado'); if(!s.error) OP.resultado = s.data||[]; }catch(e){}
+  }catch(e){ OP.erro = e.message; }
+  finally{ OP.carregando = false; renderOportunidades(); }
+}
+function opIr(aba, filtro){
+  OP.aba = aba; OP.f = { marca:'Todas', filial:'Todas', oferta:'Todas', prioridade:'Todas', pediu:false, busca:'', ...(filtro||{}) };
+  OP.sel.clear(); OP.limite = 100; renderOportunidades();
+  setTimeout(()=>document.getElementById('op-lista')?.scrollIntoView({behavior:'smooth', block:'start'}), 50);
+}
+function opSetFiltro(k, v){ OP.f[k] = v; OP.sel.clear(); OP.limite = 100; renderOportunidades(); }
+function opToggle(k, el){ el.checked ? OP.sel.add(k) : OP.sel.delete(k); opSelInfo(); }
+function opToggleTodos(el){ const ls = opFiltradas(); if(el.checked) ls.forEach(x=>OP.sel.add(opChave(x))); else OP.sel.clear(); renderOportunidades(); }
+function opSelInfo(){ const el = document.getElementById('op-sel-info'); if(el) el.textContent = OP.sel.size ? `${cdNum(OP.sel.size)} selecionados` : 'Nenhum selecionado: o botão baixa todos os filtrados'; }
+function opMensagem(lista, oferta, marca){
+  const t = (OP_MSG[lista]||{})[oferta]; if(!t) return '';
+  return t.replace('{marca}', marca && marca!=='Todas' ? marca : 'Hilink');
+}
+function opCopiarMsg(i){
+  const el = document.getElementById('op-msg-'+i); if(!el) return;
+  navigator.clipboard?.writeText(el.textContent).then(()=>toast('Mensagem copiada','success')).catch(()=>toast('Não consegui copiar. Selecione o texto e copie.','warn'));
+}
+async function opExportar(){
+  if(OP.exportando) return;
+  const base = opFiltradas();
+  const linhas = OP.sel.size ? base.filter(x=>OP.sel.has(opChave(x))) : base;
+  if(!linhas.length){ toast('Nenhum cliente na lista atual.','warn'); return; }
+  const grupos = {};
+  linhas.forEach(x=>{ const fone = cdFoneOpa(x.fone); if(!fone || !x.nome) return;
+    const g = (grupos[x.filial+'||'+x.oferta] ||= { filial:x.filial, oferta:x.oferta, mapa:new Map() }); g.mapa.set(fone, x); });
+  const chaves = Object.keys(grupos);
+  if(!chaves.length){ toast('Nenhum contato com celular válido','warn'); return; }
+  if(!confirm(`Gerar ${chaves.length} arquivo(s) para o OPA com ${cdNum(linhas.length)} clientes?\n\nEsses clientes ficam 30 dias sem aparecer nas listas de oportunidade.`)) return;
+  OP.exportando = true;
+  const data = new Date().toISOString().slice(0,10), lote = crypto.randomUUID();
+  let gerados = 0, falhas = 0;
+  try{
+    for(const k of chaves){
+      const g = grupos[k];
+      const corpo = ['name,whatsapp', ...[...g.mapa].map(([fone,x])=>`${cdCsvCampo(x.nome)},${fone}`)].join('\r\n');
+      const arquivo = `${cdSlug(g.filial)}_${OP.aba}_${cdSlug(g.oferta)}_${data}.csv`;
+      cdBaixar(arquivo, corpo); gerados++;
+      try{
+        const r = await getSB().rpc('radar_oportunidades_registrar', { p_lote:lote, p_lista:OP.aba, p_oferta:g.oferta, p_arquivo:arquivo,
+          p_itens:[...g.mapa.values()].map(x=>({ cliente:String(x.cliente), contrato:String(x.contrato||''), filial:x.filial })) });
+        if(r.error) throw r.error;
+      }catch(e){ falhas++; console.warn('[Radar] Registro oportunidade', e); }
+      if(gerados < chaves.length) await new Promise(res=>setTimeout(res, 400));
+    }
+    const saiu = new Set(linhas.map(opChave));
+    OP.dados[OP.aba] = opLista().filter(x=>!saiu.has(opChave(x)));
+    OP.sel.clear();
+    toast(`${gerados} arquivo(s) gerado(s), um por filial e oferta`, 'success');
+    if(falhas) toast('Arquivo gerado, mas o registro do envio falhou em '+falhas+' arquivo(s). Esses clientes podem voltar na próxima lista.', 'warn');
+    try{ const s = await getSB().rpc('radar_oportunidades_resultado'); if(!s.error) OP.resultado = s.data||[]; }catch(e){}
+  }finally{ OP.exportando = false; renderOportunidades(); }
+}
+function opGuiaHTML(){
+  const d = OP.dados || {}, up = d.upgrade||[], re = d.reativacao||[], uf = d.upgrade_fora||{}, rf = d.reativacao_fora||{};
+  const soma = (a, f) => a.reduce((t,x)=>t+(Number(f(x))||0),0);
+  const ganhoTotal = soma(up, x=>x.ganho);
+  const upAlta = up.filter(x=>x.prioridade==='Alta'), pediu = up.filter(x=>x.pediu_upgrade);
+  const reAlta = re.filter(x=>x.prioridade==='Alta');
+  const porOferta = o => up.filter(x=>x.oferta===o);
+  const res = OP.resultado||[], envT = res.reduce((t,r)=>t+(+r.enviados||0),0), convT = res.reduce((t,r)=>t+(+r.convertidos||0),0);
+  const calc = d.calculado_em ? new Date(d.calculado_em) : null, base = d.base_em ? new Date(d.base_em) : null;
+  const fmt = x => x ? x.toLocaleDateString('pt-BR')+' às '+x.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '-';
+  const status = `<div class="cdg-status"><span class="cdg-pill ok">Listas prontas</span>
+    <span>Base do IXC de <b>${fmt(base)}</b>. Listas calculadas em <b>${fmt(calc)}</b>.</span><span class="cdg-sp"></span>
+    <button type="button" class="cdg-mini" onclick="opCarregar(true)" ${OP.carregando?'disabled':''}>Recalcular agora</button></div>`;
+  const p1 = `Hoje há <button type="button" class="cdg-link" onclick="opIr('upgrade')"><b>${cdNum(up.length)} clientes ativos</b></button> que podem receber oferta de upgrade e <button type="button" class="cdg-link" onclick="opIr('reativacao')"><b>${cdNum(re.length)} ex-clientes</b></button> dos últimos 2 anos que podem ser chamados para voltar.`;
+  const p2 = `Se ${Math.round(OP_TAXA*100)}% dos clientes de upgrade aceitarem, a receita mensal sobe cerca de <b>${cdMoeda(ganhoTotal*OP_TAXA)}</b>. Se ${Math.round(OP_TAXA*100)}% dos ex-clientes voltarem, entram cerca de <b>${cdMoeda(soma(re,x=>x.valor_oferta)*OP_TAXA)}</b> por mês.`;
+  const p3 = `Comece pelos <button type="button" class="cdg-link" onclick="opIr('upgrade',{prioridade:'Alta'})">${cdNum(upAlta.length)} de prioridade alta</button>: são clientes há mais de 1 ano que pagaram as 6 últimas faturas em dia.${pediu.length?` <button type="button" class="cdg-link r" onclick="opIr('upgrade',{pediu:true})">${cdNum(pediu.length)} pediram upgrade no OPA</button> nos últimos 30 dias e precisam de retorno antes do disparo.`:''}`;
+  const fora = Object.values(uf).reduce((a,b)=>a+b,0);
+  const p4 = `Ficaram fora do upgrade ${cdNum(fora)} contratos: fatura vencida, OS aberta, sinal ruim, reclamação recente no OPA, mudança de plano há menos de 90 dias ou oferta recebida nos últimos 30 dias. Assim a oferta não chega para quem está com problema.`;
+  const resumo = `<div class="cdg-resumo">
+    <div class="cdg-box"><div class="cdg-eyebrow">As oportunidades em poucas linhas</div>
+      <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p><p>${p3}</p><p>${p4}</p></div>
+      <div class="cdg-nota">Os trechos sublinhados abrem a lista. Planos oficiais: 300 mega R$ 79,90, 600 mega R$ 99,90 e 1 giga R$ 149,90.</div></div>
+    <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam as campanhas</div>
+      <div class="cdg-numeros">
+        <div class="cdg-num info clicavel" role="button" tabindex="0" onclick="opIr('upgrade')"><div class="l">Upgrade <span class="ver">Ver lista</span></div><div class="v">${cdNum(up.length)}</div><div class="s">${cdMoeda(ganhoTotal)} a mais por mês se todos aceitarem</div></div>
+        <div class="cdg-num ok clicavel" role="button" tabindex="0" onclick="opIr('reativacao')"><div class="l">Reativação <span class="ver">Ver lista</span></div><div class="v">${cdNum(re.length)}</div><div class="s">${cdNum(reAlta.length)} saíram há até 6 meses</div></div>
+        <div class="cdg-num ${envT?'ok':'info'}"><div class="l">Resultado dos envios</div><div class="v">${envT?cdPct(convT,envT)+'%':'-'}</div><div class="s">${envT?`${cdNum(convT)} de ${cdNum(envT)} clientes aceitaram`:'Aparece depois do primeiro envio'}</div></div>
+      </div>
+      <div class="cdg-nota">Conversão: upgrade conta quando o contrato muda para um plano mais caro depois do envio. Reativação conta quando o cliente volta a ter contrato ativo.</div></div>
+  </div>`;
+  const agir = [
+    cdItem({tom:'agir', passo:1, titulo:'Responder quem pediu upgrade no OPA', numero:cdNum(pediu.length), unid:'clientes', vazio:!pediu.length,
+      porque:'Já demonstraram interesse. É a venda mais fácil da lista.', como:'Ligar ou responder no OPA, sem esperar o disparo em massa.', acao:['Abrir lista',"opIr('upgrade',{pediu:true})"]}),
+    cdItem({tom:'agir', passo:2, titulo:'Disparar upgrade para a prioridade alta', numero:cdNum(upAlta.length), unid:'clientes', vazio:!upAlta.length,
+      porque:`Pagam em dia e são clientes antigos. ${['300MB','600MB','1 GIGA'].map(o=>`${cdNum(upAlta.filter(x=>x.oferta===o).length)} para ${o}`).join(', ')}.`,
+      como:'Baixar para o OPA gera um arquivo por filial e por oferta. Use a mensagem sugerida de cada oferta.', acao:['Abrir lista',"opIr('upgrade',{prioridade:'Alta'})"]}),
+    cdItem({tom:'agir', passo:3, titulo:'Chamar de volta quem saiu há até 6 meses', numero:cdNum(reAlta.length), unid:'ex-clientes', vazio:!reAlta.length,
+      porque:'Quanto mais recente a saída, maior a chance de voltar e de o número ainda ser o mesmo.', como:'Disparo em massa com a oferta do plano mais próximo do que tinha.', acao:['Abrir lista',"opIr('reativacao',{prioridade:'Alta'})"]})
+  ].join('');
+  const corrigir = [
+    cdItem({tom:'corrigir', titulo:'Sinal ruim antes de vender', numero:cdNum(uf['sinal ruim']||0), unid:'contratos', vazio:!uf['sinal ruim'],
+      porque:'Oferecer mais velocidade a quem tem sinal abaixo de -27 dBm gera reclamação, não venda.', como:'NOC trata o sinal. Depois de corrigido, o cliente volta sozinho para a lista.'}),
+    cdItem({tom:'corrigir', titulo:'Cadastro sem celular válido', numero:cdNum((uf['sem celular válido']||0)+(rf['sem celular válido']||0)), unid:'clientes',
+      porque:`${cdNum(uf['sem celular válido']||0)} ativos e ${cdNum(rf['sem celular válido']||0)} ex-clientes não recebem mensagem pelo OPA.`, como:'Atualizar o celular no IXC no próximo contato.'}),
+    cdItem({tom:'corrigir', titulo:'Fatura vencida', numero:cdNum(uf['tem fatura vencida']||0), unid:'contratos', vazio:!uf['tem fatura vencida'],
+      porque:'Quem está devendo recebe cobrança, não oferta.', como:'Seguem na Cobrança do Dia. Depois de pagar, entram na lista de upgrade.'})
+  ].join('');
+  const planejar = [
+    cdItem({tom:'planejar', titulo:'Upgrade prioridade média e baixa', numero:cdNum(up.length-upAlta.length), unid:'clientes',
+      porque:'Têm atrasos eventuais ou são clientes mais novos.', como:'Disparar depois de medir o resultado da prioridade alta.', acao:['Abrir lista',"opIr('upgrade',{prioridade:'Média'})"]}),
+    cdItem({tom:'planejar', titulo:'Reativação de 6 meses a 2 anos', numero:cdNum(re.length-reAlta.length), unid:'ex-clientes',
+      porque:'Chance menor de resposta e mais números desatualizados.', como:'Disparar em lotes por filial e acompanhar a taxa de resposta.', acao:['Abrir lista',"opIr('reativacao',{prioridade:'Média'})"]}),
+    cdItem({tom:'planejar', titulo:'Medir antes de ampliar', numero:envT?cdPct(convT,envT)+'%':'-', unid:'de conversão',
+      porque:'Cada mensagem de marketing tem custo na Meta. A taxa mostra qual oferta vende.', como:'Conferir o resultado 7 dias depois de cada envio, na tabela abaixo da lista.'})
+  ].join('');
+  const alertas = [];
+  if(Number(d.mesmo_preco_600)>0) alertas.push(cdAlerta('warn', `<b>${cdNum(d.mesmo_preco_600)} clientes pagam R$ 99,90 ou mais por 500 mega.</b> O plano oficial de 600 mega custa R$ 99,90. Se o cliente descobrir, pede a troca ou vai embora. Vale decidir se essa base migra para 600 mega sem custo, como retenção.`));
+  if(uf['reclamou no OPA nos últimos 30 dias']) alertas.push(cdAlerta('', `<b>${cdNum(uf['reclamou no OPA nos últimos 30 dias'])} clientes reclamaram no OPA</b> nos últimos 30 dias (sem acesso, lentidão, cancelamento ou contestação). Ficam fora da oferta até o problema esfriar.`));
+  alertas.push(cdAlerta('', 'Quem é baixado para o OPA fica 30 dias sem aparecer nas listas. Isso evita mandar a mesma oferta duas vezes.'));
+  alertas.push(cdAlerta('', 'O arquivo do OPA traz só nome e WhatsApp. Crie no OPA um modelo de mensagem para cada oferta e use o arquivo da mesma oferta.'));
+  if(rf['saiu há mais de 2 anos']) alertas.push(cdAlerta('', `${cdNum(rf['saiu há mais de 2 anos'])} ex-clientes saíram há mais de 2 anos e ficaram fora da reativação: número antigo e pouca chance de resposta.`));
+  const colunas = `<div class="cdg-colunas">
+    <div class="cdg-col agir"><div class="cdg-col-h"><h3>Fazer agora</h3><span>nesta ordem</span></div>${agir}</div>
+    <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Corrigir antes de vender</h3><span>NOC e cadastro</span></div>${corrigir}</div>
+    <div class="cdg-col planejar"><div class="cdg-col-h"><h3>Planejar</h3><span>próximos envios</span></div>${planejar}</div>
+    <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Ficar atenta</h3><span>${alertas.length} pontos</span></div>${alertas.join('')}</div>
+  </div>`;
+  return `<div class="cdg">${status}${resumo}${colunas}</div>`;
+}
+function opListaHTML(){
+  const todas = opLista(), ls = opFiltradas(), up = OP.aba==='upgrade';
+  const uniq = k => ['Todas', ...[...new Set(todas.map(x=>x[k]).filter(Boolean))].sort()];
+  const sel = (k, rot) => `<label style="font-size:12px">${rot} <select onchange="opSetFiltro('${k}',this.value)" style="margin-left:4px">${uniq(k).map(v=>`<option ${v===OP.f[k]?'selected':''}>${cdEsc(v)}</option>`).join('')}</select></label>`;
+  const marca = OP.f.marca;
+  const ofertas = [...new Set(ls.map(x=>x.oferta))].sort();
+  const msgs = ofertas.map((o,i)=>`<div class="cdg-box" style="padding:10px 12px"><div class="cdg-eyebrow">Mensagem sugerida: ${up?'upgrade':'reativação'} ${cdEsc(o)} (${cdNum(ls.filter(x=>x.oferta===o).length)} clientes)</div>
+    <div id="op-msg-${i}" style="font-size:13px;line-height:1.45;margin:6px 0">${cdEsc(opMensagem(OP.aba, o, marca))}</div>
+    <button type="button" class="cdg-mini" onclick="opCopiarMsg(${i})">Copiar mensagem</button></div>`).join('');
+  const cab = up
+    ? ['Cliente','Filial','Plano atual','Paga hoje','Oferta','A mais por mês','Prioridade','Por quê','Celular']
+    : ['Cliente','Filial','Último plano','Saiu em','Oferta','Débito em aberto','Prioridade','Celular'];
+  const linhas = ls.slice(0, OP.limite).map(x=>{
+    const k = opChave(x), fone = cdFoneOpa(x.fone);
+    const cel = up
+      ? [`${cdEsc(x.nome)}<br><small>${cdEsc(x.cliente)}</small>`, cdEsc(x.filial), cdEsc(x.plano), cdMoeda(x.valor), `<b>${cdEsc(x.oferta)}</b> ${cdMoeda(x.valor_oferta)}`, cdMoeda(x.ganho), cdEsc(x.prioridade), `<small>${cdEsc(x.por_que)}</small>`, cdEsc(fone)]
+      : [`${cdEsc(x.nome)}<br><small>${cdEsc(x.cliente)}</small>`, cdEsc(x.filial), cdEsc(x.plano), cdData(x.saiu), `<b>${cdEsc(x.oferta)}</b> ${cdMoeda(x.valor_oferta)}`, x.debito?cdMoeda(x.debito):'-', cdEsc(x.prioridade), cdEsc(fone)];
+    return `<tr><td><input type="checkbox" ${OP.sel.has(k)?'checked':''} onchange="opToggle('${cdEsc(k)}',this)"></td>${cel.map(c=>`<td>${c}</td>`).join('')}</tr>`;
+  }).join('');
+  const res = (OP.resultado||[]).map(r=>`<tr><td>${new Date(r.enviado_em).toLocaleDateString('pt-BR')}</td><td>${r.lista==='upgrade'?'Upgrade':'Reativação'}</td><td>${cdEsc(r.oferta||'')}</td><td>${cdEsc(r.por||'')}</td><td>${cdNum(r.enviados)}</td><td>${cdNum(r.convertidos)}</td><td>${cdPct(r.convertidos,r.enviados)}%</td></tr>`).join('');
+  return `<div class="section compact-section" id="op-lista">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
+      <button class="btn sm ${up?'primary':''}" onclick="opIr('upgrade')">Upgrade (${cdNum((OP.dados?.upgrade||[]).length)})</button>
+      <button class="btn sm ${!up?'primary':''}" onclick="opIr('reativacao')">Reativação (${cdNum((OP.dados?.reativacao||[]).length)})</button>
+      <span style="flex:1"></span>
+      ${sel('marca','Marca')} ${sel('filial','Filial')} ${sel('oferta','Oferta')} ${sel('prioridade','Prioridade')}
+      ${up?`<label style="font-size:12px"><input type="checkbox" ${OP.f.pediu?'checked':''} onchange="opSetFiltro('pediu',this.checked)"> Pediu upgrade no OPA</label>`:''}
+      <input type="search" placeholder="Buscar nome, código ou plano" value="${cdEsc(OP.f.busca)}" onchange="opSetFiltro('busca',this.value)" style="min-width:200px">
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:10px">${msgs}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px">
+      <b>${cdNum(ls.length)} clientes na lista</b><span id="op-sel-info" class="cdg-nota" style="margin:0">${OP.sel.size?cdNum(OP.sel.size)+' selecionados':'Nenhum selecionado: o botão baixa todos os filtrados'}</span>
+      <span style="flex:1"></span>
+      <button class="btn primary sm" onclick="opExportar()" ${OP.exportando||!ls.length?'disabled':''}>${OP.exportando?'Gerando arquivos...':'Baixar para o OPA'}</button>
+    </div>
+    <div class="cdg-tabwrap"><table class="cdg-tab"><thead><tr><th><input type="checkbox" onchange="opToggleTodos(this)" title="Selecionar todos os filtrados"></th>${cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas||`<tr><td colspan="${cab.length+1}">Nenhum cliente com esses filtros.</td></tr>`}</tbody></table></div>
+    ${ls.length>OP.limite?`<div style="text-align:center;margin-top:8px"><button class="btn sm" onclick="OP.limite+=200;renderOportunidades()">Mostrar mais (${cdNum(ls.length-OP.limite)} restantes)</button></div>`:''}
+    <div class="cdg-nota">Um arquivo por filial e por oferta, no formato do OPA (name, whatsapp). NandoNet e Pablom saem em arquivos próprios.</div>
+  </div>
+  <div class="section compact-section"><h3 class="section-title" style="font-size:14px">Resultado dos envios (últimos 120 dias)</h3>
+    ${res?`<div class="cdg-tabwrap"><table class="cdg-tab"><thead><tr><th>Envio</th><th>Lista</th><th>Oferta</th><th>Quem baixou</th><th>Enviados</th><th>Aceitaram</th><th>Conversão</th></tr></thead><tbody>${res}</tbody></table></div>`:'<p class="cdg-nota">Ainda não há envios registrados. O resultado aparece aqui depois do primeiro arquivo baixado.</p>'}
+  </div>`;
+}
+function renderOportunidades(){
+  const box = document.getElementById('mod-oportunidades'); if(!box) return;
+  if(typeof cdEhAtendente==='function' && cdEhAtendente()){ box.innerHTML = '<div class="section compact-section">Este módulo é da gestão.</div>'; return; }
+  if(!OP.dados){
+    box.innerHTML = `<div class="section compact-section">${OP.erro?`Não foi possível carregar: ${cdEsc(OP.erro)} <button class="btn sm" onclick="opCarregar()">Tentar novamente</button>`:'Montando as listas de upgrade e reativação a partir da base do IXC...'}</div>`;
+    if(!OP.carregando && !OP.erro) opCarregar();
+    return;
+  }
+  box.innerHTML = `${OP.erro?`<div role="alert" class="section compact-section">Não foi possível atualizar: ${cdEsc(OP.erro)}</div>`:''}
+    ${OP.carregando?'<div role="status" class="section compact-section">Recalculando as listas...</div>':''}
+    ${opGuiaHTML()}${opListaHTML()}`;
+}
+Object.assign(window, { renderOportunidades, opCarregar, opIr, opSetFiltro, opToggle, opToggleTodos, opExportar, opCopiarMsg });
+
 
 document.addEventListener('DOMContentLoaded', ()=>setTimeout(ixcCargaRender, 1500));
 (function(){ const orig = window.radarAplicarPerfil; if(typeof orig==='function'){ window.radarAplicarPerfil = async function(){ const r = await orig.apply(this, arguments); try{ ixcCargaRender(); }catch(e){} return r; }; } })();
