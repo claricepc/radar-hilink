@@ -25448,7 +25448,7 @@ document.addEventListener('DOMContentLoaded', ()=>setTimeout(radarFixoRender, 25
 /* ===================== OPORTUNIDADES (upgrade e reativação para disparo no OPA) =====================
    Módulo isolado: lê só do banco (radar_oportunidades) e não altera nenhum outro módulo. */
 const OP = { dados:null, resultado:null, carregando:false, erro:null, aba:'upgrade',
-  f:{ marca:'Todas', filial:'Todas', oferta:'Todas', prioridade:'Todas', pediu:false, busca:'' },
+  f:{ marca:'Todas', filial:'Todas', oferta:'Todas', prioridade:'Todas', plano:'Todas', pediu:false, busca:'' },
   sel:new Set(), limite:100, exportando:false };
 const OP_TAXA = 0.05; // conversão de referência para estimar receita (5%)
 const opLista = () => (OP.dados && OP.dados[OP.aba]) || [];
@@ -25458,6 +25458,7 @@ function opFiltradas(){
   return opLista().filter(x =>
     (f.marca==='Todas' || x.marca===f.marca) && (f.filial==='Todas' || x.filial===f.filial) &&
     (f.oferta==='Todas' || x.oferta===f.oferta) && (f.prioridade==='Todas' || x.prioridade===f.prioridade) &&
+    (f.plano==='Todas' || x.plano===f.plano) &&
     (!f.pediu || x.pediu_upgrade) &&
     (!b || String(x.nome||'').toLowerCase().includes(b) || String(x.cliente).includes(b) || String(x.plano||'').toLowerCase().includes(b)));
 }
@@ -25473,7 +25474,7 @@ async function opCarregar(recalcular){
   finally{ OP.carregando = false; renderOportunidades(); }
 }
 function opIr(aba, filtro){
-  OP.aba = aba; OP.f = { marca:'Todas', filial:'Todas', oferta:'Todas', prioridade:'Todas', pediu:false, busca:'', ...(filtro||{}) };
+  OP.aba = aba; OP.f = { marca:'Todas', filial:'Todas', oferta:'Todas', prioridade:'Todas', plano:'Todas', pediu:false, busca:'', ...(filtro||{}) };
   OP.sel.clear(); OP.limite = 100; renderOportunidades();
   setTimeout(()=>document.getElementById('op-lista')?.scrollIntoView({behavior:'smooth', block:'start'}), 50);
 }
@@ -25549,10 +25550,13 @@ function opGuiaHTML(){
   const agir = [
     cdItem({tom:'agir', passo:1, titulo:'Responder quem pediu upgrade no OPA', numero:cdNum(pediu.length), unid:'clientes', vazio:!pediu.length,
       porque:'Já demonstraram interesse. É a venda mais fácil da lista.', como:'Ligar ou responder no OPA, sem esperar o disparo em massa.', acao:['Abrir lista',"opIr('upgrade',{pediu:true})"]}),
-    cdItem({tom:'agir', passo:2, titulo:'Disparar upgrade para a prioridade alta', numero:cdNum(upAlta.length), unid:'clientes', vazio:!upAlta.length,
+    (()=>{ const def = up.filter(x=>x.vel<=100); return cdItem({tom:'agir', passo:2, titulo:'Migrar quem está em plano defasado', numero:cdNum(def.length), unid:'contratos até 100 mega', vazio:!def.length,
+      porque:'Plano antigo que não atende mais a casa, com equipamento provavelmente defasado. É o cliente com mais risco de trocar de provedor.',
+      como:`A oferta é o 300 mega por R$ 79,90. Ganho de ${cdMoeda(def.reduce((t,x)=>t+(+x.ganho||0),0))} por mês se todos migrarem. Abra o quadro por plano e comece pelo maior.`, acao:['Ver por plano',"document.getElementById('op-planos')?.scrollIntoView({behavior:'smooth'})"]}); })(),
+    cdItem({tom:'agir', passo:3, titulo:'Disparar upgrade para a prioridade alta', numero:cdNum(upAlta.length), unid:'clientes', vazio:!upAlta.length,
       porque:`Pagam em dia e são clientes antigos. ${['300MB','600MB','1 GIGA'].map(o=>`${cdNum(upAlta.filter(x=>x.oferta===o).length)} para ${o}`).join(', ')}.`,
       como:'Baixar para o OPA gera um arquivo por filial e por oferta. Use no OPA o modelo aprovado da oferta.', acao:['Abrir lista',"opIr('upgrade',{prioridade:'Alta'})"]}),
-    cdItem({tom:'agir', passo:3, titulo:'Chamar de volta quem saiu há até 6 meses', numero:cdNum(reAlta.length), unid:'ex-clientes', vazio:!reAlta.length,
+    cdItem({tom:'agir', passo:4, titulo:'Chamar de volta quem saiu há até 6 meses', numero:cdNum(reAlta.length), unid:'ex-clientes', vazio:!reAlta.length,
       porque:'Quanto mais recente a saída, maior a chance de voltar e de o número ainda ser o mesmo.', como:'Disparo em massa com a oferta do plano mais próximo do que tinha.', acao:['Abrir lista',"opIr('reativacao',{prioridade:'Alta'})"]})
   ].join('');
   const corrigir = [
@@ -25582,7 +25586,27 @@ function opGuiaHTML(){
     <div class="cdg-col planejar"><div class="cdg-col-h"><h3>Planejar</h3><span>próximos envios</span></div>${planejar}</div>
     <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Ficar atenta</h3><span>${alertas.length} pontos</span></div>${alertas.join('')}</div>
   </div>`;
-  return `<div class="cdg">${status}${resumo}${colunas}</div>`;
+  return `<div class="cdg">${status}${resumo}${colunas}${opPlanosHTML(up)}</div>`;
+}
+function opPlanoGrupo(vel){ return vel<=100 ? 1 : vel<300 ? 2 : vel<600 ? 3 : 4; }
+const OP_GRUPO = {1:['Prioridade 1','Plano defasado (até 100 mega)','risk'],2:['Prioridade 2','Abaixo do plano de entrada (até 299 mega)','warn'],3:['Prioridade 3','Plano intermediário (300 a 599 mega)','info'],4:['Prioridade 4','Plano alto (600 mega)','ok']};
+function opPlanosHTML(up){
+  const mapa = new Map();
+  up.forEach(x=>{ const k=x.plano; const g = mapa.get(k) || {plano:k, vel:x.vel, n:0, soma:0, ganho:0, alta:0, ofertas:{}}; g.n++; g.soma+=Number(x.valor)||0; g.ganho+=Number(x.ganho)||0; if(x.prioridade==='Alta') g.alta++; g.ofertas[x.oferta]=(g.ofertas[x.oferta]||0)+1; mapa.set(k,g); });
+  const planos = [...mapa.values()].sort((a,b)=>opPlanoGrupo(a.vel)-opPlanoGrupo(b.vel) || b.n-a.n);
+  if(!planos.length) return '';
+  const grupos = [1,2,3,4].map(gr=>{
+    const ps = planos.filter(p=>opPlanoGrupo(p.vel)===gr); if(!ps.length) return '';
+    const tot = ps.reduce((t,p)=>t+p.n,0), gan = ps.reduce((t,p)=>t+p.ganho,0);
+    const [rot, desc, tom] = OP_GRUPO[gr];
+    return `<tr class="marca"><td colspan="7"><span class="cdg-pill ${tom}">${rot}</span> ${desc} · ${cdNum(tot)} contratos · ${cdMoeda(gan)} a mais por mês se todos migrarem</td></tr>` +
+      ps.map(p=>`<tr><td><button type="button" class="cdg-link" onclick="opIr('upgrade',{plano:${cdEsc(JSON.stringify(p.plano))}})">${cdEsc(p.plano)}</button></td><td>${cdNum(p.n)}</td><td>${cdMoeda(p.soma/p.n)}</td><td>${Object.entries(p.ofertas).map(([o,n])=>`${cdEsc(o)} (${cdNum(n)})`).join(', ')}</td><td>${cdMoeda(p.ganho/p.n)}</td><td>${cdMoeda(p.ganho)}</td><td>${cdNum(p.alta)}</td></tr>`).join('');
+  }).join('');
+  const p1 = planos.filter(p=>opPlanoGrupo(p.vel)===1), n1 = p1.reduce((t,p)=>t+p.n,0);
+  return `<div class="cdg-box" id="op-planos"><div class="cdg-eyebrow">Estratégia por plano</div>
+    <p style="margin:6px 0 10px;font-size:13px;line-height:1.5">${n1?`<b>${cdNum(n1)} contratos estão em planos de até 100 mega.</b> São planos antigos, que não atendem mais a maioria das casas, e o equipamento desses clientes provavelmente também está defasado. É por eles que a campanha começa.`:'Nenhum contrato apto em planos de até 100 mega.'}</p>
+    <div class="cdg-tabwrap"><table class="cdg-tab op-tab"><thead><tr><th>Plano atual</th><th>Contratos aptos</th><th>Paga hoje (média)</th><th>Oferta</th><th>A mais por cliente</th><th>A mais por mês (todos)</th><th>Prioridade alta</th></tr></thead><tbody>${grupos}</tbody></table></div>
+    <div class="cdg-nota">Clique no plano para abrir a lista só desse plano e baixar os arquivos do OPA. Contam só contratos que passaram nos filtros (sem fatura vencida, OS aberta, sinal ruim ou reclamação recente).</div></div>`;
 }
 function opListaHTML(){
   const todas = opLista(), ls = opFiltradas(), up = OP.aba==='upgrade';
@@ -25604,7 +25628,7 @@ function opListaHTML(){
       <button class="btn sm ${up?'primary':''}" onclick="opIr('upgrade')">Upgrade (${cdNum((OP.dados?.upgrade||[]).length)})</button>
       <button class="btn sm ${!up?'primary':''}" onclick="opIr('reativacao')">Reativação (${cdNum((OP.dados?.reativacao||[]).length)})</button>
       <span style="flex:1"></span>
-      ${sel('marca','Marca')} ${sel('filial','Filial')} ${sel('oferta','Oferta')} ${sel('prioridade','Prioridade')}
+      ${sel('marca','Marca')} ${sel('filial','Filial')} ${sel('plano','Plano')} ${sel('oferta','Oferta')} ${sel('prioridade','Prioridade')}
       ${up?`<label style="font-size:12px"><input type="checkbox" ${OP.f.pediu?'checked':''} onchange="opSetFiltro('pediu',this.checked)"> Pediu upgrade no OPA</label>`:''}
       <input type="search" placeholder="Buscar nome, código ou plano" value="${cdEsc(OP.f.busca)}" onchange="opSetFiltro('busca',this.value)" style="min-width:200px">
     </div>
