@@ -2521,6 +2521,7 @@ h2.section-title .info-btn{margin-left:6px}
 .nav-sub:hover{background:rgba(77,163,224,.12);opacity:1}
 .nav-sub.active{font-weight:800;opacity:1;color:#2da3ff}
 .busca-off{display:none!important}
+body.radar-modo-atendente .nav-sub{display:none!important}
 .radar-trilha{font-size:11px;color:#8FA3B8;margin-bottom:4px;letter-spacing:.02em}
 .radar-trilha button{background:none;border:0;padding:0;color:#2da3ff;cursor:pointer;font:inherit;text-decoration:underline}
 .radar-trilha span.sep{margin:0 6px;opacity:.6}
@@ -2983,6 +2984,12 @@ body.radar-modo-atendente .topbar{display:none!important}
       </div></div>
     <div class="nav-group nav-hub nav-area" data-area="financeiro"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Financeiro</div><div class="nav-group-items">
         <div class="nav-item" data-mod="cobrancaDia" onclick="go('cobrancaDia')"><span>Cobran&ccedil;a do Dia<small>vencidos, antes do bloqueio e listas</small></span></div>
+        <div class="nav-sub" data-cd="resumo" onclick="go('cobrancaDia');cdSub('resumo')">Resumo do dia</div>
+        <div class="nav-sub" data-cd="onde" onclick="go('cobrancaDia');cdSub('onde')">Onde está o dinheiro</div>
+        <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('cobrar','pre')">Cobrar antes do bloqueio</div>
+        <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('recolhimento_atd')">Agendar recolhimento</div>
+        <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('suspeitos')">Corrigir no IXC</div>
+        <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('avencer')">Lembrar vencimento e e-mail</div>
         <div class="nav-item" data-mod="carneCorreios" onclick="go('carneCorreios')"><span>Envio Correios<small>carn&ecirc; de boletos via e-Carta</small></span></div>
         <div class="nav-item" data-mod="acao" onclick="go('acao')"><span>Estrat&eacute;gia de Atua&ccedil;&atilde;o<small>prioridades e plano de a&ccedil;&atilde;o</small></span></div>
       </div></div>
@@ -23774,15 +23781,22 @@ function cdCard(o){
     <div class="cd-k-label">${o.label}</div><div class="cd-k-valor">${o.valor}</div><div class="cd-k-sub">${o.sub||''}</div>
     ${o.ir?'<div class="cd-k-ver">Ver lista</div>':''}</div>`;
 }
+const CD_SUBS = [['resumo','Resumo do dia'],['onde','Onde está o dinheiro'],['listas','Listas para cobrar'],['atividades','Atividades da equipe']];
+function cdSub(k, aba){ CD.sub = k; if(aba) CD.aba = aba; renderCobrancaDia(); try{ radarTrilha('cobrancaDia'); }catch(e){} window.scrollTo({top:0,behavior:'smooth'}); }
+function cdAbasHTML(){
+  const atrasadas = (CD.atv.lista||[]).filter(a=>a.status==='aberta' && typeof cdPrazoEstourou==='function' && cdPrazoEstourou(a)).length;
+  return `<div class="op-abas">${CD_SUBS.filter(([k])=>k!=='atividades'||cdPodeGerenciar()).map(([k,t])=>`<button type="button" class="${(CD.sub||'resumo')===k?'on':''}" onclick="cdSub('${k}')">${t}${k==='atividades'&&atrasadas?`<span class="q">${atrasadas}</span>`:''}</button>`).join('')}</div>`;
+}
+window.cdSub = cdSub;
 function cdIrLista(aba, preset){
-  CD.aba = aba;
+  CD.aba = aba; CD.sub = 'listas';
   if(aba==='cobrar' && preset){ CD.filial='Todas'; cdAplicarPreset(preset); }
   renderCobrancaDia();
   const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
-function cdIrPreFilial(f){ CD.aba='cobrar'; CD.f = { ...CD.f, ...CD_PRESETS.pre.f, preset:'pre' }; CD.filial=f; renderCobrancaDia();
+function cdIrPreFilial(f){ CD.sub='listas'; CD.aba='cobrar'; CD.f = { ...CD.f, ...CD_PRESETS.pre.f, preset:'pre' }; CD.filial=f; renderCobrancaDia();
   const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
-function cdIrAba(k){ CD.aba=k; renderCobrancaDia(); const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
+function cdIrAba(k){ CD.sub='listas'; CD.aba=k; renderCobrancaDia(); const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
 // ---- Guia de gestão da Cobrança do Dia ----
 // Só apresentação. Todo número vem de CD.dados (mesmas consultas do módulo) e,
 // quando um item abre uma lista, o número é calculado com o mesmo filtro dessa lista.
@@ -24047,7 +24061,11 @@ function cdGuiaHTML(){
     <dt>Horário dos dados</dt><dd>O IXC é lido às 4h, de segunda a sexta. Quem pagou depois disso só sai da lista com "Atualizar pagamentos agora".</dd>
   </dl></details></div>`;
 
-  return `<div class="cdg">${status}${cdAtvPainelHTML()}${resumo}${colunas}${v360}${estr}${glos}</div>`;
+  const sub = CD.sub||'resumo';
+  if(sub==='onde') return `<div class="cdg">${status}${v360}${estr}</div>`;
+  if(sub==='atividades') return `<div class="cdg">${status}${cdAtvPainelHTML()}</div>`;
+  if(sub==='listas') return `<div class="cdg">${status}</div>`;
+  return `<div class="cdg">${status}${resumo}${colunas}${glos}</div>`;
 }
 
 // ---- Atividades da equipe: gerar a partir do painel, trabalhar na área de trabalho e acompanhar ----
@@ -25496,10 +25514,11 @@ function radarTrilha(mod){
   const partes = [`<button type="button" onclick="go('inicio')">Início</button>`];
   if(mod!=='inicio'){ partes.push(`<span>${cdEsc(area)}</span>`); partes.push(mod==='oportunidades' && OP.sub!=='resumo' ? `<button type="button" onclick="opSub('resumo')">${cdEsc(RADAR_NOME_DE[mod])}</button>` : `<span>${cdEsc(RADAR_NOME_DE[mod])}</span>`); }
   if(mod==='oportunidades' && OP.sub!=='resumo') partes.push(`<span>${cdEsc((OP_SUBS.find(x=>x[0]===OP.sub)||[])[1]||'')}</span>`);
+  if(mod==='cobrancaDia' && (CD.sub||'resumo')!=='resumo') partes.push(`<span>${cdEsc((CD_SUBS.find(x=>x[0]===CD.sub)||[])[1]||'')}${CD.sub==='listas'&&CD_ABAS[CD.aba]?' / '+cdEsc(CD_ABAS[CD.aba].titulo):''}</span>`);
   el.innerHTML = partes.join('<span class="sep">/</span>');
-  document.querySelectorAll('.nav-sub').forEach(n=>n.classList.toggle('active', mod==='oportunidades' && n.getAttribute('onclick')?.includes(`opSub('${OP.sub}')`)));
+  document.querySelectorAll('.nav-sub').forEach(n=>n.classList.toggle('active', (mod==='oportunidades' && n.getAttribute('onclick')?.includes(`opSub('${OP.sub}')`)) || (mod==='cobrancaDia' && n.dataset.cd===(CD.sub||'resumo') && (CD.sub!=='listas' || n.getAttribute('onclick')?.includes(`'${CD.aba}'`)))));
 }
-function radarIrAtividades(){ go('cobrancaDia'); setTimeout(()=>document.querySelector('#mod-cobrancaDia .cdg-atv')?.scrollIntoView({behavior:'smooth'}), 600); }
+function radarIrAtividades(){ go('cobrancaDia'); cdSub('atividades'); }
 function radarAreasVisiveis(){ document.querySelectorAll('.nav-area').forEach(g=>{ const vis=[...g.querySelectorAll('.nav-item')].some(it=>getComputedStyle(it).display!=='none'); const sub=g.querySelector('.nav-sub'); if(!vis && !(g.dataset.area==='equipe' && typeof cdPodeGerenciar==='function' && cdPodeGerenciar())) g.style.display='none'; else if(!document.getElementById('nav-busca')?.value) g.style.display=''; }); }
 (function(){ const _go = go; go = function(mod){ const r = _go.apply(this, arguments); try{ radarTrilha(mod); radarAreasVisiveis(); }catch(e){} return r; }; window.go = go; })();
 (function(){ const orig = window.radarAplicarModulos; if(typeof orig==='function'){ window.radarAplicarModulos = radarAplicarModulos = function(){ const r = orig.apply(this, arguments); try{ radarAreasVisiveis(); }catch(e){} return r; }; } })();
@@ -25511,51 +25530,80 @@ async function renderInicio(){
   const pode = typeof cdPodeGerenciar==='function' ? cdPodeGerenciar() : true;
   if(!INI.carregando && (!CD.dados.resumo || !OP.dados || !CD.atv.lista)){
     INI.carregando = true;
-    box.innerHTML = '<div class="section compact-section">Buscando os números de cada área...</div>';
+    box.innerHTML = '<div class="section compact-section">Juntando os números de cada área...</div>';
     try{ await Promise.allSettled([ CD.dados.resumo ? null : cdCarregar(), OP.dados ? null : opCarregar(), CD.atv.lista ? null : cdAtvCarregar(true), IXC_CARGA.status ? null : ixcCargaStatus() ]); }catch(e){}
     INI.carregando = false;
     if(STATE.activeMod==='inicio') renderInicio();
     return;
   }
   let g = null; try{ g = cdGuiaDados(); }catch(e){}
-  const ln = (rot, val, tom, onclick) => `<div class="ln ${tom||''}">${onclick?`<button type="button" onclick="event.stopPropagation();${onclick}">${rot}</button>`:`<span>${rot}</span>`}<b>${val}</b></div>`;
-  const card = (area, titulo, linhas, ir, onclick) => `<div class="ini-card" role="button" tabindex="0" onclick="${onclick}" onkeydown="if(event.key==='Enter'){${onclick}}"><h3>${area}</h3><div class="t">${titulo}</div>${linhas.join('')}<div class="ir">${ir}</div></div>`;
-  const cards = [];
-  if(g) cards.push(card('Financeiro','Cobrança do Dia', [
-      ln('Vencido total', cdMoeda(g.todos.valor)+' · '+cdNum(g.todos.clientes)+' clientes', '', "go('cobrancaDia');setTimeout(()=>cdIrLista('cobrar','todos'),400)"),
-      ln('Antes do bloqueio (1 a 5 dias)', cdMoeda(g.pre.valor)+' · '+cdNum(g.pre.clientes), g.pre.clientes?'r':'ok', "go('cobrancaDia');setTimeout(()=>cdIrLista('cobrar','pre'),400)"),
-      ln('Recolhimento para agendar', cdNum(g.rec.clientes)+' clientes', g.rec.mais30?'r':'', "go('cobrancaDia');setTimeout(()=>cdIrLista('recolhimento_atd'),400)"),
-      ln('Mais de 90 dias', cdMoeda(g.d90.valor), '', "go('cobrancaDia');setTimeout(()=>cdIrLista('cobrar','d90'),400)")
-    ], 'Abrir Cobrança do Dia', "go('cobrancaDia')"));
-  const d = OP.dados||{}, envs=(OP.acomp?.envios)||[], perd = envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
-  const resp = envs.reduce((t,e)=>t+(+e.responderam||0),0), env = envs.reduce((t,e)=>t+(+e.enviados||0),0), conv = envs.reduce((t,e)=>t+(+e.converteram||0),0);
-  if(OP.dados) cards.push(card('Comercial','Oportunidades', [
-      ln('Aptos para upgrade', cdNum((d.upgrade||[]).length)+' contratos', '', "go('oportunidades');opSub('aptos')"),
-      ln('Planos defasados (até 100 mega)', cdNum((d.upgrade||[]).filter(x=>x.vel<=100).length), '', "go('oportunidades');opSub('planos')"),
-      ln('Ex-clientes para reativar', cdNum((d.reativacao||[]).length), '', "go('oportunidades');opIr('reativacao')"),
-      ln('Responderam aos envios', env?cdPct(resp,env)+'% ('+cdNum(resp)+' de '+cdNum(env)+')':'-', '', "go('oportunidades');opSub('envios')"),
-      ln('Encerrados pela IA sem atendimento', cdNum(perd), perd?'r':'ok', "go('oportunidades');opSub('envios')"),
-      ln('Converteram', cdNum(conv), conv?'ok':'', "go('oportunidades');opSub('envios')")
-    ], 'Abrir Oportunidades', "go('oportunidades');opSub('resumo')"));
-  if(pode && CD.atv.lista){ const ab = CD.atv.lista.filter(a=>a.status==='aberta'), est = ab.filter(a=>typeof cdPrazoEstourou==='function' && cdPrazoEstourou(a)), val = ab.filter(a=>a.validacao_solicitada_em);
-    cards.push(card('Equipe','Atividades da equipe', [
-      ln('Em andamento', cdNum(ab.length-val.length), '', 'radarIrAtividades()'),
-      ln('Prazo estourado', cdNum(est.length), est.length?'r':'ok', 'radarIrAtividades()'),
-      ln('Aguardando validação', cdNum(val.length), val.length?'r':'', 'radarIrAtividades()')
-    ], 'Abrir painel de atividades', 'radarIrAtividades()')); }
+  const d = OP.dados||{}, up = d.upgrade||[], re = d.reativacao||[];
+  const envs = (OP.acomp?.envios)||[], perd = envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
+  const env = envs.reduce((t,e)=>t+(+e.enviados||0),0), resp = envs.reduce((t,e)=>t+(+e.responderam||0),0), conv = envs.reduce((t,e)=>t+(+e.converteram||0),0), abertos = envs.reduce((t,e)=>t+(+e.abertos||0),0);
+  const atv = (CD.atv.lista||[]).filter(a=>a.status==='aberta'), est = atv.filter(a=>cdPrazoEstourou(a)), val = atv.filter(a=>a.validacao_solicitada_em);
+  const def = up.filter(x=>x.vel<=100);
   const tipos = IXC_CARGA.status?.tipos || {};
-  cards.push(card('Rede','Saúde da Rede', [
-      ln('ONUs lidas', tipos.fibra?cdNum(tipos.fibra.registros):'-'),
-      ln('Ordens de serviço abertas', tipos.os?cdNum(tipos.os.registros):'-')
-    ], 'Abrir Saúde da Rede', "go('tecnica')"));
-  cards.push(card('Comercial','Premiação', [ ln('Folha, vendas, atendimento e divergências', '') ], 'Abrir Premiação', "go('premiacoes')"));
-  if(pode) cards.push(card('Configurações','Dados e acessos', [
-      ln('Última leitura dos dados', (()=>{ try{ const u=radarFixoUltimaLeitura(IXC_CARGA.status); return u?ixcFmtDataHora(u):'-'; }catch(e){ return '-'; } })()),
-      ln('Usuários e acessos', '', '', "go('usuarios')")
-    ], 'Abrir Carregar Relatórios', "go('setup')"));
-  box.innerHTML = `${perd?`<div role="alert" class="section compact-section" style="border:2px solid #E5484D;background:rgba(229,72,77,.10);cursor:pointer" onclick="go('oportunidades');opSub('resumo')"><b style="color:#E5484D">FALHA GRAVE NO FLUXO DO OPA:</b> ${cdNum(perd)} clientes responderam à oferta e foram encerrados pela IA sem atendimento. Clique para ver.</div>`:''}
-    <div class="ini-grid">${cards.join('')}</div>
-    <div class="cdg-nota" style="margin-top:10px">Cada linha abre a lista correspondente. Os números vêm da última leitura do IXC e do OPA.</div>`;
+  let ult = null; try{ ult = radarFixoUltimaLeitura(IXC_CARGA.status); }catch(e){}
+  const hoje = new Date(); const velho = ult && (hoje - ult) > 6*3600000;
+  const lk = (txt, js, r) => `<button type="button" class="cdg-link ${r?'r':''}" onclick="${js}">${txt}</button>`;
+
+  // 1. status
+  const status = `<div class="cdg-status">${velho||!ult?`<span class="cdg-pill warn">Dados de ${ult?ixcFmtDataHora(ult):'leitura desconhecida'}</span>`:`<span class="cdg-pill ok">Dados atualizados</span>`}
+    <span>Última leitura do IXC e do OPA: <b>${ult?ixcFmtDataHora(ult):'-'}</b>.</span><span class="cdg-sp"></span>
+    <span>${velho?'Use o botão Atualizar todos os dados antes de decidir.':'Tudo abaixo vem dessa leitura.'}</span></div>`;
+
+  // 2. o que precisa de voce agora (em ordem de urgencia)
+  const pri = [];
+  if(perd) pri.push(`<b class="ruim">Falha grave no OPA:</b> ${lk(cdNum(perd)+' clientes responderam à oferta e foram encerrados pela IA sem atendimento', "go('oportunidades');opSub('envios')", true)}. Chame de volta hoje e corrija o fluxo antes do próximo disparo.`);
+  if(g && g.pre.clientes) pri.push(`${lk(cdNum(g.pre.clientes)+' clientes estão a até 5 dias do bloqueio', "go('cobrancaDia');cdIrLista('cobrar','pre')", true)}, somando <b>${cdMoeda(g.pre.valor)}</b>. É o dinheiro mais fácil de recuperar hoje.`);
+  if(est.length) pri.push(`${lk(cdNum(est.length)+(est.length===1?' atividade da equipe passou do prazo':' atividades da equipe passaram do prazo'), 'radarIrAtividades()', true)}. Fale com a responsável ou redistribua.`);
+  if(abertos) pri.push(`${lk(cdNum(abertos)+' clientes que responderam à oferta ainda estão com atendimento aberto', "go('oportunidades');opSub('envios')")}. Cliente que espera esfria.`);
+  if(val.length) pri.push(`${lk(cdNum(val.length)+(val.length===1?' atividade espera':' atividades esperam')+' a sua validação', 'radarIrAtividades()')}.`);
+  if(g && g.rec.mais30) pri.push(`${lk(cdNum(g.rec.mais30)+' recolhimentos de equipamento estão abertos há mais de 30 dias', "go('cobrancaDia');cdIrLista('recolhimento_atd')")}.`);
+  if(!pri.length) pri.push('Nada urgente agora. Use as colunas abaixo para planejar o dia.');
+
+  const num = (tom, rot, ver, v, sub, js) => `<div class="cdg-num ${tom} clicavel" role="button" tabindex="0" onclick="${js}" onkeydown="if(event.key==='Enter'){${js}}"><div class="l">${rot} <span class="ver">${ver}</span></div><div class="v">${v}</div><div class="s">${sub}</div></div>`;
+  const resumo = `<div class="cdg-resumo">
+    <div class="cdg-box"><div class="cdg-eyebrow">O que precisa de você agora</div>
+      <div class="cdg-narrativa">${pri.map(p=>`<p>${p}</p>`).join('')}</div>
+      <div class="cdg-nota">Em ordem de urgência. Os trechos sublinhados abrem a lista.</div></div>
+    <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
+      <div class="cdg-numeros">
+        ${g?num('risk','Antes do bloqueio','Cobrar',cdMoeda(g.pre.valor),cdNum(g.pre.clientes)+' clientes com 1 a 5 dias de atraso',"go('cobrancaDia');cdIrLista('cobrar','pre')"):''}
+        ${g?num('info','Vencido total','Ver',cdMoeda(g.todos.valor),cdNum(g.todos.clientes)+' clientes',"go('cobrancaDia');cdSub('onde')"):''}
+        ${num(perd?'risk':'ok','Campanhas','Ver envios',env?cdPct(resp,env)+'%':'-',env?`responderam · ${cdNum(conv)} converteram`:'nenhum envio ainda',"go('oportunidades');opSub('envios')")}
+      </div>
+      <div class="cdg-nota">Clique num número para abrir o detalhe.</div></div>
+  </div>`;
+
+  // 3. colunas por area
+  const it = o => cdItem(o);
+  const fin = g ? [
+    it({tom:'agir', titulo:'Cobrar antes do bloqueio', numero:cdMoeda(g.pre.valor), unid:cdNum(g.pre.clientes)+' clientes', vazio:!g.pre.clientes, porque:'O cliente ainda está com a internet ligada.', acao:['Abrir lista',"go('cobrancaDia');cdIrLista('cobrar','pre')"]}),
+    it({tom:'agir', titulo:'Agendar recolhimento', numero:cdNum(g.rec.clientes), unid:'clientes', vazio:!g.rec.clientes, porque:'Equipamento fora de casa é patrimônio parado.', acao:['Abrir lista',"go('cobrancaDia');cdIrLista('recolhimento_atd')"]}),
+    it({tom:'planejar', titulo:'Recuperar mais de 90 dias', numero:cdMoeda(g.d90.valor), unid:cdNum(g.d90.clientes)+' clientes', porque:'Inadimplência antiga, precisa de régua própria.', acao:['Ver onde está',"go('cobrancaDia');cdSub('onde')"]})
+  ].join('') : '<div class="cdg-nota">Os dados de cobrança ainda não carregaram.</div>';
+  const com = [
+    it({tom:perd?'corrigir':'agir', titulo:perd?'Chamar de volta quem a IA encerrou':'Acompanhar os envios', numero:perd?cdNum(perd):(env?cdPct(resp,env)+'%':'-'), unid:perd?'clientes':'responderam', porque:perd?'Responderam à oferta e ninguém atendeu.':'Engajamento e conversão de cada envio.', acao:[perd?'Ver e gerar atividade':'Ver envios',"go('oportunidades');opSub('envios')"]}),
+    it({tom:'agir', titulo:'Migrar planos defasados', numero:cdNum(def.length), unid:'contratos até 100 mega', vazio:!def.length, porque:'Plano antigo e equipamento defasado: maior risco de trocar de provedor.', acao:['Ver por plano',"go('oportunidades');opSub('planos')"]}),
+    it({tom:'planejar', titulo:'Reativar ex-clientes', numero:cdNum(re.length), unid:'dos últimos 2 anos', vazio:!re.length, porque:'Todos podem voltar. Comece por quem saiu há até 6 meses.', acao:['Abrir lista',"go('oportunidades');opIr('reativacao',{prioridade:'Alta'})"]}),
+    it({tom:'planejar', titulo:'Premiação do mês', porque:'Folha, vendas, atendimento e divergências com a planilha.', acao:['Abrir Premiação',"go('premiacoes')"]})
+  ].join('');
+  const eq = pode ? [
+    it({tom:est.length?'corrigir':'agir', titulo:'Atividades em andamento', numero:cdNum(atv.length-val.length), unid:'atividades', porque:est.length?`${cdNum(est.length)} com prazo estourado.`:'Todas dentro do prazo.', acao:['Abrir painel','radarIrAtividades()']}),
+    it({tom:'planejar', titulo:'Validar o que a equipe entregou', numero:cdNum(val.length), unid:'aguardando', vazio:!val.length, porque:'A liderança confere e conclui ou devolve para ajuste.', acao:['Abrir painel','radarIrAtividades()']})
+  ].join('') : '';
+  const rede = [
+    it({tom:'planejar', titulo:'Ordens de serviço abertas', numero:tipos.os?cdNum(tipos.os.registros):'-', unid:'OS', porque:'Inclui recolhimento, instalação e suporte técnico.', acao:['Abrir Saúde da Rede',"go('tecnica')"]}),
+    it({tom:'planejar', titulo:'Sinal da fibra', numero:tipos.fibra?cdNum(tipos.fibra.registros):'-', unid:'ONUs lidas', porque:'Sinal ruim tira o cliente da oferta e gera reclamação.', acao:['Abrir Saúde da Rede',"go('tecnica')"]})
+  ].join('');
+  const colunas = `<div class="cdg-colunas">
+    <div class="cdg-col agir"><div class="cdg-col-h"><h3>Financeiro</h3><span>cobrança</span></div>${fin}</div>
+    <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Comercial</h3><span>vendas e campanhas</span></div>${com}</div>
+    ${pode?`<div class="cdg-col planejar"><div class="cdg-col-h"><h3>Equipe</h3><span>atividades</span></div>${eq}</div>`:''}
+    <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Rede</h3><span>técnico</span></div>${rede}</div>
+  </div>`;
+  box.innerHTML = `<div class="cdg">${status}${resumo}${colunas}</div>`;
 }
 window.renderInicio = renderInicio;
 
@@ -26000,8 +26048,8 @@ function renderCobrancaDia(){
   box.innerHTML = `
     ${CD.erro?`<div role="alert" class="section compact-section">Não foi possível atualizar: ${cdEsc(CD.erro)} Os dados anteriores foram mantidos. <button class="btn sm" onclick="cdCarregar()">Tentar novamente</button></div>`:''}
     ${CD.carregando?'<div role="status" class="section compact-section">Consultando os dados de cobrança e o histórico de exportações...</div>':''}
-    ${cdGuiaHTML()}
-    <div class="section compact-section" id="cd-lista">
+    ${cdAbasHTML()}${cdGuiaHTML()}
+    <div class="section compact-section" id="cd-lista" style="${(CD.sub||'resumo')==='listas'?'':'display:none'}">
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
         ${Object.entries(CD_ABAS).map(([k,a])=>`<button class="btn sm ${k===CD.aba?'primary':''}" onclick="CD.aba='${k}';renderCobrancaDia()">${a.titulo} (${contagem(k)})</button>`).join('')}
         <span style="flex:1"></span>
