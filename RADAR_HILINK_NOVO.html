@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261029180138">
+<meta name="radar-build" content="20261029180323">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -2526,6 +2526,7 @@ body.radar-modo-atendente .nav-sub{display:none!important}
 .radar-trilha{font-size:11px;color:#8FA3B8;margin-bottom:4px;letter-spacing:.02em}
 .radar-trilha button{background:none;border:0;padding:0;color:#2da3ff;cursor:pointer;font:inherit;text-decoration:underline}
 .radar-trilha span.sep{margin:0 6px;opacity:.6}
+#prem-tabs-nav{display:none!important}
 .op-abas{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .op-abas button{border:1px solid rgba(143,163,184,.35);background:transparent;color:inherit;border-radius:999px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
 .op-abas button.on{background:#2da3ff;border-color:#2da3ff;color:#fff}
@@ -3003,7 +3004,13 @@ body.radar-modo-atendente .topbar{display:none!important}
         <div class="nav-sub" onclick="go('oportunidades');opSub('planos')">Por plano</div>
         <div class="nav-sub" onclick="go('oportunidades');opSub('listas')">Listas para o OPA</div>
         <div class="nav-sub" onclick="go('oportunidades');opSub('envios')">Envios e resultado</div>
-        <div class="nav-item" data-mod="premiacoes" onclick="go('premiacoes')"><span>Premia&ccedil;&atilde;o<small>folha, vendas e atendimento</small></span></div>
+        <div class="nav-item" data-mod="premiacoes" onclick="go('premiacoes');premSub('resumo')"><span>Premia&ccedil;&atilde;o<small>folha, vendas e atendimento</small></span></div>
+        <div class="nav-sub" data-prem="resumo" onclick="go('premiacoes');premSub('resumo')">Resumo</div>
+        <div class="nav-sub" data-prem="conferencia" onclick="go('premiacoes');premSub('conferencia')">Conferir antes de pagar</div>
+        <div class="nav-sub" data-prem="vendas" onclick="go('premiacoes');premSub('vendas')">Vendas</div>
+        <div class="nav-sub" data-prem="folha" onclick="go('premiacoes');premSub('folha')">Folha do mês</div>
+        <div class="nav-sub" data-prem="ranking" onclick="go('premiacoes');premSub('ranking')">Ranking</div>
+        <div class="nav-sub" data-prem="painel" onclick="go('premiacoes');premSub('painel')">Indicadores detalhados</div>
         <div class="nav-item" data-mod="propostas" onclick="go('propostas')"><span>Propostas Corporativas<small>CRM e proposta comercial</small></span></div>
       </div></div>
     <div class="nav-group nav-hub nav-area" data-area="rede"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Rede</div><div class="nav-group-items">
@@ -7487,6 +7494,8 @@ body.radar-modo-atendente .topbar{display:none!important}
   </style>
   <div class="module" id="mod-premiacoes">
       <div id="prem-barra" class="cdg" style="margin-bottom:14px"></div>
+      <div id="prem-abas"></div>
+      <div id="prem-guia" class="cdg" style="margin-bottom:16px"></div>
       <div id="ixc-carga-card" style="display:none"><p class="ixc-carga-nota">Carregando situação dos dados do IXC…</p></div>
 
 
@@ -7537,7 +7546,6 @@ body.radar-modo-atendente .topbar{display:none!important}
 
     <!-- -- ABA: VISÃO GERAL -- -->
     <div class="prem-tab-pane active" id="prem-tab-geral">
-      <div id="prem-guia" class="cdg" style="margin-bottom:16px"></div>
       <div class="prem-tab-intro">
         <div>
           <small>Vis&atilde;o Geral</small>
@@ -17593,23 +17601,46 @@ function premGuiaRender(c){
   if(curtos) at.push(cdAlerta('warn', `<button type="button" class="cdg-link" data-prem-geral="curtos">${nf(curtos)} ${curtos===1?'atendimento':'atendimentos'} abaixo de 60s</button>.`));
   if(totPlan && conta('IXC: ativação em nome')) at.push(cdAlerta('risk', `<button type="button" class="cdg-link r" onclick="premDivAbrir('IXC: ativação em nome')">Ver ${nf(conta('IXC: ativação em nome'))} ${conta('IXC: ativação em nome')===1?'venda':'vendas'} com atendente divergente</button>. Comparação dos últimos 3 meses; a lista mostra o mês e os nomes na planilha e no IXC.`));
   if(!at.length) at.push(cdAlerta('ok','Nada fora do normal no período.'));
-  box.innerHTML = `
+  const sub = PREM_UI.sub;
+  if(sub==='conferencia'){
+    box.innerHTML = `<div class="cdg-resumo">
+      <div class="cdg-box"><div class="cdg-eyebrow">Conferir antes de pagar</div>
+        <div class="cdg-narrativa"><p>${p2}</p>${divTxt?`<p>${divTxt}</p>`:''}<p>Abaixo, a auditoria completa de cada venda.</p></div></div>
+      <div class="cdg-box"><div class="cdg-eyebrow">O que conferir</div><div class="cdg-colunas" style="grid-template-columns:1fr">${corrigir}</div></div>
+    </div>`;
+  } else if(sub==='folha'){
+    box.innerHTML = `<div class="cdg-resumo">
+      <div class="cdg-box"><div class="cdg-eyebrow">Folha do mês</div><div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p></div></div>
+      <div class="cdg-box"><div class="cdg-eyebrow">Fechamento</div>${planejar}</div>
+    </div>`;
+  } else if(sub!=='resumo'){
+    box.innerHTML = '';
+  } else box.innerHTML = `
     <div class="cdg-resumo">
       <div class="cdg-box"><div class="cdg-eyebrow">O período em poucas linhas</div>
-        <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p>${p3?`<p>${p3}</p>`:''}${divTxt?`<p>${divTxt}</p>`:''}</div>
+        <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p>${p3?`<p>${p3}</p>`:''}${totPlan?`<p>Planilha x IXC: <button type="button" class="cdg-link r" onclick="premSub('conferencia')">${nf(soPlan)} lançamentos para conferir</button>.</p>`:''}</div>
         <div class="cdg-nota">Os trechos sublinhados abrem a lista.</div></div>
       <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o período</div>${numeros}</div>
     </div>
-    <div class="cdg-colunas">
+    <div class="cdg-colunas" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
       <div class="cdg-col agir"><div class="cdg-col-h"><h3>Fazer agora</h3><span>nesta ordem</span></div>${agir}</div>
-      <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Corrigir</h3><span>antes de pagar</span></div>${corrigir}</div>
-      <div class="cdg-col planejar"><div class="cdg-col-h"><h3>Planejar</h3><span>fechamento</span></div>${planejar}</div>
       <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Ficar atenta</h3><span>${at.length} pontos</span></div>${at.join('')}</div>
+      <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Próximos passos</h3><span>por assunto</span></div>
+        ${item({tom:'corrigir', titulo:'Conferir antes de pagar', porque:'Planilha x IXC, repetições entre meses, ativações sem lançamento e eventos para não pagar.', botao:btn('Abrir conferência',`onclick="premSub('conferencia')"`)})}
+        ${item({tom:'planejar', titulo:'Folha do mês', numero:brlS(folha), porque:'Fechar depois de zerar a fila de revisão.', botao:btn('Abrir folha',`onclick="premSub('folha')"`)})}
+        ${item({tom:'planejar', titulo:'Ranking', porque:'Geral, upgrade e semanal.', botao:btn('Abrir ranking',`onclick="premSub('ranking')"`)})}
+      </div>
     </div>`;
   // liga os botões do guia aos mesmos atalhos da Visão Geral
   box.querySelectorAll('[data-prem-geral]').forEach(el=>{ el.onclick = ()=>{ const alvo = document.querySelector(`#prem-tab-geral .prem-exec-card[data-prem-geral="${el.dataset.premGeral}"], #prem-tab-geral .prem-exec-status[data-prem-geral="${el.dataset.premGeral}"]`); if(alvo && alvo.onclick) alvo.onclick(); }; });
 }
 window.premDivAbrir = premDivAbrir;
+if(typeof renderPremiacoes==='function' && !window._premSubWrap){
+  window._premSubWrap = true;
+  const _rp = renderPremiacoes;
+  renderPremiacoes = function(){ const r = _rp.apply(this, arguments); try{ premAplicarSub(); }catch(e){ console.error('[Prem] sub',e); } return r; };
+  window.renderPremiacoes = renderPremiacoes;
+}
 window.premRepeticoesAbrir = premRepeticoesAbrir;
 
 
@@ -17673,10 +17704,34 @@ function premBarraRender(){
         ${cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="ixcCargaAtualizar()" ${andamento?'disabled':''}>${andamento?'Lendo o IXC (cerca de 20 min)...':'Atualizar dados do IXC'}</button>`:''}
       </div>
     </div>
-    ${cdAlerta('warn','<b>Planilha da equipe:</b> até <b>31/12/2026</b> ela é usada só como conferência extra, para achar diferenças com o IXC. A partir de 01/01/2027 a premiação é paga somente com base nos dados do IXC e do Radar. Quem quiser pode continuar com a planilha para controle pessoal, mas ela não vale para pagamento.')}`;
+    ${(PREM_UI.sub!=='conferencia')?'':cdAlerta('warn','<b>Planilha da equipe:</b> até <b>31/12/2026</b> ela é usada só como conferência extra, para achar diferenças com o IXC. A partir de 01/01/2027 a premiação é paga somente com base nos dados do IXC e do Radar. Quem quiser pode continuar com a planilha para controle pessoal, mas ela não vale para pagamento.')}`;
   const sel=document.getElementById('prem-barra-filial'); if(sel) sel.value=filVal;
 }
 Object.assign(window,{premPeriodo, premAplicarDatas, premBarraRender});
+
+// ===== Premiação segmentada em submenus (Resumo, Conferir, Vendas, Folha, Ranking, Indicadores) =====
+var PREM_UI = { sub:'resumo' };
+var PREM_SUBS = [['resumo','Resumo'],['conferencia','Conferir antes de pagar'],['vendas','Vendas'],['folha','Folha do mês'],['ranking','Ranking'],['painel','Indicadores detalhados']];
+var PREM_SUB_PANES = { resumo:[], conferencia:['prem-tab-auditoria'], vendas:['prem-tab-vendas'], folha:['prem-tab-apuracao'], ranking:['prem-tab-ranking','prem-tab-ranking-upgrade'], painel:['prem-tab-geral'] };
+function premAbasRender(){
+  const box=document.getElementById('prem-abas'); if(!box) return;
+  box.innerHTML=`<div class="op-abas">${PREM_SUBS.map(([k,t])=>`<button type="button" class="${PREM_UI.sub===k?'on':''}" onclick="premSub('${k}')">${t}</button>`).join('')}</div>`;
+}
+function premAplicarSub(){
+  const k=PREM_UI.sub, ativos=PREM_SUB_PANES[k]||[];
+  document.querySelectorAll('#mod-premiacoes .prem-tab-pane').forEach(p=>p.classList.toggle('active', ativos.includes(p.id)));
+  premAbasRender();
+  const chama=fn=>{ try{ if(typeof window[fn]==='function') window[fn](); }catch(e){ console.error('[Prem]',fn,e); } };
+  if(k==='conferencia') chama('renderPremiacoesAuditoria');
+  if(k==='folha') chama('renderPremiacoesApuracaoResultado');
+  if(k==='ranking'){ chama('updateRankingTab'); chama('renderRankingUpgrade'); }
+  if(['resumo','conferencia','folha','painel'].includes(k)) chama('renderPremiacoesGeral');
+  else { const g=document.getElementById('prem-guia'); if(g) g.innerHTML=''; }
+  try{ premBarraRender(); }catch(e){}
+  try{ radarTrilha('premiacoes'); }catch(e){}
+}
+function premSub(k){ PREM_UI.sub = PREM_SUB_PANES[k] ? k : 'resumo'; premAplicarSub(); window.scrollTo({top:0,behavior:'smooth'}); }
+window.premSub = premSub;
 
 function renderPremiacoesGeral(){
   _syncPremFiltrosMirror();
@@ -25615,9 +25670,10 @@ function radarTrilha(mod){
   const partes = [`<button type="button" onclick="go('inicio')">Início</button>`];
   if(mod!=='inicio'){ partes.push(`<span>${cdEsc(area)}</span>`); partes.push(mod==='oportunidades' && OP.sub!=='resumo' ? `<button type="button" onclick="opSub('resumo')">${cdEsc(RADAR_NOME_DE[mod])}</button>` : `<span>${cdEsc(RADAR_NOME_DE[mod])}</span>`); }
   if(mod==='oportunidades' && OP.sub!=='resumo') partes.push(`<span>${cdEsc((OP_SUBS.find(x=>x[0]===OP.sub)||[])[1]||'')}</span>`);
+  if(mod==='premiacoes' && typeof PREM_UI!=='undefined' && PREM_UI.sub!=='resumo') partes.push(`<span>${cdEsc((PREM_SUBS.find(x=>x[0]===PREM_UI.sub)||[])[1]||'')}</span>`);
   if(mod==='cobrancaDia' && (CD.sub||'resumo')!=='resumo') partes.push(`<span>${cdEsc((CD_SUBS.find(x=>x[0]===CD.sub)||[])[1]||'')}${CD.sub==='listas'&&CD_ABAS[CD.aba]?' / '+cdEsc(CD_ABAS[CD.aba].titulo):''}</span>`);
   el.innerHTML = partes.join('<span class="sep">/</span>');
-  document.querySelectorAll('.nav-sub').forEach(n=>n.classList.toggle('active', (mod==='oportunidades' && n.getAttribute('onclick')?.includes(`opSub('${OP.sub}')`)) || (mod==='cobrancaDia' && n.dataset.cd===(CD.sub||'resumo') && (CD.sub!=='listas' || n.getAttribute('onclick')?.includes(`'${CD.aba}'`)))));
+  document.querySelectorAll('.nav-sub').forEach(n=>n.classList.toggle('active', (mod==='oportunidades' && n.getAttribute('onclick')?.includes(`opSub('${OP.sub}')`)) || (mod==='premiacoes' && typeof PREM_UI!=='undefined' && n.dataset.prem===PREM_UI.sub) || (mod==='cobrancaDia' && n.dataset.cd===(CD.sub||'resumo') && (CD.sub!=='listas' || n.getAttribute('onclick')?.includes(`'${CD.aba}'`)))));
 }
 function radarIrAtividades(){ go('cobrancaDia'); cdSub('atividades'); }
 function radarAreasVisiveis(){ document.querySelectorAll('.nav-area').forEach(g=>{ const vis=[...g.querySelectorAll('.nav-item')].some(it=>getComputedStyle(it).display!=='none'); const sub=g.querySelector('.nav-sub'); if(!vis && !(g.dataset.area==='equipe' && typeof cdPodeGerenciar==='function' && cdPodeGerenciar())) g.style.display='none'; else if(!document.getElementById('nav-busca')?.value) g.style.display=''; }); }
