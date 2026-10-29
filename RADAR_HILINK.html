@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261029182947">
+<meta name="radar-build" content="20261029183021">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -23910,7 +23910,7 @@ function cdGuiaDados(){
   g.topFilial = g.filiais[0] || null;
   g.pctTop = g.topFilial ? cdPct(g.topFilial.valor, g.todos.valor) : 0;
   g.leituraHoje = String(r.data||'').slice(0,10) === cdHojeISO();
-  g.cargaErros = (r.ultima_carga||[]).filter(c => c.erro && c.tipo!=='filiais');
+  g.cargaErros = (r.ultima_carga||[]).filter(c => c.erro && c.tipo!=='filiais' && c.tipo!=='planilha_premiacao');
   g.conferido = CD.titulosEm || CD.carregadoEm;
   return g;
 }
@@ -26166,7 +26166,7 @@ function renderCobrancaDia(){
   if(CD.atv && CD.atv.aberta){ box.innerHTML = cdAreaHTML(); return; }
   const faixas = r.faixas || {};
   const fx = k => faixas[k] || {valor:0,clientes:0};
-  const cargaErros = (r.ultima_carga||[]).filter(c => c.erro && c.tipo!=='filiais');
+  const cargaErros = (r.ultima_carga||[]).filter(c => c.erro && c.tipo!=='filiais' && c.tipo!=='planilha_premiacao');
   const base = cdLinhasBase();
   const filiais = ['Todas', ...[...new Set(base.map(x => x.filial).filter(Boolean))].sort()];
   if(!filiais.includes(CD.filial)) CD.filial = 'Todas';
