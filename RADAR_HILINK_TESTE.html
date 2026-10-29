@@ -425,6 +425,8 @@ body{font-family:'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif;background
 /* Oculta topbar global quando premiações está ativa — usa header próprio */
 body[data-active-mod="premiacoes"] #global-filters{display:none!important}
 body[data-active-mod="oportunidades"] #global-filters{display:none!important}
+#mod-oportunidades .op-tab th,#mod-oportunidades .op-tab td{text-align:left;vertical-align:top}
+#mod-oportunidades .op-tab td small{color:var(--g-muted,#8FA3B8)}
 body[data-active-mod="setup"] .topbar{
   background:linear-gradient(180deg,#101f33 0%,#0c1829 100%);
   border:1px solid #263a54;
@@ -25592,7 +25594,7 @@ function opGuiaHTML(){
   if(Number(d.mesmo_preco_600)>0) alertas.push(cdAlerta('warn', `<b>${cdNum(d.mesmo_preco_600)} clientes pagam R$ 99,90 ou mais por 500 mega.</b> O plano oficial de 600 mega custa R$ 99,90. Se o cliente descobrir, pede a troca ou vai embora. Vale decidir se essa base migra para 600 mega sem custo, como retenção.`));
   if(uf['reclamou no OPA nos últimos 30 dias']) alertas.push(cdAlerta('', `<b>${cdNum(uf['reclamou no OPA nos últimos 30 dias'])} clientes reclamaram no OPA</b> nos últimos 30 dias (sem acesso, lentidão, cancelamento ou contestação). Ficam fora da oferta até o problema esfriar.`));
   alertas.push(cdAlerta('', 'Quem é baixado para o OPA fica 30 dias sem aparecer nas listas. Isso evita mandar a mesma oferta duas vezes.'));
-  alertas.push(cdAlerta('', 'O arquivo do OPA traz só nome e WhatsApp. Crie no OPA um modelo de mensagem para cada oferta e use o arquivo da mesma oferta.'));
+  alertas.push(cdAlerta('', 'O arquivo do OPA traz só nome e WhatsApp. Crie no OPA um modelo de mensagem para cada oferta, trocando {nome} pela variável de nome do OPA, e use o arquivo da mesma oferta.'));
   if(rf['saiu há mais de 2 anos']) alertas.push(cdAlerta('', `${cdNum(rf['saiu há mais de 2 anos'])} ex-clientes saíram há mais de 2 anos e ficaram fora da reativação: número antigo e pouca chance de resposta.`));
   const colunas = `<div class="cdg-colunas">
     <div class="cdg-col agir"><div class="cdg-col-h"><h3>Fazer agora</h3><span>nesta ordem</span></div>${agir}</div>
@@ -25607,7 +25609,8 @@ function opListaHTML(){
   const uniq = k => ['Todas', ...[...new Set(todas.map(x=>x[k]).filter(Boolean))].sort()];
   const sel = (k, rot) => `<label style="font-size:12px">${rot} <select onchange="opSetFiltro('${k}',this.value)" style="margin-left:4px">${uniq(k).map(v=>`<option ${v===OP.f[k]?'selected':''}>${cdEsc(v)}</option>`).join('')}</select></label>`;
   const marca = OP.f.marca;
-  const ofertas = [...new Set(ls.map(x=>x.oferta))].sort();
+  const ordem = ['300MB','600MB','1 GIGA'];
+  const ofertas = [...new Set(ls.map(x=>x.oferta))].sort((a,b)=>ordem.indexOf(a)-ordem.indexOf(b));
   const msgs = ofertas.map((o,i)=>`<div class="cdg-box" style="padding:10px 12px"><div class="cdg-eyebrow">Mensagem sugerida: ${up?'upgrade':'reativação'} ${cdEsc(o)} (${cdNum(ls.filter(x=>x.oferta===o).length)} clientes)</div>
     <div id="op-msg-${i}" style="font-size:13px;line-height:1.45;margin:6px 0">${cdEsc(opMensagem(OP.aba, o, marca))}</div>
     <button type="button" class="cdg-mini" onclick="opCopiarMsg(${i})">Copiar mensagem</button></div>`).join('');
@@ -25637,7 +25640,7 @@ function opListaHTML(){
       <span style="flex:1"></span>
       <button class="btn primary sm" onclick="opExportar()" ${OP.exportando||!ls.length?'disabled':''}>${OP.exportando?'Gerando arquivos...':'Baixar para o OPA'}</button>
     </div>
-    <div class="cdg-tabwrap"><table class="cdg-tab"><thead><tr><th><input type="checkbox" onchange="opToggleTodos(this)" title="Selecionar todos os filtrados"></th>${cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas||`<tr><td colspan="${cab.length+1}">Nenhum cliente com esses filtros.</td></tr>`}</tbody></table></div>
+    <div class="cdg-tabwrap"><table class="cdg-tab op-tab"><thead><tr><th><input type="checkbox" onchange="opToggleTodos(this)" title="Selecionar todos os filtrados"></th>${cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas||`<tr><td colspan="${cab.length+1}">Nenhum cliente com esses filtros.</td></tr>`}</tbody></table></div>
     ${ls.length>OP.limite?`<div style="text-align:center;margin-top:8px"><button class="btn sm" onclick="OP.limite+=200;renderOportunidades()">Mostrar mais (${cdNum(ls.length-OP.limite)} restantes)</button></div>`:''}
     <div class="cdg-nota">Um arquivo por filial e por oferta, no formato do OPA (name, whatsapp). NandoNet e Pablom saem em arquivos próprios.</div>
   </div>
