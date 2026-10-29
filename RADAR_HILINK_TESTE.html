@@ -25492,27 +25492,29 @@ async function opExportar(){
     const g = (grupos[x.filial+'||'+x.oferta] ||= { filial:x.filial, oferta:x.oferta, mapa:new Map() }); g.mapa.set(fone, x); });
   const chaves = Object.keys(grupos);
   if(!chaves.length){ toast('Nenhum contato com celular válido','warn'); return; }
-  if(!confirm(`Gerar ${chaves.length} arquivo(s) para o OPA com ${cdNum(linhas.length)} clientes?\n\nEsses clientes ficam 30 dias sem aparecer nas listas de oportunidade.`)) return;
+  if(!confirm(`Gerar arquivos para o OPA com ${cdNum(linhas.length)} clientes, em blocos de 50 por filial e oferta?\n\nEsses clientes ficam 30 dias sem aparecer nas listas de oportunidade.`)) return;
   OP.exportando = true;
   const data = new Date().toISOString().slice(0,10), lote = crypto.randomUUID();
   let gerados = 0, falhas = 0;
   try{
-    for(const k of chaves){
-      const g = grupos[k];
-      const corpo = ['name,whatsapp', ...[...g.mapa].map(([fone,x])=>`${cdCsvCampo(x.nome)},${fone}`)].join('\r\n');
-      const arquivo = `${cdSlug(g.filial)}_${OP.aba}_${cdSlug(g.oferta)}_${data}.csv`;
-      cdBaixar(arquivo, corpo); gerados++;
+    const BLOCO = 50; // regra: arquivos do OPA sempre em blocos de 50 clientes
+    const arquivos = [];
+    chaves.forEach(k=>{ const g = grupos[k], itens = [...g.mapa], n = Math.ceil(itens.length/BLOCO);
+      for(let i=0;i<n;i++) arquivos.push({ g, itens: itens.slice(i*BLOCO,(i+1)*BLOCO), nome: `${cdSlug(g.filial)}_${OP.aba}_${cdSlug(g.oferta)}_${data}_bloco${String(i+1).padStart(2,'0')}de${String(n).padStart(2,'0')}.csv` }); });
+    for(const a of arquivos){
+      const corpo = ['name,whatsapp', ...a.itens.map(([fone,x])=>`${cdCsvCampo(x.nome)},${fone}`)].join('\r\n');
+      cdBaixar(a.nome, corpo); gerados++;
       try{
-        const r = await getSB().rpc('radar_oportunidades_registrar', { p_lote:lote, p_lista:OP.aba, p_oferta:g.oferta, p_arquivo:arquivo,
-          p_itens:[...g.mapa.values()].map(x=>({ cliente:String(x.cliente), contrato:String(x.contrato||''), filial:x.filial })) });
+        const r = await getSB().rpc('radar_oportunidades_registrar', { p_lote:lote, p_lista:OP.aba, p_oferta:a.g.oferta, p_arquivo:a.nome,
+          p_itens:a.itens.map(([,x])=>({ cliente:String(x.cliente), contrato:String(x.contrato||''), filial:x.filial })) });
         if(r.error) throw r.error;
       }catch(e){ falhas++; console.warn('[Radar] Registro oportunidade', e); }
-      if(gerados < chaves.length) await new Promise(res=>setTimeout(res, 400));
+      if(gerados < arquivos.length) await new Promise(res=>setTimeout(res, 400));
     }
     const saiu = new Set(linhas.map(opChave));
     OP.dados[OP.aba] = opLista().filter(x=>!saiu.has(opChave(x)));
     OP.sel.clear();
-    toast(`${gerados} arquivo(s) gerado(s), um por filial e oferta`, 'success');
+    toast(`${gerados} arquivo(s) gerado(s), em blocos de 50 por filial e oferta`, 'success');
     if(falhas) toast('Arquivo gerado, mas o registro do envio falhou em '+falhas+' arquivo(s). Esses clientes podem voltar na próxima lista.', 'warn');
     try{ const s = await getSB().rpc('radar_oportunidades_resultado'); if(!s.error) OP.resultado = s.data||[]; }catch(e){}
   }finally{ OP.exportando = false; renderOportunidades(); }
@@ -25555,7 +25557,7 @@ function opGuiaHTML(){
       como:`A oferta é o 300 mega por R$ 79,90. Ganho de ${cdMoeda(def.reduce((t,x)=>t+(+x.ganho||0),0))} por mês se todos migrarem. Abra o quadro por plano e comece pelo maior.`, acao:['Ver por plano',"document.getElementById('op-planos')?.scrollIntoView({behavior:'smooth'})"]}); })(),
     cdItem({tom:'agir', passo:3, titulo:'Disparar upgrade para a prioridade alta', numero:cdNum(upAlta.length), unid:'clientes', vazio:!upAlta.length,
       porque:`Pagam em dia e são clientes antigos. ${['300MB','600MB','1 GIGA'].map(o=>`${cdNum(upAlta.filter(x=>x.oferta===o).length)} para ${o}`).join(', ')}.`,
-      como:'Baixar para o OPA gera um arquivo por filial e por oferta. Use no OPA o modelo aprovado da oferta.', acao:['Abrir lista',"opIr('upgrade',{prioridade:'Alta'})"]}),
+      como:'Baixar para o OPA gera arquivos de 50 clientes por filial e por oferta. Use no OPA o modelo aprovado da oferta.', acao:['Abrir lista',"opIr('upgrade',{prioridade:'Alta'})"]}),
     cdItem({tom:'agir', passo:4, titulo:'Chamar de volta quem saiu há até 6 meses', numero:cdNum(reAlta.length), unid:'ex-clientes', vazio:!reAlta.length,
       porque:'Quanto mais recente a saída, maior a chance de voltar e de o número ainda ser o mesmo.', como:'Disparo em massa com a oferta do plano mais próximo do que tinha.', acao:['Abrir lista',"opIr('reativacao',{prioridade:'Alta'})"]})
   ].join('');
@@ -25666,7 +25668,7 @@ function opListaHTML(){
     </div>
     <div class="cdg-tabwrap"><table class="cdg-tab op-tab"><thead><tr><th><input type="checkbox" onchange="opToggleTodos(this)" title="Selecionar todos os filtrados"></th>${cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas||`<tr><td colspan="${cab.length+1}">Nenhum cliente com esses filtros.</td></tr>`}</tbody></table></div>
     ${ls.length>OP.limite?`<div style="text-align:center;margin-top:8px"><button class="btn sm" onclick="OP.limite+=200;renderOportunidades()">Mostrar mais (${cdNum(ls.length-OP.limite)} restantes)</button></div>`:''}
-    <div class="cdg-nota">Um arquivo por filial e por oferta, no formato do OPA (name, whatsapp), para usar com o modelo aprovado de cada oferta. NandoNet e Pablom saem em arquivos próprios.</div>
+    <div class="cdg-nota">Arquivos em blocos de 50 clientes, separados por filial e por oferta, no formato do OPA (name, whatsapp), para usar com o modelo aprovado de cada oferta. NandoNet e Pablom saem em arquivos próprios.</div>
   </div>
   <div class="section compact-section"><h3 class="section-title" style="font-size:14px">Resultado dos envios (últimos 120 dias)</h3>
     ${res?`<div class="cdg-tabwrap"><table class="cdg-tab"><thead><tr><th>Envio</th><th>Lista</th><th>Oferta</th><th>Quem baixou</th><th>Enviados</th><th>Aceitaram</th><th>Conversão</th></tr></thead><tbody>${res}</tbody></table></div>`:'<p class="cdg-nota">Ainda não há envios registrados. O resultado aparece aqui depois do primeiro arquivo baixado.</p>'}
