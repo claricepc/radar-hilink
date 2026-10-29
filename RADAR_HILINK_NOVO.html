@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261029185103">
+<meta name="radar-build" content="20261029190051">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -17728,7 +17728,7 @@ function premBarraRender(){
         <span>${ixcEm?`Dados do IXC de <b>${ixcEm}</b>.`:'Buscando dados do IXC...'}</span>
         ${planEm?`<span>Planilha da equipe lida em <b>${planEm}</b>.</span>`:''}
         <span class="cdg-sp" style="flex:1"></span>
-        ${cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="ixcCargaAtualizar()" ${andamento?'disabled':''}>${andamento?'Lendo o IXC (cerca de 20 min)...':'Atualizar dados do IXC'}</button>`:''}
+        ${andamento?'<span>Leitura geral em andamento (cerca de 20 min).</span>':''}
       </div>
     </div>
     ${(PREM_UI.sub!=='conferencia')?'':cdAlerta('warn','<b>Planilha da equipe:</b> até <b>31/12/2026</b> ela é usada só como conferência extra, para achar diferenças com o IXC. A partir de 01/01/2027 a premiação é paga somente com base nos dados do IXC e do Radar. Quem quiser pode continuar com a planilha para controle pessoal, mas ela não vale para pagamento.')}`;
