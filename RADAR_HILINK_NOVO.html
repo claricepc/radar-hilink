@@ -25608,15 +25608,23 @@ async function renderInicio(){
 window.renderInicio = renderInicio;
 
 /* ===================== AVISO DE VERSAO NOVA DO RADAR ===================== */
-const RADAR_VER = { base:null };
+const RADAR_VER = { etag:null, checouCarga:false };
+const radarBuildAtual = () => document.querySelector('meta[name="radar-build"]')?.content || '';
 async function radarVersaoChecar(){
   try{
     const url = location.pathname;
-    if(!RADAR_VER.base){ const c = await fetch(url, { method:'HEAD', cache:'force-cache' }); RADAR_VER.base = c.headers.get('etag') || c.headers.get('last-modified') || ''; }
-    const n = await fetch(url, { method:'HEAD', cache:'no-store' });
-    const atual = n.headers.get('etag') || n.headers.get('last-modified') || '';
-    if(RADAR_VER.base && atual && atual !== RADAR_VER.base) radarVersaoAviso();
-  }catch(e){}
+    if(!RADAR_VER.checouCarga){
+      // 1a vez: confere se o navegador abriu uma versao guardada (build da pagina diferente do publicado)
+      RADAR_VER.checouCarga = true;
+      const t = await (await fetch(url, { cache:'no-store' })).text();
+      const m = t.match(/<meta name="radar-build" content="([^"]*)"/);
+      if(m && radarBuildAtual() && m[1] !== radarBuildAtual()){ radarVersaoAviso(); return; }
+    }
+    const h = await fetch(url, { method:'HEAD', cache:'no-store' });
+    const e = h.headers.get('etag') || h.headers.get('last-modified') || '';
+    if(!RADAR_VER.etag){ RADAR_VER.etag = e; return; }
+    if(e && e !== RADAR_VER.etag) radarVersaoAviso();
+  }catch(err){}
 }
 function radarVersaoAviso(){
   if(document.getElementById('radar-versao-aviso')) return;
