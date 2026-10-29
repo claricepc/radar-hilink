@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<meta name="radar-build" content="20261029164117">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -23789,7 +23790,7 @@ function cdAbasHTML(){
 }
 window.cdSub = cdSub;
 function cdIrLista(aba, preset){
-  CD.aba = aba; CD.sub = 'listas';
+  CD.aba = aba; CD.sub = 'listas'; setTimeout(()=>{ try{ radarTrilha('cobrancaDia'); }catch(e){} }, 0);
   if(aba==='cobrar' && preset){ CD.filial='Todas'; cdAplicarPreset(preset); }
   renderCobrancaDia();
   const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
