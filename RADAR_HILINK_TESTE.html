@@ -24033,10 +24033,11 @@ const CD_ATV_TIPOS = {
   recolhimento_atd: { nome:'Agendar recolhimento', fonte:'recolhimento_atd',  chave:x=>String(x.id_cliente) },
   avencer:          { nome:'Lembrar vencimento',   fonte:'avencer',           chave:x=>x.id_cliente+'-'+x.filial_id },
   sem_email:        { nome:'Cadastrar e-mail',     fonte:'sem_email',         chave:x=>String(x.id_cliente) },
-  gerados_vencidos: { nome:'Corrigir boleto gerado vencido', fonte:'gerados_vencidos', chave:x=>String(x.id_titulo) }
+  gerados_vencidos: { nome:'Corrigir boleto gerado vencido', fonte:'gerados_vencidos', chave:x=>String(x.id_titulo) },
+  retorno_oportunidade: { nome:'Chamar de volta (oferta de upgrade)', fonte:'__oportunidades', chave:x=>String(x.id_cliente) }
 };
 // prazo padrão (SLA) de cada tipo de atividade, em dias úteis a partir de hoje
-const CD_SLA_DIAS = { cobrar:0, quebra:1, suspeitos:1, gerados_vencidos:1, recolhimento_atd:2, avencer:0, sem_email:5 };
+const CD_SLA_DIAS = { retorno_oportunidade:0, cobrar:0, quebra:1, suspeitos:1, gerados_vencidos:1, recolhimento_atd:2, avencer:0, sem_email:5 };
 const CD_SLA_PRESET = { pre:0, um:0, d6_30:1, d31_90:5, d90:5, todos:2, vence_sem_email:2 };
 function cdDiaUtil(n){ const d=new Date(); let k=0; while(k<n){ d.setDate(d.getDate()+1); if(d.getDay()!==0&&d.getDay()!==6) k++; }
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -24083,9 +24084,10 @@ function cdAtvAcoes(tipo){
   if(tipo==='sem_email') return ['corrigido','aguardando','sem_resposta','numero_errado'];
   if(tipo==='recolhimento_atd') return ['contatado','aguardando','sem_resposta','numero_errado','nao_cobrar'];
   if(tipo==='avencer') return ['contatado','sem_resposta','numero_errado'];
+  if(tipo==='retorno_oportunidade') return ['corrigido','negociando','aguardando','nao_cobrar','sem_resposta','numero_errado'];
   return ['contatado','sem_resposta','numero_errado','prometeu','negociando','nao_cobrar'];
 }
-const cdAtvRotuloAcao = (tipo,s) => s==='aguardando' ? 'Em andamento' : s==='corrigido' ? (tipo==='sem_email'?'E-mail cadastrado':'Corrigido no IXC') : s==='nao_cobrar' ? (tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos'?'Não precisa corrigir':'Não cobrar') : CD_SITUACOES[s].t;
+const cdAtvRotuloAcao = (tipo,s) => tipo==='retorno_oportunidade' && ({corrigido:'Fez o upgrade',negociando:'Interessado, vai pensar',nao_cobrar:'Não quer upgrade'})[s] ? ({corrigido:'Fez o upgrade',negociando:'Interessado, vai pensar',nao_cobrar:'Não quer upgrade'})[s] : s==='aguardando' ? 'Em andamento' : s==='corrigido' ? (tipo==='sem_email'?'E-mail cadastrado':'Corrigido no IXC') : s==='nao_cobrar' ? (tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos'?'Não precisa corrigir':'Não cobrar') : CD_SITUACOES[s].t;
 
 // ---------- início da tarefa e movimento ----------
 function cdHorasDesde(d){ return d ? (Date.now()-new Date(d).getTime())/3600000 : null; }
@@ -24773,6 +24775,7 @@ function cdAtvDetalhe(tipo, i){
   if(tipo==='recolhimento_atd') return `OS ${cdEsc(d.os||'')} · ${cdEsc(d.tarefa||'')} · aberta em ${cdData(d.abertura)}${d.bairro?' · '+cdEsc(d.bairro):''}`;
   if(tipo==='avencer') return `Vence em ${cdData(d.vencimento)}${d.email?' · '+cdEsc(d.email):''}`;
   if(tipo==='sem_email') return `${cdEsc(d.situacao||'')}${d.email_atual?': '+cdEsc(d.email_atual):''}`;
+  if(tipo==='retorno_oportunidade') return `${cdEsc(d.motivo||'')}${d.oferta?' · '+cdEsc(d.oferta):''}${d.enviado_em?' · oferta enviada em '+cdData(d.enviado_em):''}`;
   if(tipo==='gerados_vencidos') return `Boleto ${d.id_titulo} emitido em ${cdData(d.emissao)} com vencimento ${cdData(d.vencimento)}${d.o_que_conferir?' · '+cdEsc(d.o_que_conferir):''}`;
   return '';
 }
@@ -25708,7 +25711,7 @@ function opAcompHTML(){
     <div class="cdg-tabwrap"><table class="cdg-tab op-tab"><thead><tr><th>Envio</th><th>Filiais</th><th>Lista</th><th>Enviados</th><th>Responderam</th><th>Setor de venda</th><th>Perdidos no fluxo</th><th>Em aberto</th><th>Converteram</th><th>Receita nova/mês</th></tr></thead><tbody>${tab}</tbody></table></div>
     <div class="cdg-eyebrow" style="margin:14px 0 6px">Envio de ${fmt(sel.enviado_em)} · ${cdEsc(sel.filiais||'')}</div>
     ${cards}
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 8px">${cam}<span style="flex:1"></span>${cl.length?`<button class="btn primary sm" onclick="opAcompExportar()">Baixar para o OPA (${cdNum(cl.length)})</button>`:''}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 8px">${cam}<span style="flex:1"></span>${cl.length && OP.acompCaminho && OP.acompCaminho!=='setor de venda'?`<button class="btn sm" onclick="opGerarAtividade(['${OP.acompCaminho}'])">Gerar atividade (${cdNum(cl.length)})</button>`:''}${cl.length?`<button class="btn primary sm" onclick="opAcompExportar()">Baixar para o OPA (${cdNum(cl.length)})</button>`:''}</div>
     <div class="cdg-tabwrap"><table class="cdg-tab op-tab"><thead><tr><th>Cliente</th><th>Filial</th><th>Celular</th><th>Caminho no OPA</th><th>Respondeu às</th><th>Situação</th><th>Converteu</th><th>Protocolo da IA</th></tr></thead><tbody>${linhas||'<tr><td colspan="8">Nenhum cliente neste caminho.</td></tr>'}</tbody></table></div>
     <div class="cdg-nota">Respostas: atendimentos abertos no OPA até 7 dias depois do envio, pelo celular do cadastro. Conversão: mudança para plano mais caro no IXC depois do envio. Dados do OPA até ${fmt(A.opa_ate)} e do IXC até ${fmt(A.ixc_ate)}. Use Atualizar todos os dados para trazer o mais recente.</div>
   </div>`;
@@ -25739,12 +25742,24 @@ function opFalhasHTML(){
     <p style="margin:8px 0 4px;font-size:12px"><b>O que fazer:</b> 1. Chamar de volta hoje quem foi encerrado. 2. Ajustar no OPA para que toda resposta à campanha vá direto para o setor de venda, sem triagem da IA. 3. Se o encerramento for a opção "não quero", o fluxo precisa aplicar a etiqueta UPGRADE OFERTADO.</p>
     <div class="cdg-botoes" style="margin-top:8px">
       ${perd?`<button type="button" class="cdg-ir" onclick="OP.acompCaminho='fechado pela IA em 0 s';renderOportunidades();setTimeout(()=>document.getElementById('op-acomp')?.scrollIntoView({behavior:'smooth'}),50)">Ver quem foi encerrado</button>`:''}
+      ${perd?`<button type="button" class="cdg-ir cdg-gerar" onclick="opGerarAtividade(['fechado pela IA em 0 s','triagem da IA sem atendente'])">Gerar atividade: chamar de volta</button>`:''}
       ${perd?`<button type="button" class="cdg-ir" onclick="opFalhasExportar()">Baixar para chamar de volta</button>`:''}
       ${geral?`<button type="button" class="cdg-ir" onclick="opFalhasProtocolos()">Ver protocolos no OPA</button>`:''}
     </div>
     <div id="op-falhas-prot"></div>
   </div>`;
 }
+async function opGerarAtividade(caminhos){
+  if(typeof cdPodeGerenciar==='function' && !cdPodeGerenciar()){ toast('Só a gestão e a liderança geram atividades.','warn'); return; }
+  const envs=(OP.acomp?.envios)||[], mapa=new Map();
+  envs.forEach(e=>(e.clientes||[]).filter(c=>caminhos.includes(c.caminho)).forEach(c=>{ if(!mapa.has(c.cli)) mapa.set(c.cli, { id_cliente:c.cli, nome:c.nome, filial:c.filial, telefone:c.fone }); }));
+  const linhas=[...mapa.values()];
+  if(!linhas.length){ toast('Ninguém para chamar de volta.','warn'); return; }
+  if(!CD.atv.usuarios || !CD.atv.usuarios.length) await cdAtvCarregar(true);
+  CD.atv.nova = { tipo:'retorno_oportunidade', preset:'', linhas, titulo:'Chamar de volta: encerrados pela IA '+cdData(cdHoje()).slice(0,5), filtro:'oportunidades', porFilial:false, prazo:cdSlaPadrao('retorno_oportunidade',''), responsavel:'' };
+  cdAtvModal();
+}
+window.opGerarAtividade = opGerarAtividade;
 function opFalhasExportar(){
   const envs = (OP.acomp?.envios)||[], mapa = new Map();
   envs.forEach(e=>(e.clientes||[]).filter(c=>['fechado pela IA em 0 s','triagem da IA sem atendente'].includes(c.caminho)).forEach(c=>{ const f=cdFoneOpa(c.fone); if(f&&c.nome) mapa.set(f,c); }));
