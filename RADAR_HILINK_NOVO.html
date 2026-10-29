@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261029164117">
+<meta name="radar-build" content="20261029174449">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -2992,6 +2992,7 @@ body.radar-modo-atendente .topbar{display:none!important}
         <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('suspeitos')">Corrigir no IXC</div>
         <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('avencer')">Lembrar vencimento e e-mail</div>
         <div class="nav-sub" data-cd="atividades" onclick="radarIrAtividades()">Atividades da equipe</div>
+        <div class="nav-sub" data-cd="desempenho" onclick="go('cobrancaDia');cdSub('desempenho')">Desempenho da equipe</div>
         <div class="nav-item" data-mod="carneCorreios" onclick="go('carneCorreios')"><span>Envio Correios<small>carn&ecirc; de boletos via e-Carta</small></span></div>
         <div class="nav-item" data-mod="acao" onclick="go('acao')"><span>Estrat&eacute;gia de Atua&ccedil;&atilde;o<small>prioridades e plano de a&ccedil;&atilde;o</small></span></div>
       </div></div>
@@ -3010,6 +3011,7 @@ body.radar-modo-atendente .topbar{display:none!important}
       </div></div>
     <div class="nav-group nav-hub nav-area" data-area="equipe"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Equipe</div><div class="nav-group-items">
         <div class="nav-sub" onclick="radarIrAtividades()">Atividades da equipe</div>
+        <div class="nav-sub" onclick="go('cobrancaDia');cdSub('desempenho')">Desempenho da equipe</div>
       </div></div>
     <div class="nav-group nav-hub nav-area" data-area="config"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Configura&ccedil;&otilde;es</div><div class="nav-group-items">
         <div class="nav-item" data-mod="setup" onclick="go('setup')"><span>Carregar Relat&oacute;rios<small>upload manual</small></span></div>
@@ -23783,11 +23785,11 @@ function cdCard(o){
     <div class="cd-k-label">${o.label}</div><div class="cd-k-valor">${o.valor}</div><div class="cd-k-sub">${o.sub||''}</div>
     ${o.ir?'<div class="cd-k-ver">Ver lista</div>':''}</div>`;
 }
-const CD_SUBS = [['resumo','Resumo do dia'],['onde','Onde está o dinheiro'],['listas','Listas para cobrar'],['atividades','Atividades da equipe']];
+const CD_SUBS = [['resumo','Resumo do dia'],['onde','Onde está o dinheiro'],['listas','Listas para cobrar'],['atividades','Atividades da equipe'],['desempenho','Desempenho da equipe']];
 function cdSub(k, aba){ CD.sub = k; if(aba) CD.aba = aba; renderCobrancaDia(); try{ radarTrilha('cobrancaDia'); }catch(e){} window.scrollTo({top:0,behavior:'smooth'}); }
 function cdAbasHTML(){
   const atrasadas = (CD.atv.lista||[]).filter(a=>a.status==='aberta' && typeof cdPrazoEstourou==='function' && cdPrazoEstourou(a)).length;
-  return `<div class="op-abas">${CD_SUBS.filter(([k])=>k!=='atividades'||cdPodeGerenciar()).map(([k,t])=>`<button type="button" class="${(CD.sub||'resumo')===k?'on':''}" onclick="cdSub('${k}')">${t}${k==='atividades'&&atrasadas?`<span class="q">${atrasadas}</span>`:''}</button>`).join('')}</div>`;
+  return `<div class="op-abas">${CD_SUBS.filter(([k])=>(k!=='atividades'&&k!=='desempenho')||cdPodeGerenciar()).map(([k,t])=>`<button type="button" class="${(CD.sub||'resumo')===k?'on':''}" onclick="cdSub('${k}')">${t}${k==='atividades'&&atrasadas?`<span class="q">${atrasadas}</span>`:''}</button>`).join('')}</div>`;
 }
 window.cdSub = cdSub;
 function cdIrLista(aba, preset){
@@ -24066,6 +24068,7 @@ function cdGuiaHTML(){
   const sub = CD.sub||'resumo';
   if(sub==='onde') return `<div class="cdg">${status}${v360}${estr}</div>`;
   if(sub==='atividades') return `<div class="cdg">${status}${cdAtvPainelHTML()}</div>`;
+  if(sub==='desempenho') return `<div class="cdg">${status}${cdDesempenhoHTML()}</div>`;
   if(sub==='listas') return `<div class="cdg">${status}</div>`;
   return `<div class="cdg">${status}${resumo}${colunas}${glos}</div>`;
 }
@@ -24216,7 +24219,8 @@ function cdAtvPainelHTML(){
   const A = CD.atv;
   if(A.erro) return `<div class="cdg-box cdg-atv"><div class="cdg-eyebrow">Atividades da equipe</div><div class="cdg-nota">Não consegui carregar as atividades: ${cdEsc(A.erro)}. <button type="button" class="cdg-ir" onclick="cdAtvCarregar()">Tentar de novo</button></div></div>`;
   if(A.lista===null) return `<div class="cdg-box cdg-atv"><div class="cdg-eyebrow">Atividades da equipe</div><div class="cdg-nota">Carregando atividades...</div></div>`;
-  const abertas = A.lista.filter(a=>a.status==='aberta');
+  const abertasTodas = A.lista.filter(a=>a.status==='aberta');
+  const abertas = cdAtvFiltrar(abertasTodas);
   const pend = A.promessas.filter(p=>p.situacao==='aguardando aprovação');
   const aprov = pend.length && cdEhAdmin() ? `<div class="cdg-aprov"><b>${cdNum(pend.length)} ${pend.length===1?'promessa aguarda':'promessas aguardam'} sua aprovação</b> (clientes com 2 ou mais promessas não cumpridas).
       ${pend.slice(0,6).map(p=>`<div class="cdg-aprov-l"><span>${cdEsc(p.nome||('Cliente '+p.id_cliente))}, ${cdMoeda(p.valor)}, até ${cdData(p.data_prometida)}. Registrada por ${cdEsc(p.registrado_por_nome||'-')}.</span>
@@ -24271,6 +24275,7 @@ function cdAtvPainelHTML(){
       </ol>
     </details>
     ${aprov}
+    ${cdAtvFiltrosHTML(abertasTodas)}
     ${resumoSla}
     ${abertas.length?`<div class="cdg-atv-grid">${cards}</div>`:`<div class="cdg-nota">Use <b>Gerar atividade</b> em qualquer item abaixo para direcionar a lista a uma ou mais atendentes. Cada atendente vê só o que foi direcionado a ela, registra o resultado de cada cliente, e o Radar confirma pelo IXC quem pagou ou foi corrigido.</div>`}
   </div>`;
@@ -24430,7 +24435,7 @@ function cdAtvEmExecucao(a){return !!a&&a.status==='aberta'&&!a.validacao_solici
 function cdAtvFluxoAcoes(a){
   if(!a||a.status!=='aberta')return '';
   const ger=cdPodeGerenciar();
-  return `${a.validacao_solicitada_em?(ger?`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModal(${a.id},'concluir')">Validar e concluir</button><button type="button" class="btn sm" onclick="cdAtvFluxoModal(${a.id},'devolver')">Devolver para ajuste</button>`:'<span class="cdg-sla-chip neutro">Aguardando validação da liderança</span>'):`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModal(${a.id},'solicitar')">Encaminhar para validação</button>`}${ger?`<button type="button" class="cdg-mini perigo-txt" onclick="cdAtvFluxoModal(${a.id},'cancelar')">Cancelar atividade</button>`:''}`;
+  return `${ger?`<button type="button" class="btn sm" onclick="cdConferir(${a.id})" title="O Radar confere a atividade e diz se pode concluir">Conferir automaticamente</button>`:''}${a.validacao_solicitada_em?(ger?`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModalComConferencia(${a.id},'concluir')">Validar e concluir</button><button type="button" class="btn sm" onclick="cdAtvFluxoModalComConferencia(${a.id},'devolver')">Devolver para ajuste</button>`:'<span class="cdg-sla-chip neutro">Aguardando validação da liderança</span>'):`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModal(${a.id},'solicitar')">Encaminhar para validação</button>`}${ger?`<button type="button" class="cdg-mini perigo-txt" onclick="cdAtvFluxoModal(${a.id},'cancelar')">Cancelar atividade</button>`:''}`;
 }
 function cdAtvFluxoAviso(a){
   if(a.validacao_solicitada_em)return `<div class="cdg-alerta"><i></i><div><b>Aguardando validação</b> · encaminhada por ${cdEsc(a.validacao_solicitada_por_nome||'Equipe')} em ${cdEsc(cdHoraTxt(a.validacao_solicitada_em))}.<p class="cd-fluxo-nota">${cdEsc(a.validacao_resumo||'')}</p>Registros bloqueados até a decisão da liderança.</div></div>`;
@@ -24447,6 +24452,98 @@ function cdAtvFluxoModal(id,acao){
     <label class="cdg-campo">${acao==='solicitar'?'Resumo do trabalho realizado':'Justificativa da decisão'} (obrigatório)<textarea id="cd-fluxo-obs" maxlength="2000" rows="4" required></textarea></label><p class="cdg-nota">${nota}</p>
     <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Voltar</button><button type="button" class="btn sm primary" id="cd-fluxo-salvar" onclick="cdAtvFluxoSalvar(${id},'${acao}')">${titulos[acao]}</button></div>`);
 }
+function cdAtvFluxoModalComConferencia(id,acao){
+  cdAtvFluxoModal(id,acao);
+  if(acao!=='concluir'&&acao!=='devolver') return;
+  const box=document.querySelector('.cdg-modal-box'); if(!box) return;
+  const div=document.createElement('div'); div.id='cd-conf-box'; div.innerHTML='<p class="cdg-nota">Conferindo a atividade...</p>';
+  box.insertBefore(div, box.querySelector('label.cdg-campo'));
+  cdAtvRpc('radar_atv_conferir',{p_atividade:id}).then(c=>{ div.innerHTML=cdConferenciaHTML(c, acao); const t=document.getElementById('cd-fluxo-obs'); if(t && !t.value) t.value=cdConferenciaTexto(c, acao); }).catch(e=>{ div.innerHTML=`<p class="cdg-nota">Não consegui conferir: ${cdEsc(e.message)}</p>`; });
+}
+function cdConferenciaHTML(c, acao){
+  const par = c.parecer==='concluir'?['ok','Pode concluir: tudo certo.']:c.parecer==='concluir_com_ressalva'?['warn','Pode concluir, com ressalvas.']:['risk','Recomendo devolver para ajuste.'];
+  const li = (arr, tom) => (arr||[]).map(t=>`<div class="cdg-alerta ${tom}" style="margin:4px 0"><i></i><div>${cdEsc(t)}</div></div>`).join('');
+  return `<div style="margin:8px 0 12px"><span class="cdg-pill ${par[0]}">${par[1]}</span>
+    ${acao==='concluir'&&c.parecer==='devolver'?'<p class="cdg-nota" style="color:#E5484D;margin:6px 0">Há pendências que impedem a conclusão. Confira antes de concluir.</p>':''}
+    ${li(c.bloqueios,'risk')}${li(c.avisos,'warn')}${li(c.ok,'ok')}
+    <p class="cdg-nota" style="margin:6px 0 0">${cdNum(c.tratados)} de ${cdNum(c.total)} clientes com registro · ${cdNum(c.resolvidos_equipe)} resolvidos no IXC pela equipe.</p></div>`;
+}
+function cdConferenciaTexto(c, acao){
+  if(acao==='devolver' || c.parecer==='devolver') return 'Devolvida para ajuste. Pendências: '+(c.bloqueios||[]).concat(c.avisos||[]).join(' ');
+  return 'Conferência automática: '+(c.ok||[]).join(' ')+((c.avisos||[]).length?' Ressalvas: '+c.avisos.join(' '):'');
+}
+async function cdConferir(id){
+  const a=(CD.atv.lista||[]).find(x=>x.id===id); if(!a) return;
+  cdModal(`<h3>Conferência automática</h3><p><b>${cdEsc(a.titulo)}</b> · ${cdEsc(a.responsavel_nome||'Equipe')}</p><div id="cd-conf-box"><p class="cdg-nota">Conferindo...</p></div>
+    <div class="cdg-modal-acoes" id="cd-conf-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Fechar</button></div>`);
+  try{
+    const c = await cdAtvRpc('radar_atv_conferir',{p_atividade:id});
+    document.getElementById('cd-conf-box').innerHTML = cdConferenciaHTML(c, 'conferir');
+    const ac = document.getElementById('cd-conf-acoes');
+    if(a.validacao_solicitada_em){
+      ac.innerHTML = `<button type="button" class="btn sm" onclick="cdModal(null)">Fechar</button>
+        <button type="button" class="btn sm" onclick="cdAtvFluxoModalComConferencia(${id},'devolver')">Devolver para ajuste</button>
+        ${c.parecer!=='devolver'?`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModalComConferencia(${id},'concluir')">Concluir</button>`:''}`;
+    } else {
+      ac.insertAdjacentHTML('afterbegin', `<span class="cdg-nota" style="margin:0 auto 0 0">A atendente ainda não encaminhou para validação. ${c.parecer==='devolver'?'Oriente sobre as pendências acima.':''}</span>`);
+    }
+  }catch(e){ document.getElementById('cd-conf-box').innerHTML = `<p class="cdg-nota">Não consegui conferir: ${cdEsc(e.message)}</p>`; }
+}
+function cdAtvFiltrar(lista){
+  const f = CD.atv.f || {};
+  return lista.filter(a => (!f.tipo || a.tipo===f.tipo) && (!f.resp || (a.responsavel_nome||'Equipe toda')===f.resp)
+    && (!f.sit || (f.sit==='validacao' ? !!a.validacao_solicitada_em : f.sit==='estourada' ? cdPrazoEstourou(a) : f.sit==='andamento' ? !a.validacao_solicitada_em && !cdPrazoEstourou(a) : f.sit==='nao_iniciada' ? !a.iniciada_em : true)));
+}
+function cdAtvFiltrosHTML(lista){
+  const f = CD.atv.f || (CD.atv.f = {});
+  const tipos = [...new Set(lista.map(a=>a.tipo))], resps = [...new Set(lista.map(a=>a.responsavel_nome||'Equipe toda'))].sort();
+  const sel = (k, rot, ops) => `<label style="font-size:12px">${rot} <select onchange="CD.atv.f.${k}=this.value;renderCobrancaDia()"><option value="">Todos</option>${ops.map(([v,t])=>`<option value="${cdEsc(v)}" ${f[k]===v?'selected':''}>${cdEsc(t)}</option>`).join('')}</select></label>`;
+  const n = cdAtvFiltrar(lista).length;
+  return `<div class="cd-filtros" style="margin:8px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+    ${sel('sit','Situação',[['andamento','Em andamento no prazo'],['estourada','Prazo estourado'],['validacao','Aguardando validação'],['nao_iniciada','Não iniciada']])}
+    ${sel('tipo','Tipo',tipos.map(t=>[t, CD_ATV_TIPOS[t]?.nome||t]))}
+    ${sel('resp','Responsável',resps.map(r=>[r,r]))}
+    <span class="cdg-nota" style="margin:0">${cdNum(n)} de ${cdNum(lista.length)} atividades</span>
+    ${(f.sit||f.tipo||f.resp)?`<button type="button" class="cdg-mini" onclick="CD.atv.f={};renderCobrancaDia()">Limpar filtros</button>`:''}</div>`;
+}
+/* ---------- desempenho da equipe ---------- */
+const CDD = { de:null, ate:null, dados:null, carregando:false, erro:null };
+function cdDesPeriodo(){ if(!CDD.de){ const h=new Date(); CDD.de = new Date(h.getFullYear(), h.getMonth(), 1).toISOString().slice(0,10); CDD.ate = h.toISOString().slice(0,10); } }
+async function cdDesCarregar(){
+  cdDesPeriodo(); CDD.carregando = true; CDD.erro = null; renderCobrancaDia();
+  try{ CDD.dados = await cdAtvRpc('radar_atv_desempenho',{p_de:CDD.de, p_ate:CDD.ate}); }catch(e){ CDD.erro = e.message; }
+  CDD.carregando = false; renderCobrancaDia();
+}
+function cdDesempenhoHTML(){
+  cdDesPeriodo();
+  if(!CDD.dados && !CDD.carregando && !CDD.erro){ setTimeout(cdDesCarregar, 0); }
+  const L = CDD.dados||[];
+  const barra = (v, tom) => `<div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:7px;border-radius:4px;background:rgba(143,163,184,.2)"><div style="width:${Math.max(0,Math.min(100,v||0))}%;height:100%;border-radius:4px;background:${tom||((v||0)>=75?'#4CC38A':(v||0)>=50?'#F5A524':'#E5484D')}"></div></div><b style="min-width:28px;text-align:right">${v==null?'-':v}</b></div>`;
+  const conf = L.filter(x=>!x.amostra_pequena);
+  const dest = conf.filter(x=>x.nota>=75 && (x.pct_prazo==null || x.pct_prazo>=80) && x.retorno_vencido===0).slice(0,3);
+  const aten = L.filter(x=>x.retorno_vencido>0 || x.fora_prazo>0 || x.sem_detalhe>0 || (x.pct_tratado!=null && x.pct_tratado<60));
+  const linhas = L.map(x=>`<tr>
+      <td><b>${cdEsc(x.pessoa)}</b>${x.amostra_pequena?'<br><small>amostra pequena</small>':''}</td>
+      <td style="min-width:120px">${barra(x.nota)}</td>
+      <td style="min-width:110px">${barra(x.execucao,'#4DA3E0')}<small>${x.pct_tratado??'-'}% tratado · ${x.pct_prazo==null?'sem prazo vencido':x.pct_prazo+'% no prazo'}</small></td>
+      <td style="min-width:110px">${barra(x.agilidade,'#4DA3E0')}<small>1º registro em ${x.horas_1o_registro==null?'-':cdTempoTxt(x.horas_1o_registro)}${x.retorno_vencido?` · <b style="color:#E5484D">${x.retorno_vencido} sem retorno 24h</b>`:''}</small></td>
+      <td style="min-width:110px">${barra(x.qualidade,'#4DA3E0')}<small>${x.pct_efetivo??'-'}% contato efetivo${x.sem_detalhe?` · ${x.sem_detalhe} sem detalhe`:''}${x.devolucoes?` · ${x.devolucoes} devolvida(s)`:''}</small></td>
+      <td style="min-width:110px">${barra(x.resultado,'#4DA3E0')}<small>${cdNum(x.resolvidos)} resolvidos no IXC${Number(x.recuperado)?' · '+cdMoeda(x.recuperado):''}</small></td>
+      <td>${cdNum(x.tratados)} de ${cdNum(x.itens)}<br><small>${cdNum(x.atividades)} atividade(s)</small></td></tr>`).join('');
+  return `<div class="cdg-box">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px"><div class="cdg-eyebrow" style="margin:0">Desempenho da equipe</div><span class="cdg-sp" style="flex:1"></span>
+      <label style="font-size:12px">De <input type="date" value="${CDD.de}" onchange="CDD.de=this.value;CDD.dados=null;cdDesCarregar()"></label>
+      <label style="font-size:12px">até <input type="date" value="${CDD.ate}" onchange="CDD.ate=this.value;CDD.dados=null;cdDesCarregar()"></label></div>
+    ${CDD.carregando?'<p class="cdg-nota">Calculando...</p>':''}${CDD.erro?`<p class="cdg-nota">Não consegui calcular: ${cdEsc(CDD.erro)}</p>`:''}
+    <div class="cdg-colunas" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+      <div class="cdg-col agir"><div class="cdg-col-h"><h3>Destaques</h3><span>no prazo e bem feito</span></div>${dest.length?dest.map(x=>cdAlerta('ok',`<b>${cdEsc(x.pessoa)}</b>: nota ${x.nota}. ${x.pct_tratado}% tratado${x.pct_prazo!=null?', '+x.pct_prazo+'% no prazo':''}, ${x.pct_efetivo??0}% de contato efetivo, ${cdNum(x.resolvidos)} resolvidos no IXC.`)).join(''):cdAlerta('','Ninguém com amostra suficiente e nota acima de 75 no período.')}</div>
+      <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Precisa de atenção</h3><span>conversar esta semana</span></div>${aten.length?aten.map(x=>cdAlerta('warn',`<b>${cdEsc(x.pessoa)}</b>: ${[x.retorno_vencido?x.retorno_vencido+' sem retorno há mais de 24h':'', x.fora_prazo?x.fora_prazo+' atividade(s) fora do prazo':'', x.sem_detalhe?x.sem_detalhe+' registro(s) sem detalhe':'', x.pct_tratado!=null&&x.pct_tratado<60?'só '+x.pct_tratado+'% tratado':''].filter(Boolean).join(', ')}.`)).join(''):cdAlerta('ok','Nada fora do normal no período.')}</div>
+    </div>
+    <div class="cdg-tabwrap" style="margin-top:12px"><table class="cdg-tab op-tab"><thead><tr><th>Atendente</th><th>Nota</th><th>Execução (20%)</th><th>Agilidade (15%)</th><th>Qualidade (25%)</th><th>Resultado (40%)</th><th>Clientes</th></tr></thead><tbody>${linhas||'<tr><td colspan="7">Sem atividades no período.</td></tr>'}</tbody></table></div>
+    <div class="cdg-nota">Execução: clientes tratados e atividades entregues no prazo. Agilidade: tempo até o primeiro registro e retorno em 24 horas. Qualidade: contato efetivo (falou com o cliente), registros com detalhe e atividades devolvidas. Resultado: clientes resolvidos no IXC depois da ação da atendente; cliente que resolveu sozinho não conta. Abaixo de 20 clientes no período a nota é só indicativa. Recomendação: acompanhar um mês antes de usar a nota na premiação.</div>
+  </div>`;
+}
+window.cdConferir = cdConferir; window.cdAtvFluxoModalComConferencia = cdAtvFluxoModalComConferencia; window.cdDesCarregar = cdDesCarregar;
 async function cdAtvFluxoSalvar(id,acao){
   const b=document.getElementById('cd-fluxo-salvar'),obs=(document.getElementById('cd-fluxo-obs')?.value||'').trim();
   if(!b||b.disabled)return;if(!obs||obs.length>2000){toast('Informe o resumo ou a justificativa, com até 2.000 caracteres.','warn');return;}
