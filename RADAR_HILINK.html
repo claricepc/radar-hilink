@@ -25335,25 +25335,52 @@ async function ixcCargaAtualizar(){
   setTimeout(ixcCargaRender, 8000);
 }
 async function ixcCargaBuscar(sb, tipo, onProgresso){
-  const out=[]; const lim=5000;
+  const out=[]; const lim=1000;
   for(let off=0; off<200000; off+=lim){
-    const r = await sb.rpc('radar_carga_dados',{ p_tipo:tipo, p_offset:off, p_limit:lim });
-    if(r.error) throw new Error(tipo+': '+r.error.message);
+    let r;
+    for(let tentativa=0; tentativa<2; tentativa++){
+      const controle=new AbortController();
+      let timer;
+      try{
+        const consulta=sb.rpc('radar_carga_dados',{ p_tipo:tipo, p_offset:off, p_limit:lim }).abortSignal(controle.signal);
+        r=await Promise.race([consulta,new Promise((_,reject)=>{
+          timer=setTimeout(()=>{controle.abort();reject(new Error('A consulta demorou mais de 30 segundos. Tente carregar novamente.'));},30000);
+        })]);
+        if(r.error)throw new Error(r.error.message||String(r.error));
+        if(!Array.isArray(r.data))throw new Error('Resposta inesperada ao carregar '+tipo+'.');
+        break;
+      }catch(err){
+        if(tentativa===1||!/fetch|network|rede|30 segundos|timeout|abort|502|503|504/i.test(err.message||String(err))){
+          throw new Error(tipo+': '+(err.message||String(err)));
+        }
+      }finally{clearTimeout(timer);}
+    }
     const rows = r.data || [];
     out.push(...rows); onProgresso && onProgresso(out.length);
     if(rows.length < lim) break;
+    if(off+lim>=200000)throw new Error(tipo+': limite de leitura atingido. A carga anterior foi preservada.');
   }
   return out;
 }
 async function ixcCargaUsar(destino){
   const sb=getSB(); if(!sb) return;
   if(IXC_CARGA.carregando) return;
-  IXC_CARGA.carregando=true; ixcCargaRender();
+  IXC_CARGA.carregando=true; IXC_CARGA.progresso='Iniciando leitura'; radarFixoRender(); ixcCargaRender();
   document.getElementById('loading').classList.add('show');
   try{
+    const leituras=[];
     for(const t of IXC_CARGA_TIPOS){
-      const rows = await ixcCargaBuscar(sb, t.key);
-      if(!rows.length) continue;
+      const mostrarProgresso=n=>{
+        IXC_CARGA.progresso=t.label+': '+Number(n).toLocaleString('pt-BR')+' linhas';
+        const info=document.querySelector('#radar-atualizar-fixo .info');
+        if(info)info.textContent=IXC_CARGA.progresso;
+      };
+      mostrarProgresso(0);
+      const rows = await ixcCargaBuscar(sb, t.key,mostrarProgresso);
+      leituras.push({t,rows});
+    }
+    // Publicar os relatórios juntos, somente após todas as consultas terminarem.
+    for(const {t,rows} of leituras){
       const nome = `IXC direto (banco) · ${rows.length.toLocaleString('pt-BR')} linhas`;
       STATE.raw[t.key] = rows; STATE.files[t.key] = nome;
       if(t.key==='alteracoes' && typeof processAlteracoesRows==='function'){
@@ -25367,7 +25394,7 @@ async function ixcCargaUsar(destino){
     toast('Dados do IXC carregados. Analisando…','success');
     await processCampaign(destino||'premiacoes');
   }catch(e){ console.error(e); toast('Erro ao carregar do IXC: '+e.message,'error'); }
-  finally{ IXC_CARGA.carregando=false; document.getElementById('loading').classList.remove('show'); ixcCargaRender(); }
+  finally{ IXC_CARGA.carregando=false; IXC_CARGA.progresso=''; document.getElementById('loading').classList.remove('show'); ixcCargaRender(); radarFixoRender(); }
 }
 window.ixcCargaAtualizar=ixcCargaAtualizar; window.ixcCargaUsar=ixcCargaUsar; window.ixcCargaRender=ixcCargaRender;
 /* Botão fixo: Atualizar todos os dados (IXC, OPA e planilha) com registro da última leitura */
@@ -25395,6 +25422,7 @@ async function radarFixoRender(){
   else if(novos) botao = `<button type="button" class="novo" onclick="radarFixoCarregar()">Carregar dados novos</button>`;
   else botao = `<button type="button" onclick="radarFixoAtualizar()">Atualizar todos os dados</button>`;
   el.innerHTML = `${botao}<div class="info">${andamento && ped ? 'Pedido às '+new Date(ped.pedido_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+quem : 'Última leitura: '+(ult?ixcFmtDataHora(ult):'—')+(ped&&!andamento?quem:'')}</div>`;
+  if(IXC_CARGA.carregando&&IXC_CARGA.progresso)el.querySelector('.info').textContent=IXC_CARGA.progresso;
   if(andamento){ clearTimeout(window._radarFixoTimer); window._radarFixoTimer = setTimeout(radarFixoRender, 30000); }
 }
 async function radarFixoAtualizar(){
