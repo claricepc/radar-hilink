@@ -25451,17 +25451,6 @@ const OP = { dados:null, resultado:null, carregando:false, erro:null, aba:'upgra
   f:{ marca:'Todas', filial:'Todas', oferta:'Todas', prioridade:'Todas', pediu:false, busca:'' },
   sel:new Set(), limite:100, exportando:false };
 const OP_TAXA = 0.05; // conversão de referência para estimar receita (5%)
-const OP_MSG = {
-  upgrade:{
-    '300MB':'Olá, {nome}! Aqui é da {marca}. Seu plano pode passar para 300 mega por R$ 79,90 por mês. Para mudar, é só responder SIM aqui que a nossa equipe faz a troca.',
-    '600MB':'Olá, {nome}! Aqui é da {marca}. Seu plano pode passar para 600 mega por R$ 99,90 por mês. Para mudar, é só responder SIM aqui que a nossa equipe faz a troca.',
-    '1 GIGA':'Olá, {nome}! Aqui é da {marca}. Seu plano pode passar para 1 giga por R$ 149,90 por mês. Para mudar, é só responder SIM aqui que a nossa equipe faz a troca.'
-  },
-  reativacao:{
-    '300MB':'Olá, {nome}! Aqui é da {marca}. Você pode voltar a ter a nossa internet com 300 mega por R$ 79,90 por mês. Se quiser voltar, responda SIM aqui que a nossa equipe te ajuda.',
-    '600MB':'Olá, {nome}! Aqui é da {marca}. Você pode voltar a ter a nossa internet com 600 mega por R$ 99,90 por mês. Se quiser voltar, responda SIM aqui que a nossa equipe te ajuda.'
-  }
-};
 const opLista = () => (OP.dados && OP.dados[OP.aba]) || [];
 const opChave = x => OP.aba+':'+(x.contrato||x.cliente);
 function opFiltradas(){
@@ -25492,14 +25481,6 @@ function opSetFiltro(k, v){ OP.f[k] = v; OP.sel.clear(); OP.limite = 100; render
 function opToggle(k, el){ el.checked ? OP.sel.add(k) : OP.sel.delete(k); opSelInfo(); }
 function opToggleTodos(el){ const ls = opFiltradas(); if(el.checked) ls.forEach(x=>OP.sel.add(opChave(x))); else OP.sel.clear(); renderOportunidades(); }
 function opSelInfo(){ const el = document.getElementById('op-sel-info'); if(el) el.textContent = OP.sel.size ? `${cdNum(OP.sel.size)} selecionados` : 'Nenhum selecionado: o botão baixa todos os filtrados'; }
-function opMensagem(lista, oferta, marca){
-  const t = (OP_MSG[lista]||{})[oferta]; if(!t) return '';
-  return t.replace('{marca}', marca && marca!=='Todas' ? marca : 'Hilink');
-}
-function opCopiarMsg(i){
-  const el = document.getElementById('op-msg-'+i); if(!el) return;
-  navigator.clipboard?.writeText(el.textContent).then(()=>toast('Mensagem copiada','success')).catch(()=>toast('Não consegui copiar. Selecione o texto e copie.','warn'));
-}
 async function opExportar(){
   if(OP.exportando) return;
   const base = opFiltradas();
@@ -25570,7 +25551,7 @@ function opGuiaHTML(){
       porque:'Já demonstraram interesse. É a venda mais fácil da lista.', como:'Ligar ou responder no OPA, sem esperar o disparo em massa.', acao:['Abrir lista',"opIr('upgrade',{pediu:true})"]}),
     cdItem({tom:'agir', passo:2, titulo:'Disparar upgrade para a prioridade alta', numero:cdNum(upAlta.length), unid:'clientes', vazio:!upAlta.length,
       porque:`Pagam em dia e são clientes antigos. ${['300MB','600MB','1 GIGA'].map(o=>`${cdNum(upAlta.filter(x=>x.oferta===o).length)} para ${o}`).join(', ')}.`,
-      como:'Baixar para o OPA gera um arquivo por filial e por oferta. Use a mensagem sugerida de cada oferta.', acao:['Abrir lista',"opIr('upgrade',{prioridade:'Alta'})"]}),
+      como:'Baixar para o OPA gera um arquivo por filial e por oferta. Use no OPA o modelo aprovado da oferta.', acao:['Abrir lista',"opIr('upgrade',{prioridade:'Alta'})"]}),
     cdItem({tom:'agir', passo:3, titulo:'Chamar de volta quem saiu há até 6 meses', numero:cdNum(reAlta.length), unid:'ex-clientes', vazio:!reAlta.length,
       porque:'Quanto mais recente a saída, maior a chance de voltar e de o número ainda ser o mesmo.', como:'Disparo em massa com a oferta do plano mais próximo do que tinha.', acao:['Abrir lista',"opIr('reativacao',{prioridade:'Alta'})"]})
   ].join('');
@@ -25594,8 +25575,7 @@ function opGuiaHTML(){
   if(Number(d.mesmo_preco_600)>0) alertas.push(cdAlerta('warn', `<b>${cdNum(d.mesmo_preco_600)} clientes pagam R$ 99,90 ou mais por 500 mega.</b> O plano oficial de 600 mega custa R$ 99,90. Se o cliente descobrir, pede a troca ou vai embora. Vale decidir se essa base migra para 600 mega sem custo, como retenção.`));
   if(uf['reclamou no OPA nos últimos 30 dias']) alertas.push(cdAlerta('', `<b>${cdNum(uf['reclamou no OPA nos últimos 30 dias'])} clientes reclamaram no OPA</b> nos últimos 30 dias (sem acesso, lentidão, cancelamento ou contestação). Ficam fora da oferta até o problema esfriar.`));
   alertas.push(cdAlerta('', 'Quem é baixado para o OPA fica 30 dias sem aparecer nas listas. Isso evita mandar a mesma oferta duas vezes.'));
-  alertas.push(cdAlerta('', 'O arquivo do OPA traz só nome e WhatsApp. Crie no OPA um modelo de mensagem para cada oferta, trocando {nome} pela variável de nome do OPA, e use o arquivo da mesma oferta.'));
-  if(rf['saiu há mais de 2 anos']) alertas.push(cdAlerta('', `${cdNum(rf['saiu há mais de 2 anos'])} ex-clientes saíram há mais de 2 anos e ficaram fora da reativação: número antigo e pouca chance de resposta.`));
+    if(rf['saiu há mais de 2 anos']) alertas.push(cdAlerta('', `${cdNum(rf['saiu há mais de 2 anos'])} ex-clientes saíram há mais de 2 anos e ficaram fora da reativação: número antigo e pouca chance de resposta.`));
   const colunas = `<div class="cdg-colunas">
     <div class="cdg-col agir"><div class="cdg-col-h"><h3>Fazer agora</h3><span>nesta ordem</span></div>${agir}</div>
     <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Corrigir antes de vender</h3><span>NOC e cadastro</span></div>${corrigir}</div>
@@ -25608,12 +25588,6 @@ function opListaHTML(){
   const todas = opLista(), ls = opFiltradas(), up = OP.aba==='upgrade';
   const uniq = k => ['Todas', ...[...new Set(todas.map(x=>x[k]).filter(Boolean))].sort()];
   const sel = (k, rot) => `<label style="font-size:12px">${rot} <select onchange="opSetFiltro('${k}',this.value)" style="margin-left:4px">${uniq(k).map(v=>`<option ${v===OP.f[k]?'selected':''}>${cdEsc(v)}</option>`).join('')}</select></label>`;
-  const marca = OP.f.marca;
-  const ordem = ['300MB','600MB','1 GIGA'];
-  const ofertas = [...new Set(ls.map(x=>x.oferta))].sort((a,b)=>ordem.indexOf(a)-ordem.indexOf(b));
-  const msgs = ofertas.map((o,i)=>`<div class="cdg-box" style="padding:10px 12px"><div class="cdg-eyebrow">Mensagem sugerida: ${up?'upgrade':'reativação'} ${cdEsc(o)} (${cdNum(ls.filter(x=>x.oferta===o).length)} clientes)</div>
-    <div id="op-msg-${i}" style="font-size:13px;line-height:1.45;margin:6px 0">${cdEsc(opMensagem(OP.aba, o, marca))}</div>
-    <button type="button" class="cdg-mini" onclick="opCopiarMsg(${i})">Copiar mensagem</button></div>`).join('');
   const cab = up
     ? ['Cliente','Filial','Plano atual','Paga hoje','Oferta','A mais por mês','Prioridade','Por quê','Celular']
     : ['Cliente','Filial','Último plano','Saiu em','Oferta','Débito em aberto','Prioridade','Celular'];
@@ -25634,7 +25608,6 @@ function opListaHTML(){
       ${up?`<label style="font-size:12px"><input type="checkbox" ${OP.f.pediu?'checked':''} onchange="opSetFiltro('pediu',this.checked)"> Pediu upgrade no OPA</label>`:''}
       <input type="search" placeholder="Buscar nome, código ou plano" value="${cdEsc(OP.f.busca)}" onchange="opSetFiltro('busca',this.value)" style="min-width:200px">
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:10px">${msgs}</div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px">
       <b>${cdNum(ls.length)} clientes na lista</b><span id="op-sel-info" class="cdg-nota" style="margin:0">${OP.sel.size?cdNum(OP.sel.size)+' selecionados':'Nenhum selecionado: o botão baixa todos os filtrados'}</span>
       <span style="flex:1"></span>
@@ -25642,7 +25615,7 @@ function opListaHTML(){
     </div>
     <div class="cdg-tabwrap"><table class="cdg-tab op-tab"><thead><tr><th><input type="checkbox" onchange="opToggleTodos(this)" title="Selecionar todos os filtrados"></th>${cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas||`<tr><td colspan="${cab.length+1}">Nenhum cliente com esses filtros.</td></tr>`}</tbody></table></div>
     ${ls.length>OP.limite?`<div style="text-align:center;margin-top:8px"><button class="btn sm" onclick="OP.limite+=200;renderOportunidades()">Mostrar mais (${cdNum(ls.length-OP.limite)} restantes)</button></div>`:''}
-    <div class="cdg-nota">Um arquivo por filial e por oferta, no formato do OPA (name, whatsapp). NandoNet e Pablom saem em arquivos próprios.</div>
+    <div class="cdg-nota">Um arquivo por filial e por oferta, no formato do OPA (name, whatsapp), para usar com o modelo aprovado de cada oferta. NandoNet e Pablom saem em arquivos próprios.</div>
   </div>
   <div class="section compact-section"><h3 class="section-title" style="font-size:14px">Resultado dos envios (últimos 120 dias)</h3>
     ${res?`<div class="cdg-tabwrap"><table class="cdg-tab"><thead><tr><th>Envio</th><th>Lista</th><th>Oferta</th><th>Quem baixou</th><th>Enviados</th><th>Aceitaram</th><th>Conversão</th></tr></thead><tbody>${res}</tbody></table></div>`:'<p class="cdg-nota">Ainda não há envios registrados. O resultado aparece aqui depois do primeiro arquivo baixado.</p>'}
@@ -25660,7 +25633,7 @@ function renderOportunidades(){
     ${OP.carregando?'<div role="status" class="section compact-section">Recalculando as listas...</div>':''}
     ${opGuiaHTML()}${opListaHTML()}`;
 }
-Object.assign(window, { renderOportunidades, opCarregar, opIr, opSetFiltro, opToggle, opToggleTodos, opExportar, opCopiarMsg });
+Object.assign(window, { renderOportunidades, opCarregar, opIr, opSetFiltro, opToggle, opToggleTodos, opExportar });
 
 
 document.addEventListener('DOMContentLoaded', ()=>setTimeout(ixcCargaRender, 1500));
