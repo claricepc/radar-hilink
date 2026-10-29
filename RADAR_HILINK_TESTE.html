@@ -25470,6 +25470,7 @@ async function opCarregar(recalcular){
     if(r.error) throw new Error(r.error.message);
     OP.dados = r.data || {}; OP.sel.clear(); OP.limite = 100;
     try{ const s = await sb.rpc('radar_oportunidades_resultado'); if(!s.error) OP.resultado = s.data||[]; }catch(e){}
+    try{ const q = await sb.rpc('radar_oportunidades_acompanhamento'); if(!q.error) OP.acomp = q.data||null; }catch(e){}
   }catch(e){ OP.erro = e.message; }
   finally{ OP.carregando = false; renderOportunidades(); }
 }
@@ -25670,10 +25671,53 @@ function opListaHTML(){
     ${ls.length>OP.limite?`<div style="text-align:center;margin-top:8px"><button class="btn sm" onclick="OP.limite+=200;renderOportunidades()">Mostrar mais (${cdNum(ls.length-OP.limite)} restantes)</button></div>`:''}
     <div class="cdg-nota">Arquivos em blocos de 50 clientes, separados por filial e por oferta, no formato do OPA (name, whatsapp), para usar com o modelo aprovado de cada oferta. NandoNet e Pablom saem em arquivos próprios.</div>
   </div>
-  <div class="section compact-section"><h3 class="section-title" style="font-size:14px">Resultado dos envios (últimos 120 dias)</h3>
-    ${res?`<div class="cdg-tabwrap"><table class="cdg-tab"><thead><tr><th>Envio</th><th>Lista</th><th>Oferta</th><th>Quem baixou</th><th>Enviados</th><th>Aceitaram</th><th>Conversão</th></tr></thead><tbody>${res}</tbody></table></div>`:'<p class="cdg-nota">Ainda não há envios registrados. O resultado aparece aqui depois do primeiro arquivo baixado.</p>'}
+  ${opAcompHTML()}`;
+}
+const OP_CAMINHOS = [
+  ['setor de venda','Foi para o setor de venda','ok'],
+  ['fechado pela IA em 0 s','Fechado pela IA na hora, sem atendente','risk'],
+  ['triagem da IA sem atendente','Triagem da IA, encerrado sem atendente','risk'],
+  ['outro atendimento (ex.: boleto)','Outro atendimento (ex.: boleto)','warn'],
+  ['sem resposta','Não respondeu','']
+];
+function opAcompHTML(){
+  const A = OP.acomp, envs = (A && A.envios) || [];
+  if(!envs.length) return `<div class="section compact-section"><h3 class="section-title" style="font-size:14px">Acompanhamento dos envios</h3><p class="cdg-nota">Ainda não há envios registrados. O acompanhamento aparece aqui depois do primeiro arquivo baixado.</p></div>`;
+  const fmt = d => d ? new Date(d).toLocaleDateString('pt-BR')+' '+new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '-';
+  const sel = OP.acompLote && envs.find(e=>e.lote===OP.acompLote) || envs[0];
+  const tab = envs.map(e=>`<tr ${e.lote===sel.lote?'style="font-weight:700"':''}><td><button type="button" class="cdg-link" onclick="OP.acompLote='${e.lote}';OP.acompCaminho='';renderOportunidades()">${fmt(e.enviado_em)}</button></td><td>${cdEsc(e.filiais||'')}</td><td>${cdEsc(e.oferta||e.lista)}</td><td>${cdNum(e.enviados)}</td><td>${cdNum(e.responderam)} (${cdPct(e.responderam,e.enviados)}%)</td><td>${cdNum(e.venda)}</td><td>${cdNum(e.ia0+e.triagem)}</td><td>${cdNum(e.abertos)}</td><td>${cdNum(e.converteram)} (${cdPct(e.converteram,e.enviados)}%)</td><td>${cdMoeda(e.receita)}</td></tr>`).join('');
+  const resp = sel.responderam||0, perdidos = (sel.ia0||0)+(sel.triagem||0);
+  const num = (rot, v, s, tom) => `<div class="cdg-num ${tom||'info'}"><div class="l">${rot}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const cards = `<div class="cdg-numeros" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+    ${num('Engajamento', cdPct(resp,sel.enviados)+'%', `${cdNum(resp)} de ${cdNum(sel.enviados)} responderam${sel.tempo_resposta_min!=null?` · metade em até ${cdNum(sel.tempo_resposta_min)} min`:''}`)}
+    ${num('Chegaram na venda', cdNum(sel.venda), `${cdPct(sel.venda,resp)}% de quem respondeu`, 'ok')}
+    ${num('Perdidos no fluxo', cdNum(perdidos), `${cdNum(sel.ia0)} fechados pela IA na hora, ${cdNum(sel.triagem)} na triagem`, perdidos?'risk':'ok')}
+    ${num('Em aberto', cdNum(sel.abertos), 'atendimentos ainda sem fim', sel.abertos?'warn':'ok')}
+    ${num('Conversão', cdPct(sel.converteram,sel.enviados)+'%', `${cdNum(sel.converteram)} mudaram de plano no IXC · ${cdNum(sel.motivo_upgrade)} com motivo UPGRADE no OPA`, sel.converteram?'ok':'info')}
+    ${num('Receita nova', cdMoeda(sel.receita), 'a mais por mês, já no IXC', sel.receita?'ok':'info')}
+    ${num('Recusaram', cdNum(sel.recusaram), 'com etiqueta UPGRADE OFERTADO')}
+  </div>`;
+  const cam = OP_CAMINHOS.map(([k,rot,tom])=>{ const n=(sel.clientes||[]).filter(c=>c.caminho===k).length; return n?`<button type="button" class="btn sm ${OP.acompCaminho===k?'primary':''}" onclick="OP.acompCaminho=OP.acompCaminho==='${k}'?'':'${k}';renderOportunidades()">${rot} (${cdNum(n)})</button>`:''; }).join(' ');
+  const cl = (sel.clientes||[]).filter(c=>!OP.acompCaminho || c.caminho===OP.acompCaminho);
+  const linhas = cl.slice(0,300).map(c=>`<tr><td>${cdEsc(c.nome||'')}<br><small>${cdEsc(c.cli)}</small></td><td>${cdEsc(c.filial||'')}</td><td>${cdEsc(cdFoneOpa(c.fone))}</td><td>${cdEsc(c.caminho)}</td><td>${c.resposta?new Date(c.resposta).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'-'}</td><td>${c.aberto?'Em aberto':''}${c.motivo_upgrade?' Motivo UPGRADE':''}${c.recusou?' Recusou':''}</td><td>${c.converteu?`Sim (${cdMoeda(c.ganho)})`:''}</td><td><small>${cdEsc(c.protocolo_ia||'')}</small></td></tr>`).join('');
+  return `<div class="section compact-section" id="op-acomp"><h3 class="section-title" style="font-size:14px">Acompanhamento dos envios</h3>
+    <div class="cdg-tabwrap"><table class="cdg-tab op-tab"><thead><tr><th>Envio</th><th>Filiais</th><th>Lista</th><th>Enviados</th><th>Responderam</th><th>Setor de venda</th><th>Perdidos no fluxo</th><th>Em aberto</th><th>Converteram</th><th>Receita nova/mês</th></tr></thead><tbody>${tab}</tbody></table></div>
+    <div class="cdg-eyebrow" style="margin:14px 0 6px">Envio de ${fmt(sel.enviado_em)} · ${cdEsc(sel.filiais||'')}</div>
+    ${cards}
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 8px">${cam}<span style="flex:1"></span>${cl.length?`<button class="btn primary sm" onclick="opAcompExportar()">Baixar para o OPA (${cdNum(cl.length)})</button>`:''}</div>
+    <div class="cdg-tabwrap"><table class="cdg-tab op-tab"><thead><tr><th>Cliente</th><th>Filial</th><th>Celular</th><th>Caminho no OPA</th><th>Respondeu às</th><th>Situação</th><th>Converteu</th><th>Protocolo da IA</th></tr></thead><tbody>${linhas||'<tr><td colspan="8">Nenhum cliente neste caminho.</td></tr>'}</tbody></table></div>
+    <div class="cdg-nota">Respostas: atendimentos abertos no OPA até 7 dias depois do envio, pelo celular do cadastro. Conversão: mudança para plano mais caro no IXC depois do envio. Dados do OPA até ${fmt(A.opa_ate)} e do IXC até ${fmt(A.ixc_ate)}. Use Atualizar todos os dados para trazer o mais recente.</div>
   </div>`;
 }
+function opAcompExportar(){
+  const A = OP.acomp, envs = (A && A.envios) || []; const sel = OP.acompLote && envs.find(e=>e.lote===OP.acompLote) || envs[0]; if(!sel) return;
+  const cl = (sel.clientes||[]).filter(c=>!OP.acompCaminho || c.caminho===OP.acompCaminho);
+  const mapa = new Map(); cl.forEach(c=>{ const f = cdFoneOpa(c.fone); if(f && c.nome) mapa.set(f, c); });
+  const itens = [...mapa], n = Math.ceil(itens.length/50), base = `${cdSlug(sel.filiais||'envio')}_retorno_${cdSlug(OP.acompCaminho||'todos')}_${new Date().toISOString().slice(0,10)}`;
+  for(let i=0;i<n;i++){ const corpo = ['name,whatsapp', ...itens.slice(i*50,(i+1)*50).map(([f,c])=>`${cdCsvCampo(c.nome)},${f}`)].join('\r\n'); setTimeout(()=>cdBaixar(`${base}_bloco${String(i+1).padStart(2,'0')}de${String(n).padStart(2,'0')}.csv`, corpo), i*400); }
+  toast(`${n} arquivo(s) em blocos de 50`, 'success');
+}
+window.opAcompExportar = opAcompExportar;
 function renderOportunidades(){
   const box = document.getElementById('mod-oportunidades'); if(!box) return;
   if(typeof cdEhAtendente==='function' && cdEhAtendente()){ box.innerHTML = '<div class="section compact-section">Este módulo é da gestão.</div>'; return; }
