@@ -25534,7 +25534,7 @@ function opGuiaHTML(){
   const p2 = `Se ${Math.round(OP_TAXA*100)}% dos clientes de upgrade aceitarem, a receita mensal sobe cerca de <b>${cdMoeda(ganhoTotal*OP_TAXA)}</b>. Se ${Math.round(OP_TAXA*100)}% dos ex-clientes voltarem, entram cerca de <b>${cdMoeda(soma(re,x=>x.valor_oferta)*OP_TAXA)}</b> por mês.`;
   const p3 = `Comece pelos <button type="button" class="cdg-link" onclick="opIr('upgrade',{prioridade:'Alta'})">${cdNum(upAlta.length)} de prioridade alta</button>: são clientes há mais de 1 ano que pagaram as 6 últimas faturas em dia.${pediu.length?` <button type="button" class="cdg-link r" onclick="opIr('upgrade',{pediu:true})">${cdNum(pediu.length)} pediram upgrade no OPA</button> nos últimos 30 dias e precisam de retorno antes do disparo.`:''}`;
   const fora = Object.values(uf).reduce((a,b)=>a+b,0);
-  const p4 = `Ficaram fora do upgrade ${cdNum(fora)} contratos: fatura vencida, OS aberta, sinal ruim, reclamação recente no OPA, mudança de plano há menos de 90 dias ou oferta recebida nos últimos 30 dias. Assim a oferta não chega para quem está com problema.`;
+  const p4 = `Ficaram fora ${cdNum(fora)} contratos ativos que não têm perfil para receber oferta agora. O quadro abaixo mostra o motivo de cada um.`;
   const resumo = `<div class="cdg-resumo">
     <div class="cdg-box"><div class="cdg-eyebrow">As oportunidades em poucas linhas</div>
       <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p><p>${p3}</p><p>${p4}</p></div>
@@ -25549,7 +25549,7 @@ function opGuiaHTML(){
   </div>`;
   const agir = [
     cdItem({tom:'agir', passo:1, titulo:'Responder quem pediu upgrade no OPA', numero:cdNum(pediu.length), unid:'clientes', vazio:!pediu.length,
-      porque:'Já demonstraram interesse. É a venda mais fácil da lista.', como:'Ligar ou responder no OPA, sem esperar o disparo em massa.', acao:['Abrir lista',"opIr('upgrade',{pediu:true})"]}),
+      porque:'Pediram upgrade no OPA ou foram etiquetados como VENDA ATIVA | OFERTAR UPGRADE. É a venda mais fácil da lista.', como:'Ligar ou responder no OPA, sem esperar o disparo em massa.', acao:['Abrir lista',"opIr('upgrade',{pediu:true})"]}),
     (()=>{ const def = up.filter(x=>x.vel<=100); return cdItem({tom:'agir', passo:2, titulo:'Migrar quem está em plano defasado', numero:cdNum(def.length), unid:'contratos até 100 mega', vazio:!def.length,
       porque:'Plano antigo que não atende mais a casa, com equipamento provavelmente defasado. É o cliente com mais risco de trocar de provedor.',
       como:`A oferta é o 300 mega por R$ 79,90. Ganho de ${cdMoeda(def.reduce((t,x)=>t+(+x.ganho||0),0))} por mês se todos migrarem. Abra o quadro por plano e comece pelo maior.`, acao:['Ver por plano',"document.getElementById('op-planos')?.scrollIntoView({behavior:'smooth'})"]}); })(),
@@ -25586,7 +25586,34 @@ function opGuiaHTML(){
     <div class="cdg-col planejar"><div class="cdg-col-h"><h3>Planejar</h3><span>próximos envios</span></div>${planejar}</div>
     <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Ficar atenta</h3><span>${alertas.length} pontos</span></div>${alertas.join('')}</div>
   </div>`;
-  return `<div class="cdg">${status}${resumo}${colunas}${opPlanosHTML(up)}</div>`;
+  return `<div class="cdg">${status}${resumo}${opFunilHTML(d)}${colunas}${opPlanosHTML(up)}</div>`;
+}
+const OP_FUNIL = [
+  ['plano fora da regra','Plano empresarial, dedicado, IP fixo ou teste'],
+  ['já no plano mais alto','Já está no 1 giga ou paga mais que a próxima oferta'],
+  ['tem fatura vencida','Tem fatura vencida (vai para a cobrança)'],
+  ['já recusou oferta de upgrade no OPA','Já recusou oferta (etiqueta UPGRADE OFERTADO no OPA)'],
+  ['cliente há menos de 6 meses','Cliente há menos de 6 meses'],
+  ['atrasou 2 ou mais das últimas 6 faturas','Atrasou 2 ou mais das últimas 6 faturas'],
+  ['liberação em confiança','Está com liberação em confiança'],
+  ['OS aberta','Tem OS aberta'],
+  ['sinal ruim','Sinal da fibra abaixo de -27 dBm'],
+  ['mudou de plano há menos de 1 ano','Mudou de plano há menos de 1 ano'],
+  ['reclamou no OPA nos últimos 30 dias','Reclamou no OPA nos últimos 30 dias'],
+  ['já recebeu oferta nos últimos 30 dias','Recebeu oferta do Radar nos últimos 30 dias'],
+  ['sem celular válido','Sem celular válido no cadastro']
+];
+function opFunilHTML(d){
+  const uf = d.upgrade_fora||{}, base = Number(d.base_contratos)||0, aptos = (d.upgrade||[]).length;
+  if(!base) return '';
+  let resta = base;
+  const linhas = OP_FUNIL.filter(([k])=>uf[k]).map(([k,rot])=>{ resta -= uf[k]; return `<tr><td>${rot}</td><td>- ${cdNum(uf[k])}</td><td>${cdNum(resta)}</td><td class="bar"><div style="width:${(100*resta/base).toFixed(1)}%"></div></td></tr>`; }).join('');
+  return `<div class="cdg-box"><div class="cdg-eyebrow">Quem pode receber oferta de upgrade</div>
+    <p style="margin:6px 0 10px;font-size:13px;line-height:1.5">Dos <b>${cdNum(base)} contratos ativos</b> (${cdNum(d.base_clientes)} clientes), <b>${cdNum(aptos)} (${cdPct(aptos,base)}%) estão aptos</b> a receber oferta hoje. Os demais saem da lista na ordem abaixo: cada contrato conta só no primeiro motivo em que cai.</p>
+    <div class="cdg-tabwrap"><table class="cdg-tab op-tab"><thead><tr><th>Motivo para não ofertar</th><th>Saem</th><th>Restam</th><th></th></tr></thead><tbody>
+      <tr><td><b>Contratos ativos com internet liberada</b></td><td></td><td><b>${cdNum(base)}</b></td><td class="bar"><div style="width:100%"></div></td></tr>${linhas}
+      <tr><td><b>Aptos para oferta</b></td><td></td><td><b>${cdNum(aptos)}</b></td><td></td></tr></tbody></table></div>
+    <div class="cdg-nota">Não entram na conta: contratos bloqueados, suspensos, isentos e a Filial 10 (B2B). A recusa no OPA considera os atendimentos carregados desde 01/05/2026.</div></div>`;
 }
 function opPlanoGrupo(vel){ return vel<=100 ? 1 : vel<300 ? 2 : vel<600 ? 3 : 4; }
 const OP_GRUPO = {1:['Prioridade 1','Plano defasado (até 100 mega)','risk'],2:['Prioridade 2','Abaixo do plano de entrada (até 299 mega)','warn'],3:['Prioridade 3','Plano intermediário (300 a 599 mega)','info'],4:['Prioridade 4','Plano alto (600 mega)','ok']};
