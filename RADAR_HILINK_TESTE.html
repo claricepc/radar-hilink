@@ -426,6 +426,8 @@ body{font-family:'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif;background
 body[data-active-mod="premiacoes"] #global-filters{display:none!important}
 body[data-active-mod="oportunidades"] #global-filters{display:none!important}
 #mod-oportunidades .op-tab th,#mod-oportunidades .op-tab td{text-align:left;vertical-align:top}
+#mod-oportunidades .op-cards{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;gap:8px!important}
+#mod-oportunidades .op-cards .cdg-num{display:block!important;min-height:0}
 #mod-oportunidades .op-tab td small{color:var(--g-muted,#8FA3B8)}
 body[data-active-mod="setup"] .topbar{
   background:linear-gradient(180deg,#101f33 0%,#0c1829 100%);
@@ -25688,7 +25690,7 @@ function opAcompHTML(){
   const tab = envs.map(e=>`<tr ${e.lote===sel.lote?'style="font-weight:700"':''}><td><button type="button" class="cdg-link" onclick="OP.acompLote='${e.lote}';OP.acompCaminho='';renderOportunidades()">${fmt(e.enviado_em)}</button></td><td>${cdEsc(e.filiais||'')}</td><td>${cdEsc(e.oferta||e.lista)}</td><td>${cdNum(e.enviados)}</td><td>${cdNum(e.responderam)} (${cdPct(e.responderam,e.enviados)}%)</td><td>${cdNum(e.venda)}</td><td>${cdNum(e.ia0+e.triagem)}</td><td>${cdNum(e.abertos)}</td><td>${cdNum(e.converteram)} (${cdPct(e.converteram,e.enviados)}%)</td><td>${cdMoeda(e.receita)}</td></tr>`).join('');
   const resp = sel.responderam||0, perdidos = (sel.ia0||0)+(sel.triagem||0);
   const num = (rot, v, s, tom) => `<div class="cdg-num ${tom||'info'}"><div class="l">${rot}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
-  const cards = `<div class="cdg-numeros" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+  const cards = `<div class="cdg-numeros op-cards">
     ${num('Engajamento', cdPct(resp,sel.enviados)+'%', `${cdNum(resp)} de ${cdNum(sel.enviados)} responderam${sel.tempo_resposta_min!=null?` · metade em até ${cdNum(sel.tempo_resposta_min)} min`:''}`)}
     ${num('Chegaram na venda', cdNum(sel.venda), `${cdPct(sel.venda,resp)}% de quem respondeu`, 'ok')}
     ${num('Perdidos no fluxo', cdNum(perdidos), `${cdNum(sel.ia0)} fechados pela IA na hora, ${cdNum(sel.triagem)} na triagem`, perdidos?'risk':'ok')}
