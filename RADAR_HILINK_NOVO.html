@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261029174449">
+<meta name="radar-build" content="20261029180138">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -25413,6 +25413,8 @@ const IXC_CARGA_TIPOS = [
   { key:'fibra',        base:'fibra',            label:'ONUs da fibra (sinal, temperatura, quedas)' },
   { key:'comodato',     base:'os',               label:'Ordens de Serviço abertas' },
   { key:'opa',          base:'opa',              label:'Atendimentos do OPA (últimos 120 dias)' },
+  { key:'cadastro',     base:'clientes_cadastro', label:'Cadastro de clientes' },
+  { key:'historicoPgto', base:'planilha',        label:'Histórico de pagamentos (planilha da equipe)', fonte:'Planilha da equipe (leitura automática)', semLinha:true },
 ];
 function ixcFmtDataHora(v){ if(!v) return '—'; const d=new Date(v); return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function ixcEsc(s){ return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -25446,7 +25448,7 @@ function ixcCargaCardHTML(){
   const tipos = st.tipos || {};
   const andamento = ixcCargaEmAndamento(st);
   const ped = st.ultimo_pedido;
-  const linhas = IXC_CARGA_TIPOS.map(t=>{
+  const linhas = IXC_CARGA_TIPOS.filter(t=>!t.semLinha).map(t=>{
     const x = tipos[t.base];
     return `<li><span>${t.label}</span><strong>${x ? Number(x.registros).toLocaleString('pt-BR')+' linhas' : 'ainda não carregado'}</strong><em>${x ? 'atualizado em '+ixcFmtDataHora(x.atualizado_em) : ''}</em></li>`;
   }).join('') + (()=>{ const x = tipos.planilha; return `<li><span>Planilha da equipe (premiação)</span><strong>${x ? Number(x.registros).toLocaleString('pt-BR')+' linhas' : 'ainda não carregada'}</strong><em>${x ? 'atualizada em '+ixcFmtDataHora(x.atualizado_em) : ''}</em></li>`; })();
@@ -25539,7 +25541,7 @@ async function ixcCargaUsar(destino){
     }
     // Publicar os relatórios juntos, somente após todas as consultas terminarem.
     for(const {t,rows} of leituras){
-      const nome = `IXC direto (banco) · ${rows.length.toLocaleString('pt-BR')} linhas`;
+      const nome = t.fonte || `IXC direto (banco) · ${rows.length.toLocaleString('pt-BR')} linhas`;
       STATE.raw[t.key] = rows; STATE.files[t.key] = nome;
       if(t.key==='alteracoes' && typeof processAlteracoesRows==='function'){
         if(STATE.processed) STATE.processed.alteracoes = processAlteracoesRows(rows);
