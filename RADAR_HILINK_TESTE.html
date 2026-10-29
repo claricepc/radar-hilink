@@ -25581,6 +25581,8 @@ function opGuiaHTML(){
       porque:'Cada mensagem de marketing tem custo na Meta. A taxa mostra qual oferta vende.', como:'Conferir o resultado 7 dias depois de cada envio, na tabela abaixo da lista.'})
   ].join('');
   const alertas = [];
+  { const envs=(OP.acomp?.envios)||[], perd=envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
+    if(perd) alertas.push(cdAlerta('risk', `<b>Falha grave no fluxo do OPA:</b> ${cdNum(perd)} clientes responderam à oferta e foram encerrados pela IA sem atendimento. Veja o alerta no topo da página.`)); }
   if(Number(d.mesmo_preco_600)>0) alertas.push(cdAlerta('warn', `<b>${cdNum(d.mesmo_preco_600)} clientes pagam R$ 99,90 ou mais por 500 mega.</b> O plano oficial de 600 mega custa R$ 99,90. Se o cliente descobrir, pede a troca ou vai embora. Vale decidir se essa base migra para 600 mega sem custo, como retenção.`));
   if(uf['reclamou no OPA nos últimos 30 dias']) alertas.push(cdAlerta('', `<b>${cdNum(uf['reclamou no OPA nos últimos 30 dias'])} clientes reclamaram no OPA</b> nos últimos 30 dias (sem acesso, lentidão, cancelamento ou contestação). Ficam fora da oferta até o problema esfriar.`));
   alertas.push(cdAlerta('', 'Quem é baixado para o OPA fica 30 dias sem aparecer nas listas. Isso evita mandar a mesma oferta duas vezes.'));
@@ -25720,6 +25722,43 @@ function opAcompExportar(){
   toast(`${n} arquivo(s) em blocos de 50`, 'success');
 }
 window.opAcompExportar = opAcompExportar;
+function opFalhasHTML(){
+  const A = OP.acomp; if(!A) return '';
+  const envs = A.envios||[], f = A.falhas_fluxo||{};
+  const perd = envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
+  const geral = (+f.ia_0s||0) + (+f.ia_venda_sem_atendente||0);
+  const espera = envs.flatMap(e=>(e.clientes||[]).filter(c=>c.aberto && c.resposta && (Date.now()-new Date(c.resposta).getTime()) > 30*60000)).length;
+  if(!perd && !geral && !espera) return '';
+  const partes = [];
+  if(perd) partes.push(`<b>${cdNum(perd)} clientes responderam à oferta e foram encerrados pela IA sem atendimento.</b> São vendas perdidas e, se for recusa, falta a etiqueta UPGRADE OFERTADO.`);
+  if(geral) partes.push(`Nas últimas 24 horas o OPA teve <b>${cdNum(f.ia_0s||0)} atendimentos fechados pela Fernanda em 0 segundo, sem etiqueta</b>${f.ia_venda_sem_atendente?`, e <b>${cdNum(f.ia_venda_sem_atendente)} etiquetados para venda e fechados pela IA</b>`:''}, sem nenhum atendente depois. Nos 10 dias anteriores isso não aconteceu nenhuma vez.`);
+  if(espera) partes.push(`<b>${cdNum(espera)} clientes que responderam estão esperando há mais de 30 minutos</b> com o atendimento em aberto.`);
+  return `<div role="alert" class="section compact-section" style="border:2px solid #E5484D;background:rgba(229,72,77,.10)">
+    <div style="font-weight:900;color:#E5484D;letter-spacing:.03em;margin-bottom:6px">FALHA GRAVE NO FLUXO DO OPA: CLIENTE ENCERRADO SEM TRATAMENTO</div>
+    ${partes.map(p=>`<p style="margin:4px 0;font-size:13px;line-height:1.5">${p}</p>`).join('')}
+    <p style="margin:8px 0 4px;font-size:12px"><b>O que fazer:</b> 1. Chamar de volta hoje quem foi encerrado. 2. Ajustar no OPA para que toda resposta à campanha vá direto para o setor de venda, sem triagem da IA. 3. Se o encerramento for a opção "não quero", o fluxo precisa aplicar a etiqueta UPGRADE OFERTADO.</p>
+    <div class="cdg-botoes" style="margin-top:8px">
+      ${perd?`<button type="button" class="cdg-ir" onclick="OP.acompCaminho='fechado pela IA em 0 s';renderOportunidades();setTimeout(()=>document.getElementById('op-acomp')?.scrollIntoView({behavior:'smooth'}),50)">Ver quem foi encerrado</button>`:''}
+      ${perd?`<button type="button" class="cdg-ir" onclick="opFalhasExportar()">Baixar para chamar de volta</button>`:''}
+      ${geral?`<button type="button" class="cdg-ir" onclick="opFalhasProtocolos()">Ver protocolos no OPA</button>`:''}
+    </div>
+    <div id="op-falhas-prot"></div>
+  </div>`;
+}
+function opFalhasExportar(){
+  const envs = (OP.acomp?.envios)||[], mapa = new Map();
+  envs.forEach(e=>(e.clientes||[]).filter(c=>['fechado pela IA em 0 s','triagem da IA sem atendente'].includes(c.caminho)).forEach(c=>{ const f=cdFoneOpa(c.fone); if(f&&c.nome) mapa.set(f,c); }));
+  const itens=[...mapa], n=Math.ceil(itens.length/50), base=`chamar_de_volta_encerrados_pela_IA_${new Date().toISOString().slice(0,10)}`;
+  if(!n){ toast('Ninguém para chamar de volta','warn'); return; }
+  for(let i=0;i<n;i++){ const corpo=['name,whatsapp',...itens.slice(i*50,(i+1)*50).map(([f,c])=>`${cdCsvCampo(c.nome)},${f}`)].join('\r\n'); setTimeout(()=>cdBaixar(`${base}_bloco${String(i+1).padStart(2,'0')}de${String(n).padStart(2,'0')}.csv`,corpo), i*400); }
+  toast(`${n} arquivo(s) em blocos de 50`,'success');
+}
+function opFalhasProtocolos(){
+  const el = document.getElementById('op-falhas-prot'); if(!el) return;
+  const ps = (OP.acomp?.falhas_fluxo?.protocolos)||[];
+  el.innerHTML = `<div class="cdg-tabwrap" style="margin-top:8px"><table class="cdg-tab op-tab"><thead><tr><th>Protocolo</th><th>Contato</th><th>Hora</th><th>O que aconteceu</th></tr></thead><tbody>${ps.map(p=>`<tr><td>${cdEsc(p.protocolo)}</td><td>${cdEsc(cdFoneOpa(p.contato)||p.contato)}</td><td>${new Date(p.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td><td>${cdEsc(p.tipo)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+Object.assign(window,{opFalhasExportar, opFalhasProtocolos});
 function renderOportunidades(){
   const box = document.getElementById('mod-oportunidades'); if(!box) return;
   if(typeof cdEhAtendente==='function' && cdEhAtendente()){ box.innerHTML = '<div class="section compact-section">Este módulo é da gestão.</div>'; return; }
@@ -25730,7 +25769,7 @@ function renderOportunidades(){
   }
   box.innerHTML = `${OP.erro?`<div role="alert" class="section compact-section">Não foi possível atualizar: ${cdEsc(OP.erro)}</div>`:''}
     ${OP.carregando?'<div role="status" class="section compact-section">Recalculando as listas...</div>':''}
-    ${opGuiaHTML()}${opListaHTML()}`;
+    ${opFalhasHTML()}${opGuiaHTML()}${opListaHTML()}`;
 }
 Object.assign(window, { renderOportunidades, opCarregar, opIr, opSetFiltro, opToggle, opToggleTodos, opExportar });
 
