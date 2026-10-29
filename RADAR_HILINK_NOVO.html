@@ -2520,6 +2520,7 @@ h2.section-title .info-btn{margin-left:6px}
 .nav-sub{padding:6px 14px 6px 28px;font-size:12px;cursor:pointer;border-radius:6px;opacity:.85}
 .nav-sub:hover{background:rgba(77,163,224,.12);opacity:1}
 .nav-sub.active{font-weight:800;opacity:1;color:#2da3ff}
+.busca-off{display:none!important}
 .radar-trilha{font-size:11px;color:#8FA3B8;margin-bottom:4px;letter-spacing:.02em}
 .radar-trilha button{background:none;border:0;padding:0;color:#2da3ff;cursor:pointer;font:inherit;text-decoration:underline}
 .radar-trilha span.sep{margin:0 6px;opacity:.6}
@@ -25476,9 +25477,114 @@ async function radarFixoCarregar(){
 window.radarFixoRender=radarFixoRender; window.radarFixoAtualizar=radarFixoAtualizar; window.radarFixoCarregar=radarFixoCarregar;
 document.addEventListener('DOMContentLoaded', ()=>setTimeout(radarFixoRender, 2500));
 
+/* ===================== NAVEGACAO POR AREAS (versao NOVO) ===================== */
+const RADAR_AREA_DE = { inicio:'Início', cobrancaDia:'Financeiro', carneCorreios:'Financeiro', acao:'Financeiro', oportunidades:'Comercial', premiacoes:'Comercial', propostas:'Comercial', tecnica:'Rede', setup:'Configurações', relatorios:'Configurações', usuarios:'Configurações' };
+const RADAR_NOME_DE = { inicio:'Visão geral', cobrancaDia:'Cobrança do Dia', carneCorreios:'Envio Correios', acao:'Estratégia de Atuação', oportunidades:'Oportunidades', premiacoes:'Premiação', propostas:'Propostas Corporativas', tecnica:'Saúde da Rede', setup:'Carregar Relatórios', relatorios:'Relatórios Personalizados', usuarios:'Usuários e acessos' };
+function radarAreaToggle(el){ el.closest('.nav-area')?.classList.toggle('collapsed'); }
+function radarMenuBuscar(q){
+  q = String(q||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+  document.querySelectorAll('.nav-area').forEach(g=>{
+    let algum = false;
+    g.querySelectorAll('.nav-item,.nav-sub').forEach(it=>{ const t = it.textContent.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); const ok = !q || t.includes(q); it.classList.toggle('busca-off', !ok); if(ok && getComputedStyle(it).display!=='none') algum = true; });
+    g.style.display = algum || !q ? '' : 'none'; if(q) g.classList.remove('collapsed');
+  });
+}
+function radarTrilha(mod){
+  const el = document.getElementById('radar-trilha'); if(!el) return;
+  mod = mod || STATE.activeMod; const area = RADAR_AREA_DE[mod];
+  if(!area){ el.innerHTML=''; return; }
+  const partes = [`<button type="button" onclick="go('inicio')">Início</button>`];
+  if(mod!=='inicio'){ partes.push(`<span>${cdEsc(area)}</span>`); partes.push(mod==='oportunidades' && OP.sub!=='resumo' ? `<button type="button" onclick="opSub('resumo')">${cdEsc(RADAR_NOME_DE[mod])}</button>` : `<span>${cdEsc(RADAR_NOME_DE[mod])}</span>`); }
+  if(mod==='oportunidades' && OP.sub!=='resumo') partes.push(`<span>${cdEsc((OP_SUBS.find(x=>x[0]===OP.sub)||[])[1]||'')}</span>`);
+  el.innerHTML = partes.join('<span class="sep">/</span>');
+  document.querySelectorAll('.nav-sub').forEach(n=>n.classList.toggle('active', mod==='oportunidades' && n.getAttribute('onclick')?.includes(`opSub('${OP.sub}')`)));
+}
+function radarIrAtividades(){ go('cobrancaDia'); setTimeout(()=>document.querySelector('#mod-cobrancaDia .cdg-atv')?.scrollIntoView({behavior:'smooth'}), 600); }
+function radarAreasVisiveis(){ document.querySelectorAll('.nav-area').forEach(g=>{ const vis=[...g.querySelectorAll('.nav-item')].some(it=>getComputedStyle(it).display!=='none'); const sub=g.querySelector('.nav-sub'); if(!vis && !(g.dataset.area==='equipe' && typeof cdPodeGerenciar==='function' && cdPodeGerenciar())) g.style.display='none'; else if(!document.getElementById('nav-busca')?.value) g.style.display=''; }); }
+(function(){ const _go = go; go = function(mod){ const r = _go.apply(this, arguments); try{ radarTrilha(mod); radarAreasVisiveis(); }catch(e){} return r; }; window.go = go; })();
+(function(){ const orig = window.radarAplicarModulos; if(typeof orig==='function'){ window.radarAplicarModulos = radarAplicarModulos = function(){ const r = orig.apply(this, arguments); try{ radarAreasVisiveis(); }catch(e){} return r; }; } })();
+
+/* ===================== INICIO: os numeros de cada area ===================== */
+const INI = { carregando:false };
+async function renderInicio(){
+  const box = document.getElementById('mod-inicio'); if(!box) return;
+  const pode = typeof cdPodeGerenciar==='function' ? cdPodeGerenciar() : true;
+  if(!INI.carregando && (!CD.dados.resumo || !OP.dados || !CD.atv.lista)){
+    INI.carregando = true;
+    box.innerHTML = '<div class="section compact-section">Buscando os números de cada área...</div>';
+    try{ await Promise.allSettled([ CD.dados.resumo ? null : cdCarregar(), OP.dados ? null : opCarregar(), CD.atv.lista ? null : cdAtvCarregar(true), IXC_CARGA.status ? null : ixcCargaStatus() ]); }catch(e){}
+    INI.carregando = false;
+    if(STATE.activeMod==='inicio') renderInicio();
+    return;
+  }
+  let g = null; try{ g = cdGuiaDados(); }catch(e){}
+  const ln = (rot, val, tom, onclick) => `<div class="ln ${tom||''}">${onclick?`<button type="button" onclick="event.stopPropagation();${onclick}">${rot}</button>`:`<span>${rot}</span>`}<b>${val}</b></div>`;
+  const card = (area, titulo, linhas, ir, onclick) => `<div class="ini-card" role="button" tabindex="0" onclick="${onclick}" onkeydown="if(event.key==='Enter'){${onclick}}"><h3>${area}</h3><div class="t">${titulo}</div>${linhas.join('')}<div class="ir">${ir}</div></div>`;
+  const cards = [];
+  if(g) cards.push(card('Financeiro','Cobrança do Dia', [
+      ln('Vencido total', cdMoeda(g.todos.valor)+' · '+cdNum(g.todos.clientes)+' clientes', '', "go('cobrancaDia');setTimeout(()=>cdIrLista('cobrar','todos'),400)"),
+      ln('Antes do bloqueio (1 a 5 dias)', cdMoeda(g.pre.valor)+' · '+cdNum(g.pre.clientes), g.pre.clientes?'r':'ok', "go('cobrancaDia');setTimeout(()=>cdIrLista('cobrar','pre'),400)"),
+      ln('Recolhimento para agendar', cdNum(g.rec.clientes)+' clientes', g.rec.mais30?'r':'', "go('cobrancaDia');setTimeout(()=>cdIrLista('recolhimento_atd'),400)"),
+      ln('Mais de 90 dias', cdMoeda(g.d90.valor), '', "go('cobrancaDia');setTimeout(()=>cdIrLista('cobrar','d90'),400)")
+    ], 'Abrir Cobrança do Dia', "go('cobrancaDia')"));
+  const d = OP.dados||{}, envs=(OP.acomp?.envios)||[], perd = envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
+  const resp = envs.reduce((t,e)=>t+(+e.responderam||0),0), env = envs.reduce((t,e)=>t+(+e.enviados||0),0), conv = envs.reduce((t,e)=>t+(+e.converteram||0),0);
+  if(OP.dados) cards.push(card('Comercial','Oportunidades', [
+      ln('Aptos para upgrade', cdNum((d.upgrade||[]).length)+' contratos', '', "go('oportunidades');opSub('aptos')"),
+      ln('Planos defasados (até 100 mega)', cdNum((d.upgrade||[]).filter(x=>x.vel<=100).length), '', "go('oportunidades');opSub('planos')"),
+      ln('Ex-clientes para reativar', cdNum((d.reativacao||[]).length), '', "go('oportunidades');opIr('reativacao')"),
+      ln('Responderam aos envios', env?cdPct(resp,env)+'% ('+cdNum(resp)+' de '+cdNum(env)+')':'-', '', "go('oportunidades');opSub('envios')"),
+      ln('Encerrados pela IA sem atendimento', cdNum(perd), perd?'r':'ok', "go('oportunidades');opSub('envios')"),
+      ln('Converteram', cdNum(conv), conv?'ok':'', "go('oportunidades');opSub('envios')")
+    ], 'Abrir Oportunidades', "go('oportunidades');opSub('resumo')"));
+  if(pode && CD.atv.lista){ const ab = CD.atv.lista.filter(a=>a.status==='aberta'), est = ab.filter(a=>typeof cdPrazoEstourou==='function' && cdPrazoEstourou(a)), val = ab.filter(a=>a.validacao_solicitada_em);
+    cards.push(card('Equipe','Atividades da equipe', [
+      ln('Em andamento', cdNum(ab.length-val.length), '', 'radarIrAtividades()'),
+      ln('Prazo estourado', cdNum(est.length), est.length?'r':'ok', 'radarIrAtividades()'),
+      ln('Aguardando validação', cdNum(val.length), val.length?'r':'', 'radarIrAtividades()')
+    ], 'Abrir painel de atividades', 'radarIrAtividades()')); }
+  const tipos = IXC_CARGA.status?.tipos || {};
+  cards.push(card('Rede','Saúde da Rede', [
+      ln('ONUs lidas', tipos.fibra?cdNum(tipos.fibra.registros):'-'),
+      ln('Ordens de serviço abertas', tipos.os?cdNum(tipos.os.registros):'-')
+    ], 'Abrir Saúde da Rede', "go('tecnica')"));
+  cards.push(card('Comercial','Premiação', [ ln('Folha, vendas, atendimento e divergências', '') ], 'Abrir Premiação', "go('premiacoes')"));
+  if(pode) cards.push(card('Configurações','Dados e acessos', [
+      ln('Última leitura dos dados', (()=>{ try{ const u=radarFixoUltimaLeitura(IXC_CARGA.status); return u?ixcFmtDataHora(u):'-'; }catch(e){ return '-'; } })()),
+      ln('Usuários e acessos', '', '', "go('usuarios')")
+    ], 'Abrir Carregar Relatórios', "go('setup')"));
+  box.innerHTML = `${perd?`<div role="alert" class="section compact-section" style="border:2px solid #E5484D;background:rgba(229,72,77,.10);cursor:pointer" onclick="go('oportunidades');opSub('resumo')"><b style="color:#E5484D">FALHA GRAVE NO FLUXO DO OPA:</b> ${cdNum(perd)} clientes responderam à oferta e foram encerrados pela IA sem atendimento. Clique para ver.</div>`:''}
+    <div class="ini-grid">${cards.join('')}</div>
+    <div class="cdg-nota" style="margin-top:10px">Cada linha abre a lista correspondente. Os números vêm da última leitura do IXC e do OPA.</div>`;
+}
+window.renderInicio = renderInicio;
+
+/* ===================== AVISO DE VERSAO NOVA DO RADAR ===================== */
+const RADAR_VER = { base:null };
+async function radarVersaoChecar(){
+  try{
+    const url = location.pathname;
+    if(!RADAR_VER.base){ const c = await fetch(url, { method:'HEAD', cache:'force-cache' }); RADAR_VER.base = c.headers.get('etag') || c.headers.get('last-modified') || ''; }
+    const n = await fetch(url, { method:'HEAD', cache:'no-store' });
+    const atual = n.headers.get('etag') || n.headers.get('last-modified') || '';
+    if(RADAR_VER.base && atual && atual !== RADAR_VER.base) radarVersaoAviso();
+  }catch(e){}
+}
+function radarVersaoAviso(){
+  if(document.getElementById('radar-versao-aviso')) return;
+  const el = document.createElement('div'); el.id = 'radar-versao-aviso';
+  el.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9500;background:#0b5cad;color:#fff;padding:10px 16px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:13px;font-weight:700;cursor:pointer;display:flex;gap:12px;align-items:center';
+  el.innerHTML = 'Há uma atualização do Radar. <span style="background:#fff;color:#0b5cad;border-radius:6px;padding:4px 10px">Clique para carregar</span>';
+  el.onclick = () => { const u = new URL(location.href); u.searchParams.set('v', Date.now()); location.href = u.toString(); };
+  document.body.appendChild(el);
+}
+document.addEventListener('DOMContentLoaded', ()=>{ setTimeout(radarVersaoChecar, 5000); setInterval(radarVersaoChecar, 3*60000); });
+Object.assign(window, { radarAreaToggle, radarMenuBuscar, radarTrilha, radarIrAtividades });
+
+
 /* ===================== OPORTUNIDADES (upgrade e reativação para disparo no OPA) =====================
    Módulo isolado: lê só do banco (radar_oportunidades) e não altera nenhum outro módulo. */
-const OP = { dados:null, resultado:null, carregando:false, erro:null, aba:'upgrade',
+const OP = { sub:'resumo', dados:null, resultado:null, carregando:false, erro:null, aba:'upgrade',
   f:{ marca:'Todas', filial:'Todas', oferta:'Todas', prioridade:'Todas', plano:'Todas', pediu:false, busca:'' },
   sel:new Set(), limite:100, exportando:false };
 const OP_TAXA = 0.05; // conversão de referência para estimar receita (5%)
@@ -25507,7 +25613,7 @@ async function opCarregar(recalcular){
 }
 function opIr(aba, filtro){
   OP.aba = aba; OP.f = { marca:'Todas', filial:'Todas', oferta:'Todas', prioridade:'Todas', plano:'Todas', pediu:false, busca:'', ...(filtro||{}) };
-  OP.sel.clear(); OP.limite = 100; renderOportunidades();
+  OP.sel.clear(); OP.limite = 100; OP.sub='listas'; renderOportunidades(); radarTrilha('oportunidades');
   setTimeout(()=>document.getElementById('op-lista')?.scrollIntoView({behavior:'smooth', block:'start'}), 50);
 }
 function opSetFiltro(k, v){ OP.f[k] = v; OP.sel.clear(); OP.limite = 100; renderOportunidades(); }
@@ -25586,7 +25692,7 @@ function opGuiaHTML(){
       porque:'Pediram upgrade no OPA ou foram etiquetados como VENDA ATIVA | OFERTAR UPGRADE. É a venda mais fácil da lista.', como:'Ligar ou responder no OPA, sem esperar o disparo em massa.', acao:['Abrir lista',"opIr('upgrade',{pediu:true})"]}),
     (()=>{ const def = up.filter(x=>x.vel<=100); return cdItem({tom:'agir', passo:2, titulo:'Migrar quem está em plano defasado', numero:cdNum(def.length), unid:'contratos até 100 mega', vazio:!def.length,
       porque:'Plano antigo que não atende mais a casa, com equipamento provavelmente defasado. É o cliente com mais risco de trocar de provedor.',
-      como:`A oferta é o 300 mega por R$ 79,90. Ganho de ${cdMoeda(def.reduce((t,x)=>t+(+x.ganho||0),0))} por mês se todos migrarem. Abra o quadro por plano e comece pelo maior.`, acao:['Ver por plano',"document.getElementById('op-planos')?.scrollIntoView({behavior:'smooth'})"]}); })(),
+      como:`A oferta é o 300 mega por R$ 79,90. Ganho de ${cdMoeda(def.reduce((t,x)=>t+(+x.ganho||0),0))} por mês se todos migrarem. Abra o quadro por plano e comece pelo maior.`, acao:['Ver por plano',"opSub('planos')"]}); })(),
     cdItem({tom:'agir', passo:3, titulo:'Disparar upgrade para a prioridade alta', numero:cdNum(upAlta.length), unid:'clientes', vazio:!upAlta.length,
       porque:`Pagam em dia e são clientes antigos. ${['300MB','600MB','1 GIGA'].map(o=>`${cdNum(upAlta.filter(x=>x.oferta===o).length)} para ${o}`).join(', ')}.`,
       como:'Baixar para o OPA gera arquivos de 50 clientes por filial e por oferta. Use no OPA o modelo aprovado da oferta.', acao:['Abrir lista',"opIr('upgrade',{prioridade:'Alta'})"]}),
@@ -25622,7 +25728,10 @@ function opGuiaHTML(){
     <div class="cdg-col planejar"><div class="cdg-col-h"><h3>Planejar</h3><span>próximos envios</span></div>${planejar}</div>
     <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Ficar atenta</h3><span>${alertas.length} pontos</span></div>${alertas.join('')}</div>
   </div>`;
-  return `<div class="cdg">${status}${resumo}${opFunilHTML(d)}${colunas}${opPlanosHTML(up)}</div>`;
+  if(OP.sub==='aptos') return `<div class="cdg">${status}${opFunilHTML(d)}</div>`;
+  if(OP.sub==='planos') return `<div class="cdg">${status}${opPlanosHTML(up)}</div>`;
+  if(OP.sub!=='resumo') return `<div class="cdg">${status}</div>`;
+  return `<div class="cdg">${status}${resumo}${colunas}</div>`;
 }
 const OP_FUNIL = [
   ['plano fora da regra','Plano empresarial, dedicado, IP fixo ou teste'],
@@ -25704,7 +25813,7 @@ function opListaHTML(){
     ${ls.length>OP.limite?`<div style="text-align:center;margin-top:8px"><button class="btn sm" onclick="OP.limite+=200;renderOportunidades()">Mostrar mais (${cdNum(ls.length-OP.limite)} restantes)</button></div>`:''}
     <div class="cdg-nota">Arquivos em blocos de 50 clientes, separados por filial e por oferta, no formato do OPA (name, whatsapp), para usar com o modelo aprovado de cada oferta. NandoNet e Pablom saem em arquivos próprios.</div>
   </div>
-  ${opAcompHTML()}`;
+`;
 }
 const OP_CAMINHOS = [
   ['setor de venda','Foi para o setor de venda','ok'],
@@ -25767,7 +25876,7 @@ function opFalhasHTML(){
     ${partes.map(p=>`<p style="margin:4px 0;font-size:13px;line-height:1.5">${p}</p>`).join('')}
     <p style="margin:8px 0 4px;font-size:12px"><b>O que fazer:</b> 1. Chamar de volta hoje quem foi encerrado. 2. Ajustar no OPA para que toda resposta à campanha vá direto para o setor de venda, sem triagem da IA. 3. Se o encerramento for a opção "não quero", o fluxo precisa aplicar a etiqueta UPGRADE OFERTADO.</p>
     <div class="cdg-botoes" style="margin-top:8px">
-      ${perd?`<button type="button" class="cdg-ir" onclick="OP.acompCaminho='fechado pela IA em 0 s';renderOportunidades();setTimeout(()=>document.getElementById('op-acomp')?.scrollIntoView({behavior:'smooth'}),50)">Ver quem foi encerrado</button>`:''}
+      ${perd?`<button type="button" class="cdg-ir" onclick="OP.acompCaminho='fechado pela IA em 0 s';opSub('envios')">Ver quem foi encerrado</button>`:''}
       ${perd?`<button type="button" class="cdg-ir cdg-gerar" onclick="opGerarAtividade(['fechado pela IA em 0 s','triagem da IA sem atendente'])">Gerar atividade: chamar de volta</button>`:''}
       ${perd?`<button type="button" class="cdg-ir" onclick="opFalhasExportar()">Baixar para chamar de volta</button>`:''}
       ${geral?`<button type="button" class="cdg-ir" onclick="opFalhasProtocolos()">Ver protocolos no OPA</button>`:''}
@@ -25800,6 +25909,13 @@ function opFalhasProtocolos(){
   el.innerHTML = `<div class="cdg-tabwrap" style="margin-top:8px"><table class="cdg-tab op-tab"><thead><tr><th>Protocolo</th><th>Contato</th><th>Hora</th><th>O que aconteceu</th></tr></thead><tbody>${ps.map(p=>`<tr><td>${cdEsc(p.protocolo)}</td><td>${cdEsc(cdFoneOpa(p.contato)||p.contato)}</td><td>${new Date(p.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td><td>${cdEsc(p.tipo)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 Object.assign(window,{opFalhasExportar, opFalhasProtocolos});
+const OP_SUBS = [['resumo','Resumo'],['aptos','Quem pode receber'],['planos','Por plano'],['listas','Listas para o OPA'],['envios','Envios e resultado']];
+function opSub(k){ OP.sub = k; renderOportunidades(); radarTrilha('oportunidades'); window.scrollTo({top:0,behavior:'smooth'}); }
+function opAbasHTML(){
+  const envs=(OP.acomp?.envios)||[], perd=envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
+  return `<div class="op-abas">${OP_SUBS.map(([k,t])=>`<button type="button" class="${OP.sub===k?'on':''}" onclick="opSub('${k}')">${t}${k==='envios'&&perd?`<span class="q">${perd}</span>`:''}</button>`).join('')}</div>`;
+}
+window.opSub = opSub;
 function renderOportunidades(){
   const box = document.getElementById('mod-oportunidades'); if(!box) return;
   if(typeof cdEhAtendente==='function' && cdEhAtendente()){ box.innerHTML = '<div class="section compact-section">Este módulo é da gestão.</div>'; return; }
@@ -25810,7 +25926,7 @@ function renderOportunidades(){
   }
   box.innerHTML = `${OP.erro?`<div role="alert" class="section compact-section">Não foi possível atualizar: ${cdEsc(OP.erro)}</div>`:''}
     ${OP.carregando?'<div role="status" class="section compact-section">Recalculando as listas...</div>':''}
-    ${opFalhasHTML()}${opGuiaHTML()}${opListaHTML()}`;
+    ${opAbasHTML()}${OP.sub==='resumo'?opFalhasHTML():''}${opGuiaHTML()}${OP.sub==='listas'?opListaHTML():''}${OP.sub==='envios'?opAcompHTML():''}`;
 }
 Object.assign(window, { renderOportunidades, opCarregar, opIr, opSetFiltro, opToggle, opToggleTodos, opExportar });
 
