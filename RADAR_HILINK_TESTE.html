@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<meta name="radar-build" content="20261029182947">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -2510,6 +2511,37 @@ h2.section-title .info-btn{margin-left:6px}
 #radar-atualizar-fixo button:disabled{background:#94a3b8;cursor:default}
 #radar-atualizar-fixo .info{font-size:10px;color:#475569;text-align:center;line-height:1.25}
 @media print{#radar-atualizar-fixo{display:none}}
+
+/* ===== Menu por areas, trilha e Inicio (versao NOVO) ===== */
+.nav-busca{padding:8px 10px 4px}
+.nav-busca input{width:100%;box-sizing:border-box;padding:7px 10px;border-radius:8px;border:1px solid rgba(143,163,184,.35);background:rgba(255,255,255,.06);color:inherit;font-size:12px}
+.nav-area .nav-area-h{cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.nav-area .nav-area-h::after{content:'-';font-weight:900;opacity:.6}
+.nav-area.collapsed .nav-area-h::after{content:'+'}
+.nav-sub{padding:6px 14px 6px 28px;font-size:12px;cursor:pointer;border-radius:6px;opacity:.85}
+.nav-sub:hover{background:rgba(77,163,224,.12);opacity:1}
+.nav-sub.active{font-weight:800;opacity:1;color:#2da3ff}
+.busca-off{display:none!important}
+body.radar-modo-atendente .nav-sub{display:none!important}
+.radar-trilha{font-size:11px;color:#8FA3B8;margin-bottom:4px;letter-spacing:.02em}
+.radar-trilha button{background:none;border:0;padding:0;color:#2da3ff;cursor:pointer;font:inherit;text-decoration:underline}
+.radar-trilha span.sep{margin:0 6px;opacity:.6}
+#prem-tabs-nav{display:none!important}
+.op-abas{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.op-abas button{border:1px solid rgba(143,163,184,.35);background:transparent;color:inherit;border-radius:999px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
+.op-abas button.on{background:#2da3ff;border-color:#2da3ff;color:#fff}
+.op-abas button .q{margin-left:6px;background:#E5484D;color:#fff;border-radius:999px;padding:0 6px;font-size:10px}
+.ini-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.ini-card{border:1px solid rgba(143,163,184,.25);border-radius:12px;padding:14px 16px;cursor:pointer;background:var(--g-card,#fff);transition:border-color .15s}
+.ini-card:hover{border-color:#2da3ff}
+.ini-card h3{margin:0 0 2px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8FA3B8}
+.ini-card .t{font-size:16px;font-weight:800;margin-bottom:10px}
+.ini-card .ln{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid rgba(143,163,184,.15);font-size:13px}
+.ini-card .ln b{white-space:nowrap}
+.ini-card .ln.r b{color:#E5484D}
+.ini-card .ln.ok b{color:#4CC38A}
+.ini-card .ln button{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left;text-decoration:underline dotted}
+.ini-card .ir{margin-top:8px;font-size:11px;color:#2da3ff;font-weight:700}
 </style>
 <style>
 .cd-atalho{display:flex;align-items:center;gap:18px;justify-content:space-between;margin:0 0 14px;padding:18px 20px;border-radius:12px;cursor:pointer;
@@ -2551,7 +2583,7 @@ h2.section-title .info-btn{margin-left:6px}
 .cd-passos span{border:1px solid rgba(90,150,220,.45);border-radius:999px;padding:4px 10px}
 @media (max-width:760px){.cd-atalho{flex-direction:column;align-items:flex-start}}
 /* ===== Cobrança do Dia: guia de gestão (só apresentação; números vêm das mesmas listas do módulo) ===== */
-#mod-cobrancaDia,#mod-premiacoes,#mod-oportunidades{--g-bg:#0B1B2B;--g-card:#0E2236;--g-card2:#11283F;--g-line:rgba(143,163,184,.20);--g-text:#F2F5F8;--g-sub:#B4C2D0;--g-muted:#8FA3B8;--g-blue:#4DA3E0;--g-risk:#FF6B70;--g-risk-bg:rgba(229,72,77,.10);--g-warn:#FFB84D;--g-warn-bg:rgba(245,165,36,.09);--g-ok:#4CC38A;--g-ok-bg:rgba(48,164,108,.10);--g-info-bg:rgba(77,163,224,.09)}
+#mod-cobrancaDia,#mod-premiacoes,#mod-oportunidades,#mod-inicio{--g-bg:#0B1B2B;--g-card:#0E2236;--g-card2:#11283F;--g-line:rgba(143,163,184,.20);--g-text:#F2F5F8;--g-sub:#B4C2D0;--g-muted:#8FA3B8;--g-blue:#4DA3E0;--g-risk:#FF6B70;--g-risk-bg:rgba(229,72,77,.10);--g-warn:#FFB84D;--g-warn-bg:rgba(245,165,36,.09);--g-ok:#4CC38A;--g-ok-bg:rgba(48,164,108,.10);--g-info-bg:rgba(77,163,224,.09)}
 .cdg{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
 .cdg-status{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 14px;border:1px solid var(--g-line);border-radius:10px;background:var(--g-card);font-size:12px;color:var(--g-sub)}
 .cdg-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-weight:700;font-size:11px;letter-spacing:.02em}
@@ -2947,43 +2979,50 @@ body.radar-modo-atendente .topbar{display:none!important}
 <aside class="sidebar">
   <div class="logo-box"><img src="data:image/png;base64,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" alt="Hilink" style="height:54px;width:auto;display:block"><svg class="sidebar-logo-svg" viewBox="0 0 148 46" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hilink"><circle cx="101" cy="9" r="7.5" fill="none" stroke="#2da3ff" stroke-width="1.4"/><ellipse cx="101" cy="9" rx="4" ry="7.5" fill="none" stroke="#2da3ff" stroke-width="1"/><line x1="93.5" y1="9" x2="108.5" y2="9" stroke="#2da3ff" stroke-width="1"/><text x="2" y="38" font-family="'Inter',sans-serif" font-size="22" font-weight="700" fill="#b8cee0" letter-spacing="-0.5">Hi</text><text x="35" y="38" font-family="'Inter',sans-serif" font-size="22" font-weight="700" fill="#2da3ff" letter-spacing="-0.5">link</text><path d="M 2 43 Q 74 52 146 43" stroke="#2da3ff" stroke-width="1.5" fill="none" opacity="0.5"/></svg></div>
   <nav>
-    <!-- MODULOS: menu unico, em ordem de importancia -->
-    <div class="nav-group nav-hub">
-      <div class="nav-section">M&oacute;dulos</div>
-      <div class="nav-group-items">
-        <div class="nav-item" data-mod="cobrancaDia" onclick="go('cobrancaDia')">
-          <span>Cobran&ccedil;a do Dia<small>dados autom&aacute;ticos do IXC, sem upload</small></span>
-        </div>
-        <div class="nav-item" data-mod="tecnica" onclick="go('tecnica')">
-          <span>Sa&uacute;de da Rede<small>risco t&eacute;cnico, preven&ccedil;&atilde;o e fila NOC</small></span>
-        </div>
-        <div class="nav-item" data-mod="carneCorreios" onclick="go('carneCorreios')">
-          <span>Envio Correios<small>carn&ecirc; de boletos via e-Carta</small></span>
-        </div>
-        <div class="nav-item" data-mod="premiacoes" onclick="go('premiacoes')">
-          <span>Premia&ccedil;&atilde;o<small>folha, vendas, atendimento e ranking</small></span>
-        </div>
-        <div class="nav-item" data-mod="oportunidades" onclick="go('oportunidades')">
-          <span>Oportunidades<small>upgrade e reativa&ccedil;&atilde;o para disparo no OPA</small></span>
-        </div>
-        <div class="nav-item" data-mod="propostas" onclick="go('propostas')">
-          <span>Propostas Corporativas<small>CRM, viabilidade e proposta comercial</small></span>
-        </div>
-        <div class="nav-item" data-mod="acao" onclick="go('acao')">
-          <span>Estrat&eacute;gia de Atua&ccedil;&atilde;o<small>prioridades, campanhas e plano de a&ccedil;&atilde;o</small></span>
-        </div>
-        <div class="nav-item" data-mod="relatorios" onclick="go('relatorios')">
-          <span>Relat&oacute;rios Personalizados<small>LOA, cartas e documentos timbrados</small></span>
-        </div>
-        <div class="nav-item active" data-mod="setup" onclick="go('setup')">
-          <span>Carregar Relat&oacute;rios<small>upload manual dos relat&oacute;rios do IXC e OPA</small></span>
-        </div>
-        <div class="nav-item" data-mod="usuarios" onclick="go('usuarios')" style="display:none">
-          <span>Usu&aacute;rios e acessos<small>cadastrar, redefinir senha, permiss&otilde;es</small></span>
-        </div>
-      </div>
-      <div class="nav-note">Os demais m&oacute;dulos permanecem preservados em stand by e ser&atilde;o integrados como se&ccedil;&otilde;es internas.</div>
-    </div>
+    <!-- MENU POR AREAS (versao NOVO) -->
+    <div class="nav-busca"><input type="search" id="nav-busca" placeholder="Buscar no menu..." oninput="radarMenuBuscar(this.value)"></div>
+    <div class="nav-group nav-hub nav-area" data-area="inicio"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Início</div><div class="nav-group-items">
+        <div class="nav-item" data-mod="inicio" onclick="go('inicio')"><span>Visão geral<small>os números de todas as áreas</small></span></div>
+      </div></div>
+    <div class="nav-group nav-hub nav-area" data-area="financeiro"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Financeiro</div><div class="nav-group-items">
+        <div class="nav-item" data-mod="cobrancaDia" onclick="go('cobrancaDia')"><span>Cobran&ccedil;a do Dia<small>vencidos, antes do bloqueio e listas</small></span></div>
+        <div class="nav-sub" data-cd="resumo" onclick="go('cobrancaDia');cdSub('resumo')">Resumo do dia</div>
+        <div class="nav-sub" data-cd="onde" onclick="go('cobrancaDia');cdSub('onde')">Onde está o dinheiro</div>
+        <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('cobrar','pre')">Cobrar antes do bloqueio</div>
+        <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('recolhimento_atd')">Agendar recolhimento</div>
+        <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('suspeitos')">Corrigir no IXC</div>
+        <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('avencer')">Lembrar vencimento e e-mail</div>
+        <div class="nav-item" data-mod="carneCorreios" onclick="go('carneCorreios')"><span>Envio Correios<small>carn&ecirc; de boletos via e-Carta</small></span></div>
+        <div class="nav-item" data-mod="acao" onclick="go('acao')"><span>Estrat&eacute;gia de Atua&ccedil;&atilde;o<small>prioridades e plano de a&ccedil;&atilde;o</small></span></div>
+      </div></div>
+    <div class="nav-group nav-hub nav-area" data-area="comercial"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Comercial</div><div class="nav-group-items">
+        <div class="nav-item" data-mod="oportunidades" onclick="go('oportunidades')"><span>Oportunidades<small>upgrade e reativa&ccedil;&atilde;o</small></span></div>
+        <div class="nav-sub" onclick="go('oportunidades');opSub('resumo')">Resumo</div>
+        <div class="nav-sub" onclick="go('oportunidades');opSub('aptos')">Quem pode receber</div>
+        <div class="nav-sub" onclick="go('oportunidades');opSub('planos')">Por plano</div>
+        <div class="nav-sub" onclick="go('oportunidades');opSub('listas')">Listas para o OPA</div>
+        <div class="nav-sub" onclick="go('oportunidades');opSub('envios')">Envios e resultado</div>
+        <div class="nav-item" data-mod="premiacoes" onclick="go('premiacoes');premSub('resumo')"><span>Premia&ccedil;&atilde;o<small>folha, vendas e atendimento</small></span></div>
+        <div class="nav-sub" data-prem="resumo" onclick="go('premiacoes');premSub('resumo')">Resumo</div>
+        <div class="nav-sub" data-prem="conferencia" onclick="go('premiacoes');premSub('conferencia')">Conferir antes de pagar</div>
+        <div class="nav-sub" data-prem="vendas" onclick="go('premiacoes');premSub('vendas')">Vendas</div>
+        <div class="nav-sub" data-prem="folha" onclick="go('premiacoes');premSub('folha')">Folha do mês</div>
+        <div class="nav-sub" data-prem="ranking" onclick="go('premiacoes');premSub('ranking')">Ranking</div>
+        <div class="nav-sub" data-prem="painel" onclick="go('premiacoes');premSub('painel')">Indicadores detalhados</div>
+        <div class="nav-item" data-mod="propostas" onclick="go('propostas')"><span>Propostas Corporativas<small>CRM e proposta comercial</small></span></div>
+      </div></div>
+    <div class="nav-group nav-hub nav-area" data-area="rede"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Rede</div><div class="nav-group-items">
+        <div class="nav-item" data-mod="tecnica" onclick="go('tecnica')"><span>Sa&uacute;de da Rede<small>sinal, quedas e fila do NOC</small></span></div>
+      </div></div>
+    <div class="nav-group nav-hub nav-area" data-area="equipe"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Equipe</div><div class="nav-group-items">
+        <div class="nav-sub" data-cd="atividades" onclick="radarIrAtividades()">Atividades da equipe</div>
+        <div class="nav-sub" data-cd="desempenho" onclick="go('cobrancaDia');cdSub('desempenho')">Desempenho da equipe</div>
+      </div></div>
+    <div class="nav-group nav-hub nav-area" data-area="config"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Configura&ccedil;&otilde;es</div><div class="nav-group-items">
+        <div class="nav-item" data-mod="setup" onclick="go('setup')"><span>Carregar Relat&oacute;rios<small>upload manual</small></span></div>
+        <div class="nav-item" data-mod="relatorios" onclick="go('relatorios')"><span>Relat&oacute;rios Personalizados<small>LOA, cartas e documentos</small></span></div>
+        <div class="nav-item" data-mod="usuarios" onclick="go('usuarios')" style="display:none"><span>Usu&aacute;rios e acessos<small>cadastro e permiss&otilde;es</small></span></div>
+      </div></div>
     <!-- STAND BY: módulos preservados fora da navegação principal -->
     <div class="nav-group nav-standby" data-group-id="standby">
       <div class="nav-section">Stand by</div>
@@ -3033,6 +3072,7 @@ body.radar-modo-atendente .topbar{display:none!important}
 
   <div class="topbar">
     <div>
+      <div id="radar-trilha" class="radar-trilha"></div>
       <h1 id="page-title">RADAR HILINK</h1>
       <div class="sub" id="page-sub">Inteligência operacional para análise, decisão e ação</div>
       <div class="context-badge" id="context-badge">Sem base carregada</div>
@@ -7452,6 +7492,8 @@ body.radar-modo-atendente .topbar{display:none!important}
   </style>
   <div class="module" id="mod-premiacoes">
       <div id="prem-barra" class="cdg" style="margin-bottom:14px"></div>
+      <div id="prem-abas"></div>
+      <div id="prem-guia" class="cdg" style="margin-bottom:16px"></div>
       <div id="ixc-carga-card" style="display:none"><p class="ixc-carga-nota">Carregando situação dos dados do IXC…</p></div>
 
 
@@ -7502,7 +7544,6 @@ body.radar-modo-atendente .topbar{display:none!important}
 
     <!-- -- ABA: VISÃO GERAL -- -->
     <div class="prem-tab-pane active" id="prem-tab-geral">
-      <div id="prem-guia" class="cdg" style="margin-bottom:16px"></div>
       <div class="prem-tab-intro">
         <div>
           <small>Vis&atilde;o Geral</small>
@@ -8362,6 +8403,7 @@ body.radar-modo-atendente .topbar{display:none!important}
 
   <div class="module" id="mod-cobrancaDia"></div>
   <div class="module" id="mod-oportunidades"></div>
+  <div class="module" id="mod-inicio"></div>
   <div class="module" id="mod-usuarios"></div>
 
   <!-- ====================== MÓDULO: CARNÊ CORREIOS ====================== -->
@@ -10509,7 +10551,7 @@ function go(mod){
     if(!(IXC_CARGA && IXC_CARGA.carregando)){ toast('Buscando os dados direto do IXC...','success'); ixcCargaUsar(mod); }
     return;
   }
-  if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='oportunidades'&&mod!=='usuarios'&&!STATE.processed){toast('Processe a base primeiro','error');return}
+  if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='oportunidades'&&mod!=='inicio'&&mod!=='usuarios'&&!STATE.processed){toast('Processe a base primeiro','error');return}
   if((mod==='segmentacao'||mod==='disparo')&&!STATE.campaign){toast('Mapeie uma campanha primeiro','error');mod='mapear'}
   if(!document.getElementById('mod-'+mod)){toast('Módulo não encontrado: '+mod,'error');return}
   document.querySelector(`.nav-item[data-mod="${mod}"]`)?.classList.remove('disabled');
@@ -10540,6 +10582,7 @@ function go(mod){
                 propostas:['Propostas Corporativas','Geração assistida de proposta comercial a partir do CRM e viabilidade'],
                 acao:['Estratégia de Atuação','Prioridades automáticas, campanhas e plano de ação operacional'],
                 usuarios:['Usuários e acessos','Cadastro de usuários do Radar, redefinição de senha e permissões'],
+                inicio:['INÍCIO','Os números de todas as áreas. Clique em qualquer cartão para abrir a tela.'],
                 oportunidades:['OPORTUNIDADES','Upgrade e reativação a partir da carteira de clientes, prontos para disparo em massa no OPA'],
                 cobrancaDia:['Cobrança do Dia','Inadimplência, pré-bloqueio, recolhimento e títulos suspeitos direto do banco (leitura do IXC às 4h)'],
                 historico:['Histórico de Campanhas','Campanhas mapeadas anteriormente'],
@@ -10560,6 +10603,7 @@ function go(mod){
     if(mod==='comercial') renderComercial();
     if(mod==='premiacoes') renderPremiacoes();
     if(mod==='oportunidades') renderOportunidades();
+    if(mod==='inicio') renderInicio();
     if(mod==='precificacao') renderPrecificacao();
     if(mod==='isencoes') renderIsencoes();
     if(mod==='tecnica') renderTecnica();
@@ -17555,23 +17599,46 @@ function premGuiaRender(c){
   if(curtos) at.push(cdAlerta('warn', `<button type="button" class="cdg-link" data-prem-geral="curtos">${nf(curtos)} ${curtos===1?'atendimento':'atendimentos'} abaixo de 60s</button>.`));
   if(totPlan && conta('IXC: ativação em nome')) at.push(cdAlerta('risk', `<button type="button" class="cdg-link r" onclick="premDivAbrir('IXC: ativação em nome')">Ver ${nf(conta('IXC: ativação em nome'))} ${conta('IXC: ativação em nome')===1?'venda':'vendas'} com atendente divergente</button>. Comparação dos últimos 3 meses; a lista mostra o mês e os nomes na planilha e no IXC.`));
   if(!at.length) at.push(cdAlerta('ok','Nada fora do normal no período.'));
-  box.innerHTML = `
+  const sub = PREM_UI.sub;
+  if(sub==='conferencia'){
+    box.innerHTML = `<div class="cdg-resumo">
+      <div class="cdg-box"><div class="cdg-eyebrow">Conferir antes de pagar</div>
+        <div class="cdg-narrativa"><p>${p2}</p>${divTxt?`<p>${divTxt}</p>`:''}<p>Abaixo, a auditoria completa de cada venda.</p></div></div>
+      <div class="cdg-box"><div class="cdg-eyebrow">O que conferir</div><div class="cdg-colunas" style="grid-template-columns:1fr">${corrigir}</div></div>
+    </div>`;
+  } else if(sub==='folha'){
+    box.innerHTML = `<div class="cdg-resumo">
+      <div class="cdg-box"><div class="cdg-eyebrow">Folha do mês</div><div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p></div></div>
+      <div class="cdg-box"><div class="cdg-eyebrow">Fechamento</div>${planejar}</div>
+    </div>`;
+  } else if(sub!=='resumo'){
+    box.innerHTML = '';
+  } else box.innerHTML = `
     <div class="cdg-resumo">
       <div class="cdg-box"><div class="cdg-eyebrow">O período em poucas linhas</div>
-        <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p>${p3?`<p>${p3}</p>`:''}${divTxt?`<p>${divTxt}</p>`:''}</div>
+        <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p>${p3?`<p>${p3}</p>`:''}${totPlan?`<p>Planilha x IXC: <button type="button" class="cdg-link r" onclick="premSub('conferencia')">${nf(soPlan)} lançamentos para conferir</button>.</p>`:''}</div>
         <div class="cdg-nota">Os trechos sublinhados abrem a lista.</div></div>
       <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o período</div>${numeros}</div>
     </div>
-    <div class="cdg-colunas">
+    <div class="cdg-colunas" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
       <div class="cdg-col agir"><div class="cdg-col-h"><h3>Fazer agora</h3><span>nesta ordem</span></div>${agir}</div>
-      <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Corrigir</h3><span>antes de pagar</span></div>${corrigir}</div>
-      <div class="cdg-col planejar"><div class="cdg-col-h"><h3>Planejar</h3><span>fechamento</span></div>${planejar}</div>
       <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Ficar atenta</h3><span>${at.length} pontos</span></div>${at.join('')}</div>
+      <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Próximos passos</h3><span>por assunto</span></div>
+        ${item({tom:'corrigir', titulo:'Conferir antes de pagar', porque:'Planilha x IXC, repetições entre meses, ativações sem lançamento e eventos para não pagar.', botao:btn('Abrir conferência',`onclick="premSub('conferencia')"`)})}
+        ${item({tom:'planejar', titulo:'Folha do mês', numero:brlS(folha), porque:'Fechar depois de zerar a fila de revisão.', botao:btn('Abrir folha',`onclick="premSub('folha')"`)})}
+        ${item({tom:'planejar', titulo:'Ranking', porque:'Geral, upgrade e semanal.', botao:btn('Abrir ranking',`onclick="premSub('ranking')"`)})}
+      </div>
     </div>`;
   // liga os botões do guia aos mesmos atalhos da Visão Geral
   box.querySelectorAll('[data-prem-geral]').forEach(el=>{ el.onclick = ()=>{ const alvo = document.querySelector(`#prem-tab-geral .prem-exec-card[data-prem-geral="${el.dataset.premGeral}"], #prem-tab-geral .prem-exec-status[data-prem-geral="${el.dataset.premGeral}"]`); if(alvo && alvo.onclick) alvo.onclick(); }; });
 }
 window.premDivAbrir = premDivAbrir;
+if(typeof renderPremiacoes==='function' && !window._premSubWrap){
+  window._premSubWrap = true;
+  const _rp = renderPremiacoes;
+  renderPremiacoes = function(){ const r = _rp.apply(this, arguments); try{ premAplicarSub(); }catch(e){ console.error('[Prem] sub',e); } return r; };
+  window.renderPremiacoes = renderPremiacoes;
+}
 window.premRepeticoesAbrir = premRepeticoesAbrir;
 
 
@@ -17635,10 +17702,34 @@ function premBarraRender(){
         ${cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="ixcCargaAtualizar()" ${andamento?'disabled':''}>${andamento?'Lendo o IXC (cerca de 20 min)...':'Atualizar dados do IXC'}</button>`:''}
       </div>
     </div>
-    ${cdAlerta('warn','<b>Planilha da equipe:</b> até <b>31/12/2026</b> ela é usada só como conferência extra, para achar diferenças com o IXC. A partir de 01/01/2027 a premiação é paga somente com base nos dados do IXC e do Radar. Quem quiser pode continuar com a planilha para controle pessoal, mas ela não vale para pagamento.')}`;
+    ${(PREM_UI.sub!=='conferencia')?'':cdAlerta('warn','<b>Planilha da equipe:</b> até <b>31/12/2026</b> ela é usada só como conferência extra, para achar diferenças com o IXC. A partir de 01/01/2027 a premiação é paga somente com base nos dados do IXC e do Radar. Quem quiser pode continuar com a planilha para controle pessoal, mas ela não vale para pagamento.')}`;
   const sel=document.getElementById('prem-barra-filial'); if(sel) sel.value=filVal;
 }
 Object.assign(window,{premPeriodo, premAplicarDatas, premBarraRender});
+
+// ===== Premiação segmentada em submenus (Resumo, Conferir, Vendas, Folha, Ranking, Indicadores) =====
+var PREM_UI = { sub:'resumo' };
+var PREM_SUBS = [['resumo','Resumo'],['conferencia','Conferir antes de pagar'],['vendas','Vendas'],['folha','Folha do mês'],['ranking','Ranking'],['painel','Indicadores detalhados']];
+var PREM_SUB_PANES = { resumo:[], conferencia:['prem-tab-auditoria'], vendas:['prem-tab-vendas'], folha:['prem-tab-apuracao'], ranking:['prem-tab-ranking','prem-tab-ranking-upgrade'], painel:['prem-tab-geral'] };
+function premAbasRender(){
+  const box=document.getElementById('prem-abas'); if(!box) return;
+  box.innerHTML=`<div class="op-abas">${PREM_SUBS.map(([k,t])=>`<button type="button" class="${PREM_UI.sub===k?'on':''}" onclick="premSub('${k}')">${t}</button>`).join('')}</div>`;
+}
+function premAplicarSub(){
+  const k=PREM_UI.sub, ativos=PREM_SUB_PANES[k]||[];
+  document.querySelectorAll('#mod-premiacoes .prem-tab-pane').forEach(p=>p.classList.toggle('active', ativos.includes(p.id)));
+  premAbasRender();
+  const chama=fn=>{ try{ if(typeof window[fn]==='function') window[fn](); }catch(e){ console.error('[Prem]',fn,e); } };
+  if(k==='conferencia') chama('renderPremiacoesAuditoria');
+  if(k==='folha') chama('renderPremiacoesApuracaoResultado');
+  if(k==='ranking'){ chama('updateRankingTab'); chama('renderRankingUpgrade'); }
+  if(['resumo','conferencia','folha','painel'].includes(k)) chama('renderPremiacoesGeral');
+  else { const g=document.getElementById('prem-guia'); if(g) g.innerHTML=''; }
+  try{ premBarraRender(); }catch(e){}
+  try{ radarTrilha('premiacoes'); }catch(e){}
+}
+function premSub(k){ PREM_UI.sub = PREM_SUB_PANES[k] ? k : 'resumo'; premAplicarSub(); window.scrollTo({top:0,behavior:'smooth'}); }
+window.premSub = premSub;
 
 function renderPremiacoesGeral(){
   _syncPremFiltrosMirror();
@@ -23747,15 +23838,22 @@ function cdCard(o){
     <div class="cd-k-label">${o.label}</div><div class="cd-k-valor">${o.valor}</div><div class="cd-k-sub">${o.sub||''}</div>
     ${o.ir?'<div class="cd-k-ver">Ver lista</div>':''}</div>`;
 }
+const CD_SUBS = [['resumo','Resumo do dia'],['onde','Onde está o dinheiro'],['listas','Listas para cobrar'],['atividades','Atividades da equipe'],['desempenho','Desempenho da equipe']];
+function cdSub(k, aba){ CD.sub = k; if(aba) CD.aba = aba; renderCobrancaDia(); try{ radarTrilha('cobrancaDia'); }catch(e){} window.scrollTo({top:0,behavior:'smooth'}); }
+function cdAbasHTML(){
+  const atrasadas = (CD.atv.lista||[]).filter(a=>a.status==='aberta' && typeof cdPrazoEstourou==='function' && cdPrazoEstourou(a)).length;
+  return `<div class="op-abas">${CD_SUBS.filter(([k])=>((k==='atividades'||k==='desempenho')===(CD.sub==='atividades'||CD.sub==='desempenho')) && ((k!=='atividades'&&k!=='desempenho')||cdPodeGerenciar())).map(([k,t])=>`<button type="button" class="${(CD.sub||'resumo')===k?'on':''}" onclick="cdSub('${k}')">${t}${k==='atividades'&&atrasadas?`<span class="q">${atrasadas}</span>`:''}</button>`).join('')}</div>`;
+}
+window.cdSub = cdSub;
 function cdIrLista(aba, preset){
-  CD.aba = aba;
+  CD.aba = aba; CD.sub = 'listas'; setTimeout(()=>{ try{ radarTrilha('cobrancaDia'); }catch(e){} }, 0);
   if(aba==='cobrar' && preset){ CD.filial='Todas'; cdAplicarPreset(preset); }
   renderCobrancaDia();
   const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
-function cdIrPreFilial(f){ CD.aba='cobrar'; CD.f = { ...CD.f, ...CD_PRESETS.pre.f, preset:'pre' }; CD.filial=f; renderCobrancaDia();
+function cdIrPreFilial(f){ CD.sub='listas'; CD.aba='cobrar'; CD.f = { ...CD.f, ...CD_PRESETS.pre.f, preset:'pre' }; CD.filial=f; renderCobrancaDia();
   const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
-function cdIrAba(k){ CD.aba=k; renderCobrancaDia(); const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
+function cdIrAba(k){ CD.sub='listas'; CD.aba=k; renderCobrancaDia(); const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
 // ---- Guia de gestão da Cobrança do Dia ----
 // Só apresentação. Todo número vem de CD.dados (mesmas consultas do módulo) e,
 // quando um item abre uma lista, o número é calculado com o mesmo filtro dessa lista.
@@ -24020,7 +24118,12 @@ function cdGuiaHTML(){
     <dt>Horário dos dados</dt><dd>O IXC é lido às 4h, de segunda a sexta. Quem pagou depois disso só sai da lista com "Atualizar pagamentos agora".</dd>
   </dl></details></div>`;
 
-  return `<div class="cdg">${status}${cdAtvPainelHTML()}${resumo}${colunas}${v360}${estr}${glos}</div>`;
+  const sub = CD.sub||'resumo';
+  if(sub==='onde') return `<div class="cdg">${status}${v360}${estr}</div>`;
+  if(sub==='atividades') return `<div class="cdg">${status}${cdAtvPainelHTML()}</div>`;
+  if(sub==='desempenho') return `<div class="cdg">${status}${cdDesempenhoHTML()}</div>`;
+  if(sub==='listas') return `<div class="cdg">${status}</div>`;
+  return `<div class="cdg">${status}${resumo}${colunas}${glos}</div>`;
 }
 
 // ---- Atividades da equipe: gerar a partir do painel, trabalhar na área de trabalho e acompanhar ----
@@ -24169,7 +24272,8 @@ function cdAtvPainelHTML(){
   const A = CD.atv;
   if(A.erro) return `<div class="cdg-box cdg-atv"><div class="cdg-eyebrow">Atividades da equipe</div><div class="cdg-nota">Não consegui carregar as atividades: ${cdEsc(A.erro)}. <button type="button" class="cdg-ir" onclick="cdAtvCarregar()">Tentar de novo</button></div></div>`;
   if(A.lista===null) return `<div class="cdg-box cdg-atv"><div class="cdg-eyebrow">Atividades da equipe</div><div class="cdg-nota">Carregando atividades...</div></div>`;
-  const abertas = A.lista.filter(a=>a.status==='aberta');
+  const abertasTodas = A.lista.filter(a=>a.status==='aberta');
+  const abertas = cdAtvFiltrar(abertasTodas);
   const pend = A.promessas.filter(p=>p.situacao==='aguardando aprovação');
   const aprov = pend.length && cdEhAdmin() ? `<div class="cdg-aprov"><b>${cdNum(pend.length)} ${pend.length===1?'promessa aguarda':'promessas aguardam'} sua aprovação</b> (clientes com 2 ou mais promessas não cumpridas).
       ${pend.slice(0,6).map(p=>`<div class="cdg-aprov-l"><span>${cdEsc(p.nome||('Cliente '+p.id_cliente))}, ${cdMoeda(p.valor)}, até ${cdData(p.data_prometida)}. Registrada por ${cdEsc(p.registrado_por_nome||'-')}.</span>
@@ -24224,6 +24328,7 @@ function cdAtvPainelHTML(){
       </ol>
     </details>
     ${aprov}
+    ${cdAtvFiltrosHTML(abertasTodas)}
     ${resumoSla}
     ${abertas.length?`<div class="cdg-atv-grid">${cards}</div>`:`<div class="cdg-nota">Use <b>Gerar atividade</b> em qualquer item abaixo para direcionar a lista a uma ou mais atendentes. Cada atendente vê só o que foi direcionado a ela, registra o resultado de cada cliente, e o Radar confirma pelo IXC quem pagou ou foi corrigido.</div>`}
   </div>`;
@@ -24383,7 +24488,7 @@ function cdAtvEmExecucao(a){return !!a&&a.status==='aberta'&&!a.validacao_solici
 function cdAtvFluxoAcoes(a){
   if(!a||a.status!=='aberta')return '';
   const ger=cdPodeGerenciar();
-  return `${a.validacao_solicitada_em?(ger?`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModal(${a.id},'concluir')">Validar e concluir</button><button type="button" class="btn sm" onclick="cdAtvFluxoModal(${a.id},'devolver')">Devolver para ajuste</button>`:'<span class="cdg-sla-chip neutro">Aguardando validação da liderança</span>'):`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModal(${a.id},'solicitar')">Encaminhar para validação</button>`}${ger?`<button type="button" class="cdg-mini perigo-txt" onclick="cdAtvFluxoModal(${a.id},'cancelar')">Cancelar atividade</button>`:''}`;
+  return `${ger?`<button type="button" class="btn sm" onclick="cdConferir(${a.id})" title="O Radar confere a atividade e diz se pode concluir">Conferir automaticamente</button>`:''}${a.validacao_solicitada_em?(ger?`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModalComConferencia(${a.id},'concluir')">Validar e concluir</button><button type="button" class="btn sm" onclick="cdAtvFluxoModalComConferencia(${a.id},'devolver')">Devolver para ajuste</button>`:'<span class="cdg-sla-chip neutro">Aguardando validação da liderança</span>'):`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModal(${a.id},'solicitar')">Encaminhar para validação</button>`}${ger?`<button type="button" class="cdg-mini perigo-txt" onclick="cdAtvFluxoModal(${a.id},'cancelar')">Cancelar atividade</button>`:''}`;
 }
 function cdAtvFluxoAviso(a){
   if(a.validacao_solicitada_em)return `<div class="cdg-alerta"><i></i><div><b>Aguardando validação</b> · encaminhada por ${cdEsc(a.validacao_solicitada_por_nome||'Equipe')} em ${cdEsc(cdHoraTxt(a.validacao_solicitada_em))}.<p class="cd-fluxo-nota">${cdEsc(a.validacao_resumo||'')}</p>Registros bloqueados até a decisão da liderança.</div></div>`;
@@ -24400,6 +24505,98 @@ function cdAtvFluxoModal(id,acao){
     <label class="cdg-campo">${acao==='solicitar'?'Resumo do trabalho realizado':'Justificativa da decisão'} (obrigatório)<textarea id="cd-fluxo-obs" maxlength="2000" rows="4" required></textarea></label><p class="cdg-nota">${nota}</p>
     <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Voltar</button><button type="button" class="btn sm primary" id="cd-fluxo-salvar" onclick="cdAtvFluxoSalvar(${id},'${acao}')">${titulos[acao]}</button></div>`);
 }
+function cdAtvFluxoModalComConferencia(id,acao){
+  cdAtvFluxoModal(id,acao);
+  if(acao!=='concluir'&&acao!=='devolver') return;
+  const box=document.querySelector('.cdg-modal-box'); if(!box) return;
+  const div=document.createElement('div'); div.id='cd-conf-box'; div.innerHTML='<p class="cdg-nota">Conferindo a atividade...</p>';
+  box.insertBefore(div, box.querySelector('label.cdg-campo'));
+  cdAtvRpc('radar_atv_conferir',{p_atividade:id}).then(c=>{ div.innerHTML=cdConferenciaHTML(c, acao); const t=document.getElementById('cd-fluxo-obs'); if(t && !t.value) t.value=cdConferenciaTexto(c, acao); }).catch(e=>{ div.innerHTML=`<p class="cdg-nota">Não consegui conferir: ${cdEsc(e.message)}</p>`; });
+}
+function cdConferenciaHTML(c, acao){
+  const par = c.parecer==='concluir'?['ok','Pode concluir: tudo certo.']:c.parecer==='concluir_com_ressalva'?['warn','Pode concluir, com ressalvas.']:['risk','Recomendo devolver para ajuste.'];
+  const li = (arr, tom) => (arr||[]).map(t=>`<div class="cdg-alerta ${tom}" style="margin:4px 0"><i></i><div>${cdEsc(t)}</div></div>`).join('');
+  return `<div style="margin:8px 0 12px"><span class="cdg-pill ${par[0]}">${par[1]}</span>
+    ${acao==='concluir'&&c.parecer==='devolver'?'<p class="cdg-nota" style="color:#E5484D;margin:6px 0">Há pendências que impedem a conclusão. Confira antes de concluir.</p>':''}
+    ${li(c.bloqueios,'risk')}${li(c.avisos,'warn')}${li(c.ok,'ok')}
+    <p class="cdg-nota" style="margin:6px 0 0">${cdNum(c.tratados)} de ${cdNum(c.total)} clientes com registro · ${cdNum(c.resolvidos_equipe)} resolvidos no IXC pela equipe.</p></div>`;
+}
+function cdConferenciaTexto(c, acao){
+  if(acao==='devolver' || c.parecer==='devolver') return 'Devolvida para ajuste. Pendências: '+(c.bloqueios||[]).concat(c.avisos||[]).join(' ');
+  return 'Conferência automática: '+(c.ok||[]).join(' ')+((c.avisos||[]).length?' Ressalvas: '+c.avisos.join(' '):'');
+}
+async function cdConferir(id){
+  const a=(CD.atv.lista||[]).find(x=>x.id===id); if(!a) return;
+  cdModal(`<h3>Conferência automática</h3><p><b>${cdEsc(a.titulo)}</b> · ${cdEsc(a.responsavel_nome||'Equipe')}</p><div id="cd-conf-box"><p class="cdg-nota">Conferindo...</p></div>
+    <div class="cdg-modal-acoes" id="cd-conf-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Fechar</button></div>`);
+  try{
+    const c = await cdAtvRpc('radar_atv_conferir',{p_atividade:id});
+    document.getElementById('cd-conf-box').innerHTML = cdConferenciaHTML(c, 'conferir');
+    const ac = document.getElementById('cd-conf-acoes');
+    if(a.validacao_solicitada_em){
+      ac.innerHTML = `<button type="button" class="btn sm" onclick="cdModal(null)">Fechar</button>
+        <button type="button" class="btn sm" onclick="cdAtvFluxoModalComConferencia(${id},'devolver')">Devolver para ajuste</button>
+        ${c.parecer!=='devolver'?`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModalComConferencia(${id},'concluir')">Concluir</button>`:''}`;
+    } else {
+      ac.insertAdjacentHTML('afterbegin', `<span class="cdg-nota" style="margin:0 auto 0 0">A atendente ainda não encaminhou para validação. ${c.parecer==='devolver'?'Oriente sobre as pendências acima.':''}</span>`);
+    }
+  }catch(e){ document.getElementById('cd-conf-box').innerHTML = `<p class="cdg-nota">Não consegui conferir: ${cdEsc(e.message)}</p>`; }
+}
+function cdAtvFiltrar(lista){
+  const f = CD.atv.f || {};
+  return lista.filter(a => (!f.tipo || a.tipo===f.tipo) && (!f.resp || (a.responsavel_nome||'Equipe toda')===f.resp)
+    && (!f.sit || (f.sit==='validacao' ? !!a.validacao_solicitada_em : f.sit==='estourada' ? cdPrazoEstourou(a) : f.sit==='andamento' ? !a.validacao_solicitada_em && !cdPrazoEstourou(a) : f.sit==='nao_iniciada' ? !a.iniciada_em : true)));
+}
+function cdAtvFiltrosHTML(lista){
+  const f = CD.atv.f || (CD.atv.f = {});
+  const tipos = [...new Set(lista.map(a=>a.tipo))], resps = [...new Set(lista.map(a=>a.responsavel_nome||'Equipe toda'))].sort();
+  const sel = (k, rot, ops) => `<label style="font-size:12px">${rot} <select onchange="CD.atv.f.${k}=this.value;renderCobrancaDia()"><option value="">Todos</option>${ops.map(([v,t])=>`<option value="${cdEsc(v)}" ${f[k]===v?'selected':''}>${cdEsc(t)}</option>`).join('')}</select></label>`;
+  const n = cdAtvFiltrar(lista).length;
+  return `<div class="cd-filtros" style="margin:8px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+    ${sel('sit','Situação',[['andamento','Em andamento no prazo'],['estourada','Prazo estourado'],['validacao','Aguardando validação'],['nao_iniciada','Não iniciada']])}
+    ${sel('tipo','Tipo',tipos.map(t=>[t, CD_ATV_TIPOS[t]?.nome||t]))}
+    ${sel('resp','Responsável',resps.map(r=>[r,r]))}
+    <span class="cdg-nota" style="margin:0">${cdNum(n)} de ${cdNum(lista.length)} atividades</span>
+    ${(f.sit||f.tipo||f.resp)?`<button type="button" class="cdg-mini" onclick="CD.atv.f={};renderCobrancaDia()">Limpar filtros</button>`:''}</div>`;
+}
+/* ---------- desempenho da equipe ---------- */
+const CDD = { de:null, ate:null, dados:null, carregando:false, erro:null };
+function cdDesPeriodo(){ if(!CDD.de){ const h=new Date(); CDD.de = new Date(h.getFullYear(), h.getMonth(), 1).toISOString().slice(0,10); CDD.ate = h.toISOString().slice(0,10); } }
+async function cdDesCarregar(){
+  cdDesPeriodo(); CDD.carregando = true; CDD.erro = null; renderCobrancaDia();
+  try{ CDD.dados = await cdAtvRpc('radar_atv_desempenho',{p_de:CDD.de, p_ate:CDD.ate}); }catch(e){ CDD.erro = e.message; }
+  CDD.carregando = false; renderCobrancaDia();
+}
+function cdDesempenhoHTML(){
+  cdDesPeriodo();
+  if(!CDD.dados && !CDD.carregando && !CDD.erro){ setTimeout(cdDesCarregar, 0); }
+  const L = CDD.dados||[];
+  const barra = (v, tom) => `<div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:7px;border-radius:4px;background:rgba(143,163,184,.2)"><div style="width:${Math.max(0,Math.min(100,v||0))}%;height:100%;border-radius:4px;background:${tom||((v||0)>=75?'#4CC38A':(v||0)>=50?'#F5A524':'#E5484D')}"></div></div><b style="min-width:28px;text-align:right">${v==null?'-':v}</b></div>`;
+  const conf = L.filter(x=>!x.amostra_pequena);
+  const dest = conf.filter(x=>x.nota>=75 && (x.pct_prazo==null || x.pct_prazo>=80) && x.retorno_vencido===0).slice(0,3);
+  const aten = L.filter(x=>x.retorno_vencido>0 || x.fora_prazo>0 || x.sem_detalhe>0 || (x.pct_tratado!=null && x.pct_tratado<60));
+  const linhas = L.map(x=>`<tr>
+      <td><b>${cdEsc(x.pessoa)}</b>${x.amostra_pequena?'<br><small>amostra pequena</small>':''}</td>
+      <td style="min-width:120px">${barra(x.nota)}</td>
+      <td style="min-width:110px">${barra(x.execucao,'#4DA3E0')}<small>${x.pct_tratado??'-'}% tratado · ${x.pct_prazo==null?'sem prazo vencido':x.pct_prazo+'% no prazo'}</small></td>
+      <td style="min-width:110px">${barra(x.agilidade,'#4DA3E0')}<small>1º registro em ${x.horas_1o_registro==null?'-':cdTempoTxt(x.horas_1o_registro)}${x.retorno_vencido?` · <b style="color:#E5484D">${x.retorno_vencido} sem retorno 24h</b>`:''}</small></td>
+      <td style="min-width:110px">${barra(x.qualidade,'#4DA3E0')}<small>${x.pct_efetivo??'-'}% contato efetivo${x.sem_detalhe?` · ${x.sem_detalhe} sem detalhe`:''}${x.devolucoes?` · ${x.devolucoes} devolvida(s)`:''}</small></td>
+      <td style="min-width:110px">${barra(x.resultado,'#4DA3E0')}<small>${cdNum(x.resolvidos)} resolvidos no IXC${Number(x.recuperado)?' · '+cdMoeda(x.recuperado):''}</small></td>
+      <td>${cdNum(x.tratados)} de ${cdNum(x.itens)}<br><small>${cdNum(x.atividades)} atividade(s)</small></td></tr>`).join('');
+  return `<div class="cdg-box">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px"><div class="cdg-eyebrow" style="margin:0">Desempenho da equipe</div><span class="cdg-sp" style="flex:1"></span>
+      <label style="font-size:12px">De <input type="date" value="${CDD.de}" onchange="CDD.de=this.value;CDD.dados=null;cdDesCarregar()"></label>
+      <label style="font-size:12px">até <input type="date" value="${CDD.ate}" onchange="CDD.ate=this.value;CDD.dados=null;cdDesCarregar()"></label></div>
+    ${CDD.carregando?'<p class="cdg-nota">Calculando...</p>':''}${CDD.erro?`<p class="cdg-nota">Não consegui calcular: ${cdEsc(CDD.erro)}</p>`:''}
+    <div class="cdg-colunas" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+      <div class="cdg-col agir"><div class="cdg-col-h"><h3>Destaques</h3><span>no prazo e bem feito</span></div>${dest.length?dest.map(x=>cdAlerta('ok',`<b>${cdEsc(x.pessoa)}</b>: nota ${x.nota}. ${x.pct_tratado}% tratado${x.pct_prazo!=null?', '+x.pct_prazo+'% no prazo':''}, ${x.pct_efetivo??0}% de contato efetivo, ${cdNum(x.resolvidos)} resolvidos no IXC.`)).join(''):cdAlerta('','Ninguém com amostra suficiente e nota acima de 75 no período.')}</div>
+      <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Precisa de atenção</h3><span>conversar esta semana</span></div>${aten.length?aten.map(x=>cdAlerta('warn',`<b>${cdEsc(x.pessoa)}</b>: ${[x.retorno_vencido?x.retorno_vencido+' sem retorno há mais de 24h':'', x.fora_prazo?x.fora_prazo+' atividade(s) fora do prazo':'', x.sem_detalhe?x.sem_detalhe+' registro(s) sem detalhe':'', x.pct_tratado!=null&&x.pct_tratado<60?'só '+x.pct_tratado+'% tratado':''].filter(Boolean).join(', ')}.`)).join(''):cdAlerta('ok','Nada fora do normal no período.')}</div>
+    </div>
+    <div class="cdg-tabwrap" style="margin-top:12px"><table class="cdg-tab op-tab"><thead><tr><th>Atendente</th><th>Nota</th><th>Execução (20%)</th><th>Agilidade (15%)</th><th>Qualidade (25%)</th><th>Resultado (40%)</th><th>Clientes</th></tr></thead><tbody>${linhas||'<tr><td colspan="7">Sem atividades no período.</td></tr>'}</tbody></table></div>
+    <div class="cdg-nota">Execução: clientes tratados e atividades entregues no prazo. Agilidade: tempo até o primeiro registro e retorno em 24 horas. Qualidade: contato efetivo (falou com o cliente), registros com detalhe e atividades devolvidas. Resultado: clientes resolvidos no IXC depois da ação da atendente; cliente que resolveu sozinho não conta. Abaixo de 20 clientes no período a nota é só indicativa. Recomendação: acompanhar um mês antes de usar a nota na premiação.</div>
+  </div>`;
+}
+window.cdConferir = cdConferir; window.cdAtvFluxoModalComConferencia = cdAtvFluxoModalComConferencia; window.cdDesCarregar = cdDesCarregar;
 async function cdAtvFluxoSalvar(id,acao){
   const b=document.getElementById('cd-fluxo-salvar'),obs=(document.getElementById('cd-fluxo-obs')?.value||'').trim();
   if(!b||b.disabled)return;if(!obs||obs.length>2000){toast('Informe o resumo ou a justificativa, com até 2.000 caracteres.','warn');return;}
@@ -25070,7 +25267,7 @@ async function radarAplicarPerfil(){
     const navU = document.querySelector('.nav-item[data-mod="usuarios"]'); if(navU) navU.style.display = cdPodeGerenciar() ? '' : 'none';
     if(data?.trocar_senha) radarTrocarSenhaModal();
     if(CD.perfil==='atendente'){ CD.atv.lista=null; go('cobrancaDia'); }
-    else if(!CD._abriuInicio && document.querySelector('.nav-item.active')?.dataset.mod==='setup'){ CD._abriuInicio = true; go('cobrancaDia'); }
+    else if(!CD._abriuInicio && document.querySelector('.nav-item.active')?.dataset.mod==='setup'){ CD._abriuInicio = true; go('inicio'); }
     else if(document.body.dataset.activeMod==='cobrancaDia' || document.getElementById('mod-cobrancaDia')?.offsetParent) renderCobrancaDia();
   }catch(e){ console.warn('[Radar] perfil', e.message||e); }
 }
@@ -25269,6 +25466,8 @@ const IXC_CARGA_TIPOS = [
   { key:'fibra',        base:'fibra',            label:'ONUs da fibra (sinal, temperatura, quedas)' },
   { key:'comodato',     base:'os',               label:'Ordens de Serviço abertas' },
   { key:'opa',          base:'opa',              label:'Atendimentos do OPA (últimos 120 dias)' },
+  { key:'cadastro',     base:'clientes_cadastro', label:'Cadastro de clientes' },
+  { key:'historicoPgto', base:'planilha',        label:'Histórico de pagamentos (planilha da equipe)', fonte:'Planilha da equipe (leitura automática)', semLinha:true },
 ];
 function ixcFmtDataHora(v){ if(!v) return '—'; const d=new Date(v); return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function ixcEsc(s){ return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -25302,7 +25501,7 @@ function ixcCargaCardHTML(){
   const tipos = st.tipos || {};
   const andamento = ixcCargaEmAndamento(st);
   const ped = st.ultimo_pedido;
-  const linhas = IXC_CARGA_TIPOS.map(t=>{
+  const linhas = IXC_CARGA_TIPOS.filter(t=>!t.semLinha).map(t=>{
     const x = tipos[t.base];
     return `<li><span>${t.label}</span><strong>${x ? Number(x.registros).toLocaleString('pt-BR')+' linhas' : 'ainda não carregado'}</strong><em>${x ? 'atualizado em '+ixcFmtDataHora(x.atualizado_em) : ''}</em></li>`;
   }).join('') + (()=>{ const x = tipos.planilha; return `<li><span>Planilha da equipe (premiação)</span><strong>${x ? Number(x.registros).toLocaleString('pt-BR')+' linhas' : 'ainda não carregada'}</strong><em>${x ? 'atualizada em '+ixcFmtDataHora(x.atualizado_em) : ''}</em></li>`; })();
@@ -25395,7 +25594,7 @@ async function ixcCargaUsar(destino){
     }
     // Publicar os relatórios juntos, somente após todas as consultas terminarem.
     for(const {t,rows} of leituras){
-      const nome = `IXC direto (banco) · ${rows.length.toLocaleString('pt-BR')} linhas`;
+      const nome = t.fonte || `IXC direto (banco) · ${rows.length.toLocaleString('pt-BR')} linhas`;
       STATE.raw[t.key] = rows; STATE.files[t.key] = nome;
       if(t.key==='alteracoes' && typeof processAlteracoesRows==='function'){
         if(STATE.processed) STATE.processed.alteracoes = processAlteracoesRows(rows);
@@ -25450,9 +25649,154 @@ async function radarFixoCarregar(){
 window.radarFixoRender=radarFixoRender; window.radarFixoAtualizar=radarFixoAtualizar; window.radarFixoCarregar=radarFixoCarregar;
 document.addEventListener('DOMContentLoaded', ()=>setTimeout(radarFixoRender, 2500));
 
+/* ===================== NAVEGACAO POR AREAS (versao NOVO) ===================== */
+const RADAR_AREA_DE = { inicio:'Início', cobrancaDia:'Financeiro', carneCorreios:'Financeiro', acao:'Financeiro', oportunidades:'Comercial', premiacoes:'Comercial', propostas:'Comercial', tecnica:'Rede', setup:'Configurações', relatorios:'Configurações', usuarios:'Configurações' };
+const RADAR_NOME_DE = { inicio:'Visão geral', cobrancaDia:'Cobrança do Dia', carneCorreios:'Envio Correios', acao:'Estratégia de Atuação', oportunidades:'Oportunidades', premiacoes:'Premiação', propostas:'Propostas Corporativas', tecnica:'Saúde da Rede', setup:'Carregar Relatórios', relatorios:'Relatórios Personalizados', usuarios:'Usuários e acessos' };
+function radarAreaToggle(el){ el.closest('.nav-area')?.classList.toggle('collapsed'); }
+function radarMenuBuscar(q){
+  q = String(q||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+  document.querySelectorAll('.nav-area').forEach(g=>{
+    let algum = false;
+    g.querySelectorAll('.nav-item,.nav-sub').forEach(it=>{ const t = it.textContent.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); const ok = !q || t.includes(q); it.classList.toggle('busca-off', !ok); if(ok && getComputedStyle(it).display!=='none') algum = true; });
+    g.style.display = algum || !q ? '' : 'none'; if(q) g.classList.remove('collapsed');
+  });
+}
+function radarTrilha(mod){
+  const el = document.getElementById('radar-trilha'); if(!el) return;
+  mod = mod || STATE.activeMod; const area = RADAR_AREA_DE[mod];
+  if(!area){ el.innerHTML=''; return; }
+  const partes = [`<button type="button" onclick="go('inicio')">Início</button>`];
+  if(mod==='cobrancaDia' && (CD.sub==='atividades'||CD.sub==='desempenho')){ partes.push(`<span>Equipe</span>`, `<span>${cdEsc((CD_SUBS.find(x=>x[0]===CD.sub)||[])[1]||'')}</span>`); el.innerHTML = partes.join('<span class="sep">/</span>'); document.querySelectorAll('.nav-sub').forEach(n=>n.classList.toggle('active', n.dataset.cd===CD.sub)); return; }
+  if(mod!=='inicio'){ partes.push(`<span>${cdEsc(area)}</span>`); partes.push(mod==='oportunidades' && OP.sub!=='resumo' ? `<button type="button" onclick="opSub('resumo')">${cdEsc(RADAR_NOME_DE[mod])}</button>` : `<span>${cdEsc(RADAR_NOME_DE[mod])}</span>`); }
+  if(mod==='oportunidades' && OP.sub!=='resumo') partes.push(`<span>${cdEsc((OP_SUBS.find(x=>x[0]===OP.sub)||[])[1]||'')}</span>`);
+  if(mod==='premiacoes' && typeof PREM_UI!=='undefined' && PREM_UI.sub!=='resumo') partes.push(`<span>${cdEsc((PREM_SUBS.find(x=>x[0]===PREM_UI.sub)||[])[1]||'')}</span>`);
+  if(mod==='cobrancaDia' && (CD.sub||'resumo')!=='resumo') partes.push(`<span>${cdEsc((CD_SUBS.find(x=>x[0]===CD.sub)||[])[1]||'')}${CD.sub==='listas'&&CD_ABAS[CD.aba]?' / '+cdEsc(CD_ABAS[CD.aba].titulo):''}</span>`);
+  el.innerHTML = partes.join('<span class="sep">/</span>');
+  document.querySelectorAll('.nav-sub').forEach(n=>n.classList.toggle('active', (mod==='oportunidades' && n.getAttribute('onclick')?.includes(`opSub('${OP.sub}')`)) || (mod==='premiacoes' && typeof PREM_UI!=='undefined' && n.dataset.prem===PREM_UI.sub) || (mod==='cobrancaDia' && n.dataset.cd===(CD.sub||'resumo') && (CD.sub!=='listas' || n.getAttribute('onclick')?.includes(`'${CD.aba}'`)))));
+}
+function radarIrAtividades(){ go('cobrancaDia'); cdSub('atividades'); }
+function radarAreasVisiveis(){ document.querySelectorAll('.nav-area').forEach(g=>{ const vis=[...g.querySelectorAll('.nav-item')].some(it=>getComputedStyle(it).display!=='none'); const sub=g.querySelector('.nav-sub'); if(!vis && !(g.dataset.area==='equipe' && typeof cdPodeGerenciar==='function' && cdPodeGerenciar())) g.style.display='none'; else if(!document.getElementById('nav-busca')?.value) g.style.display=''; }); }
+(function(){ const _go = go; go = function(mod){ const r = _go.apply(this, arguments); try{ radarTrilha(mod); radarAreasVisiveis(); }catch(e){} return r; }; window.go = go; })();
+(function(){ const orig = window.radarAplicarModulos; if(typeof orig==='function'){ window.radarAplicarModulos = radarAplicarModulos = function(){ const r = orig.apply(this, arguments); try{ radarAreasVisiveis(); }catch(e){} return r; }; } })();
+
+/* ===================== INICIO: os numeros de cada area ===================== */
+const INI = { carregando:false };
+async function renderInicio(){
+  const box = document.getElementById('mod-inicio'); if(!box) return;
+  const pode = typeof cdPodeGerenciar==='function' ? cdPodeGerenciar() : true;
+  if(!INI.carregando && (!CD.dados.resumo || !OP.dados || !CD.atv.lista)){
+    INI.carregando = true;
+    box.innerHTML = '<div class="section compact-section">Juntando os números de cada área...</div>';
+    try{ await Promise.allSettled([ CD.dados.resumo ? null : cdCarregar(), OP.dados ? null : opCarregar(), CD.atv.lista ? null : cdAtvCarregar(true), IXC_CARGA.status ? null : ixcCargaStatus() ]); }catch(e){}
+    INI.carregando = false;
+    if(STATE.activeMod==='inicio') renderInicio();
+    return;
+  }
+  let g = null; try{ g = cdGuiaDados(); }catch(e){}
+  const d = OP.dados||{}, up = d.upgrade||[], re = d.reativacao||[];
+  const envs = (OP.acomp?.envios)||[], perd = envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
+  const env = envs.reduce((t,e)=>t+(+e.enviados||0),0), resp = envs.reduce((t,e)=>t+(+e.responderam||0),0), conv = envs.reduce((t,e)=>t+(+e.converteram||0),0), abertos = envs.reduce((t,e)=>t+(+e.abertos||0),0);
+  const atv = (CD.atv.lista||[]).filter(a=>a.status==='aberta'), est = atv.filter(a=>cdPrazoEstourou(a)), val = atv.filter(a=>a.validacao_solicitada_em);
+  const def = up.filter(x=>x.vel<=100);
+  const tipos = IXC_CARGA.status?.tipos || {};
+  let ult = null; try{ ult = radarFixoUltimaLeitura(IXC_CARGA.status); }catch(e){}
+  const hoje = new Date(); const velho = ult && (hoje - ult) > 6*3600000;
+  const lk = (txt, js, r) => `<button type="button" class="cdg-link ${r?'r':''}" onclick="${js}">${txt}</button>`;
+
+  // 1. status
+  const status = `<div class="cdg-status">${velho||!ult?`<span class="cdg-pill warn">Dados de ${ult?ixcFmtDataHora(ult):'leitura desconhecida'}</span>`:`<span class="cdg-pill ok">Dados atualizados</span>`}
+    <span>Última leitura do IXC e do OPA: <b>${ult?ixcFmtDataHora(ult):'-'}</b>.</span><span class="cdg-sp"></span>
+    <span>${velho?'Use o botão Atualizar todos os dados antes de decidir.':'Tudo abaixo vem dessa leitura.'}</span></div>`;
+
+  // 2. o que precisa de voce agora (em ordem de urgencia)
+  const pri = [];
+  if(perd) pri.push(`<b class="ruim">Falha grave no OPA:</b> ${lk(cdNum(perd)+' clientes responderam à oferta e foram encerrados pela IA sem atendimento', "go('oportunidades');opSub('envios')", true)}. Chame de volta hoje e corrija o fluxo antes do próximo disparo.`);
+  if(g && g.pre.clientes) pri.push(`${lk(cdNum(g.pre.clientes)+' clientes estão a até 5 dias do bloqueio', "go('cobrancaDia');cdIrLista('cobrar','pre')", true)}, somando <b>${cdMoeda(g.pre.valor)}</b>. É o dinheiro mais fácil de recuperar hoje.`);
+  if(est.length) pri.push(`${lk(cdNum(est.length)+(est.length===1?' atividade da equipe passou do prazo':' atividades da equipe passaram do prazo'), 'radarIrAtividades()', true)}. Fale com a responsável ou redistribua.`);
+  if(abertos) pri.push(`${lk(cdNum(abertos)+' clientes que responderam à oferta ainda estão com atendimento aberto', "go('oportunidades');opSub('envios')")}. Cliente que espera esfria.`);
+  if(val.length) pri.push(`${lk(cdNum(val.length)+(val.length===1?' atividade espera':' atividades esperam')+' a sua validação', 'radarIrAtividades()')}.`);
+  if(g && g.rec.mais30) pri.push(`${lk(cdNum(g.rec.mais30)+' recolhimentos de equipamento estão abertos há mais de 30 dias', "go('cobrancaDia');cdIrLista('recolhimento_atd')")}.`);
+  if(!pri.length) pri.push('Nada urgente agora. Use as colunas abaixo para planejar o dia.');
+
+  const num = (tom, rot, ver, v, sub, js) => `<div class="cdg-num ${tom} clicavel" role="button" tabindex="0" onclick="${js}" onkeydown="if(event.key==='Enter'){${js}}"><div class="l">${rot} <span class="ver">${ver}</span></div><div class="v">${v}</div><div class="s">${sub}</div></div>`;
+  const resumo = `<div class="cdg-resumo">
+    <div class="cdg-box"><div class="cdg-eyebrow">O que precisa de você agora</div>
+      <div class="cdg-narrativa">${pri.map(p=>`<p>${p}</p>`).join('')}</div>
+      <div class="cdg-nota">Em ordem de urgência. Os trechos sublinhados abrem a lista.</div></div>
+    <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
+      <div class="cdg-numeros">
+        ${g?num('risk','Antes do bloqueio','Cobrar',cdMoeda(g.pre.valor),cdNum(g.pre.clientes)+' clientes com 1 a 5 dias de atraso',"go('cobrancaDia');cdIrLista('cobrar','pre')"):''}
+        ${g?num('info','Vencido total','Ver',cdMoeda(g.todos.valor),cdNum(g.todos.clientes)+' clientes',"go('cobrancaDia');cdSub('onde')"):''}
+        ${num(perd?'risk':'ok','Campanhas','Ver envios',env?cdPct(resp,env)+'%':'-',env?`responderam · ${cdNum(conv)} converteram`:'nenhum envio ainda',"go('oportunidades');opSub('envios')")}
+      </div>
+      <div class="cdg-nota">Clique num número para abrir o detalhe.</div></div>
+  </div>`;
+
+  // 3. colunas por area
+  const it = o => cdItem(o);
+  const fin = g ? [
+    it({tom:'agir', titulo:'Cobrar antes do bloqueio', numero:cdMoeda(g.pre.valor), unid:cdNum(g.pre.clientes)+' clientes', vazio:!g.pre.clientes, porque:'O cliente ainda está com a internet ligada.', acao:['Abrir lista',"go('cobrancaDia');cdIrLista('cobrar','pre')"]}),
+    it({tom:'agir', titulo:'Agendar recolhimento', numero:cdNum(g.rec.clientes), unid:'clientes', vazio:!g.rec.clientes, porque:'Equipamento fora de casa é patrimônio parado.', acao:['Abrir lista',"go('cobrancaDia');cdIrLista('recolhimento_atd')"]}),
+    it({tom:'planejar', titulo:'Recuperar mais de 90 dias', numero:cdMoeda(g.d90.valor), unid:cdNum(g.d90.clientes)+' clientes', porque:'Inadimplência antiga, precisa de régua própria.', acao:['Ver onde está',"go('cobrancaDia');cdSub('onde')"]})
+  ].join('') : '<div class="cdg-nota">Os dados de cobrança ainda não carregaram.</div>';
+  const com = [
+    it({tom:perd?'corrigir':'agir', titulo:perd?'Chamar de volta quem a IA encerrou':'Acompanhar os envios', numero:perd?cdNum(perd):(env?cdPct(resp,env)+'%':'-'), unid:perd?'clientes':'responderam', porque:perd?'Responderam à oferta e ninguém atendeu.':'Engajamento e conversão de cada envio.', acao:[perd?'Ver e gerar atividade':'Ver envios',"go('oportunidades');opSub('envios')"]}),
+    it({tom:'agir', titulo:'Migrar planos defasados', numero:cdNum(def.length), unid:'contratos até 100 mega', vazio:!def.length, porque:'Plano antigo e equipamento defasado: maior risco de trocar de provedor.', acao:['Ver por plano',"go('oportunidades');opSub('planos')"]}),
+    it({tom:'planejar', titulo:'Reativar ex-clientes', numero:cdNum(re.length), unid:'dos últimos 2 anos', vazio:!re.length, porque:'Todos podem voltar. Comece por quem saiu há até 6 meses.', acao:['Abrir lista',"go('oportunidades');opIr('reativacao',{prioridade:'Alta'})"]}),
+    it({tom:'planejar', titulo:'Premiação do mês', porque:'Folha, vendas, atendimento e divergências com a planilha.', acao:['Abrir Premiação',"go('premiacoes')"]})
+  ].join('');
+  const eq = pode ? [
+    it({tom:est.length?'corrigir':'agir', titulo:'Atividades em andamento', numero:cdNum(atv.length-val.length), unid:'atividades', porque:est.length?`${cdNum(est.length)} com prazo estourado.`:'Todas dentro do prazo.', acao:['Abrir painel','radarIrAtividades()']}),
+    it({tom:'planejar', titulo:'Validar o que a equipe entregou', numero:cdNum(val.length), unid:'aguardando', vazio:!val.length, porque:'A liderança confere e conclui ou devolve para ajuste.', acao:['Abrir painel','radarIrAtividades()']})
+  ].join('') : '';
+  const rede = [
+    it({tom:'planejar', titulo:'Ordens de serviço abertas', numero:tipos.os?cdNum(tipos.os.registros):'-', unid:'OS', porque:'Inclui recolhimento, instalação e suporte técnico.', acao:['Abrir Saúde da Rede',"go('tecnica')"]}),
+    it({tom:'planejar', titulo:'Sinal da fibra', numero:tipos.fibra?cdNum(tipos.fibra.registros):'-', unid:'ONUs lidas', porque:'Sinal ruim tira o cliente da oferta e gera reclamação.', acao:['Abrir Saúde da Rede',"go('tecnica')"]})
+  ].join('');
+  const colunas = `<div class="cdg-colunas">
+    <div class="cdg-col agir"><div class="cdg-col-h"><h3>Financeiro</h3><span>cobrança</span></div>${fin}</div>
+    <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Comercial</h3><span>vendas e campanhas</span></div>${com}</div>
+    ${pode?`<div class="cdg-col planejar"><div class="cdg-col-h"><h3>Equipe</h3><span>atividades</span></div>${eq}</div>`:''}
+    <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Rede</h3><span>técnico</span></div>${rede}</div>
+  </div>`;
+  box.innerHTML = `<div class="cdg">${status}${resumo}${colunas}</div>`;
+}
+window.renderInicio = renderInicio;
+
+/* ===================== AVISO DE VERSAO NOVA DO RADAR ===================== */
+const RADAR_VER = { etag:null, checouCarga:false };
+const radarBuildAtual = () => document.querySelector('meta[name="radar-build"]')?.content || '';
+async function radarVersaoChecar(){
+  try{
+    const url = location.pathname;
+    if(!RADAR_VER.checouCarga){
+      // 1a vez: confere se o navegador abriu uma versao guardada (build da pagina diferente do publicado)
+      RADAR_VER.checouCarga = true;
+      const t = await (await fetch(url, { cache:'no-store' })).text();
+      const m = t.match(/<meta name="radar-build" content="([^"]*)"/);
+      if(m && radarBuildAtual() && m[1] !== radarBuildAtual()){ radarVersaoAviso(); return; }
+    }
+    const h = await fetch(url, { method:'HEAD', cache:'no-store' });
+    const e = h.headers.get('etag') || h.headers.get('last-modified') || '';
+    if(!RADAR_VER.etag){ RADAR_VER.etag = e; return; }
+    if(e && e !== RADAR_VER.etag) radarVersaoAviso();
+  }catch(err){}
+}
+function radarVersaoAviso(){
+  if(document.getElementById('radar-versao-aviso')) return;
+  const el = document.createElement('div'); el.id = 'radar-versao-aviso';
+  el.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9500;background:#0b5cad;color:#fff;padding:10px 16px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:13px;font-weight:700;cursor:pointer;display:flex;gap:12px;align-items:center';
+  el.innerHTML = 'Há uma atualização do Radar. <span style="background:#fff;color:#0b5cad;border-radius:6px;padding:4px 10px">Clique para carregar</span>';
+  el.onclick = () => { const u = new URL(location.href); u.searchParams.set('v', Date.now()); location.href = u.toString(); };
+  document.body.appendChild(el);
+}
+document.addEventListener('DOMContentLoaded', ()=>{ setTimeout(radarVersaoChecar, 5000); setInterval(radarVersaoChecar, 3*60000); });
+Object.assign(window, { radarAreaToggle, radarMenuBuscar, radarTrilha, radarIrAtividades });
+
+
 /* ===================== OPORTUNIDADES (upgrade e reativação para disparo no OPA) =====================
    Módulo isolado: lê só do banco (radar_oportunidades) e não altera nenhum outro módulo. */
-const OP = { dados:null, resultado:null, carregando:false, erro:null, aba:'upgrade',
+const OP = { sub:'resumo', dados:null, resultado:null, carregando:false, erro:null, aba:'upgrade',
   f:{ marca:'Todas', filial:'Todas', oferta:'Todas', prioridade:'Todas', plano:'Todas', pediu:false, busca:'' },
   sel:new Set(), limite:100, exportando:false };
 const OP_TAXA = 0.05; // conversão de referência para estimar receita (5%)
@@ -25481,7 +25825,7 @@ async function opCarregar(recalcular){
 }
 function opIr(aba, filtro){
   OP.aba = aba; OP.f = { marca:'Todas', filial:'Todas', oferta:'Todas', prioridade:'Todas', plano:'Todas', pediu:false, busca:'', ...(filtro||{}) };
-  OP.sel.clear(); OP.limite = 100; renderOportunidades();
+  OP.sel.clear(); OP.limite = 100; OP.sub='listas'; renderOportunidades(); radarTrilha('oportunidades');
   setTimeout(()=>document.getElementById('op-lista')?.scrollIntoView({behavior:'smooth', block:'start'}), 50);
 }
 function opSetFiltro(k, v){ OP.f[k] = v; OP.sel.clear(); OP.limite = 100; renderOportunidades(); }
@@ -25560,7 +25904,7 @@ function opGuiaHTML(){
       porque:'Pediram upgrade no OPA ou foram etiquetados como VENDA ATIVA | OFERTAR UPGRADE. É a venda mais fácil da lista.', como:'Ligar ou responder no OPA, sem esperar o disparo em massa.', acao:['Abrir lista',"opIr('upgrade',{pediu:true})"]}),
     (()=>{ const def = up.filter(x=>x.vel<=100); return cdItem({tom:'agir', passo:2, titulo:'Migrar quem está em plano defasado', numero:cdNum(def.length), unid:'contratos até 100 mega', vazio:!def.length,
       porque:'Plano antigo que não atende mais a casa, com equipamento provavelmente defasado. É o cliente com mais risco de trocar de provedor.',
-      como:`A oferta é o 300 mega por R$ 79,90. Ganho de ${cdMoeda(def.reduce((t,x)=>t+(+x.ganho||0),0))} por mês se todos migrarem. Abra o quadro por plano e comece pelo maior.`, acao:['Ver por plano',"document.getElementById('op-planos')?.scrollIntoView({behavior:'smooth'})"]}); })(),
+      como:`A oferta é o 300 mega por R$ 79,90. Ganho de ${cdMoeda(def.reduce((t,x)=>t+(+x.ganho||0),0))} por mês se todos migrarem. Abra o quadro por plano e comece pelo maior.`, acao:['Ver por plano',"opSub('planos')"]}); })(),
     cdItem({tom:'agir', passo:3, titulo:'Disparar upgrade para a prioridade alta', numero:cdNum(upAlta.length), unid:'clientes', vazio:!upAlta.length,
       porque:`Pagam em dia e são clientes antigos. ${['300MB','600MB','1 GIGA'].map(o=>`${cdNum(upAlta.filter(x=>x.oferta===o).length)} para ${o}`).join(', ')}.`,
       como:'Baixar para o OPA gera arquivos de 50 clientes por filial e por oferta. Use no OPA o modelo aprovado da oferta.', acao:['Abrir lista',"opIr('upgrade',{prioridade:'Alta'})"]}),
@@ -25596,7 +25940,10 @@ function opGuiaHTML(){
     <div class="cdg-col planejar"><div class="cdg-col-h"><h3>Planejar</h3><span>próximos envios</span></div>${planejar}</div>
     <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Ficar atenta</h3><span>${alertas.length} pontos</span></div>${alertas.join('')}</div>
   </div>`;
-  return `<div class="cdg">${status}${resumo}${opFunilHTML(d)}${colunas}${opPlanosHTML(up)}</div>`;
+  if(OP.sub==='aptos') return `<div class="cdg">${status}${opFunilHTML(d)}</div>`;
+  if(OP.sub==='planos') return `<div class="cdg">${status}${opPlanosHTML(up)}</div>`;
+  if(OP.sub!=='resumo') return `<div class="cdg">${status}</div>`;
+  return `<div class="cdg">${status}${resumo}${colunas}</div>`;
 }
 const OP_FUNIL = [
   ['plano fora da regra','Plano empresarial, dedicado, IP fixo ou teste'],
@@ -25678,7 +26025,7 @@ function opListaHTML(){
     ${ls.length>OP.limite?`<div style="text-align:center;margin-top:8px"><button class="btn sm" onclick="OP.limite+=200;renderOportunidades()">Mostrar mais (${cdNum(ls.length-OP.limite)} restantes)</button></div>`:''}
     <div class="cdg-nota">Arquivos em blocos de 50 clientes, separados por filial e por oferta, no formato do OPA (name, whatsapp), para usar com o modelo aprovado de cada oferta. NandoNet e Pablom saem em arquivos próprios.</div>
   </div>
-  ${opAcompHTML()}`;
+`;
 }
 const OP_CAMINHOS = [
   ['setor de venda','Foi para o setor de venda','ok'],
@@ -25741,7 +26088,7 @@ function opFalhasHTML(){
     ${partes.map(p=>`<p style="margin:4px 0;font-size:13px;line-height:1.5">${p}</p>`).join('')}
     <p style="margin:8px 0 4px;font-size:12px"><b>O que fazer:</b> 1. Chamar de volta hoje quem foi encerrado. 2. Ajustar no OPA para que toda resposta à campanha vá direto para o setor de venda, sem triagem da IA. 3. Se o encerramento for a opção "não quero", o fluxo precisa aplicar a etiqueta UPGRADE OFERTADO.</p>
     <div class="cdg-botoes" style="margin-top:8px">
-      ${perd?`<button type="button" class="cdg-ir" onclick="OP.acompCaminho='fechado pela IA em 0 s';renderOportunidades();setTimeout(()=>document.getElementById('op-acomp')?.scrollIntoView({behavior:'smooth'}),50)">Ver quem foi encerrado</button>`:''}
+      ${perd?`<button type="button" class="cdg-ir" onclick="OP.acompCaminho='fechado pela IA em 0 s';opSub('envios')">Ver quem foi encerrado</button>`:''}
       ${perd?`<button type="button" class="cdg-ir cdg-gerar" onclick="opGerarAtividade(['fechado pela IA em 0 s','triagem da IA sem atendente'])">Gerar atividade: chamar de volta</button>`:''}
       ${perd?`<button type="button" class="cdg-ir" onclick="opFalhasExportar()">Baixar para chamar de volta</button>`:''}
       ${geral?`<button type="button" class="cdg-ir" onclick="opFalhasProtocolos()">Ver protocolos no OPA</button>`:''}
@@ -25774,6 +26121,13 @@ function opFalhasProtocolos(){
   el.innerHTML = `<div class="cdg-tabwrap" style="margin-top:8px"><table class="cdg-tab op-tab"><thead><tr><th>Protocolo</th><th>Contato</th><th>Hora</th><th>O que aconteceu</th></tr></thead><tbody>${ps.map(p=>`<tr><td>${cdEsc(p.protocolo)}</td><td>${cdEsc(cdFoneOpa(p.contato)||p.contato)}</td><td>${new Date(p.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td><td>${cdEsc(p.tipo)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 Object.assign(window,{opFalhasExportar, opFalhasProtocolos});
+const OP_SUBS = [['resumo','Resumo'],['aptos','Quem pode receber'],['planos','Por plano'],['listas','Listas para o OPA'],['envios','Envios e resultado']];
+function opSub(k){ OP.sub = k; renderOportunidades(); radarTrilha('oportunidades'); window.scrollTo({top:0,behavior:'smooth'}); }
+function opAbasHTML(){
+  const envs=(OP.acomp?.envios)||[], perd=envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
+  return `<div class="op-abas">${OP_SUBS.map(([k,t])=>`<button type="button" class="${OP.sub===k?'on':''}" onclick="opSub('${k}')">${t}${k==='envios'&&perd?`<span class="q">${perd}</span>`:''}</button>`).join('')}</div>`;
+}
+window.opSub = opSub;
 function renderOportunidades(){
   const box = document.getElementById('mod-oportunidades'); if(!box) return;
   if(typeof cdEhAtendente==='function' && cdEhAtendente()){ box.innerHTML = '<div class="section compact-section">Este módulo é da gestão.</div>'; return; }
@@ -25784,7 +26138,7 @@ function renderOportunidades(){
   }
   box.innerHTML = `${OP.erro?`<div role="alert" class="section compact-section">Não foi possível atualizar: ${cdEsc(OP.erro)}</div>`:''}
     ${OP.carregando?'<div role="status" class="section compact-section">Recalculando as listas...</div>':''}
-    ${opFalhasHTML()}${opGuiaHTML()}${opListaHTML()}`;
+    ${opAbasHTML()}${OP.sub==='resumo'?opFalhasHTML():''}${opGuiaHTML()}${OP.sub==='listas'?opListaHTML():''}${OP.sub==='envios'?opAcompHTML():''}`;
 }
 Object.assign(window, { renderOportunidades, opCarregar, opIr, opSetFiltro, opToggle, opToggleTodos, opExportar });
 
@@ -25858,8 +26212,8 @@ function renderCobrancaDia(){
   box.innerHTML = `
     ${CD.erro?`<div role="alert" class="section compact-section">Não foi possível atualizar: ${cdEsc(CD.erro)} Os dados anteriores foram mantidos. <button class="btn sm" onclick="cdCarregar()">Tentar novamente</button></div>`:''}
     ${CD.carregando?'<div role="status" class="section compact-section">Consultando os dados de cobrança e o histórico de exportações...</div>':''}
-    ${cdGuiaHTML()}
-    <div class="section compact-section" id="cd-lista">
+    ${cdAbasHTML()}${cdGuiaHTML()}
+    <div class="section compact-section" id="cd-lista" style="${(CD.sub||'resumo')==='listas'?'':'display:none'}">
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
         ${Object.entries(CD_ABAS).map(([k,a])=>`<button class="btn sm ${k===CD.aba?'primary':''}" onclick="CD.aba='${k}';renderCobrancaDia()">${a.titulo} (${contagem(k)})</button>`).join('')}
         <span style="flex:1"></span>
