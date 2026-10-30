@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030093712">
+<meta name="radar-build" content="20261030094951">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -24210,7 +24210,7 @@ function cdSla(a){
   const horas = Math.round((fim-agora)/3600000);
   const falta = h => h>=24 ? Math.round(h/24)+' dia(s)' : Math.max(h,0)+'h';
   if(!pend && agu) return {c:'warn', t:'Em andamento', pctFeito, pctAgu, pctTempo:null, dica:`Tudo foi trabalhado, mas ${cdNum(agu)} ${agu===1?'cliente ainda não respondeu':'clientes ainda não responderam'}. Cobre o retorno.`};
-  if(!pend) return {c:'ok', t:'Tudo tratado', pctFeito, pctTempo:null, dica:'Os registros foram feitos. Encaminhe para a liderança validar o resultado antes de concluir.'};
+  if(!pend) return {c:'ok', t:'Tudo tratado', pctFeito, pctTempo:null, dica:(typeof cdPodeGerenciar==='function'&&cdPodeGerenciar())?'Os registros foram feitos. Confira automaticamente e conclua, ou devolva para ajuste.':'Os registros foram feitos. Encaminhe para a liderança validar o resultado antes de concluir.'};
   if(agora>fim) return {c:'risk', t:'Prazo estourado há '+falta(-horas), pctFeito, pctAgu, pctTempo:100,
     dica:`Faltam ${cdNum(pend)} itens e o prazo acabou. Fale com ${a.responsavel_nome?cdEsc(String(a.responsavel_nome).split(' ')[0]):'a equipe'} ou redistribua o que falta.`};
   if(pctTempo>=75 || pctFeito+20 < pctTempo) return {c:'warn', t: horas<=24?'Perto do prazo: faltam '+falta(horas):'Ritmo abaixo do necessário', pctFeito, pctAgu, pctTempo,
@@ -24539,7 +24539,9 @@ function cdAtvEmExecucao(a){return !!a&&a.status==='aberta'&&!a.validacao_solici
 function cdAtvFluxoAcoes(a){
   if(!a||a.status!=='aberta')return '';
   const ger=cdPodeGerenciar();
-  return `${ger?`<button type="button" class="btn sm" onclick="cdConferir(${a.id})" title="O Radar confere a atividade e diz se pode concluir">Conferir automaticamente</button>`:''}${a.validacao_solicitada_em?(ger?`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModalComConferencia(${a.id},'concluir')">Validar e concluir</button><button type="button" class="btn sm" onclick="cdAtvFluxoModalComConferencia(${a.id},'devolver')">Devolver para ajuste</button>`:'<span class="cdg-sla-chip neutro">Aguardando validação da liderança</span>'):`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModal(${a.id},'solicitar')">Encaminhar para validação</button>`}${ger?`<button type="button" class="cdg-mini perigo-txt" onclick="cdAtvFluxoModal(${a.id},'cancelar')">Cancelar atividade</button>`:''}`;
+  // Liderança: decide direto (confere, conclui ou devolve). Quem executa: encaminha para a liderança validar.
+  if(ger) return `<button type="button" class="btn sm" onclick="cdConferir(${a.id})" title="O Radar confere a atividade e diz se pode concluir">Conferir automaticamente</button><button type="button" class="btn sm primary" onclick="cdAtvFluxoModalComConferencia(${a.id},'concluir')">Validar e concluir</button><button type="button" class="btn sm" onclick="cdAtvFluxoModalComConferencia(${a.id},'devolver')">Devolver para ajuste</button><button type="button" class="cdg-mini perigo-txt" onclick="cdAtvFluxoModal(${a.id},'cancelar')">Cancelar atividade</button>`;
+  return a.validacao_solicitada_em?'<span class="cdg-sla-chip neutro">Aguardando validação da liderança</span>':`<button type="button" class="btn sm primary" onclick="cdAtvFluxoModal(${a.id},'solicitar')">Encaminhar para validação</button>`;
 }
 function cdAtvFluxoAviso(a){
   if(a.validacao_solicitada_em)return `<div class="cdg-alerta"><i></i><div><b>Aguardando validação</b> · encaminhada por ${cdEsc(a.validacao_solicitada_por_nome||'Equipe')} em ${cdEsc(cdHoraTxt(a.validacao_solicitada_em))}.<p class="cd-fluxo-nota">${cdEsc(a.validacao_resumo||'')}</p>Registros bloqueados até a decisão da liderança.</div></div>`;
