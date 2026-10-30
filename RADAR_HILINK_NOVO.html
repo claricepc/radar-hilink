@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030152406">
+<meta name="radar-build" content="20261030155435">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -19377,7 +19377,7 @@ function atualizarPropostaPreview(){
   toast('Prévia atualizada.','success');
 }
 window.atualizarPropostaPreview = atualizarPropostaPreview;
-const PROP_ASSINATURA_PADRAO_URL = 'assinatura-akassio.png';
+// assinatura padrão fica no banco, só para gestão e liderança logadas (não fica mais pública no site)
 let PROP_ASSINATURA_DATAURL = localStorage.getItem('radar_prop_assinatura_akassio') || '';
 async function initPropostaAssinaturaPadrao(){
   if(PROP_ASSINATURA_DATAURL || localStorage.getItem('radar_prop_assinatura_removida')==='1'){
@@ -19385,15 +19385,10 @@ async function initPropostaAssinaturaPadrao(){
     return;
   }
   try{
-    const res=await fetch(PROP_ASSINATURA_PADRAO_URL);
-    if(!res.ok)throw new Error('assinatura padrao indisponivel');
-    const blob=await res.blob();
-    await new Promise((resolve,reject)=>{
-      const reader=new FileReader();
-      reader.onload=()=>{ PROP_ASSINATURA_DATAURL=reader.result; resolve(); };
-      reader.onerror=reject;
-      reader.readAsDataURL(blob);
-    });
+    const sb=getSB(); if(!sb) throw new Error('sem conexao');
+    const r=await sb.rpc('radar_assinatura_padrao',{p_chave:'akassio'});
+    if(r.error||!r.data) throw new Error(r.error?r.error.message:'assinatura padrao indisponivel');
+    PROP_ASSINATURA_DATAURL=r.data;
   }catch(e){
     console.warn('Assinatura padrao nao carregada',e);
   }
@@ -19546,7 +19541,10 @@ function calcularPropostaCorporativa(){
   const custoMensal=propParseMoney(propVal('prop-parceiro-mensal'));
   const custoInfra=propParseMoney(propVal('prop-parceiro-infra'));
   const margemManual=propParseMoney(propVal('prop-fator'));
-  const margemOverride=margemManual>0?(margemManual>1?margemManual/100:margemManual):0;
+  let margemOverride=margemManual>0?(margemManual>1?margemManual/100:margemManual):0;
+  const margemInvalida=!Number.isFinite(margemOverride)||margemOverride<0||margemOverride>=1;
+  { const inp=document.getElementById('prop-fator'); if(inp){ inp.style.borderColor=margemInvalida?'var(--estado-risco)':''; inp.title=margemInvalida?'Margem precisa ficar abaixo de 100%. Usando o cálculo automático.':''; } }
+  if(margemInvalida){ margemOverride=0; if(!window._propMargemAviso){ window._propMargemAviso=1; setTimeout(()=>{window._propMargemAviso=0},4000); try{toast('Margem manual inválida: precisa ficar abaixo de 100%. Usei o cálculo automático.','warn');}catch(e){} } }
   const infraPropria=propInfraPropriaPorDistancia(dist);
   const parceiroMensal=propParceiroMarkup(custoMensal);
   const parceiroInfra=propParceiroMarkup(custoInfra);
@@ -19575,6 +19573,9 @@ function calcularPropostaCorporativa(){
     notas.push('Rede Hilink: usa apenas progressão por distância, salvo preenchimento manual.');
   }
   if(instManual>0)instalacao=instManual;
+  if(margemInvalida) notas.push('Margem manual ignorada por ser 100% ou mais.');
+  if(!Number.isFinite(instalacao)||instalacao<0) instalacao=0;
+  if(!Number.isFinite(mensalidade)||mensalidade<0) mensalidade=0;
   const nota=notas.join(' ');
   document.getElementById('prop-kpi-instalacao').textContent=propMoney(instalacao);
   document.getElementById('prop-kpi-mensalidade').textContent=propMoney(mensalidade);
@@ -25917,14 +25918,20 @@ const INI = { carregando:false };
 async function renderInicio(){
   const box = document.getElementById('mod-inicio'); if(!box) return;
   const pode = typeof cdPodeGerenciar==='function' ? cdPodeGerenciar() : true;
-  if(!INI.carregando && (!CD.dados.resumo || !OP.dados || !CD.atv.lista)){
-    INI.carregando = true;
+  const faltaIni = ()=>[!CD.dados.resumo&&'cobrança', !OP.dados&&'oportunidades', !CD.atv.lista&&'atividades'].filter(Boolean);
+  // no máximo 2 tentativas seguidas; depois mostra o que tem e só tenta de novo após 1 minuto
+  if(!INI.carregando && faltaIni().length && (INI.tentativas||0) < 2 && Date.now() >= (INI.proxima||0)){
+    INI.carregando = true; INI.tentativas = (INI.tentativas||0) + 1;
     box.innerHTML = '<div class="section compact-section">Juntando os números de cada área...</div>';
     try{ await Promise.allSettled([ CD.dados.resumo ? null : cdCarregar(), OP.dados ? null : opCarregar(), CD.atv.lista ? null : cdAtvCarregar(true), IXC_CARGA.status ? null : ixcCargaStatus() ]); }catch(e){}
     INI.carregando = false;
+    if(!faltaIni().length) INI.tentativas = 0;
+    else if(INI.tentativas >= 2){ INI.proxima = Date.now() + 60000; INI.tentativas = 0; }
     if(STATE.activeMod==='inicio') renderInicio();
     return;
   }
+  if(INI.carregando) return;
+  INI.parcial = faltaIni();
   let g = null; try{ g = cdGuiaDados(); }catch(e){}
   const d = OP.dados||{}, up = d.upgrade||[], re = d.reativacao||[];
   const envs = (OP.acomp?.envios)||[], perd = envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
@@ -25992,7 +25999,8 @@ async function renderInicio(){
     ${pode?`<div class="cdg-col planejar"><div class="cdg-col-h"><h3>Equipe</h3><span>atividades</span></div>${eq}</div>`:''}
     <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Rede</h3><span>técnico</span></div>${rede}</div>
   </div>`;
-  box.innerHTML = `<div class="cdg">${status}${resumo}${colunas}</div>`;
+  const avisoParcial = (INI.parcial||[]).length ? `<div class="cdg-alerta warn" style="margin-bottom:12px"><i></i><div><b>Visão parcial.</b> Não consegui ler agora: ${INI.parcial.join(', ')}. Os outros números estão certos e os módulos funcionam normalmente. Tento de novo em 1 minuto.</div></div>` : '';
+  box.innerHTML = `<div class="cdg">${avisoParcial}${status}${resumo}${colunas}</div>`;
 }
 window.renderInicio = renderInicio;
 
