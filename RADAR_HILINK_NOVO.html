@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030135842">
+<meta name="radar-build" content="20261030140030">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -2949,6 +2949,12 @@ body.radar-modo-atendente .topbar{display:none!important}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
 <style data-tema-ignorar="1" id="radar-padrao-visual">
+html body #mod-premiacoes .prem-status-dot{background:var(--estado-ok)!important}
+html body #mod-premiacoes .prem-status-dot.warn{background:var(--estado-atencao)!important}
+html body #mod-premiacoes .prem-status-dot.danger{background:var(--estado-risco)!important}
+html body #mod-premiacoes .prem-status-dot.muted{background:var(--serie-outros)!important}
+html body #mod-premiacoes .prem-sales-status-chart{width:100%!important;height:auto!important;min-height:0!important;display:block!important}
+
 /* ===== PADRÃO VISUAL RADAR HILINK (aprovado em 30/10/2026) =====
    Fonte única das cores: estes tokens. O código antigo é convertido para eles quando a página abre. */
 :root,html[data-radar-tema="claro"]{--fundo:#f3f6fa;--superficie:#ffffff;--superficie-2:#eef3f8;--linha:#d9e1ea;--texto:#17212c;--texto-2:#59595b;--texto-3:#5c6773;--azul:#0071bc;--azul-forte:#005a96;--azul-suave:#e3f0fa;--sobre-azul:#ffffff;--indigo:#2e3192;--indigo-suave:#e9e9f7;--menu:#0d2440;--menu-texto:#c9d6e4;--menu-ativo:#ffffff;--ok:#1e7b4f;--ok-suave:#e3f4ea;--atencao:#8a5a00;--atencao-suave:#fff3d6;--risco:#c4232b;--risco-suave:#fde7e8;--cinza-marca:#59595b;--grade:#e6ebf1;--serie-1:#0071bc;--serie-2:#eb6834;--serie-3:#1baf7a;--serie-4:#6250d6;--serie-5:#e87ba4;--serie-outros:#9aa5b1;--escala-1:#86b6ef;--escala-2:#5598e7;--escala-3:#2a78d6;--escala-4:#1c5cab;--escala-5:#0d366b;--estado-ok:#23955c;--estado-atencao:#e0a100;--estado-risco:#d13438;--font-titulo:Montserrat,"Segoe UI",Arial,sans-serif;--font-texto:"Source Sans 3","Segoe UI",Arial,sans-serif;--radar-font:"Source Sans 3","Segoe UI",Arial,sans-serif;color-scheme:light}
@@ -17876,10 +17882,8 @@ function renderPremiacoesGeral(){
     ${usaTma?`<div class="prem-exec-mini" data-prem-geral="tme"><small>TMA</small><strong>${fmtDuration(tma)}</strong><span>tempo de atendimento</span><div class="trend">mediana</div></div>`:`<div class="prem-exec-mini" data-prem-geral="tme"><small>TME</small><strong>${tme===null?'--':fmtDuration(tme)}</strong><span>tempo médio</span><div class="trend">${tme!==null&&tme<=59?'meta':'atenção'}</div></div>`}
     <div class="prem-exec-mini" data-prem-geral="cliente"><small>Avaliação</small><strong>${nota===null?'--':nota.toFixed(2)}</strong><span>nota média</span><div class="trend">${nota!==null&&nota>=4.5?'meta':'atenção'}</div></div>
   </div>`;
-  statusBox.innerHTML=`<div class="prem-status-donut-layout">
-    <div class="prem-status-donut" style="background:conic-gradient(#2da3ff 0 ${c1.toFixed(2)}%,#f59e0b ${c1.toFixed(2)}% ${c2.toFixed(2)}%,#ef4444 ${c2.toFixed(2)}% ${c3.toFixed(2)}%,#64748b ${c3.toFixed(2)}% 100%)">
-      <div class="prem-status-donut-center"><strong>${Number(meta.volumeBruto||0).toLocaleString('pt-BR')}</strong><span>total</span></div>
-    </div>
+  statusBox.innerHTML=`<div class="prem-status-donut-layout" style="grid-template-columns:1fr!important;display:grid;gap:12px">
+    ${window.radarDistribuicao?window.radarDistribuicao([{rotulo:'Validados',valor:Number(meta.volumeValidado||0),cor:'estado-ok'},{rotulo:'Suspeitos',valor:suspeitos,cor:'estado-atencao'},{rotulo:'Críticos',valor:criticos,cor:'estado-risco'},{rotulo:'Não elegíveis',valor:naoElegiveis,cor:'serie-outros'}],Number(meta.volumeBruto||0),'atendimentos no total'):''}
     <div class="prem-status-legend">
       <div class="prem-status-legend-row" data-prem-geral="validado"><i class="prem-status-dot"></i><b>Validados</b><span>${Number(meta.volumeValidado||0).toLocaleString('pt-BR')} (${pctValid.toFixed(1).replace('.',',')}%)</span></div>
       <div class="prem-status-legend-row" data-prem-geral="suspeitos"><i class="prem-status-dot warn"></i><b>Suspeitos</b><span>${suspeitos.toLocaleString('pt-BR')} (${pctSusp.toFixed(1).replace('.',',')}%)</span></div>
@@ -21497,7 +21501,7 @@ function renderPremiacoesView(){
     const statusTotal=Math.max(1,aprovadas.length+revisarIds.size+reprovadas.length);
     const aprovadoDeg=(aprovadas.length/statusTotal)*360;
     const revisaoDeg=aprovadoDeg+(revisarIds.size/statusTotal)*360;
-    salesStatusChart.innerHTML=`<div class="prem-sales-donut" style="--aprovado:${aprovadoDeg.toFixed(2)}deg;--revisao:${revisaoDeg.toFixed(2)}deg" title="Aprovados: ${aprovadas.length.toLocaleString('pt-BR')} · Em revisão: ${revisarIds.size.toLocaleString('pt-BR')} · Reprovados: ${reprovadas.length.toLocaleString('pt-BR')}"><div class="prem-sales-donut-center"><strong>${(aprovadas.length+revisarIds.size+reprovadas.length).toLocaleString('pt-BR')}</strong><span>eventos</span></div></div>`;
+    salesStatusChart.innerHTML=window.radarDistribuicao?window.radarDistribuicao([{rotulo:'Aprovados',valor:aprovadas.length,cor:'estado-ok'},{rotulo:'Em revisão',valor:revisarIds.size,cor:'estado-atencao'},{rotulo:'Reprovados',valor:reprovadas.length,cor:'estado-risco'}],aprovadas.length+revisarIds.size+reprovadas.length,'eventos'):'';
   }
   if(salesStatusLegend){
     salesStatusLegend.innerHTML=`
@@ -26545,6 +26549,19 @@ html[data-radar-tema="claro"] .sidebar .radar-tema-btn:hover{background:rgba(255
 html[data-radar-tema="claro"] .sidebar .nav-item:focus-visible,html[data-radar-tema="claro"] .sidebar .radar-tema-btn:focus-visible{outline:2px solid #8DB5DE;outline-offset:2px}
 </style>
 <script>
+
+// ===== Barra de distribuição (substitui rosca/pizza, padrão visual) =====
+function radarDistribuicao(itens, total, rotuloTotal){
+  const soma = itens.reduce((a,x)=>a+(Number(x.valor)||0),0) || 1;
+  const fmt = n=>Number(n||0).toLocaleString('pt-BR');
+  const seg = itens.filter(x=>Number(x.valor)>0).map(x=>{ const p=(Number(x.valor)/soma)*100;
+    return `<span title="${x.rotulo}: ${fmt(x.valor)} (${p.toFixed(1).replace('.',',')}%)" style="flex:${p} 0 0;min-width:3px;background:var(--${x.cor});height:100%"></span>`; }).join('');
+  return `<div class="radar-dist" style="width:100%">
+    <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px"><strong style="font:700 28px/1 var(--font-titulo);color:var(--texto)">${fmt(total ?? soma)}</strong><span style="font:600 11px/1 var(--font-titulo);letter-spacing:.06em;text-transform:uppercase;color:var(--texto-3)">${rotuloTotal||'total'}</span></div>
+    <div role="img" aria-label="${itens.map(x=>x.rotulo+' '+fmt(x.valor)).join(', ')}" style="display:flex;gap:2px;height:14px;border-radius:4px;overflow:hidden;background:var(--grade)">${seg}</div>
+  </div>`;
+}
+window.radarDistribuicao = radarDistribuicao;
 
 // ===== Fotos das pessoas (subidas no Radar em Usuários e acessos) =====
 var RADAR_FOTOS = { porEmail:{}, porId:{}, porNome:{}, carregado:false };
