@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261029190051">
+<meta name="radar-build" content="20261030085824">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -2527,7 +2527,19 @@ body.radar-modo-atendente .nav-sub{display:none!important}
 .radar-trilha button{background:none;border:0;padding:0;color:#2da3ff;cursor:pointer;font:inherit;text-decoration:underline}
 .radar-trilha span.sep{margin:0 6px;opacity:.6}
 #prem-tabs-nav{display:none!important}
-#mod-tecnica #tec-view-tabs,#mod-tecnica .tec-att-tabs{display:none!important}
+#mod-tecnica #tec-view-tabs{display:none!important}
+#mod-tecnica:not(.tec-sub-tecnico) .tec-att-tabs{display:none!important}
+.rede-caso{border:1px solid var(--g-line,rgba(143,163,184,.25));border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.rede-caso-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rede-termo{font-size:11px;opacity:.7}
+.rede-caso-cli{margin-top:4px;font-size:12.5px}
+.rede-caso-exp{margin-top:4px;font-size:12px;opacity:.85}
+.rede-caso-acao{margin-top:4px;font-size:12.5px}
+.rede-prazo{margin-left:8px;font-size:11px;font-weight:700;color:#FFB84D}
+.rede-caso-dados{margin-top:6px;font-size:11.5px;opacity:.85}
+.rede-filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.rede-filtros select,.rede-filtros input[type=search]{padding:6px 8px;border-radius:8px;font-size:12px}
+.rede-regra textarea{width:100%}
 .op-abas{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .op-abas button{border:1px solid rgba(143,163,184,.35);background:transparent;color:inherit;border-radius:999px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
 .op-abas button.on{background:#2da3ff;border-color:#2da3ff;color:#fff}
@@ -3013,13 +3025,13 @@ body.radar-modo-atendente .topbar{display:none!important}
         <div class="nav-item" data-mod="propostas" onclick="go('propostas')"><span>Propostas Corporativas<small>CRM e proposta comercial</small></span></div>
       </div></div>
     <div class="nav-group nav-hub nav-area" data-area="rede"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Rede</div><div class="nav-group-items">
-        <div class="nav-item" data-mod="tecnica" onclick="go('tecnica');tecSub('resumo')"><span>Sa&uacute;de da Rede<small>sinal, quedas e fila do NOC</small></span></div>
-        <div class="nav-sub" data-tec="resumo" onclick="go('tecnica');tecSub('resumo')">Resumo do dia</div>
-        <div class="nav-sub" data-tec="fila_atd" onclick="go('tecnica');tecSub('fila_atd')">Fila do atendimento</div>
-        <div class="nav-sub" data-tec="fila_noc" onclick="go('tecnica');tecSub('fila_noc')">Fila do NOC e campo</div>
-        <div class="nav-sub" data-tec="setores" onclick="go('tecnica');tecSub('setores')">Fila por setor</div>
+        <div class="nav-item" data-mod="tecnica" onclick="go('tecnica');tecSub('casos')"><span>Sa&uacute;de da Rede<small>casos do dia, NOC e campo</small></span></div>
+        <div class="nav-sub" data-tec="casos" onclick="go('tecnica');tecSub('casos')">Casos do dia</div>
+        <div class="nav-sub" data-tec="impacto" onclick="go('tecnica');tecSub('impacto')">Impacto na operação</div>
+        <div class="nav-sub" data-tec="regras" onclick="go('tecnica');tecSub('regras')">Regras</div>
         <div class="nav-sub" data-tec="onde" onclick="go('tecnica');tecSub('onde')">Onde está o problema</div>
         <div class="nav-sub" data-tec="diagnostico" onclick="go('tecnica');tecSub('diagnostico')">Diagnóstico técnico</div>
+        <div class="nav-sub" data-tec="tecnico" onclick="go('tecnica');tecSub('tecnico')">Painel técnico completo</div>
       </div></div>
     <div class="nav-group nav-hub nav-area" data-area="equipe"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Equipe</div><div class="nav-group-items">
         <div class="nav-sub" data-cd="atividades" onclick="radarIrAtividades()">Atividades da equipe</div>
@@ -8285,7 +8297,10 @@ body.radar-modo-atendente .topbar{display:none!important}
       <button class="tec-view-tab" data-tec-view="tudo" onclick="switchTecView('tudo')">Tudo</button>
     </div>
 
-    <div class="section compact-section tec-view-panel active" data-tec-view-panel="diagnostico" data-tec-sub="diagnostico">
+    <div class="tec-view-panel" data-tec-sub="casos"><div id="rede-casos"></div></div>
+    <div class="tec-view-panel" data-tec-sub="impacto"><div id="rede-impacto"></div></div>
+    <div class="tec-view-panel" data-tec-sub="regras"><div id="rede-regras"></div></div>
+    <div class="section compact-section tec-view-panel" data-tec-view-panel="diagnostico" data-tec-sub="diagnostico">
       <div class="section-title-row"><h2 class="section-title">Diagnóstico técnico <span class="help">Sinal, sessão, causas e concentração técnica para investigação</span></h2><button class="tec-collapse-btn" onclick="tecCollapse('tec-body-diagnostico',this)">? Recolher</button></div>
       <div class="tec-collapsible-body" id="tec-body-diagnostico">
       <div class="tec-charts-row">
@@ -8323,7 +8338,7 @@ body.radar-modo-atendente .topbar{display:none!important}
       </div>
     </div>
 
-    <div class="section compact-section tec-main-kpis tec-view-panel" data-tec-view-panel="acao" data-tec-sub="resumo">
+    <div class="section compact-section tec-main-kpis tec-view-panel" data-tec-view-panel="acao" data-tec-sub="tecnico">
       <h2 class="section-title">Painel preventivo <span class="help">Saúde técnica, risco de reclamação e ação operacional</span></h2>
       <div class="tec-executive-grid">
         <div class="exec-read" id="tec-executive"></div>
@@ -8332,24 +8347,24 @@ body.radar-modo-atendente .topbar{display:none!important}
       </div>
     </div>
 
-    <div class="section compact-section tec-view-panel" data-tec-view-panel="acao" data-tec-sub="setores">
+    <div class="section compact-section tec-view-panel" data-tec-view-panel="acao" data-tec-sub="tecnico">
       <h2 class="section-title">Mapa de decisão <span class="help">Quem aciona, qual hipótese e qual caminho de solução</span></h2>
       <div class="tec-decision-map" id="tec-decision-map"></div>
     </div>
 
-    <div class="section compact-section tec-view-panel" data-tec-view-panel="acao" data-tec-sub="resumo">
+    <div class="section compact-section tec-view-panel" data-tec-view-panel="acao" data-tec-sub="tecnico">
       <h2 class="section-title">O que fazer agora <span class="help">Fila priorizada para atendimento, suporte, NOC e campo</span></h2>
       <div class="tec-action-layout">
         <div class="ops-grid" id="tec-critical"></div>
       </div>
     </div>
 
-    <div class="section compact-section tec-view-panel" data-tec-view-panel="acao" data-tec-sub="setores">
+    <div class="section compact-section tec-view-panel" data-tec-view-panel="acao" data-tec-sub="tecnico">
       <h2 class="section-title">Fila operacional <span class="help">Fila técnica por setor: atendimento, suporte, NOC e campo</span></h2>
       <div class="tbl-wrap" id="tec-now-wrap"><table class="decision-table" id="tec-now"><thead><tr><th>Problema</th><th>Qtd.</th><th>Prioridade</th><th>Setor</th><th>O que fazer</th></tr></thead><tbody></tbody></table></div>
     </div>
 
-    <div class="section compact-section tec-view-panel" data-tec-view-panel="acao" data-tec-sub="fila_atd fila_noc">
+    <div class="section compact-section tec-view-panel" data-tec-view-panel="acao" data-tec-sub="tecnico">
       <h2 class="section-title">Fila diária do atendimento <span class="help">Clientes para trabalhar hoje, com responsável e orientação de tratativa</span></h2>
       <div class="tec-att-tabs">
         <button class="tec-att-tab active" data-tec-att-tab="atendimento" onclick="switchTecAttTab('atendimento')">Atendimento / Comercial</button>
@@ -12722,18 +12737,19 @@ function switchTecView(view){
 window.switchTecView=switchTecView;
 
 // ===== Saúde da Rede segmentada em submenus =====
-var TEC_UI = { sub:'resumo' };
-var TEC_SUBS = [['resumo','Resumo do dia'],['fila_atd','Fila do atendimento'],['fila_noc','Fila do NOC e campo'],['setores','Fila por setor'],['onde','Onde está o problema'],['diagnostico','Diagnóstico técnico']];
+var TEC_UI = { sub:'casos' };
+var TEC_SUBS = [['casos','Casos do dia'],['impacto','Impacto na operação'],['regras','Regras'],['onde','Onde está o problema'],['diagnostico','Diagnóstico técnico'],['tecnico','Painel técnico completo']];
 function tecAplicarSub(){
   const k=TEC_UI.sub;
   document.querySelectorAll('#mod-tecnica .tec-view-panel').forEach(p=>p.classList.toggle('active', (p.dataset.tecSub||'').split(' ').includes(k)));
-  if(k==='fila_atd'||k==='fila_noc'){ try{ switchTecAttTab(k==='fila_noc'?'noc':'atendimento'); }catch(e){} }
+  const mod=document.getElementById('mod-tecnica'); if(mod) mod.classList.toggle('tec-sub-tecnico', k==='tecnico');
   const box=document.getElementById('tec-abas');
   if(box) box.innerHTML=`<div class="op-abas" style="margin-top:4px">${TEC_SUBS.map(([s,t])=>`<button type="button" class="${k===s?'on':''}" onclick="tecSub('${s}')">${t}</button>`).join('')}</div>`;
+  if(k==='casos'||k==='impacto'||k==='regras'){ try{ redeRender(); }catch(e){ console.error('[Rede]',e); } }
   setTimeout(()=>{ ['tec-ch-saude','tec-ch-filial','tec-ch-prevencao-status','tec-ch-prevencao-camadas'].forEach(id=>{ try{ if(CHARTS&&CHARTS[id]) CHARTS[id].resize(); }catch(e){} }); },60);
   try{ radarTrilha('tecnica'); }catch(e){}
 }
-function tecSub(k){ TEC_UI.sub = TEC_SUBS.some(x=>x[0]===k) ? k : 'resumo'; tecAplicarSub(); window.scrollTo({top:0,behavior:'smooth'}); }
+function tecSub(k){ TEC_UI.sub = TEC_SUBS.some(x=>x[0]===k) ? k : 'casos'; tecAplicarSub(); window.scrollTo({top:0,behavior:'smooth'}); }
 window.tecSub = tecSub;
 if(typeof renderTecnica==='function' && !window._tecSubWrap){
   window._tecSubWrap = true;
@@ -24166,10 +24182,13 @@ const CD_ATV_TIPOS = {
   avencer:          { nome:'Lembrar vencimento',   fonte:'avencer',           chave:x=>x.id_cliente+'-'+x.filial_id },
   sem_email:        { nome:'Cadastrar e-mail',     fonte:'sem_email',         chave:x=>String(x.id_cliente) },
   gerados_vencidos: { nome:'Corrigir boleto gerado vencido', fonte:'gerados_vencidos', chave:x=>String(x.id_titulo) },
-  retorno_oportunidade: { nome:'Chamar de volta (oferta de upgrade)', fonte:'__oportunidades', chave:x=>String(x.id_cliente) }
+  retorno_oportunidade: { nome:'Chamar de volta (oferta de upgrade)', fonte:'__oportunidades', chave:x=>String(x.id_cliente) },
+  rede_cliente:     { nome:'Rede: contato com o cliente', fonte:'__rede', chave:x=>String(x.chave) },
+  rede_campo:       { nome:'Rede: demanda externa (campo)', fonte:'__rede', chave:x=>String(x.chave) },
+  rede_noc:         { nome:'Rede: NOC', fonte:'__rede', chave:x=>String(x.chave) }
 };
 // prazo padrão (SLA) de cada tipo de atividade, em dias úteis a partir de hoje
-const CD_SLA_DIAS = { retorno_oportunidade:0, cobrar:0, quebra:1, suspeitos:1, gerados_vencidos:1, recolhimento_atd:2, avencer:0, sem_email:5 };
+const CD_SLA_DIAS = { rede_cliente:0, rede_campo:1, rede_noc:0, retorno_oportunidade:0, cobrar:0, quebra:1, suspeitos:1, gerados_vencidos:1, recolhimento_atd:2, avencer:0, sem_email:5 };
 const CD_SLA_PRESET = { pre:0, um:0, d6_30:1, d31_90:5, d90:5, todos:2, vence_sem_email:2 };
 function cdDiaUtil(n){ const d=new Date(); let k=0; while(k<n){ d.setDate(d.getDate()+1); if(d.getDay()!==0&&d.getDay()!==6) k++; }
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -24217,9 +24236,12 @@ function cdAtvAcoes(tipo){
   if(tipo==='recolhimento_atd') return ['contatado','aguardando','sem_resposta','numero_errado','nao_cobrar'];
   if(tipo==='avencer') return ['contatado','sem_resposta','numero_errado'];
   if(tipo==='retorno_oportunidade') return ['corrigido','negociando','aguardando','nao_cobrar','sem_resposta','numero_errado'];
+  if(tipo==='rede_cliente') return ['corrigido','contatado','aguardando','sem_resposta','numero_errado','nao_cobrar'];
+  if(tipo==='rede_campo'||tipo==='rede_noc') return ['corrigido','aguardando','nao_cobrar'];
   return ['contatado','sem_resposta','numero_errado','prometeu','negociando','nao_cobrar'];
 }
-const cdAtvRotuloAcao = (tipo,s) => tipo==='retorno_oportunidade' && ({corrigido:'Fez o upgrade',negociando:'Interessado, vai pensar',nao_cobrar:'Não quer upgrade'})[s] ? ({corrigido:'Fez o upgrade',negociando:'Interessado, vai pensar',nao_cobrar:'Não quer upgrade'})[s] : s==='aguardando' ? 'Em andamento' : s==='corrigido' ? (tipo==='sem_email'?'E-mail cadastrado':'Corrigido no IXC') : s==='nao_cobrar' ? (tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos'?'Não precisa corrigir':'Não cobrar') : CD_SITUACOES[s].t;
+const CD_ROTULO_REDE = {corrigido:'Resolvido',contatado:'Cliente orientado',nao_cobrar:'Não é problema da rede'};
+const cdAtvRotuloAcao = (tipo,s) => String(tipo).startsWith('rede_') && CD_ROTULO_REDE[s] ? CD_ROTULO_REDE[s] : tipo==='retorno_oportunidade' && ({corrigido:'Fez o upgrade',negociando:'Interessado, vai pensar',nao_cobrar:'Não quer upgrade'})[s] ? ({corrigido:'Fez o upgrade',negociando:'Interessado, vai pensar',nao_cobrar:'Não quer upgrade'})[s] : s==='aguardando' ? 'Em andamento' : s==='corrigido' ? (tipo==='sem_email'?'E-mail cadastrado':'Corrigido no IXC') : s==='nao_cobrar' ? (tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos'?'Não precisa corrigir':'Não cobrar') : CD_SITUACOES[s].t;
 
 // ---------- início da tarefa e movimento ----------
 function cdHorasDesde(d){ return d ? (Date.now()-new Date(d).getTime())/3600000 : null; }
@@ -24398,7 +24420,7 @@ function cdAtvModal(){
   const unid = (N.tipo==='quebra'||N.tipo==='suspeitos'||N.tipo==='gerados_vencidos')?'títulos':'clientes';
   const pessoas = CD.atv.usuarios || [];
   el.innerHTML = `<div class="cdg-modal-box" role="dialog" aria-modal="true" aria-labelledby="cd-atv-tit">
-    <h3 id="cd-atv-tit">Direcionar atividade para o atendimento</h3>
+    <h3 id="cd-atv-tit">${String(N.tipo).startsWith('rede_')?'Direcionar tarefa da rede':'Direcionar atividade para o atendimento'}</h3>
     <p class="cdg-nota" style="margin:0 0 12px">${cdEsc(CD_ATV_TIPOS[N.tipo].nome)}: <b>${cdNum(N.linhas.length)} ${unid}</b>${valor?`, ${cdMoeda(valor)}`:''}, em ${filiais.length} ${filiais.length===1?'filial':'filiais'}. A lista é salva como está agora.</p>
     <label class="cdg-campo">Nome da atividade<input id="cd-atv-nome" type="text" value="${cdEsc(N.titulo)}" maxlength="80"></label>
     <div class="cdg-campo">Quem vai tratar
@@ -25001,6 +25023,7 @@ function cdAtvDetalhe(tipo, i){
   if(tipo==='recolhimento_atd') return `OS ${cdEsc(d.os||'')} · ${cdEsc(d.tarefa||'')} · aberta em ${cdData(d.abertura)}${d.bairro?' · '+cdEsc(d.bairro):''}`;
   if(tipo==='avencer') return `Vence em ${cdData(d.vencimento)}${d.email?' · '+cdEsc(d.email):''}`;
   if(tipo==='sem_email') return `${cdEsc(d.situacao||'')}${d.email_atual?': '+cdEsc(d.email_atual):''}`;
+  if(String(tipo).startsWith('rede_')) return `<b>${cdEsc(d.caso_nome||'')}</b>${d.termo?' ('+cdEsc(d.termo)+')':''}. ${cdEsc(d.acao||'')}${d.rx!=null&&d.rx!==''?' · sinal '+String(d.rx).replace('.',',')+' dBm':''}${d.online==='N'?' · offline':''}${d.afetados?' · '+d.afetados+' clientes afetados':''}${d.cancel_em?' · pediu cancelamento em '+cdData(d.cancel_em):''}`;
   if(tipo==='retorno_oportunidade') return `${cdEsc(d.motivo||'')}${d.oferta?' · '+cdEsc(d.oferta):''}${d.enviado_em?' · oferta enviada em '+cdData(d.enviado_em):''}`;
   if(tipo==='gerados_vencidos') return `Boleto ${d.id_titulo} emitido em ${cdData(d.emissao)} com vencimento ${cdData(d.vencimento)}${d.o_que_conferir?' · '+cdEsc(d.o_que_conferir):''}`;
   return '';
@@ -25698,7 +25721,7 @@ function radarTrilha(mod){
   if(mod==='cobrancaDia' && (CD.sub==='atividades'||CD.sub==='desempenho')){ partes.push(`<span>Equipe</span>`, `<span>${cdEsc((CD_SUBS.find(x=>x[0]===CD.sub)||[])[1]||'')}</span>`); el.innerHTML = partes.join('<span class="sep">/</span>'); document.querySelectorAll('.nav-sub').forEach(n=>n.classList.toggle('active', n.dataset.cd===CD.sub)); return; }
   if(mod!=='inicio'){ partes.push(`<span>${cdEsc(area)}</span>`); partes.push(mod==='oportunidades' && OP.sub!=='resumo' ? `<button type="button" onclick="opSub('resumo')">${cdEsc(RADAR_NOME_DE[mod])}</button>` : `<span>${cdEsc(RADAR_NOME_DE[mod])}</span>`); }
   if(mod==='oportunidades' && OP.sub!=='resumo') partes.push(`<span>${cdEsc((OP_SUBS.find(x=>x[0]===OP.sub)||[])[1]||'')}</span>`);
-  if(mod==='tecnica' && typeof TEC_UI!=='undefined' && TEC_UI.sub!=='resumo') partes.push(`<span>${cdEsc((TEC_SUBS.find(x=>x[0]===TEC_UI.sub)||[])[1]||'')}</span>`);
+  if(mod==='tecnica' && typeof TEC_UI!=='undefined' && TEC_UI.sub!=='casos') partes.push(`<span>${cdEsc((TEC_SUBS.find(x=>x[0]===TEC_UI.sub)||[])[1]||'')}</span>`);
   if(mod==='premiacoes' && typeof PREM_UI!=='undefined' && PREM_UI.sub!=='resumo') partes.push(`<span>${cdEsc((PREM_SUBS.find(x=>x[0]===PREM_UI.sub)||[])[1]||'')}</span>`);
   if(mod==='cobrancaDia' && (CD.sub||'resumo')!=='resumo') partes.push(`<span>${cdEsc((CD_SUBS.find(x=>x[0]===CD.sub)||[])[1]||'')}${CD.sub==='listas'&&CD_ABAS[CD.aba]?' / '+cdEsc(CD_ABAS[CD.aba].titulo):''}</span>`);
   el.innerHTML = partes.join('<span class="sep">/</span>');
@@ -26351,6 +26374,201 @@ html[data-radar-tema="claro"] .sidebar .radar-tema-btn{border-color:rgba(255,255
 html[data-radar-tema="claro"] .sidebar .radar-tema-btn:hover{background:rgba(255,255,255,.08)!important}
 html[data-radar-tema="claro"] .sidebar .nav-item:focus-visible,html[data-radar-tema="claro"] .sidebar .radar-tema-btn:focus-visible{outline:2px solid #8DB5DE;outline-offset:2px}
 </style>
+<script>
+
+// ===== SAÚDE DA REDE: casos do dia em 3 filas, impacto no OPA e regras editáveis =====
+var REDE = { dados:null, carregando:false, erro:'', fila:'', caso:'', filial:'', prio:'', busca:'', so_livres:true, edit:null, hist:null, abertos:{} };
+const REDE_FILAS = {
+  cliente:{ nome:'Contato com o cliente', gestor:'Talitha', tipo:'rede_cliente', quem:'Atendimento', tom:'agir' },
+  campo:  { nome:'Demanda externa (campo)', gestor:'Akassio', tipo:'rede_campo', quem:'Equipe técnica', tom:'corrigir' },
+  noc:    { nome:'Rede (NOC)', gestor:'Gabriel', tipo:'rede_noc', quem:'NOC', tom:'planejar' }
+};
+const REDE_PRIO = { 1:['Alta','risk'], 2:['Média','warn'], 3:['Baixa','info'] };
+function redeRegra(caso){ return ((REDE.dados||{}).regras||{}).casos?.[caso] || {}; }
+function redeDh(v){ return v ? new Date(v).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-'; }
+async function redeCarregar(forcar){
+  const sb=getSB(); if(!sb || REDE.carregando) return;
+  if(REDE.dados && !forcar) return;
+  REDE.carregando=true; REDE.erro='';
+  try{ const r=await sb.rpc('radar_rede_casos'); if(r.error) throw new Error(r.error.message); REDE.dados=r.data||{}; }
+  catch(e){ REDE.erro=e.message; }
+  finally{ REDE.carregando=false; redeRender(); }
+}
+function redeRender(){
+  const k = (typeof TEC_UI!=='undefined') ? TEC_UI.sub : 'casos';
+  if(k==='casos') renderRedeCasos();
+  if(k==='impacto') renderRedeImpacto();
+  if(k==='regras') renderRedeRegras();
+}
+function redeEmAtv(){ return new Set((REDE.dados?.em_atividade)||[]); }
+function redeFiltrados(fila){
+  const ea = redeEmAtv(), q = (REDE.busca||'').toLowerCase().trim();
+  return ((REDE.dados?.casos)||[]).filter(c=>
+    (!fila || c.fila===fila) && (!REDE.caso || c.caso===REDE.caso) && (!REDE.filial || c.filial===REDE.filial) &&
+    (!REDE.prio || String(c.prioridade)===REDE.prio) && (!REDE.so_livres || !ea.has(c.chave)) &&
+    (!q || [c.nome,c.chave,c.telefone,c.filial,c.dados?.pon].join(' ').toLowerCase().includes(q)));
+}
+function redeSinalTxt(d){
+  const p=[];
+  if(d.rx!=null && d.rx!=='') p.push(`Sinal ${String(d.rx).replace('.',',')} dBm`);
+  if(d.temp!=null && d.temp!=='') p.push(`${Math.round(d.temp)} °C`);
+  if(d.causa) p.push(`última queda: ${cdEsc(d.causa)}`);
+  if(d.online) p.push(d.online==='N'?'<b>offline</b>':'online');
+  if(d.quedas) p.push(`${d.quedas} queda(s) hoje`);
+  return p.join(' · ');
+}
+function redeOpaTxt(d){
+  const p=[];
+  if(d.opa90) p.push(`${d.opa90} atendimento(s) no OPA em 90 dias`);
+  if(d.tec30) p.push(`<b>reclamou de internet em 30 dias</b>`);
+  if(d.cancel_em) p.push(`<b style="color:#FF8A8E">pediu cancelamento em ${cdData(d.cancel_em)}</b>${d.cancel_antes?' (antes de ficar offline)':''}`);
+  return p.join(' · ') || 'Sem atendimento no OPA em 90 dias';
+}
+function redeCasoLinha(c){
+  const R = redeRegra(c.caso), d=c.dados||{}, pr=REDE_PRIO[c.prioridade]||['',''], ab=REDE.abertos[c.chave];
+  const pon = c.caso==='coletivo_pon';
+  const lista = pon && ab ? `<div class="cdg-tabwrap" style="margin-top:8px"><table class="cdg-tab"><thead><tr><th>Cliente</th><th>Telefone</th><th>Sinal</th><th>Situação</th></tr></thead><tbody>${(d.clientes||[]).map(x=>`<tr><td>${cdEsc(x.id)} · ${cdEsc(x.nome||'')}</td><td>${cdEsc(x.fone||'')}</td><td>${x.rx!=null?String(x.rx).replace('.',','):'-'}</td><td>${x.online==='N'?'offline':'online'}${x.causa?' · '+cdEsc(x.causa):''}</td></tr>`).join('')}</tbody></table></div>` : '';
+  return `<div class="rede-caso">
+    <div class="rede-caso-top"><span class="cdg-chip ${pr[1]}">${pr[0]}</span> <b>${cdEsc(R.nome||c.caso)}</b> <span class="rede-termo">${cdEsc(R.termo||'')}</span></div>
+    <div class="rede-caso-cli">${pon?cdEsc(c.nome):`<b>${cdEsc(c.id_cliente)} · ${cdEsc(c.nome||'')}</b> · ${cdEsc(c.telefone||'sem celular')}`} · ${cdEsc(c.filial||'')}${c.valor?' · '+cdMoeda(c.valor)+(pon?' em mensalidades':'/mês'):''}</div>
+    <div class="rede-caso-exp">${cdEsc(R.explicacao||'')}</div>
+    <div class="rede-caso-acao"><b>O que fazer:</b> ${cdEsc(R.acao||'')} <span class="rede-prazo">Prazo: ${R.prazo_h>=24?Math.round(R.prazo_h/24)+' dia(s)':R.prazo_h+'h'}</span></div>
+    <div class="rede-caso-dados">${pon?`${d.afetados} de ${d.total_pon} clientes da PON afetados (${d.sem_luz} sem luz, ${d.sinal_critico} com sinal crítico) · ${d.opa90||0} atendimentos no OPA em 90 dias · ${d.tec30||0} reclamaram de internet em 30 dias <button type="button" class="cdg-mini" onclick="REDE.abertos['${cdEsc(c.chave)}']=!REDE.abertos['${cdEsc(c.chave)}'];renderRedeCasos()">${ab?'Esconder clientes':'Ver clientes'}</button>`:`${redeSinalTxt(d)}<br>${redeOpaTxt(d)}${d.pon?' · PON '+cdEsc(d.pon):''}`}</div>
+    ${lista}
+  </div>`;
+}
+function renderRedeCasos(){
+  const box=document.getElementById('rede-casos'); if(!box) return;
+  if(!REDE.dados){ box.innerHTML = `<div class="cdg-box">${REDE.erro?`Não foi possível carregar: ${cdEsc(REDE.erro)} <button class="btn sm" onclick="redeCarregar(true)">Tentar de novo</button>`:'Montando os casos do dia...'}</div>`; redeCarregar(); return; }
+  const D=REDE.dados, todos=D.casos||[], ea=redeEmAtv();
+  const gerente = typeof cdPodeGerenciar==='function' && cdPodeGerenciar();
+  const porFila = f => todos.filter(c=>c.fila===f);
+  const cards = Object.entries(REDE_FILAS).map(([f,F])=>{
+    const ls=porFila(f), livres=ls.filter(c=>!ea.has(c.chave)), alta=livres.filter(c=>c.prioridade===1).length;
+    return `<div class="cdg-item ${F.tom}">
+      <div class="t"><span>${F.nome}</span></div>
+      <div class="n">${cdNum(livres.length)}<small>casos sem tarefa</small></div>
+      <div class="p">${alta?`<b>${alta} de prioridade alta.</b> `:''}${ls.length-livres.length?`${ls.length-livres.length} já estão em tarefa. `:''}Quem executa: ${F.quem}. Gestor: ${F.gestor}.</div>
+      <div class="cdg-botoes"><button type="button" class="cdg-ir" onclick="REDE.fila='${f}';renderRedeCasos()">Ver lista</button>${gerente&&livres.length?`<button type="button" class="cdg-ir cdg-gerar" onclick="redeGerarAtividade('${f}')">Gerar tarefa</button>`:''}</div>
+    </div>`; }).join('');
+  const casosOpts = Object.entries(D.regras?.casos||{}).sort((a,b)=>a[1].ordem-b[1].ordem).map(([k,v])=>`<option value="${k}" ${REDE.caso===k?'selected':''}>${cdEsc(v.nome)}${v.ativo?'':' (desligado)'}</option>`).join('');
+  const filiais=[...new Set(todos.map(c=>c.filial).filter(Boolean))].sort();
+  const ls = redeFiltrados(REDE.fila);
+  const mostra = ls.slice(0,200);
+  const desligados = Object.values(D.regras?.casos||{}).filter(v=>!v.ativo).map(v=>v.nome);
+  box.innerHTML = `
+    <div class="cdg-box" style="margin-bottom:12px">
+      <div class="cdg-eyebrow">Casos do dia</div>
+      <p style="margin:6px 0 0">O Radar separa cada problema de rede em uma fila, diz o que fazer e o prazo. O gestor de cada fila gera a tarefa e escolhe quem executa. Quando a leitura seguinte mostrar o problema resolvido, o item é baixado sozinho.</p>
+      <p class="cdg-nota" style="margin:6px 0 0">Leitura da rede: ${redeDh(D.base_em)} · casos calculados em ${redeDh(D.calculado_em)} · regras versão ${D.regras_versao||1}${D.regras_por?' ('+cdEsc(D.regras_por)+')':''}. ${D.resumo?.campo_com_os?`${D.resumo.campo_com_os} clientes com OS já aberta ficaram fora da fila de campo.`:''}${desligados.length?` Casos desligados nas regras: ${desligados.map(cdEsc).join(', ')}.`:''}</p>
+    </div>
+    <div class="cdg-colunas" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:12px">${cards}</div>
+    <div class="cdg-box">
+      <div class="op-abas">${[['','Todas as filas'],...Object.entries(REDE_FILAS).map(([f,F])=>[f,F.nome])].map(([f,t])=>`<button type="button" class="${REDE.fila===f?'on':''}" onclick="REDE.fila='${f}';renderRedeCasos()">${t}</button>`).join('')}</div>
+      <div class="rede-filtros">
+        <select onchange="REDE.caso=this.value;renderRedeCasos()"><option value="">Todos os casos</option>${casosOpts}</select>
+        <select onchange="REDE.prio=this.value;renderRedeCasos()"><option value="">Todas as prioridades</option>${[1,2,3].map(p=>`<option value="${p}" ${REDE.prio===String(p)?'selected':''}>${REDE_PRIO[p][0]}</option>`).join('')}</select>
+        <select onchange="REDE.filial=this.value;renderRedeCasos()"><option value="">Todas as filiais</option>${filiais.map(f=>`<option ${REDE.filial===f?'selected':''}>${cdEsc(f)}</option>`).join('')}</select>
+        <input type="search" placeholder="Buscar cliente, telefone ou PON" value="${cdEsc(REDE.busca)}" onchange="REDE.busca=this.value;renderRedeCasos()">
+        <label class="cd-chk"><input type="checkbox" ${REDE.so_livres?'checked':''} onchange="REDE.so_livres=this.checked;renderRedeCasos()"> Só os que ainda não estão em tarefa</label>
+        <span style="flex:1"></span>
+        <button type="button" class="btn sm" onclick="redeExportar()">Baixar lista</button>
+        ${gerente&&REDE.fila&&ls.length?`<button type="button" class="btn sm primary" onclick="redeGerarAtividade('${REDE.fila}')">Gerar tarefa com estes ${cdNum(ls.length)}</button>`:''}
+      </div>
+      <p class="cdg-nota">${cdNum(ls.length)} casos${ls.length>mostra.length?`, mostrando os ${mostra.length} mais prioritários (baixe a lista para ver todos)`:''}. Ordem: prioridade e valor da mensalidade.</p>
+      <div class="rede-lista">${mostra.map(redeCasoLinha).join('') || '<div class="cdg-nota">Nenhum caso com esses filtros.</div>'}</div>
+    </div>`;
+}
+async function redeGerarAtividade(fila){
+  if(typeof cdPodeGerenciar==='function' && !cdPodeGerenciar()){ toast('Só a gestão e a liderança geram tarefas.','warn'); return; }
+  const F=REDE_FILAS[fila]; const ls = redeFiltrados(fila);
+  if(!ls.length){ toast('Nenhum caso livre nesta fila.','warn'); return; }
+  const linhas = ls.map(c=>({ chave:c.chave, id_cliente:c.id_cliente, nome:c.nome, filial:c.filial, telefone:c.telefone, valor:c.valor }));
+  if(!CD.atv.usuarios || !CD.atv.usuarios.length) await cdAtvCarregar(true);
+  CD.atv.nova = { tipo:F.tipo, preset:'', linhas, titulo:'Rede · '+F.nome+' · '+cdData(cdHoje()).slice(0,5), filtro:'rede', porFilial:false, prazo:cdSlaPadrao(F.tipo,''), responsavel:'' };
+  cdAtvModal();
+}
+function redeExportar(){
+  const ls = redeFiltrados(REDE.fila); if(!ls.length){ toast('Lista vazia','warn'); return; }
+  const cab=['Prioridade','Fila','Caso','Termo técnico','Cliente','Nome','Telefone','Filial','Mensalidade','Sinal (dBm)','Temperatura','Última queda','Online','PON','Atendimentos OPA 90d','Reclamou 30d','Pediu cancelamento em','O que fazer'];
+  const linhas = ls.map(c=>{ const d=c.dados||{}, R=redeRegra(c.caso); return [REDE_PRIO[c.prioridade]?.[0], REDE_FILAS[c.fila]?.nome, R.nome, R.termo, c.id_cliente||'', c.nome, c.telefone, c.filial, String(c.valor||'').replace('.',','), d.rx!=null?String(d.rx).replace('.',','):'', d.temp??'', d.causa||'', d.online||'', d.pon||'', d.opa90||0, d.tec30?'sim':'', d.cancel_em?cdData(d.cancel_em):'', R.acao].map(cdCsvCampo).join(';'); });
+  cdBaixar(`rede_casos_${REDE.fila||'todas'}_${new Date().toISOString().slice(0,10)}.csv`, '﻿'+[cab.join(';'),...linhas].join('\r\n'));
+}
+function renderRedeImpacto(){
+  const box=document.getElementById('rede-impacto'); if(!box) return;
+  if(!REDE.dados){ box.innerHTML='<div class="cdg-box">Carregando...</div>'; redeCarregar(); return; }
+  const imp=(REDE.dados.resumo?.impacto)||[], base=imp.find(x=>x.caso==='saudavel')||{};
+  const nome=k=>k==='saudavel'?'Clientes sem problema (comparação)':(redeRegra(k).nome||k);
+  const ordem=k=>k==='saudavel'?99:(redeRegra(k).ordem||50);
+  const linhas=[...imp].sort((a,b)=>ordem(a.caso)-ordem(b.caso));
+  const vez=(v,b)=>b>0&&v>0?` <small>(${(v/b).toFixed(1).replace('.',',')}x)</small>`:'';
+  const prob=linhas.filter(x=>x.caso!=='saudavel'), recRisco=prob.reduce((a,x)=>a+Number(x.receita||0),0), at=prob.reduce((a,x)=>a+Number(x.atend90||0),0);
+  box.innerHTML=`<div class="cdg-box" style="margin-bottom:12px"><div class="cdg-eyebrow">Impacto na operação</div>
+    <p style="margin:6px 0 0">Cruza cada caso de rede com o histórico do OPA dos últimos 90 dias (pelo telefone do cliente) e compara com quem está sem problema. Mostra onde a rede gera atendimento e risco de perder cliente.</p>
+    <div class="cdg-numeros" style="margin-top:10px">
+      <div class="cdg-num risk"><div class="l">Mensalidades dos clientes com problema</div><div class="v">${cdMoeda(recRisco)}</div><div class="s">por mês, ${cdNum(prob.reduce((a,x)=>a+Number(x.clientes||0),0))} clientes</div></div>
+      <div class="cdg-num info"><div class="l">Atendimentos no OPA desses clientes</div><div class="v">${cdNum(at)}</div><div class="s">nos últimos 90 dias</div></div>
+    </div></div>
+    <div class="cdg-box"><div class="cdg-tabwrap"><table class="cdg-tab"><thead><tr><th>Caso</th><th>Clientes</th><th>Mensalidades</th><th>Atendimentos OPA 90d</th><th>Reclamou de internet em 30d</th><th>Pediu cancelamento em 90d</th></tr></thead><tbody>
+    ${linhas.map(x=>`<tr${x.caso==='saudavel'?' style="opacity:.75"':''}><td>${cdEsc(nome(x.caso))}${x.caso!=='saudavel'&&!redeRegra(x.caso).ativo?' <small>(desligado)</small>':''}</td><td>${cdNum(x.clientes)}</td><td>${cdMoeda(x.receita)}</td><td>${cdNum(x.atend90)}</td><td>${String(x.pct_tec30).replace('.',',')}%${x.caso!=='saudavel'?vez(x.pct_tec30,base.pct_tec30):''}</td><td>${String(x.pct_cancel90).replace('.',',')}%${x.caso!=='saudavel'?vez(x.pct_cancel90,base.pct_cancel90):''}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="cdg-nota">O "x" compara com os clientes sem problema. Cuidado ao ler cancelamento: parte de quem está offline pode ter desligado o aparelho porque já tinha decidido sair. Na lista de casos aparece se o pedido foi antes de ficar offline. A marcação de motivo no OPA ainda é fraca, então a reclamação de internet tende a aparecer menor do que é.</p></div>`;
+}
+function redeEditarIniciar(){ REDE.edit = JSON.parse(JSON.stringify(REDE.dados.regras)); renderRedeRegras(); }
+function redeEditVal(path, v){ const p=path.split('.'); let o=REDE.edit; while(p.length>1) o=o[p.shift()]; o[p[0]]=v; }
+async function redeSalvarRegras(){
+  const motivo=document.getElementById('rede-motivo')?.value||'';
+  if(!motivo.trim()){ toast('Escreva o motivo da mudança.','warn'); return; }
+  const sb=getSB(); const btn=document.getElementById('rede-salvar'); if(btn){btn.disabled=true;btn.textContent='Salvando e recalculando...';}
+  const r=await sb.rpc('radar_rede_regras_salvar',{ p_regras:REDE.edit, p_motivo:motivo });
+  if(r.error){ toast(r.error.message,'error'); if(btn){btn.disabled=false;btn.textContent='Salvar regras';} return; }
+  toast(`Regras salvas (versão ${r.data.versao}). ${r.data.casos} casos recalculados.`,'success');
+  REDE.edit=null; REDE.hist=null; await redeCarregar(true);
+}
+async function redeHistorico(){ const r=await getSB().rpc('radar_rede_regras_historico'); if(r.error){toast(r.error.message,'error');return;} REDE.hist=r.data||[]; renderRedeRegras(); }
+async function redeRestaurar(id, v){
+  if(!confirm(`Voltar as regras para a versão ${v}? A versão atual continua guardada no histórico.`)) return;
+  const r=await getSB().rpc('radar_rede_regras_restaurar',{p_hist:id}); if(r.error){toast(r.error.message,'error');return;}
+  toast('Regras restauradas.','success'); REDE.hist=null; await redeCarregar(true);
+}
+function renderRedeRegras(){
+  const box=document.getElementById('rede-regras'); if(!box) return;
+  if(!REDE.dados){ box.innerHTML='<div class="cdg-box">Carregando...</div>'; redeCarregar(); return; }
+  const D=REDE.dados, E=REDE.edit, R=E||D.regras, ed=!!E;
+  const L=R.limites||{};
+  const lim=(k,t,ajuda)=>`<label class="cdg-campo" style="max-width:230px">${t}${ed?`<input type="number" step="any" value="${L[k]}" onchange="redeEditVal('limites.${k}', Number(this.value))">`:`<b style="display:block;font-size:18px">${String(L[k]).replace('.',',')}</b>`}<small class="cdg-nota">${ajuda}</small></label>`;
+  const casos=Object.entries(R.casos||{}).sort((a,b)=>a[1].ordem-b[1].ordem);
+  const linha=([k,c])=>`<div class="cdg-box rede-regra" style="margin-bottom:10px">
+     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>${c.ordem}. ${cdEsc(c.nome)}</b><span class="rede-termo">${cdEsc(c.termo)}</span>
+       ${ed?`<label class="cd-chk"><input type="checkbox" ${c.ativo?'checked':''} onchange="redeEditVal('casos.${k}.ativo', this.checked)"> Ligado</label>
+         <select onchange="redeEditVal('casos.${k}.fila', this.value)">${Object.entries(REDE_FILAS).map(([f,F])=>`<option value="${f}" ${c.fila===f?'selected':''}>${F.nome}</option>`).join('')}</select>
+         <label>Prazo (horas) <input type="number" min="1" style="width:80px" value="${c.prazo_h}" onchange="redeEditVal('casos.${k}.prazo_h', Number(this.value))"></label>`
+       :`<span class="cdg-chip ${c.ativo?'ok':''}">${c.ativo?'Ligado':'Desligado'}</span><span class="cdg-chip info">${REDE_FILAS[c.fila]?.nome||c.fila}</span><span class="cdg-chip">Prazo ${c.prazo_h}h</span>`}</div>
+     ${ed?`<label class="cdg-campo">Explicação simples<textarea rows="2" onchange="redeEditVal('casos.${k}.explicacao', this.value)">${cdEsc(c.explicacao)}</textarea></label>
+       <label class="cdg-campo">O que fazer<textarea rows="2" onchange="redeEditVal('casos.${k}.acao', this.value)">${cdEsc(c.acao)}</textarea></label>`
+       :`<p style="margin:6px 0 0">${cdEsc(c.explicacao)}</p><p style="margin:4px 0 0"><b>O que fazer:</b> ${cdEsc(c.acao)}</p>`}
+   </div>`;
+  box.innerHTML=`<div class="cdg-box" style="margin-bottom:12px"><div class="cdg-eyebrow">Regras da Saúde da Rede</div>
+    <p style="margin:6px 0 0">Aqui ficam os limites e o que fazer em cada caso. Quem pode mudar: a gestão, o Gabriel (NOC) e o Akassio (equipe técnica). Toda mudança fica registrada e dá para voltar atrás.</p>
+    <p class="cdg-nota" style="margin:6px 0 0">Versão ${D.regras_versao||1}, salva em ${redeDh(D.regras_em)}${D.regras_por?' por '+cdEsc(D.regras_por):''}.</p>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">${D.pode_editar?(ed?`<button class="btn sm" onclick="REDE.edit=null;renderRedeRegras()">Cancelar</button>`:`<button class="btn sm primary" onclick="redeEditarIniciar()">Editar regras</button>`):'<span class="cdg-nota">Você pode ver as regras, mas não editar.</span>'}
+      <button class="btn sm" onclick="${REDE.hist?'REDE.hist=null;renderRedeRegras()':'redeHistorico()'}">${REDE.hist?'Esconder histórico':'Ver histórico de mudanças'}</button></div>
+    ${REDE.hist?`<div class="cdg-tabwrap" style="margin-top:10px"><table class="cdg-tab"><thead><tr><th>Versão</th><th>Quando</th><th>Quem</th><th>Motivo</th><th></th></tr></thead><tbody>${REDE.hist.map(h=>`<tr><td>${h.versao}</td><td>${redeDh(h.salvo_em)}</td><td>${cdEsc(h.salvo_por||'')}</td><td>${cdEsc(h.motivo||'')}</td><td>${D.pode_editar&&h.versao!==D.regras_versao?`<button class="cdg-mini" onclick="redeRestaurar(${h.id},${h.versao})">Voltar para esta</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:''}
+  </div>
+  <div class="cdg-box" style="margin-bottom:12px"><div class="cdg-eyebrow">Limites</div><div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px">
+    ${lim('rx_critico','Sinal crítico abaixo de (dBm)','Ex.: -27. Mais negativo é mais fraco.')}
+    ${lim('rx_atencao','Sinal em atenção abaixo de (dBm)','Ex.: -24.')}
+    ${lim('temp_alta','Aparelho quente a partir de (°C)','Ex.: 60.')}
+    ${lim('quedas_dia','Quedas no dia a partir de','Ex.: 3.')}
+    ${lim('coletivo_min','Problema coletivo a partir de (clientes na mesma PON)','Ex.: 5.')}
+  </div></div>
+  ${casos.map(linha).join('')}
+  ${ed?`<div class="cdg-box"><label class="cdg-campo">Motivo da mudança (obrigatório)<input id="rede-motivo" type="text" maxlength="200" placeholder="Ex.: ajuste do limite de sinal combinado com o NOC"></label>
+    <button id="rede-salvar" class="btn primary" onclick="redeSalvarRegras()">Salvar regras</button> <span class="cdg-nota">Ao salvar, os casos do dia são recalculados na hora.</span></div>`:''}`;
+}
+Object.assign(window,{redeCarregar, renderRedeCasos, renderRedeImpacto, renderRedeRegras, redeGerarAtividade, redeExportar, redeEditarIniciar, redeEditVal, redeSalvarRegras, redeHistorico, redeRestaurar});
+
+</script>
 </body>
 
 <script>
