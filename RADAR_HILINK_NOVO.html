@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030101612">
+<meta name="radar-build" content="20261030101905">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -25500,7 +25500,7 @@ function cdAtendenteHTML(){
       return pre+sp+prop+colon+val.replace(RE_COR, c=>{ const pp = papel || papelPelaCor(c); return pp ? converter(c, pp, forte) : c; });
     });
   }
-  function converterCss(css){ return css.replace(/([^{}]*)\{([^{}]*)\}/g, (all,sel,decls)=>/\.sidebar|\.nav-|radar-tema-btn|:root/.test(sel) ? all : sel+'{'+converterDecls(decls)+'}'); }
+  function converterCss(css){ return css.replace(/([^{}]*)\{([^{}]*)\}/g, (all,sel,decls)=>/\.sidebar|\.nav-|radar-tema-btn/.test(sel) ? all : sel+'{'+converterDecls(decls)+'}'); }
 
   // ---------- aplicar ----------
   const originais = new Map();
