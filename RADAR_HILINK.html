@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030100015">
+<meta name="radar-build" content="20261030152406">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -156,7 +156,7 @@ function renderUserBadge(){
   const badge=document.createElement('div');
   badge.id='radar-user-badge';
   badge.style.cssText='position:fixed;top:10px;right:16px;z-index:9999;display:flex;align-items:center;gap:8px;background:#081e35;border:1px solid #1a3a5c;border-radius:20px;padding:5px 12px;font-size:11px;color:#9bb0ca';
-  badge.innerHTML=`<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block"></span><span style="font-weight:700;color:#f8fbff">${name}</span>${radarIsAdminUser()?'<button onclick="radarOpenUserAdmin()" style="border:1px solid #1f6feb;background:#0b2f55;color:#dbeafe;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer">Usuários</button>':''}<button onclick="radarLogout()" title="Sair do Radar" style="border:1px solid #ef4444;background:#fff;color:#d1343a;border-radius:999px;padding:2px 10px;font-size:10px;font-weight:800;cursor:pointer;margin-left:2px">Sair</button>`;
+  badge.innerHTML=`${typeof radarAvatar==='function'?radarAvatar({email:_radarUser.email,id:_radarUser.id,nome:name},22):''}<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block"></span><span style="font-weight:700;color:#f8fbff">${name}</span>${radarIsAdminUser()?'<button onclick="radarOpenUserAdmin()" style="border:1px solid #1f6feb;background:#0b2f55;color:#dbeafe;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer">Usuários</button>':''}<button onclick="radarLogout()" title="Sair do Radar" style="border:1px solid #ef4444;background:#fff;color:#d1343a;border-radius:999px;padding:2px 10px;font-size:10px;font-weight:800;cursor:pointer;margin-left:2px">Sair</button>`;
   document.body.appendChild(badge);
 }
 
@@ -2945,6 +2945,38 @@ body.radar-modo-atendente .topbar{display:none!important}
 .prem-chip{border:1.5px solid var(--g-line);background:transparent;color:var(--g-text);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}
 .prem-chip:hover{border-color:#0071BC}
 .prem-chip.on{background:#0071BC;border-color:#0071BC;color:#fff}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style data-tema-ignorar="1" id="radar-padrao-visual">
+html body #mod-premiacoes .prem-status-dot{background:var(--estado-ok)!important}
+html body #mod-premiacoes .prem-sales-stack .inst,html body #mod-premiacoes .prem-sales-stack .reat{background:var(--serie-1)!important;color:#fff!important}
+html body #mod-premiacoes .prem-sales-stack .up{background:var(--serie-3)!important;color:#fff!important}
+html body #mod-premiacoes .prem-sales-legend span:nth-child(1) i{background:var(--serie-1)!important}
+html body #mod-premiacoes .prem-sales-legend span:nth-child(2) i{background:var(--serie-3)!important}
+html body #mod-premiacoes .prem-sales-stack{background:var(--grade)!important;border-radius:4px!important;gap:2px}
+html body #mod-premiacoes .prem-status-dot.warn{background:var(--estado-atencao)!important}
+html body #mod-premiacoes .prem-status-dot.danger{background:var(--estado-risco)!important}
+html body #mod-premiacoes .prem-status-dot.muted{background:var(--serie-outros)!important}
+html body #mod-premiacoes .prem-sales-status-chart{width:100%!important;height:auto!important;min-height:0!important;display:block!important}
+
+/* ===== PADRÃO VISUAL RADAR HILINK (aprovado em 30/10/2026) =====
+   Fonte única das cores: estes tokens. O código antigo é convertido para eles quando a página abre. */
+:root,html[data-radar-tema="claro"]{--fundo:#f3f6fa;--superficie:#ffffff;--superficie-2:#eef3f8;--linha:#d9e1ea;--texto:#17212c;--texto-2:#59595b;--texto-3:#5c6773;--azul:#0071bc;--azul-forte:#005a96;--azul-suave:#e3f0fa;--sobre-azul:#ffffff;--indigo:#2e3192;--indigo-suave:#e9e9f7;--menu:#0d2440;--menu-texto:#c9d6e4;--menu-ativo:#ffffff;--ok:#1e7b4f;--ok-suave:#e3f4ea;--atencao:#8a5a00;--atencao-suave:#fff3d6;--risco:#c4232b;--risco-suave:#fde7e8;--cinza-marca:#59595b;--grade:#e6ebf1;--serie-1:#0071bc;--serie-2:#eb6834;--serie-3:#1baf7a;--serie-4:#6250d6;--serie-5:#e87ba4;--serie-outros:#9aa5b1;--escala-1:#86b6ef;--escala-2:#5598e7;--escala-3:#2a78d6;--escala-4:#1c5cab;--escala-5:#0d366b;--estado-ok:#23955c;--estado-atencao:#e0a100;--estado-risco:#d13438;--font-titulo:Montserrat,"Segoe UI",Arial,sans-serif;--font-texto:"Source Sans 3","Segoe UI",Arial,sans-serif;--radar-font:"Source Sans 3","Segoe UI",Arial,sans-serif;color-scheme:light}
+html[data-radar-tema="escuro"]{--fundo:#0b1624;--superficie:#12223a;--superficie-2:#182c47;--linha:#263b57;--texto:#e8eef5;--texto-2:#a3b3c6;--texto-3:#8798ad;--azul:#3d9be0;--azul-forte:#6cb4ea;--azul-suave:#14365a;--sobre-azul:#0b1624;--indigo:#8a8df0;--indigo-suave:#24265c;--menu:#081320;--menu-texto:#b4c3d4;--menu-ativo:#ffffff;--ok:#4cc38a;--ok-suave:#12352a;--atencao:#f2b544;--atencao-suave:#3a2c0e;--risco:#ff8a8e;--risco-suave:#3d171a;--cinza-marca:#59595b;--grade:#22354f;--serie-1:#3d9be0;--serie-2:#d95926;--serie-3:#199e70;--serie-4:#9085e9;--serie-5:#d55181;--serie-outros:#5b6b80;--escala-1:#184f95;--escala-2:#256abf;--escala-3:#3987e5;--escala-4:#6da7ec;--escala-5:#b7d3f6;--estado-ok:#4cc38a;--estado-atencao:#f2b544;--estado-risco:#ff8a8e;color-scheme:dark}
+html,body{background:var(--fundo)!important;color:var(--texto)}
+body,button,input,select,textarea,table{font-family:var(--font-texto)!important}
+.main h1,.main h2,.main h3,.main h4,.section-title,.cdg-eyebrow,.cdg-col-h h3,.cdg-num .v,.cdg-item .n,.cdg-item .t,.kpi .v,.kpi-value,.prem-exec-header-title,.module h2,.module h3,#radar-trilha+*,.page-title,.page-header h1{font-family:var(--font-titulo)!important;letter-spacing:0}
+.cdg-eyebrow,.section-title .help{font-family:var(--font-titulo)!important}
+.cdg-num .v,.cdg-item .n,.kpi .v,td,th{font-variant-numeric:tabular-nums}
+.btn{border-radius:6px!important;font-weight:600!important}
+.btn.primary,.btn.pri,.cdg-ir.cdg-gerar{background:var(--azul)!important;border-color:var(--azul)!important;color:var(--sobre-azul)!important}
+.btn.primary:hover,.cdg-ir.cdg-gerar:hover{background:var(--azul-forte)!important;border-color:var(--azul-forte)!important}
+.op-abas button.on{background:var(--azul)!important;border-color:var(--azul)!important;color:var(--sobre-azul)!important}
+:focus-visible{outline:2px solid var(--indigo);outline-offset:2px}
+.sidebar{font-family:var(--font-texto)!important}
+.sidebar .nav-section,.sidebar .nav-area-h,.sidebar .logo-box{font-family:var(--font-titulo)!important}
+html body .sidebar .logo-box{background:url("data:image/png;base64,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") center 14px/176px auto no-repeat!important;min-height:92px!important}
 </style>
 </head>
 <body>
@@ -9694,14 +9726,14 @@ if(window.Chart){
           if(val===null||val===undefined||Number(val)===0)return;
           const label=fmt(val);
           ctx.save();
-          ctx.font='800 11px Inter,Segoe UI,Arial,sans-serif';
+          ctx.font='600 12px "Source Sans 3",Segoe UI,Arial,sans-serif';
           if(isH){
             ctx.textBaseline='middle';
             const xOut=bar.x+4;
             const labelW=ctx.measureText(label).width;
             if(xOut+labelW<chart.chartArea.right-2){
               // espaço fora da barra — label à direita
-              ctx.fillStyle='#FFFFFF';
+              ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--texto').trim()||'#17212c';
               ctx.textAlign='left';
               ctx.fillText(label,xOut,bar.y);
             }else if(bar.x-bar.base>labelW+8){
@@ -9714,7 +9746,7 @@ if(window.Chart){
           }else{
             ctx.textAlign='center';
             ctx.textBaseline='bottom';
-            ctx.fillStyle='#FFFFFF';
+            ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--texto').trim()||'#17212c';
             if(bar.y>chart.chartArea.top+12)ctx.fillText(label,bar.x,bar.y-2);
           }
           ctx.restore();
@@ -9770,7 +9802,7 @@ if(window.Chart){
   Chart.register({
     id:'hideTecSaudeCenterText',
     afterDraw(chart){
-      if(!chart.canvas||chart.canvas.id!=='tec-ch-saude')return;
+      if(!chart.canvas||chart.canvas.id!=='tec-ch-saude'||!['doughnut','pie'].includes(chart.config.type))return;
       const meta=chart.getDatasetMeta(0);
       const arc=meta&&meta.data&&meta.data[0];
       if(!arc)return;
@@ -9862,6 +9894,7 @@ if(window.Chart){
   };
   Object.keys(NativeChart).forEach(k=>{try{window.Chart[k]=NativeChart[k]}catch{}});
   window.Chart.prototype=NativeChart.prototype;
+  try{ Object.setPrototypeOf(window.Chart, NativeChart); }catch(e){}
 }
 
 const RADAR_THEME={
@@ -16723,7 +16756,9 @@ function premAtendimentoNome(nome){
 }
 function premAtendimentoAvatar(nome){
   const k=premAtendimentoKey(nome);
-  return k?PREM_AVATAR_ATENDIMENTO[k]||'':'';
+  if(!k) return '';
+  try{ const f=window.radarFotoPorNome && window.radarFotoPorNome(PREM_TIME_ATENDIMENTO[k]||k); if(f) return f; }catch(e){}
+  return PREM_AVATAR_ATENDIMENTO[k]||'';
 }
 
 // ===== Fotos do time: gestão troca clicando na foto (salvo no banco, vale para todos) =====
@@ -17853,10 +17888,8 @@ function renderPremiacoesGeral(){
     ${usaTma?`<div class="prem-exec-mini" data-prem-geral="tme"><small>TMA</small><strong>${fmtDuration(tma)}</strong><span>tempo de atendimento</span><div class="trend">mediana</div></div>`:`<div class="prem-exec-mini" data-prem-geral="tme"><small>TME</small><strong>${tme===null?'--':fmtDuration(tme)}</strong><span>tempo médio</span><div class="trend">${tme!==null&&tme<=59?'meta':'atenção'}</div></div>`}
     <div class="prem-exec-mini" data-prem-geral="cliente"><small>Avaliação</small><strong>${nota===null?'--':nota.toFixed(2)}</strong><span>nota média</span><div class="trend">${nota!==null&&nota>=4.5?'meta':'atenção'}</div></div>
   </div>`;
-  statusBox.innerHTML=`<div class="prem-status-donut-layout">
-    <div class="prem-status-donut" style="background:conic-gradient(#2da3ff 0 ${c1.toFixed(2)}%,#f59e0b ${c1.toFixed(2)}% ${c2.toFixed(2)}%,#ef4444 ${c2.toFixed(2)}% ${c3.toFixed(2)}%,#64748b ${c3.toFixed(2)}% 100%)">
-      <div class="prem-status-donut-center"><strong>${Number(meta.volumeBruto||0).toLocaleString('pt-BR')}</strong><span>total</span></div>
-    </div>
+  statusBox.innerHTML=`<div class="prem-status-donut-layout" style="grid-template-columns:1fr!important;display:grid;gap:12px">
+    ${window.radarDistribuicao?window.radarDistribuicao([{rotulo:'Validados',valor:Number(meta.volumeValidado||0),cor:'estado-ok'},{rotulo:'Suspeitos',valor:suspeitos,cor:'estado-atencao'},{rotulo:'Críticos',valor:criticos,cor:'estado-risco'},{rotulo:'Não elegíveis',valor:naoElegiveis,cor:'serie-outros'}],Number(meta.volumeBruto||0),'atendimentos no total'):''}
     <div class="prem-status-legend">
       <div class="prem-status-legend-row" data-prem-geral="validado"><i class="prem-status-dot"></i><b>Validados</b><span>${Number(meta.volumeValidado||0).toLocaleString('pt-BR')} (${pctValid.toFixed(1).replace('.',',')}%)</span></div>
       <div class="prem-status-legend-row" data-prem-geral="suspeitos"><i class="prem-status-dot warn"></i><b>Suspeitos</b><span>${suspeitos.toLocaleString('pt-BR')} (${pctSusp.toFixed(1).replace('.',',')}%)</span></div>
@@ -21474,7 +21507,7 @@ function renderPremiacoesView(){
     const statusTotal=Math.max(1,aprovadas.length+revisarIds.size+reprovadas.length);
     const aprovadoDeg=(aprovadas.length/statusTotal)*360;
     const revisaoDeg=aprovadoDeg+(revisarIds.size/statusTotal)*360;
-    salesStatusChart.innerHTML=`<div class="prem-sales-donut" style="--aprovado:${aprovadoDeg.toFixed(2)}deg;--revisao:${revisaoDeg.toFixed(2)}deg" title="Aprovados: ${aprovadas.length.toLocaleString('pt-BR')} · Em revisão: ${revisarIds.size.toLocaleString('pt-BR')} · Reprovados: ${reprovadas.length.toLocaleString('pt-BR')}"><div class="prem-sales-donut-center"><strong>${(aprovadas.length+revisarIds.size+reprovadas.length).toLocaleString('pt-BR')}</strong><span>eventos</span></div></div>`;
+    salesStatusChart.innerHTML=window.radarDistribuicao?window.radarDistribuicao([{rotulo:'Aprovados',valor:aprovadas.length,cor:'estado-ok'},{rotulo:'Em revisão',valor:revisarIds.size,cor:'estado-atencao'},{rotulo:'Reprovados',valor:reprovadas.length,cor:'estado-risco'}],aprovadas.length+revisarIds.size+reprovadas.length,'eventos'):'';
   }
   if(salesStatusLegend){
     salesStatusLegend.innerHTML=`
@@ -24339,7 +24372,7 @@ function cdAtvPainelHTML(){
     return `<div class="cdg-atv-card sla-${sla.c}" id="cd-atv-card-${a.id}">
       <div class="cdg-atv-tit">${cdEsc(a.titulo)}</div>
       <div class="cdg-atv-info">
-        <span><small>Quem trata</small><b>${resp}</b></span>
+        <span><small>Quem trata</small><b style="display:flex;gap:6px;align-items:center">${a.responsavel_nome?radarAvatar({id:a.responsavel,nome:a.responsavel_nome},22):''}${resp}</b></span>
         <span><small>Prazo</small><b>${a.prazo?cdPrazoTxt(a,true):'sem prazo'}</b></span>
         <span><small>Tipo</small><b>${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||a.tipo)}</b></span>
       </div>
@@ -24353,7 +24386,7 @@ function cdAtvPainelHTML(){
       ${pessoas?`<div class="cdg-nota" style="margin:0">Tratados por: ${pessoas}</div>`:''}
       <div class="cdg-atv-acoes">
         <button type="button" class="btn sm primary" onclick="cdAtvAbrir(${a.id})" title="Ver os clientes desta atividade e o que já foi registrado">Abrir atividade</button>
-        ${!a.validacao_solicitada_em?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
+        ${!a.validacao_solicitada_em?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>${Number(a.pendentes)>1&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvDistribuirModal(${a.id})">Distribuir na equipe</button>`:''}`:''}
         ${cdAtvFluxoAcoes(a)}
       </div>
     </div>`;
@@ -24411,6 +24444,13 @@ function cdAtvNova(tipo, preset, daLista){
   if(!linhas.length){ toast('A lista está vazia: nada para gerar.','warn'); CD.atv.nova=null; return; }
   cdAtvModal();
 }
+function cdAtvPessoasOrdenadas(){
+  const lista=(CD.atv.usuarios||[]).slice(); const eu=String((_radarUser&&_radarUser.email)||'').toLowerCase();
+  const porEmail={}; lista.forEach(u=>porEmail[String(u.email).toLowerCase()]=u);
+  const abaixoDeMim=u=>{ let s=String(u.superior||'').toLowerCase(), n=0; while(s && n<6){ if(s===eu) return true; s=String((porEmail[s]||{}).superior||'').toLowerCase(); n++; } return false; };
+  const peso=u=>abaixoDeMim(u)?0:(u.perfil==='lider'?1:2);
+  return lista.sort((a,b)=>peso(a)-peso(b)||String(a.nome).localeCompare(String(b.nome),'pt-BR')).map(u=>Object.assign({},u,{minha:abaixoDeMim(u)}));
+}
 function cdAtvModal(){
   const N = CD.atv.nova; let el = document.getElementById('cd-atv-modal');
   if(!N){ if(el) el.remove(); return; }
@@ -24418,13 +24458,13 @@ function cdAtvModal(){
   const valor = N.linhas.reduce((a,x)=>a+(Number(x.valor ?? x.valor_aberto ?? x.valor_vencido)||0),0);
   const filiais = [...new Set(N.linhas.map(x=>x.filial).filter(Boolean))];
   const unid = (N.tipo==='quebra'||N.tipo==='suspeitos'||N.tipo==='gerados_vencidos')?'títulos':'clientes';
-  const pessoas = CD.atv.usuarios || [];
+  const pessoas = cdAtvPessoasOrdenadas();
   el.innerHTML = `<div class="cdg-modal-box" role="dialog" aria-modal="true" aria-labelledby="cd-atv-tit">
     <h3 id="cd-atv-tit">${String(N.tipo).startsWith('rede_')?'Direcionar tarefa da rede':'Direcionar atividade para o atendimento'}</h3>
     <p class="cdg-nota" style="margin:0 0 12px">${cdEsc(CD_ATV_TIPOS[N.tipo].nome)}: <b>${cdNum(N.linhas.length)} ${unid}</b>${valor?`, ${cdMoeda(valor)}`:''}, em ${filiais.length} ${filiais.length===1?'filial':'filiais'}. A lista é salva como está agora.</p>
     <label class="cdg-campo">Nome da atividade<input id="cd-atv-nome" type="text" value="${cdEsc(N.titulo)}" maxlength="80"></label>
     <div class="cdg-campo">Quem vai tratar
-      ${pessoas.length?`<div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-atv-pessoa" value="${u.id}" data-nome="${cdEsc(u.nome)}" onchange="cdAtvDivisao()"> ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${u.equipe?' <small>· '+cdEsc(u.equipe)+'</small>':''}${u.ultimo_login?'':' <small>· ainda não entrou</small>'}</label>`).join('')}</div>`
+      ${pessoas.length?`<div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-atv-pessoa" value="${u.id}" data-nome="${cdEsc(u.nome)}" onchange="cdAtvDivisao()"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança, distribui para a equipe dela)':''}${(u.cargo||u.equipe)?' <small>· '+cdEsc(u.cargo||u.equipe)+'</small>':''}${u.minha?' <small>· sua equipe</small>':''}${u.ultimo_login?'':' <small>· ainda não entrou</small>'}</label>`).join('')}</div>`
         :`<div class="cdg-nota">Nenhuma atendente cadastrada. Use "Cadastrar atendente" no painel de atividades.</div>`}
       <div class="cdg-nota" id="cd-atv-divisao" style="margin-top:6px">Marque uma ou mais atendentes. Com mais de uma, a lista é dividida igualmente e cada uma recebe a sua atividade.</div>
     </div>
@@ -24702,11 +24742,11 @@ function cdAtvHistoricoVoltar(){
 Object.assign(window,{cdAtvFluxoModal,cdAtvFluxoSalvar,cdAtvHistoricoModal,cdAtvHistoricoBuscar,cdAtvHistoricoDetalhe,cdAtvHistoricoVoltar});
 function cdAtvTrocarModal(id){
   const a = (CD.atv.lista||[]).find(x=>x.id===id); if(!a) return;
-  const pessoas = (CD.atv.usuarios||[]);
+  const pessoas = cdAtvPessoasOrdenadas();
   cdModal(`<h3>Trocar responsável</h3>
     <p class="cdg-nota" style="margin:0 0 10px"><b>${cdEsc(a.titulo)}</b>. Hoje com ${cdEsc(a.responsavel_nome||'ninguém')}, ${cdNum(a.pendentes)} itens para tratar.</p>
     <div class="cdg-campo">Passar para
-      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="radio" name="cd-troca-p" value="${u.id}" ${u.id===a.responsavel?'disabled':''}> ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${u.equipe?' <small>· '+cdEsc(u.equipe)+'</small>':''}${u.id===a.responsavel?' (atual)':''}</label>`).join('')}</div></div>
+      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="radio" name="cd-troca-p" value="${u.id}" ${u.id===a.responsavel?'disabled':''}> ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${(u.cargo||u.equipe)?' <small>· '+cdEsc(u.cargo||u.equipe)+'</small>':''}${u.id===a.responsavel?' (atual)':''}</label>`).join('')}</div></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap"><label class="cdg-campo" style="max-width:200px">Novo prazo: dia<input id="cd-troca-prazo" type="date" min="${cdHoje()}" value="${a.prazo && a.prazo>=cdHoje() ? a.prazo : cdHoje()}"></label>
     <label class="cdg-campo" style="max-width:130px">Até as<input id="cd-troca-hora" type="time" step="900" value="${a.prazo_hora||'18:00'}"></label></div>
     <p class="cdg-nota" style="margin:-6px 0 14px">O que já foi tratado continua registrado. A nova responsável vê a atividade na hora.</p>
@@ -24758,6 +24798,38 @@ async function cdAtvPrazosModal(id){
   }catch(e){if(modal.isConnected&&modal.innerHTML===conteudo){cdModal(null);toast(e.message,'error');}}
 }
 Object.assign(window,{cdAtvProrrogarModal,cdAtvProrrogar,cdAtvPrazosModal});
+
+function cdAtvDistribuirModal(id){
+  const a=(CD.atv.lista||[]).find(x=>x.id===id); if(!a) return;
+  const eu=String((_radarUser&&_radarUser.email)||'').toLowerCase();
+  const pessoas=cdAtvPessoasOrdenadas();
+  const resp=pessoas.find(u=>u.id===a.responsavel);
+  cdModal(`<h3>Distribuir na equipe</h3>
+    <p class="cdg-nota" style="margin:0 0 10px"><b>${cdEsc(a.titulo)}</b>${a.criado_por_nome?` · veio de ${cdEsc(a.criado_por_nome)}`:''}. ${cdNum(a.pendentes)} itens pendentes serão divididos por igual. O que já foi tratado fica onde está.</p>
+    <div class="cdg-campo">Dividir entre
+      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-dist-p" value="${u.id}" data-nome="${cdEsc(u.nome)}" ${u.minha&&String(u.email).toLowerCase()!==eu&&u.perfil==='atendente'?'checked':''} onchange="cdAtvDistribuirPrevia(${a.pendentes})"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${(u.cargo||u.equipe)?' <small>· '+cdEsc(u.cargo||u.equipe)+'</small>':''}${u.minha?' <small>· sua equipe</small>':''}</label>`).join('')}</div></div>
+    <div class="cdg-nota" id="cd-dist-previa" style="margin:4px 0 14px"></div>
+    <p class="cdg-nota" style="margin:0 0 14px">Cada pessoa recebe a sua tarefa com o mesmo prazo. A primeira marcada fica com esta tarefa; as outras recebem tarefas novas. Tudo fica no histórico.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+      <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="cdAtvDistribuir(${id})">Distribuir</button></div>`);
+  cdAtvDistribuirPrevia(a.pendentes);
+}
+function cdAtvDistribuirPrevia(n){
+  const el=document.getElementById('cd-dist-previa'); if(!el) return; n=Number(n)||0;
+  const sel=[...document.querySelectorAll('.cd-dist-p:checked')];
+  if(!sel.length){ el.textContent='Marque quem vai receber.'; return; }
+  const base=Math.floor(n/sel.length), resto=n%sel.length;
+  el.innerHTML=sel.map((s,k)=>`<b>${s.dataset.nome}</b>: ${cdNum(base+(k<resto?1:0))}`).join(' · ');
+}
+async function cdAtvDistribuir(id){
+  const sel=[...document.querySelectorAll('.cd-dist-p:checked')].map(x=>x.value);
+  if(!sel.length){ toast('Marque quem vai receber.','warn'); return; }
+  const b=document.getElementById('cd-conf-ok'); if(b){ b.disabled=true; b.textContent='Distribuindo...'; }
+  try{ const r=await cdAtvRpc('radar_atv_distribuir',{p_atividade:id, p_responsaveis:sel});
+    cdModal(null); toast(`${cdNum(r.itens)} itens divididos entre ${(r.pessoas||[]).join(', ')}.`,'success'); cdAtvCarregar(); }
+  catch(e){ toast(e.message,'error'); if(b){ b.disabled=false; b.textContent='Distribuir'; } }
+}
+Object.assign(window,{cdAtvDistribuirModal,cdAtvDistribuirPrevia,cdAtvDistribuir});
 async function cdAtvTrocar(id){
   const sel = document.querySelector('input[name="cd-troca-p"]:checked');
   if(!sel){ toast('Escolha quem vai tratar.','warn'); return; }
@@ -24933,7 +25005,7 @@ function cdAreaFocoHTML(){
         <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdPrazoTxt(a):''}</div></div>
       <button type="button" class="btn sm" onclick="cdAtvItensCarregar()">Atualizar</button>
       <button type="button" class="btn sm" onclick="CD.atv.modo='lista';renderCobrancaDia()" title="Ver todos os clientes numa lista">Ver em lista</button>
-      ${cdAtvEmExecucao(a)&&ger?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
+      ${cdAtvEmExecucao(a)&&ger?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>${Number(a.pendentes)>1&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvDistribuirModal(${a.id})">Distribuir na equipe</button>`:''}`:''}
       <button type="button" class="btn sm" onclick="cdAtvPrazosModal(${a.id})">Histórico de prazos</button>
       ${cdAtvFluxoAcoes(a)}
     </div>
@@ -25054,7 +25126,7 @@ function cdAreaListaHTML(){
         <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdPrazoTxt(a):''} · criada por ${cdEsc(a.criado_por_nome||'-')}</div></div>
       ${cdAtvEmExecucao(a)?`<button type="button" class="btn sm primary" onclick="cdAtvProximo()">Pegar o próximo cliente</button>`:''}
       <button type="button" class="btn sm" onclick="cdAtvItensCarregar()">Atualizar</button>
-      ${cdAtvEmExecucao(a)&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
+      ${cdAtvEmExecucao(a)&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>${Number(a.pendentes)>1&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvDistribuirModal(${a.id})">Distribuir na equipe</button>`:''}`:''}
       <button type="button" class="btn sm" onclick="cdAtvPrazosModal(${a.id})">Histórico de prazos</button>
       ${cdAtvFluxoAcoes(a)}
     </div>`;
@@ -25111,11 +25183,11 @@ function cdAreaListaHTML(){
 }
 
 // ---------- Usuários e acessos (admin: tudo; líder: cadastra atendentes e redefine senha delas) ----------
-const USR = { lista:null, erro:null, busca:'', perfil:'todos', inativos:false, msg:'' };
-const USR_PERFIS = { admin:'Gestão (acesso total)', lider:'Liderança do atendimento', atendente:'Atendente', usuario:'Usuário do Radar' };
+const USR = { lista:null, erro:null, busca:'', perfil:'todos', inativos:false, msg:'', vista:'hierarquia' };
+const USR_PERFIS = { admin:'Gestão (acesso total)', lider:'Liderança', atendente:'Equipe', usuario:'Usuário do Radar' };
 const USR_PERFIL_DESC = {
   admin:'Vê e altera tudo no Radar, inclusive usuários.',
-  lider:'Vê o painel de atividades da equipe, direciona atividades, cadastra atendentes e redefine a senha delas.',
+  lider:'Vê o painel de atividades da equipe, direciona atividades, cadastra a equipe e redefine senhas. Não altera o sistema.',
   atendente:'Vê só as atividades direcionadas a ela. Não vê nenhum outro módulo.',
   usuario:'Vê os módulos do Radar, mas não o painel de atividades nem o cadastro de usuários.'
 };
@@ -25180,7 +25252,7 @@ Object.assign(window,{usrModulosModal, usrModulosSalvar});
 
 function renderUsuarios(){
   const box = document.getElementById('mod-usuarios'); if(!box) return;
-  if(!cdPodeGerenciar()){ box.innerHTML = `<div class="section compact-section"><h2 class="section-title">Usuários e acessos</h2><p class="cdg-nota">Acesso restrito à gestão e à liderança do atendimento.</p></div>`; return; }
+  if(!cdPodeGerenciar()){ box.innerHTML = `<div class="section compact-section"><h2 class="section-title">Usuários e acessos</h2><p class="cdg-nota">Acesso restrito à gestão e à liderança.</p></div>`; return; }
   if(USR.lista===null){ box.innerHTML = `<div class="section compact-section"><h2 class="section-title">Usuários e acessos</h2><p class="cdg-nota">Carregando usuários...</p></div>`; usrCarregar(); return; }
   const admin = CD.perfil==='admin';
   const busca = USR.busca.trim().toUpperCase();
@@ -25198,7 +25270,7 @@ function renderUsuarios(){
       ${admin&&!u.admin_sistema?`<button type="button" class="cdg-mini" onclick="usrEditarModal('${em}')">Editar</button>
       ${u.status==='ativo'?`<button type="button" class="cdg-mini" onclick="usrSituacao('${em}','inativo')">Desativar</button>`:`<button type="button" class="cdg-mini" onclick="usrSituacao('${em}','ativo')">Reativar</button>`}
       <button type="button" class="cdg-mini perigo-txt" onclick="usrExcluirModal('${em}')">Excluir</button>`:''}`;
-    return `<tr class="${u.status!=='ativo'?'usr-inativo':''}"><td><b>${cdEsc(u.nome||'-')}</b><small>${cdEsc(u.email)}</small></td>
+    return `<tr class="${u.status!=='ativo'?'usr-inativo':''}"><td><div style="display:flex;gap:10px;align-items:center">${usrAvatarClicavel(u,36)}<div><b>${cdEsc(u.nome||'-')}</b>${u.cargo?`<small>${cdEsc(u.cargo)}</small>`:''}<small>${cdEsc(u.email)}</small></div></div></td>
       <td>${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}${u.admin_sistema?' <small>(administradora do sistema)</small>':''}<small>${usrModulosTxt(u)}</small></td><td>${sit}</td><td>${ult}</td><td class="usr-acoes">${acoes}</td></tr>`;
   }).join('');
   const perfisCad = admin ? ['atendente','lider','usuario'] : ['atendente'];
@@ -25229,6 +25301,11 @@ function renderUsuarios(){
         ${!admin?'<div class="cdg-nota" style="margin-top:8px">Como liderança, você cadastra atendentes e redefine a senha delas. Mudanças de perfil e exclusões são feitas pela gestão.</div>':''}
       </div>
     </div>
+    <div class="tec-subtabs" style="margin-top:16px;display:flex;gap:6px">
+      <button type="button" class="btn sm ${USR.vista==='hierarquia'?'primary':''}" onclick="USR.vista='hierarquia';renderUsuarios()">Estrutura da equipe</button>
+      <button type="button" class="btn sm ${USR.vista==='lista'?'primary':''}" onclick="USR.vista='lista';renderUsuarios()">Lista de acessos</button>
+    </div>
+    ${USR.vista==='hierarquia' ? usrHierarquiaHtml() : `
     <div class="cdg-area-f" style="margin-top:12px">
       <input type="text" placeholder="Buscar por nome ou e-mail" value="${cdEsc(USR.busca)}" oninput="USR.busca=this.value;clearTimeout(USR.t);USR.t=setTimeout(renderUsuarios,300)">
       <select onchange="USR.perfil=this.value;renderUsuarios()"><option value="todos">Todos os perfis</option>${Object.entries(USR_PERFIS).filter(([k])=>admin||k!=='admin'&&k!=='usuario').map(([k,t])=>`<option value="${k}" ${USR.perfil===k?'selected':''}>${t}</option>`).join('')}</select>
@@ -25237,9 +25314,66 @@ function renderUsuarios(){
     </div>
     ${USR.erro?`<div class="cdg-alerta risk"><i></i><div>${cdEsc(USR.erro)}</div></div>`:''}
     <div class="tbl-wrap" style="max-height:560px"><table class="decision-table usr-tab"><thead><tr><th>Pessoa</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th>Ações</th></tr></thead>
-      <tbody>${linhas||'<tr><td colspan="5">Nenhum usuário com esses filtros.</td></tr>'}</tbody></table></div>
+      <tbody>${linhas||'<tr><td colspan="5">Nenhum usuário com esses filtros.</td></tr>'}</tbody></table></div>`}
   </div>`;
 }
+
+// ===== Estrutura hierárquica da equipe =====
+function usrHierarquiaHtml(){
+  const admin = CD.perfil==='admin';
+  const ativos = (USR.lista||[]).filter(u=>u.status==='ativo');
+  const porEmail = {}; ativos.forEach(u=>porEmail[String(u.email).toLowerCase()]=u);
+  const filhos = {}; const raizes=[], soltos=[];
+  ativos.forEach(u=>{ const s=String(u.superior||'').toLowerCase();
+    if(s && porEmail[s]) (filhos[s]=filhos[s]||[]).push(u);
+    else if(u.perfil==='admin'||(u.perfil==='lider'&&u.cargo)) raizes.push(u); else soltos.push(u); });
+  const ord = (a,b)=>({admin:0,lider:1,atendente:2,usuario:3}[a.perfil]-{admin:0,lider:1,atendente:2,usuario:3}[b.perfil]) || String(a.nome).localeCompare(String(b.nome),'pt-BR');
+  const vePorPerfil = { admin:'Vê e altera tudo no Radar.', lider:'Vê todos os módulos, valida e conclui tarefas, cadastra a equipe. Não altera o sistema.', atendente:'Vê as próprias tarefas e os módulos liberados.', usuario:'Vê só os módulos liberados.' };
+  const no = (u, nivel)=>{
+    const em=encodeURIComponent(u.email), k=String(u.email).toLowerCase(), fs=(filhos[k]||[]).sort(ord);
+    const pode = admin ? u.perfil!=='admin' : u.perfil==='atendente';
+    const mods = (u.perfil==='atendente'||u.perfil==='usuario') ? usrModulosTxt(u) : '';
+    return `<div class="usr-no" style="margin-left:${nivel?22:0}px;${nivel?'border-left:2px solid var(--linha);padding-left:14px;':''}">
+      <div class="cdg-box" style="display:flex;gap:12px;align-items:center;padding:10px 12px;margin:8px 0">
+        ${usrAvatarClicavel(u,40)}
+        <div style="flex:1;min-width:0">
+          <div><b>${cdEsc(u.nome||u.email)}</b> <span style="color:var(--texto-2)">${cdEsc(u.cargo||'Cargo não informado')}</span>${u.equipe?` <small>· ${cdEsc(u.equipe)}</small>`:''}${fs.length?` <small>· ${fs.length} ${fs.length===1?'pessoa':'pessoas'} abaixo</small>`:''}</div>
+          <small>Acesso: <span class="cdg-sla-chip ${u.perfil==='admin'?'ok':u.perfil==='lider'?'warn':'neutro'}">${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}</span> ${vePorPerfil[u.perfil]||''}${mods?' '+mods:''}</small>
+        </div>
+        ${pode?`<button type="button" class="cdg-mini" onclick="usrPosicaoModal('${em}')">Posição</button>`:''}
+        ${pode&&(u.perfil==='atendente'||u.perfil==='usuario')?`<button type="button" class="cdg-mini" onclick="usrModulosModal('${em}')">Módulos</button>`:''}
+      </div>
+      ${fs.map(f=>no(f,nivel+1)).join('')}
+    </div>`;
+  };
+  // liderança não recebe a linha da gestão: mostra a partir dos líderes
+  const topo = raizes.length ? raizes.sort(ord) : ativos.filter(u=>u.perfil==='lider' && !porEmail[String(u.superior||'').toLowerCase()]).sort(ord);
+  const usados = new Set(); const marca=u=>{ const k=String(u.email).toLowerCase(); if(usados.has(k)) return; usados.add(k); (filhos[k]||[]).forEach(marca); }; topo.forEach(marca);
+  const resto = soltos.filter(u=>!usados.has(String(u.email).toLowerCase())).sort(ord);
+  return `<div class="cdg-nota" style="margin:12px 0 4px">Clique no círculo da foto para trocar. Quem responde a quem. A posição define de quem a pessoa recebe tarefas e quem valida o trabalho dela; o perfil define o que ela vê.</div>
+    ${topo.map(u=>no(u,0)).join('')}
+    ${resto.length?`<div class="cdg-eyebrow" style="margin-top:18px">Sem posição definida (${resto.length})</div>
+      <div class="cdg-nota" style="margin:2px 0 4px">Use "Posição" para dizer a quem cada uma responde.</div>${resto.map(u=>no(u,0)).join('')}`:''}`;
+}
+function usrPosicaoModal(em){
+  const u = usrAchar(em); if(!u) return;
+  const k = String(u.email).toLowerCase();
+  const opcoes = (USR.lista||[]).filter(x=>x.status==='ativo' && String(x.email).toLowerCase()!==k && (x.perfil==='admin'||x.perfil==='lider'))
+    .sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt-BR'));
+  cdModal(`<h3>Posição de ${cdEsc(u.nome||u.email)}</h3>
+    <label class="cdg-campo">Responde a<select id="usr-pos-sup"><option value="">Ninguém (sem posição)</option>${opcoes.map(x=>`<option value="${cdEsc(x.email)}" ${String(u.superior||'').toLowerCase()===String(x.email).toLowerCase()?'selected':''}>${cdEsc(x.nome)} (${cdEsc(USR_PERFIS[x.perfil]||x.perfil)})</option>`).join('')}</select></label>
+    <label class="cdg-campo">Cargo<input id="usr-pos-cargo" type="text" maxlength="60" value="${cdEsc(u.cargo||'')}" placeholder="Ex.: Atendente, Técnico, Gestor de redes"></label>
+    <label class="cdg-campo">Equipe<input id="usr-pos-eq" type="text" maxlength="60" value="${cdEsc(u.equipe||'')}" placeholder="Ex.: Atendimento, Redes, Administrativo e financeiro"></label>
+    <div class="cdg-nota" style="margin:-4px 0 14px">A equipe aparece na hora de direcionar tarefas.</div>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+      <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="usrPosicaoSalvar('${em}')">Salvar</button></div>`);
+}
+async function usrPosicaoSalvar(em){
+  try{ await cdAtvRpc('radar_usr_posicao_salvar',{p_email:decodeURIComponent(em), p_superior:document.getElementById('usr-pos-sup').value||null, p_equipe:document.getElementById('usr-pos-eq').value, p_cargo:document.getElementById('usr-pos-cargo').value});
+    cdModal(null); toast('Posição salva.','success'); USR.lista=null; CD.atv.usuarios=null; renderUsuarios(); }
+  catch(e){ toast(e.message,'error'); }
+}
+Object.assign(window,{usrPosicaoModal, usrPosicaoSalvar});
 async function usrCriar(){
   const nome = document.getElementById('usr-nome').value.trim(), email = document.getElementById('usr-email').value.trim(),
         perfil = document.getElementById('usr-perfil').value, senha = document.getElementById('usr-senha').value.trim();
@@ -25412,28 +25546,40 @@ function cdAtendenteHTML(){
     return {r:Math.round((r+m)*255),g:Math.round((g+m)*255),b:Math.round((b+m)*255)}; }
   function txt(o,a){ return a<1 ? `rgba(${o.r},${o.g},${o.b},${+a.toFixed(3)})` : '#'+[o.r,o.g,o.b].map(v=>v.toString(16).padStart(2,'0')).join(''); }
   // papel: 'fundo', 'borda', 'texto', 'sombra'
+  // PADRÃO VISUAL RADAR HILINK: toda cor do código vira um token do padrão (var(--...)).
+  // Os tokens têm valor no tema claro e no escuro, então trocar de tema é só trocar os valores.
+  function mix(token, a){ return a>=0.98 ? `var(--${token})` : `color-mix(in srgb, var(--${token}) ${Math.round(a*100)}%, transparent)`; }
+  function grupoCor(h,l){
+    if(h<15||h>=330) return 'risco';
+    if(h<70) return 'atencao';
+    if(h<170) return 'ok';
+    if(h<255) return 'azul';
+    return 'indigo';
+  }
   function converter(cor, papel, fundoForte){
     const p=parseCor(cor); if(!p) return cor;
     const {h,s,l,c}=hsl(p); const a=p.a; const neutro = c < 0.32;
-    if(papel==='sombra'){ if(l<0.2) return txt({r:15,g:23,b:42}, Math.min(a,0.10)); return cor; }
+    if(papel==='sombra'){ return a<0.02 ? cor : `rgba(13,36,64,${Math.min(a,0.14).toFixed(2)})`; }
+    if(neutro){
+      if(papel==='fundo'){
+        if(a<0.5){ return l>0.5 ? mix('texto', Math.min(a,0.12)) : cor; } // véus: brilho vira véu do texto; sombra de modal fica
+        if(l<0.5){ return mix(l<0.1?'fundo':l<0.165?'superficie':l<0.25?'superficie-2':'linha', a); }
+        return mix(l>=0.97?'superficie':l>=0.88?'superficie-2':'linha', a);
+      }
+      if(papel==='borda'){ return a<0.5 ? mix('linha', Math.min(1,a*3)) : 'var(--linha)'; }
+      // texto
+      if(fundoForte && l>0.7) return 'var(--sobre-azul)';
+      const t = l>=0.5 ? (l>0.85?'texto':l>0.66?'texto-2':'texto-3') : (l<0.28?'texto':l<0.42?'texto-2':'texto-3');
+      return mix(t, a);
+    }
+    const g = grupoCor(h,l);
     if(papel==='fundo'){
-      if(neutro && l<0.5){ // fundos escuros e azul-marinho viram claros, com um leve tom azulado
-        const nl = a<1 ? 0.5 : 0.985 - l*0.32; return txt(rgbDeHsl(h, Math.min(s,0.35), Math.min(nl,0.99)), a<1 ? Math.min(a*0.55,0.10) : 1); }
-      if(neutro && l>=0.85 && a<0.5){ return txt({r:15,g:23,b:42}, Math.min(a,0.06)); } // brilhos claros sobre fundo escuro
-      if(!neutro && a<0.5){ return txt(p, Math.min(a*1.1,0.16)); } // véus coloridos ficam como estão
-      return cor;
+      if(a<0.5) return mix(g, a);
+      if(l>0.85) return `var(--${g}-suave)`;
+      return mix(g==='azul'||g==='indigo' ? g : 'estado-'+g, a);
     }
-    if(papel==='borda'){
-      if(neutro && l<0.55) return txt(rgbDeHsl(h, Math.min(s,0.3), 0.86), 1);
-      if(!neutro && a<1) return txt(p, Math.min(a+0.1,0.6));
-      if(neutro && l>=0.85 && a<1) return txt({r:15,g:23,b:42}, Math.min(a,0.12));
-      return cor;
-    }
-    // texto
-    if(fundoForte) return cor;               // texto sobre botão ou etiqueta colorida continua
-    if(neutro && l>0.55) return txt(rgbDeHsl(h, Math.min(s,0.45), 0.10 + (1-l)*0.55), a); // claro -> escuro
-    if(!neutro && l>0.6) return txt(rgbDeHsl(h, Math.min(1,s), Math.max(0.30, l-0.30)), a); // destaque claro -> mais fechado
-    return cor;
+    if(papel==='borda') return mix(g, a);
+    return mix(g, a);
   }
   const RE_COR=/#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|\bwhite\b|\bblack\b/g;
   function papelDe(prop){
@@ -25468,7 +25614,7 @@ function cdAtendenteHTML(){
       return pre+sp+prop+colon+val.replace(RE_COR, c=>{ const pp = papel || papelPelaCor(c); return pp ? converter(c, pp, forte) : c; });
     });
   }
-  function converterCss(css){ return css.replace(/([^{}]*)\{([^{}]*)\}/g, (all,sel,decls)=>sel+'{'+converterDecls(decls)+'}'); }
+  function converterCss(css){ return css.replace(/([^{}]*)\{([^{}]*)\}/g, (all,sel,decls)=>/\.sidebar|\.nav-|radar-tema-btn/.test(sel) ? all : sel+'{'+converterDecls(decls)+'}'); }
 
   // ---------- aplicar ----------
   const originais = new Map();
@@ -25481,23 +25627,37 @@ function cdAtendenteHTML(){
     const nv=converterDecls(';'+st).slice(1); el.dataset.temaOk=nv; if(nv!==st) el.setAttribute('style',nv);
   }
   function varrer(raiz){ if(raiz.nodeType!==1) return; converterInline(raiz); raiz.querySelectorAll && raiz.querySelectorAll('[style]').forEach(converterInline); }
+  let mapeado=false;
+  function lerToken(n){ return getComputedStyle(document.documentElement).getPropertyValue('--'+n).trim(); }
+  function graficosNoPadrao(){
+    if(typeof RADAR_THEME!=='undefined'){
+      const t=lerToken;
+      Object.assign(RADAR_THEME,{ blue:t('serie-1'), green:t('ok'), yellow:t('atencao'), orange:t('serie-2'), red:t('risco'), purple:t('serie-4'), gray:t('serie-outros'),
+        grid:t('grade'), text:t('texto'), muted:t('texto-3'), palette:[t('serie-1'),t('serie-2'),t('serie-3'),t('serie-4'),t('serie-5'),t('serie-outros')] });
+    }
+    if(window.Chart){
+      Chart.defaults.color=lerToken('texto-3'); Chart.defaults.borderColor=lerToken('grade');
+      Chart.defaults.font.family='"Source Sans 3","Segoe UI",Arial,sans-serif'; Chart.defaults.font.weight='600';
+      try{ Chart.defaults.plugins.legend.labels.color=lerToken('texto-2'); Chart.defaults.plugins.legend.labels.font={family:'"Source Sans 3","Segoe UI",Arial,sans-serif',size:12,weight:'600'}; }catch(e){}
+    }
+  }
   function aplicar(tema){
     document.documentElement.dataset.radarTema = tema;
-    folhasAlvo().forEach(st=>{
-      if(!originais.has(st)) originais.set(st, st.textContent);
-      st.textContent = tema==='claro' ? converterCss(originais.get(st)) : originais.get(st);
-    });
-    if(tema==='claro'){
+    if(!mapeado){
+      mapeado=true;
+      folhasAlvo().forEach(st=>{ st.textContent = converterCss(st.textContent); st.dataset.temaIgnorar='1'; });
       varrer(document.body);
-      if(!observador){ observador=new MutationObserver(ms=>{ ms.forEach(m=>{ if(m.type==='attributes') converterInline(m.target); else m.addedNodes.forEach(varrer); }); });
-        observador.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['style']}); }
-    }else{
-      if(observador){ observador.disconnect(); observador=null; }
-      document.querySelectorAll('[data-tema-orig]').forEach(el=>{ el.setAttribute('style', el.dataset.temaOrig); delete el.dataset.temaOk; delete el.dataset.temaOrig; });
+      observador=new MutationObserver(ms=>{ ms.forEach(m=>{
+        if(m.type==='attributes') converterInline(m.target);
+        else m.addedNodes.forEach(n=>{ if(n.tagName==='STYLE' && !n.dataset.temaIgnorar){ n.textContent=converterCss(n.textContent); n.dataset.temaIgnorar='1'; } else varrer(n); });
+      }); });
+      observador.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['style']});
     }
+    graficosNoPadrao();
     const b=document.getElementById('radar-tema-btn'); if(b) b.textContent = tema==='claro' ? 'Usar tema escuro' : 'Usar tema claro';
   }
-  window.radarTema = function(t){ t = t || (document.documentElement.dataset.radarTema==='claro'?'escuro':'claro'); salvarPref(t); aplicar(t); };
+  window.radarTemaTrocado = function(){ graficosNoPadrao(); try{ if(typeof refreshActiveModule==='function') refreshActiveModule(); }catch(e){} };
+  window.radarTema = function(t){ t = t || (document.documentElement.dataset.radarTema==='claro'?'escuro':'claro'); salvarPref(t); aplicar(t); window.radarTemaTrocado(); };
   window.radarTemaConverter = converterCss; // para testes
   function botao(){
     const nav=document.querySelector('.sidebar'); if(!nav || document.getElementById('radar-tema-btn')) return;
@@ -26396,12 +26556,156 @@ html[data-radar-tema="claro"] .sidebar .nav-item:focus-visible,html[data-radar-t
 </style>
 <script>
 
+// ===== Barra de distribuição (substitui rosca/pizza, padrão visual) =====
+function radarDistribuicao(itens, total, rotuloTotal){
+  const soma = itens.reduce((a,x)=>a+(Number(x.valor)||0),0) || 1;
+  const fmt = n=>Number(n||0).toLocaleString('pt-BR');
+  const seg = itens.filter(x=>Number(x.valor)>0).map(x=>{ const p=(Number(x.valor)/soma)*100;
+    return `<span title="${x.rotulo}: ${fmt(x.valor)} (${p.toFixed(1).replace('.',',')}%)" style="flex:${p} 0 0;min-width:3px;background:var(--${x.cor});height:100%"></span>`; }).join('');
+  return `<div class="radar-dist" style="width:100%">
+    <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px"><strong style="font:700 28px/1 var(--font-titulo);color:var(--texto)">${fmt(total ?? soma)}</strong><span style="font:600 11px/1 var(--font-titulo);letter-spacing:.06em;text-transform:uppercase;color:var(--texto-3)">${rotuloTotal||'total'}</span></div>
+    <div role="img" aria-label="${itens.map(x=>x.rotulo+' '+fmt(x.valor)).join(', ')}" style="display:flex;gap:2px;height:14px;border-radius:4px;overflow:hidden;background:var(--grade)">${seg}</div>
+  </div>`;
+}
+window.radarDistribuicao = radarDistribuicao;
+
+// ===== Fotos das pessoas (subidas no Radar em Usuários e acessos) =====
+var RADAR_FOTOS = { porEmail:{}, porId:{}, porNome:{}, carregado:false };
+function radarNomeChave(n){ return String(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().trim().split(/\s+/).slice(0,2).join(' '); }
+async function radarFotosCarregar(){
+  try{ const sb=getSB(); if(!sb) return; const r=await sb.rpc('radar_fotos'); if(r.error) return;
+    const m={porEmail:{},porId:{},porNome:{},carregado:true};
+    (r.data||[]).forEach(u=>{ if(u.email) m.porEmail[u.email]=u.foto; if(u.id) m.porId[u.id]=u.foto; if(u.nome) m.porNome[radarNomeChave(u.nome)]=u.foto; });
+    RADAR_FOTOS=m; try{ renderUserBadge(); }catch(e){} try{ if(STATE.activeMod==='premiacoes' && STATE.processed) refreshActiveModule(); }catch(e){}
+  }catch(e){}
+}
+function radarAvatar(p, tam){
+  tam = tam||28; p = p||{};
+  const foto = (p.email && RADAR_FOTOS.porEmail[String(p.email).toLowerCase()]) || (p.id && RADAR_FOTOS.porId[p.id]) || (p.nome && RADAR_FOTOS.porNome[radarNomeChave(p.nome)]);
+  const st = `width:${tam}px;height:${tam}px;border-radius:50%;flex:none;display:inline-block;vertical-align:middle`;
+  if(foto) return `<img class="radar-avatar" src="${foto}" alt="" style="${st};object-fit:cover">`;
+  const nome = String(p.nome||p.email||'?').trim(); const partes = nome.split(/[\s@.]+/).filter(Boolean);
+  const ini = ((partes[0]||'?')[0] + (partes.length>1 ? partes[partes.length-1][0] : '')).toUpperCase();
+  let h=0; for(const c of nome) h=(h*31+c.charCodeAt(0))>>>0; const cor = ['serie-1','serie-2','serie-3','serie-4','serie-5'][h%5];
+  return `<span class="radar-avatar" aria-hidden="true" style="${st};background:var(--${cor});color:#fff;font:700 ${Math.round(tam*0.38)}px/${tam}px var(--font-titulo);text-align:center">${cdEsc(ini)}</span>`;
+}
+function usrAvatarClicavel(u, tam){
+  const eu = String(u.email).toLowerCase()===String((typeof _radarUser!=='undefined'&&_radarUser&&_radarUser.email)||'').toLowerCase();
+  const pode = eu || (typeof CD!=='undefined' && (CD.perfil==='admin' || (CD.perfil==='lider' && u.perfil!=='admin')));
+  const av = radarAvatar({email:u.email,nome:u.nome},tam);
+  if(!pode) return av;
+  return `<button type="button" class="usr-av-btn" title="Clique para trocar a foto" aria-label="Trocar a foto de ${cdEsc(u.nome||u.email)}" onclick="usrFotoEscolher('${encodeURIComponent(u.email)}')" style="position:relative;padding:0;border:0;background:none;border-radius:50%;cursor:pointer;flex:none;line-height:0">${av}<span style="position:absolute;right:-2px;bottom:-2px;width:${Math.round(tam*0.42)}px;height:${Math.round(tam*0.42)}px;border-radius:50%;background:var(--azul);border:2px solid var(--superficie);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 16 16" width="${Math.round(tam*0.24)}" height="${Math.round(tam*0.24)}" fill="#fff" aria-hidden="true"><path d="M5.5 2 4.6 3.5H2.5A1.5 1.5 0 0 0 1 5v7.5A1.5 1.5 0 0 0 2.5 14h11a1.5 1.5 0 0 0 1.5-1.5V5a1.5 1.5 0 0 0-1.5-1.5h-2.1L10.5 2h-5ZM8 5.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg></span></button>`;
+}
+function radarFotoReduzir(arquivo){
+  return new Promise((ok,erro)=>{
+    if(!arquivo || !/^image\//.test(arquivo.type)){ erro(new Error('Escolha um arquivo de imagem.')); return; }
+    const img=new Image(); const url=URL.createObjectURL(arquivo);
+    img.onload=()=>{ const lado=Math.min(img.width,img.height), T=192, c=document.createElement('canvas'); c.width=T; c.height=T;
+      c.getContext('2d').drawImage(img,(img.width-lado)/2,(img.height-lado)/2,lado,lado,0,0,T,T); URL.revokeObjectURL(url);
+      let d=c.toDataURL('image/webp',0.85); if(!/^data:image\/webp/.test(d)) d=c.toDataURL('image/jpeg',0.85); ok(d); };
+    img.onerror=()=>erro(new Error('Não consegui abrir essa imagem.')); img.src=url; });
+}
+function usrFotoEscolher(emailCod){
+  const email=decodeURIComponent(emailCod); const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=async()=>{ try{ const d=await radarFotoReduzir(inp.files[0]); const r=await getSB().rpc('radar_usr_foto_salvar',{p_email:email,p_foto:d});
+      if(r.error) throw new Error(r.error.message); toast('Foto salva.','success'); await radarFotosCarregar(); try{ renderUsuarios(); }catch(e){} }
+    catch(e){ toast(e.message,'error'); } };
+  inp.click();
+}
+async function usrFotoRemover(emailCod){
+  const r=await getSB().rpc('radar_usr_foto_salvar',{p_email:decodeURIComponent(emailCod),p_foto:null});
+  if(r.error){ toast(r.error.message,'error'); return; } toast('Foto removida.','success'); await radarFotosCarregar(); try{ renderUsuarios(); }catch(e){}
+}
+Object.assign(window,{radarFotosCarregar, radarAvatar, usrFotoEscolher, usrFotoRemover, usrAvatarClicavel, radarFotoPorNome:n=>RADAR_FOTOS.porNome[radarNomeChave(n)]||''});
+setTimeout(function tenta(){ try{ const sb=getSB(); if(sb){ sb.auth.getSession().then(({data})=>{ if(data&&data.session) radarFotosCarregar(); else setTimeout(tenta,3000); }); return; } }catch(e){} setTimeout(tenta,3000); }, 2500);
+
+// ===== PADRÃO VISUAL: todo gráfico passa por aqui antes de ser desenhado =====
+// Cores do padrão (séries e situação), barras finas com ponta arredondada, linhas de 2px, grade discreta.
+// Rosca e pizza viram barras deitadas (fora do padrão aprovado).
+(function(){
+  if(!window.Chart || window.Chart.__radarPadrao) return;
+  const Orig = window.Chart;
+  const tk = n => getComputedStyle(document.documentElement).getPropertyValue('--'+n).trim() || '#888';
+  function rgb(s){ s=String(s).trim().toLowerCase(); let m;
+    if((m=s.match(/^#([0-9a-f]{3,8})$/))){ let h=m[1]; if(h.length<5) h=h.split('').map(c=>c+c).join(''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16),h.length===8?parseInt(h.slice(6,8),16)/255:1]; }
+    if((m=s.match(/^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,/]+([\d.]+))?\s*\)$/))) return [+m[1],+m[2],+m[3],m[4]===undefined?1:+m[4]];
+    return null; }
+  function hsl(r,g,b){ r/=255;g/=255;b/=255; const mx=Math.max(r,g,b),mn=Math.min(r,g,b),c=mx-mn,l=(mx+mn)/2; let h=0; if(c){ h=mx===r?((g-b)/c)%6:mx===g?(b-r)/c+2:(r-g)/c+4; h*=60; if(h<0)h+=360; } return {h,l,c}; }
+  function comAlfa(hex,a){ const p=rgb(hex); return !p ? hex : (a>=0.98 ? hex : `rgba(${p[0]},${p[1]},${p[2]},${a})`); }
+  function corPadrao(cor){
+    if(typeof cor!=='string') return cor;
+    const p=rgb(cor); if(!p) return cor;
+    const {h,l,c}=hsl(p[0],p[1],p[2]);
+    let t;
+    if(c<0.25) t = l>0.8||l<0.2 ? 'serie-outros' : 'serie-outros';
+    else if(h<15||h>=330) t='estado-risco';
+    else if(h<70) t='estado-atencao';
+    else if(h<170) t='estado-ok';
+    else if(h<255) t='serie-1';
+    else t='serie-4';
+    return comAlfa(tk(t), p[3]);
+  }
+  const mapa = v => Array.isArray(v) ? v.map(corPadrao) : corPadrao(v);
+  function padronizar(config){
+    try{
+      if(!config || !config.data) return config;
+      const fonte = '"Source Sans 3","Segoe UI",Arial,sans-serif';
+      let tipo = config.type;
+      if(tipo==='doughnut'||tipo==='pie'){
+        const ds = (config.data.datasets||[])[0]||{}; const total=(ds.data||[]).reduce((a,v)=>a+(Number(v)||0),0);
+        const o = config.options||{};
+        config = { type:'bar', data:{ labels:config.data.labels, datasets:[{ label:ds.label||'Quantidade', data:ds.data, backgroundColor:ds.backgroundColor }] },
+          options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, onClick:o.onClick, onHover:o.onHover,
+            layout:{padding:{right:56}},
+            plugins:{ legend:{display:false}, radarValorPonta:{display:true,total},
+              tooltip:{ callbacks:{ label:(ctx)=>{ const v=Number(ctx.raw)||0; return ` ${v.toLocaleString('pt-BR')} (${total?Math.round(100*v/total):0}%)`; } } } },
+            scales:{ x:{ beginAtZero:true, ticks:{precision:0} }, y:{ grid:{display:false} } } } };
+        tipo='bar';
+      }
+      (config.data.datasets||[]).forEach(ds=>{
+        const t = ds.type || tipo;
+        if(ds.backgroundColor!==undefined) ds.backgroundColor = mapa(ds.backgroundColor);
+        if(ds.borderColor!==undefined) ds.borderColor = mapa(ds.borderColor);
+        if(ds.pointBackgroundColor!==undefined) ds.pointBackgroundColor = mapa(ds.pointBackgroundColor);
+        if(t==='bar'){ ds.borderRadius = 4; ds.borderSkipped = 'start'; ds.maxBarThickness = 24; ds.borderWidth = 0; }
+        if(t==='line'){ ds.borderWidth = 2; ds.pointRadius = 0; ds.pointHoverRadius = 5; ds.pointHitRadius = 12; ds.pointBorderColor = tk('superficie'); ds.pointBorderWidth = 2;
+          if(ds.fill && typeof ds.backgroundColor==='string'){ const p=rgb(ds.backgroundColor); if(p) ds.backgroundColor=`rgba(${p[0]},${p[1]},${p[2]},0.10)`; } }
+      });
+      const o = config.options = config.options || {};
+      o.plugins = o.plugins || {};
+      o.plugins.legend = o.plugins.legend || {};
+      o.plugins.legend.labels = Object.assign({}, o.plugins.legend.labels||{}, { color:tk('texto-2'), font:{family:fonte,size:12,weight:'600'}, boxWidth:10, boxHeight:10 });
+      o.plugins.tooltip = Object.assign({ backgroundColor:tk('superficie'), titleColor:tk('texto'), bodyColor:tk('texto-2'), borderColor:tk('linha'), borderWidth:1, padding:10,
+        titleFont:{family:fonte,weight:'700'}, bodyFont:{family:fonte} }, o.plugins.tooltip||{});
+      Object.values(o.scales||{}).forEach(sc=>{
+        sc.grid = Object.assign({}, sc.grid||{}, { color:tk('grade'), borderDash:[], tickBorderDash:[] });
+        if(sc.grid.display!==false) sc.grid.drawTicks=false;
+        sc.border = Object.assign({}, sc.border||{}, { color:tk('linha'), dash:[] });
+        sc.ticks = Object.assign({}, sc.ticks||{}, { color:tk('texto-3'), font:{family:fonte,size:11} });
+        if(sc.title) sc.title = Object.assign({}, sc.title, { color:tk('texto-3'), font:{family:fonte,size:11,weight:'600'} });
+      });
+    }catch(e){ console.error('[Radar] padrão do gráfico', e); }
+    return config;
+  }
+  class RadarChart extends Orig { constructor(item, config){ super(item, padronizar(config)); } }
+  RadarChart.__radarPadrao = true;
+  window.Chart = RadarChart;
+  // valor escrito na ponta da barra (só nos gráficos que eram rosca)
+  (typeof Orig.register==='function' ? Orig : Object.getPrototypeOf(Orig)).register({ id:'radarValorPonta', afterDatasetsDraw(chart, args, opts){
+    if(!opts || opts.display!==true) return;
+    const meta = chart.getDatasetMeta(0); if(!meta || !meta.data) return;
+    const ctx = chart.ctx; ctx.save(); ctx.fillStyle = tk('texto'); ctx.font = '600 12px "Source Sans 3", Arial, sans-serif'; ctx.textBaseline = 'middle';
+    meta.data.forEach((bar,i)=>{ const v = Number(chart.data.datasets[0].data[i])||0; const pct = opts.total ? Math.round(100*v/opts.total) : null;
+      ctx.fillText(v.toLocaleString('pt-BR') + (pct!==null ? ` · ${pct}%` : ''), bar.x + 6, bar.y); });
+    ctx.restore(); } });
+})();
+
 // ===== SAÚDE DA REDE: casos do dia em 3 filas, impacto no OPA e regras editáveis =====
 var REDE = { dados:null, carregando:false, erro:'', fila:'', caso:'', filial:'', prio:'', busca:'', so_livres:true, edit:null, hist:null, abertos:{} };
 const REDE_FILAS = {
   cliente:{ nome:'Contato com o cliente', gestor:'Talitha', tipo:'rede_cliente', quem:'Atendimento', tom:'agir' },
-  campo:  { nome:'Demanda externa (campo)', gestor:'Akassio (gestor geral da técnica e do NOC)', tipo:'rede_campo', quem:'Equipe técnica', tom:'corrigir' },
-  noc:    { nome:'Rede (NOC)', gestor:'Gabriel, com o Akassio acima', tipo:'rede_noc', quem:'NOC', tom:'planejar' }
+  campo:  { nome:'Demanda externa (campo)', gestor:'Akassio (gerente operacional)', tipo:'rede_campo', quem:'Equipe técnica', tom:'corrigir' },
+  noc:    { nome:'Rede (NOC)', gestor:'Gabriel (gestor de redes), com o Akassio acima', tipo:'rede_noc', quem:'NOC', tom:'planejar' }
 };
 const REDE_PRIO = { 1:['Alta','risk'], 2:['Média','warn'], 3:['Baixa','info'] };
 function redeRegra(caso){ return ((REDE.dados||{}).regras||{}).casos?.[caso] || {}; }
@@ -26570,7 +26874,7 @@ function renderRedeRegras(){
        :`<p style="margin:6px 0 0">${cdEsc(c.explicacao)}</p><p style="margin:4px 0 0"><b>O que fazer:</b> ${cdEsc(c.acao)}</p>`}
    </div>`;
   box.innerHTML=`<div class="cdg-box" style="margin-bottom:12px"><div class="cdg-eyebrow">Regras da Saúde da Rede</div>
-    <p style="margin:6px 0 0">Aqui ficam os limites e o que fazer em cada caso. Quem pode mudar: a gestão, o Akassio (gestor geral da técnica e do NOC) e o Gabriel (NOC). Toda mudança fica registrada e dá para voltar atrás.</p>
+    <p style="margin:6px 0 0">Aqui ficam os limites e o que fazer em cada caso. Quem pode mudar: a gestão, o Akassio (gerente operacional) e o Gabriel (gestor de redes). Toda mudança fica registrada e dá para voltar atrás.</p>
     <p class="cdg-nota" style="margin:6px 0 0">Versão ${D.regras_versao||1}, salva em ${redeDh(D.regras_em)}${D.regras_por?' por '+cdEsc(D.regras_por):''}.</p>
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">${D.pode_editar?(ed?`<button class="btn sm" onclick="REDE.edit=null;renderRedeRegras()">Cancelar</button>`:`<button class="btn sm primary" onclick="redeEditarIniciar()">Editar regras</button>`):'<span class="cdg-nota">Você pode ver as regras, mas não editar.</span>'}
       <button class="btn sm" onclick="${REDE.hist?'REDE.hist=null;renderRedeRegras()':'redeHistorico()'}">${REDE.hist?'Esconder histórico':'Ver histórico de mudanças'}</button></div>
