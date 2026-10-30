@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030100015">
+<meta name="radar-build" content="20261030101612">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -2945,6 +2945,26 @@ body.radar-modo-atendente .topbar{display:none!important}
 .prem-chip{border:1.5px solid var(--g-line);background:transparent;color:var(--g-text);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}
 .prem-chip:hover{border-color:#0071BC}
 .prem-chip.on{background:#0071BC;border-color:#0071BC;color:#fff}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style data-tema-ignorar="1" id="radar-padrao-visual">
+/* ===== PADRÃO VISUAL RADAR HILINK (aprovado em 30/10/2026) =====
+   Fonte única das cores: estes tokens. O código antigo é convertido para eles quando a página abre. */
+:root,html[data-radar-tema="claro"]{--fundo:#f3f6fa;--superficie:#ffffff;--superficie-2:#eef3f8;--linha:#d9e1ea;--texto:#17212c;--texto-2:#59595b;--texto-3:#5c6773;--azul:#0071bc;--azul-forte:#005a96;--azul-suave:#e3f0fa;--sobre-azul:#ffffff;--indigo:#2e3192;--indigo-suave:#e9e9f7;--menu:#0d2440;--menu-texto:#c9d6e4;--menu-ativo:#ffffff;--ok:#1e7b4f;--ok-suave:#e3f4ea;--atencao:#8a5a00;--atencao-suave:#fff3d6;--risco:#c4232b;--risco-suave:#fde7e8;--cinza-marca:#59595b;--grade:#e6ebf1;--serie-1:#0071bc;--serie-2:#eb6834;--serie-3:#1baf7a;--serie-4:#6250d6;--serie-5:#e87ba4;--serie-outros:#9aa5b1;--escala-1:#86b6ef;--escala-2:#5598e7;--escala-3:#2a78d6;--escala-4:#1c5cab;--escala-5:#0d366b;--font-titulo:Montserrat,"Segoe UI",Arial,sans-serif;--font-texto:"Source Sans 3","Segoe UI",Arial,sans-serif;--radar-font:"Source Sans 3","Segoe UI",Arial,sans-serif;color-scheme:light}
+html[data-radar-tema="escuro"]{--fundo:#0b1624;--superficie:#12223a;--superficie-2:#182c47;--linha:#263b57;--texto:#e8eef5;--texto-2:#a3b3c6;--texto-3:#8798ad;--azul:#3d9be0;--azul-forte:#6cb4ea;--azul-suave:#14365a;--sobre-azul:#0b1624;--indigo:#8a8df0;--indigo-suave:#24265c;--menu:#081320;--menu-texto:#b4c3d4;--menu-ativo:#ffffff;--ok:#4cc38a;--ok-suave:#12352a;--atencao:#f2b544;--atencao-suave:#3a2c0e;--risco:#ff8a8e;--risco-suave:#3d171a;--cinza-marca:#59595b;--grade:#22354f;--serie-1:#3d9be0;--serie-2:#d95926;--serie-3:#199e70;--serie-4:#9085e9;--serie-5:#d55181;--serie-outros:#5b6b80;--escala-1:#184f95;--escala-2:#256abf;--escala-3:#3987e5;--escala-4:#6da7ec;--escala-5:#b7d3f6;color-scheme:dark}
+html,body{background:var(--fundo)!important;color:var(--texto)}
+body,button,input,select,textarea,table{font-family:var(--font-texto)!important}
+.main h1,.main h2,.main h3,.main h4,.section-title,.cdg-eyebrow,.cdg-col-h h3,.cdg-num .v,.cdg-item .n,.cdg-item .t,.kpi .v,.kpi-value,.prem-exec-header-title,.module h2,.module h3,#radar-trilha+*,.page-title,.page-header h1{font-family:var(--font-titulo)!important;letter-spacing:0}
+.cdg-eyebrow,.section-title .help{font-family:var(--font-titulo)!important}
+.cdg-num .v,.cdg-item .n,.kpi .v,td,th{font-variant-numeric:tabular-nums}
+.btn{border-radius:6px!important;font-weight:600!important}
+.btn.primary,.btn.pri,.cdg-ir.cdg-gerar{background:var(--azul)!important;border-color:var(--azul)!important;color:var(--sobre-azul)!important}
+.btn.primary:hover,.cdg-ir.cdg-gerar:hover{background:var(--azul-forte)!important;border-color:var(--azul-forte)!important}
+.op-abas button.on{background:var(--azul)!important;border-color:var(--azul)!important;color:var(--sobre-azul)!important}
+:focus-visible{outline:2px solid var(--indigo);outline-offset:2px}
+.sidebar{font-family:var(--font-texto)!important}
+.sidebar .nav-section,.sidebar .nav-area-h,.sidebar .logo-box{font-family:var(--font-titulo)!important}
 </style>
 </head>
 <body>
@@ -25412,28 +25432,40 @@ function cdAtendenteHTML(){
     return {r:Math.round((r+m)*255),g:Math.round((g+m)*255),b:Math.round((b+m)*255)}; }
   function txt(o,a){ return a<1 ? `rgba(${o.r},${o.g},${o.b},${+a.toFixed(3)})` : '#'+[o.r,o.g,o.b].map(v=>v.toString(16).padStart(2,'0')).join(''); }
   // papel: 'fundo', 'borda', 'texto', 'sombra'
+  // PADRÃO VISUAL RADAR HILINK: toda cor do código vira um token do padrão (var(--...)).
+  // Os tokens têm valor no tema claro e no escuro, então trocar de tema é só trocar os valores.
+  function mix(token, a){ return a>=0.98 ? `var(--${token})` : `color-mix(in srgb, var(--${token}) ${Math.round(a*100)}%, transparent)`; }
+  function grupoCor(h,l){
+    if(h<15||h>=330) return 'risco';
+    if(h<70) return 'atencao';
+    if(h<170) return 'ok';
+    if(h<255) return 'azul';
+    return 'indigo';
+  }
   function converter(cor, papel, fundoForte){
     const p=parseCor(cor); if(!p) return cor;
     const {h,s,l,c}=hsl(p); const a=p.a; const neutro = c < 0.32;
-    if(papel==='sombra'){ if(l<0.2) return txt({r:15,g:23,b:42}, Math.min(a,0.10)); return cor; }
+    if(papel==='sombra'){ return a<0.02 ? cor : `rgba(13,36,64,${Math.min(a,0.14).toFixed(2)})`; }
+    if(neutro){
+      if(papel==='fundo'){
+        if(a<0.5){ return l>0.5 ? mix('texto', Math.min(a,0.12)) : cor; } // véus: brilho vira véu do texto; sombra de modal fica
+        if(l<0.5){ return mix(l<0.1?'fundo':l<0.165?'superficie':l<0.25?'superficie-2':'linha', a); }
+        return mix(l>=0.97?'superficie':l>=0.88?'superficie-2':'linha', a);
+      }
+      if(papel==='borda'){ return a<0.5 ? mix('linha', Math.min(1,a*3)) : 'var(--linha)'; }
+      // texto
+      if(fundoForte && l>0.7) return 'var(--sobre-azul)';
+      const t = l>=0.5 ? (l>0.85?'texto':l>0.66?'texto-2':'texto-3') : (l<0.28?'texto':l<0.42?'texto-2':'texto-3');
+      return mix(t, a);
+    }
+    const g = grupoCor(h,l);
     if(papel==='fundo'){
-      if(neutro && l<0.5){ // fundos escuros e azul-marinho viram claros, com um leve tom azulado
-        const nl = a<1 ? 0.5 : 0.985 - l*0.32; return txt(rgbDeHsl(h, Math.min(s,0.35), Math.min(nl,0.99)), a<1 ? Math.min(a*0.55,0.10) : 1); }
-      if(neutro && l>=0.85 && a<0.5){ return txt({r:15,g:23,b:42}, Math.min(a,0.06)); } // brilhos claros sobre fundo escuro
-      if(!neutro && a<0.5){ return txt(p, Math.min(a*1.1,0.16)); } // véus coloridos ficam como estão
-      return cor;
+      if(a<0.5) return mix(g, a);
+      if(l>0.85) return `var(--${g}-suave)`;
+      return mix(g, a);
     }
-    if(papel==='borda'){
-      if(neutro && l<0.55) return txt(rgbDeHsl(h, Math.min(s,0.3), 0.86), 1);
-      if(!neutro && a<1) return txt(p, Math.min(a+0.1,0.6));
-      if(neutro && l>=0.85 && a<1) return txt({r:15,g:23,b:42}, Math.min(a,0.12));
-      return cor;
-    }
-    // texto
-    if(fundoForte) return cor;               // texto sobre botão ou etiqueta colorida continua
-    if(neutro && l>0.55) return txt(rgbDeHsl(h, Math.min(s,0.45), 0.10 + (1-l)*0.55), a); // claro -> escuro
-    if(!neutro && l>0.6) return txt(rgbDeHsl(h, Math.min(1,s), Math.max(0.30, l-0.30)), a); // destaque claro -> mais fechado
-    return cor;
+    if(papel==='borda') return mix(g, a);
+    return mix(g, a);
   }
   const RE_COR=/#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|\bwhite\b|\bblack\b/g;
   function papelDe(prop){
@@ -25468,7 +25500,7 @@ function cdAtendenteHTML(){
       return pre+sp+prop+colon+val.replace(RE_COR, c=>{ const pp = papel || papelPelaCor(c); return pp ? converter(c, pp, forte) : c; });
     });
   }
-  function converterCss(css){ return css.replace(/([^{}]*)\{([^{}]*)\}/g, (all,sel,decls)=>sel+'{'+converterDecls(decls)+'}'); }
+  function converterCss(css){ return css.replace(/([^{}]*)\{([^{}]*)\}/g, (all,sel,decls)=>/\.sidebar|\.nav-|radar-tema-btn|:root/.test(sel) ? all : sel+'{'+converterDecls(decls)+'}'); }
 
   // ---------- aplicar ----------
   const originais = new Map();
@@ -25481,23 +25513,37 @@ function cdAtendenteHTML(){
     const nv=converterDecls(';'+st).slice(1); el.dataset.temaOk=nv; if(nv!==st) el.setAttribute('style',nv);
   }
   function varrer(raiz){ if(raiz.nodeType!==1) return; converterInline(raiz); raiz.querySelectorAll && raiz.querySelectorAll('[style]').forEach(converterInline); }
+  let mapeado=false;
+  function lerToken(n){ return getComputedStyle(document.documentElement).getPropertyValue('--'+n).trim(); }
+  function graficosNoPadrao(){
+    if(typeof RADAR_THEME!=='undefined'){
+      const t=lerToken;
+      Object.assign(RADAR_THEME,{ blue:t('serie-1'), green:t('ok'), yellow:t('atencao'), orange:t('serie-2'), red:t('risco'), purple:t('serie-4'), gray:t('serie-outros'),
+        grid:t('grade'), text:t('texto'), muted:t('texto-3'), palette:[t('serie-1'),t('serie-2'),t('serie-3'),t('serie-4'),t('serie-5'),t('serie-outros')] });
+    }
+    if(window.Chart){
+      Chart.defaults.color=lerToken('texto-3'); Chart.defaults.borderColor=lerToken('grade');
+      Chart.defaults.font.family='"Source Sans 3","Segoe UI",Arial,sans-serif'; Chart.defaults.font.weight='600';
+      try{ Chart.defaults.plugins.legend.labels.color=lerToken('texto-2'); Chart.defaults.plugins.legend.labels.font={family:'"Source Sans 3","Segoe UI",Arial,sans-serif',size:12,weight:'600'}; }catch(e){}
+    }
+  }
   function aplicar(tema){
     document.documentElement.dataset.radarTema = tema;
-    folhasAlvo().forEach(st=>{
-      if(!originais.has(st)) originais.set(st, st.textContent);
-      st.textContent = tema==='claro' ? converterCss(originais.get(st)) : originais.get(st);
-    });
-    if(tema==='claro'){
+    if(!mapeado){
+      mapeado=true;
+      folhasAlvo().forEach(st=>{ st.textContent = converterCss(st.textContent); st.dataset.temaIgnorar='1'; });
       varrer(document.body);
-      if(!observador){ observador=new MutationObserver(ms=>{ ms.forEach(m=>{ if(m.type==='attributes') converterInline(m.target); else m.addedNodes.forEach(varrer); }); });
-        observador.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['style']}); }
-    }else{
-      if(observador){ observador.disconnect(); observador=null; }
-      document.querySelectorAll('[data-tema-orig]').forEach(el=>{ el.setAttribute('style', el.dataset.temaOrig); delete el.dataset.temaOk; delete el.dataset.temaOrig; });
+      observador=new MutationObserver(ms=>{ ms.forEach(m=>{
+        if(m.type==='attributes') converterInline(m.target);
+        else m.addedNodes.forEach(n=>{ if(n.tagName==='STYLE' && !n.dataset.temaIgnorar){ n.textContent=converterCss(n.textContent); n.dataset.temaIgnorar='1'; } else varrer(n); });
+      }); });
+      observador.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['style']});
     }
+    graficosNoPadrao();
     const b=document.getElementById('radar-tema-btn'); if(b) b.textContent = tema==='claro' ? 'Usar tema escuro' : 'Usar tema claro';
   }
-  window.radarTema = function(t){ t = t || (document.documentElement.dataset.radarTema==='claro'?'escuro':'claro'); salvarPref(t); aplicar(t); };
+  window.radarTemaTrocado = function(){ graficosNoPadrao(); try{ if(typeof refreshActiveModule==='function') refreshActiveModule(); }catch(e){} };
+  window.radarTema = function(t){ t = t || (document.documentElement.dataset.radarTema==='claro'?'escuro':'claro'); salvarPref(t); aplicar(t); window.radarTemaTrocado(); };
   window.radarTemaConverter = converterCss; // para testes
   function botao(){
     const nav=document.querySelector('.sidebar'); if(!nav || document.getElementById('radar-tema-btn')) return;
