@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030134815">
+<meta name="radar-build" content="20261030134952">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -25133,10 +25133,10 @@ function cdAreaListaHTML(){
 
 // ---------- Usuários e acessos (admin: tudo; líder: cadastra atendentes e redefine senha delas) ----------
 const USR = { lista:null, erro:null, busca:'', perfil:'todos', inativos:false, msg:'', vista:'hierarquia' };
-const USR_PERFIS = { admin:'Gestão (acesso total)', lider:'Liderança do atendimento', atendente:'Atendente', usuario:'Usuário do Radar' };
+const USR_PERFIS = { admin:'Gestão (acesso total)', lider:'Liderança', atendente:'Atendente', usuario:'Usuário do Radar' };
 const USR_PERFIL_DESC = {
   admin:'Vê e altera tudo no Radar, inclusive usuários.',
-  lider:'Vê o painel de atividades da equipe, direciona atividades, cadastra atendentes e redefine a senha delas.',
+  lider:'Vê o painel de atividades da equipe, direciona atividades, cadastra a equipe e redefine senhas. Não altera o sistema.',
   atendente:'Vê só as atividades direcionadas a ela. Não vê nenhum outro módulo.',
   usuario:'Vê os módulos do Radar, mas não o painel de atividades nem o cadastro de usuários.'
 };
