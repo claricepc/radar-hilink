@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030135414">
+<meta name="radar-build" content="20261030135842">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -24454,7 +24454,7 @@ function cdAtvModal(){
     <p class="cdg-nota" style="margin:0 0 12px">${cdEsc(CD_ATV_TIPOS[N.tipo].nome)}: <b>${cdNum(N.linhas.length)} ${unid}</b>${valor?`, ${cdMoeda(valor)}`:''}, em ${filiais.length} ${filiais.length===1?'filial':'filiais'}. A lista é salva como está agora.</p>
     <label class="cdg-campo">Nome da atividade<input id="cd-atv-nome" type="text" value="${cdEsc(N.titulo)}" maxlength="80"></label>
     <div class="cdg-campo">Quem vai tratar
-      ${pessoas.length?`<div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-atv-pessoa" value="${u.id}" data-nome="${cdEsc(u.nome)}" onchange="cdAtvDivisao()"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança, distribui para a equipe dela)':''}${u.equipe?' <small>· '+cdEsc(u.equipe)+'</small>':''}${u.minha?' <small>· sua equipe</small>':''}${u.ultimo_login?'':' <small>· ainda não entrou</small>'}</label>`).join('')}</div>`
+      ${pessoas.length?`<div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-atv-pessoa" value="${u.id}" data-nome="${cdEsc(u.nome)}" onchange="cdAtvDivisao()"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança, distribui para a equipe dela)':''}${(u.cargo||u.equipe)?' <small>· '+cdEsc(u.cargo||u.equipe)+'</small>':''}${u.minha?' <small>· sua equipe</small>':''}${u.ultimo_login?'':' <small>· ainda não entrou</small>'}</label>`).join('')}</div>`
         :`<div class="cdg-nota">Nenhuma atendente cadastrada. Use "Cadastrar atendente" no painel de atividades.</div>`}
       <div class="cdg-nota" id="cd-atv-divisao" style="margin-top:6px">Marque uma ou mais atendentes. Com mais de uma, a lista é dividida igualmente e cada uma recebe a sua atividade.</div>
     </div>
@@ -24736,7 +24736,7 @@ function cdAtvTrocarModal(id){
   cdModal(`<h3>Trocar responsável</h3>
     <p class="cdg-nota" style="margin:0 0 10px"><b>${cdEsc(a.titulo)}</b>. Hoje com ${cdEsc(a.responsavel_nome||'ninguém')}, ${cdNum(a.pendentes)} itens para tratar.</p>
     <div class="cdg-campo">Passar para
-      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="radio" name="cd-troca-p" value="${u.id}" ${u.id===a.responsavel?'disabled':''}> ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${u.equipe?' <small>· '+cdEsc(u.equipe)+'</small>':''}${u.id===a.responsavel?' (atual)':''}</label>`).join('')}</div></div>
+      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="radio" name="cd-troca-p" value="${u.id}" ${u.id===a.responsavel?'disabled':''}> ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${(u.cargo||u.equipe)?' <small>· '+cdEsc(u.cargo||u.equipe)+'</small>':''}${u.id===a.responsavel?' (atual)':''}</label>`).join('')}</div></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap"><label class="cdg-campo" style="max-width:200px">Novo prazo: dia<input id="cd-troca-prazo" type="date" min="${cdHoje()}" value="${a.prazo && a.prazo>=cdHoje() ? a.prazo : cdHoje()}"></label>
     <label class="cdg-campo" style="max-width:130px">Até as<input id="cd-troca-hora" type="time" step="900" value="${a.prazo_hora||'18:00'}"></label></div>
     <p class="cdg-nota" style="margin:-6px 0 14px">O que já foi tratado continua registrado. A nova responsável vê a atividade na hora.</p>
@@ -24797,7 +24797,7 @@ function cdAtvDistribuirModal(id){
   cdModal(`<h3>Distribuir na equipe</h3>
     <p class="cdg-nota" style="margin:0 0 10px"><b>${cdEsc(a.titulo)}</b>${a.criado_por_nome?` · veio de ${cdEsc(a.criado_por_nome)}`:''}. ${cdNum(a.pendentes)} itens pendentes serão divididos por igual. O que já foi tratado fica onde está.</p>
     <div class="cdg-campo">Dividir entre
-      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-dist-p" value="${u.id}" data-nome="${cdEsc(u.nome)}" ${u.minha&&String(u.email).toLowerCase()!==eu&&u.perfil==='atendente'?'checked':''} onchange="cdAtvDistribuirPrevia(${a.pendentes})"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${u.equipe?' <small>· '+cdEsc(u.equipe)+'</small>':''}${u.minha?' <small>· sua equipe</small>':''}</label>`).join('')}</div></div>
+      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-dist-p" value="${u.id}" data-nome="${cdEsc(u.nome)}" ${u.minha&&String(u.email).toLowerCase()!==eu&&u.perfil==='atendente'?'checked':''} onchange="cdAtvDistribuirPrevia(${a.pendentes})"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${(u.cargo||u.equipe)?' <small>· '+cdEsc(u.cargo||u.equipe)+'</small>':''}${u.minha?' <small>· sua equipe</small>':''}</label>`).join('')}</div></div>
     <div class="cdg-nota" id="cd-dist-previa" style="margin:4px 0 14px"></div>
     <p class="cdg-nota" style="margin:0 0 14px">Cada pessoa recebe a sua tarefa com o mesmo prazo. A primeira marcada fica com esta tarefa; as outras recebem tarefas novas. Tudo fica no histórico.</p>
     <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
@@ -25174,7 +25174,7 @@ function cdAreaListaHTML(){
 
 // ---------- Usuários e acessos (admin: tudo; líder: cadastra atendentes e redefine senha delas) ----------
 const USR = { lista:null, erro:null, busca:'', perfil:'todos', inativos:false, msg:'', vista:'hierarquia' };
-const USR_PERFIS = { admin:'Gestão (acesso total)', lider:'Liderança', atendente:'Atendente', usuario:'Usuário do Radar' };
+const USR_PERFIS = { admin:'Gestão (acesso total)', lider:'Liderança', atendente:'Equipe', usuario:'Usuário do Radar' };
 const USR_PERFIL_DESC = {
   admin:'Vê e altera tudo no Radar, inclusive usuários.',
   lider:'Vê o painel de atividades da equipe, direciona atividades, cadastra a equipe e redefine senhas. Não altera o sistema.',
@@ -25260,7 +25260,7 @@ function renderUsuarios(){
       ${admin&&!u.admin_sistema?`<button type="button" class="cdg-mini" onclick="usrEditarModal('${em}')">Editar</button>
       ${u.status==='ativo'?`<button type="button" class="cdg-mini" onclick="usrSituacao('${em}','inativo')">Desativar</button>`:`<button type="button" class="cdg-mini" onclick="usrSituacao('${em}','ativo')">Reativar</button>`}
       <button type="button" class="cdg-mini perigo-txt" onclick="usrExcluirModal('${em}')">Excluir</button>`:''}`;
-    return `<tr class="${u.status!=='ativo'?'usr-inativo':''}"><td><div style="display:flex;gap:10px;align-items:center">${usrAvatarClicavel(u,36)}<div><b>${cdEsc(u.nome||'-')}</b><small>${cdEsc(u.email)}</small></div></div></td>
+    return `<tr class="${u.status!=='ativo'?'usr-inativo':''}"><td><div style="display:flex;gap:10px;align-items:center">${usrAvatarClicavel(u,36)}<div><b>${cdEsc(u.nome||'-')}</b>${u.cargo?`<small>${cdEsc(u.cargo)}</small>`:''}<small>${cdEsc(u.email)}</small></div></div></td>
       <td>${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}${u.admin_sistema?' <small>(administradora do sistema)</small>':''}<small>${usrModulosTxt(u)}</small></td><td>${sit}</td><td>${ult}</td><td class="usr-acoes">${acoes}</td></tr>`;
   }).join('');
   const perfisCad = admin ? ['atendente','lider','usuario'] : ['atendente'];
@@ -25316,7 +25316,7 @@ function usrHierarquiaHtml(){
   const filhos = {}; const raizes=[], soltos=[];
   ativos.forEach(u=>{ const s=String(u.superior||'').toLowerCase();
     if(s && porEmail[s]) (filhos[s]=filhos[s]||[]).push(u);
-    else if(u.perfil==='admin') raizes.push(u); else soltos.push(u); });
+    else if(u.perfil==='admin'||(u.perfil==='lider'&&u.cargo)) raizes.push(u); else soltos.push(u); });
   const ord = (a,b)=>({admin:0,lider:1,atendente:2,usuario:3}[a.perfil]-{admin:0,lider:1,atendente:2,usuario:3}[b.perfil]) || String(a.nome).localeCompare(String(b.nome),'pt-BR');
   const vePorPerfil = { admin:'Vê e altera tudo no Radar.', lider:'Vê todos os módulos, valida e conclui tarefas, cadastra a equipe. Não altera o sistema.', atendente:'Vê as próprias tarefas e os módulos liberados.', usuario:'Vê só os módulos liberados.' };
   const no = (u, nivel)=>{
@@ -25327,8 +25327,8 @@ function usrHierarquiaHtml(){
       <div class="cdg-box" style="display:flex;gap:12px;align-items:center;padding:10px 12px;margin:8px 0">
         ${usrAvatarClicavel(u,40)}
         <div style="flex:1;min-width:0">
-          <div><b>${cdEsc(u.nome||u.email)}</b> <span class="cdg-sla-chip ${u.perfil==='admin'?'ok':u.perfil==='lider'?'warn':'neutro'}">${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}</span>${fs.length?` <small>· ${fs.length} ${fs.length===1?'pessoa':'pessoas'} abaixo</small>`:''}</div>
-          <small>${cdEsc(u.equipe||'Equipe não informada')} · ${vePorPerfil[u.perfil]||''}${mods?' '+mods:''}</small>
+          <div><b>${cdEsc(u.nome||u.email)}</b> <span style="color:var(--texto-2)">${cdEsc(u.cargo||'Cargo não informado')}</span>${u.equipe?` <small>· ${cdEsc(u.equipe)}</small>`:''}${fs.length?` <small>· ${fs.length} ${fs.length===1?'pessoa':'pessoas'} abaixo</small>`:''}</div>
+          <small>Acesso: <span class="cdg-sla-chip ${u.perfil==='admin'?'ok':u.perfil==='lider'?'warn':'neutro'}">${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}</span> ${vePorPerfil[u.perfil]||''}${mods?' '+mods:''}</small>
         </div>
         ${pode?`<button type="button" class="cdg-mini" onclick="usrPosicaoModal('${em}')">Posição</button>`:''}
         ${pode&&(u.perfil==='atendente'||u.perfil==='usuario')?`<button type="button" class="cdg-mini" onclick="usrModulosModal('${em}')">Módulos</button>`:''}
@@ -25352,13 +25352,14 @@ function usrPosicaoModal(em){
     .sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt-BR'));
   cdModal(`<h3>Posição de ${cdEsc(u.nome||u.email)}</h3>
     <label class="cdg-campo">Responde a<select id="usr-pos-sup"><option value="">Ninguém (sem posição)</option>${opcoes.map(x=>`<option value="${cdEsc(x.email)}" ${String(u.superior||'').toLowerCase()===String(x.email).toLowerCase()?'selected':''}>${cdEsc(x.nome)} (${cdEsc(USR_PERFIS[x.perfil]||x.perfil)})</option>`).join('')}</select></label>
-    <label class="cdg-campo">Equipe<input id="usr-pos-eq" type="text" maxlength="60" value="${cdEsc(u.equipe||'')}" placeholder="Ex.: Atendimento, NOC, Técnica"></label>
+    <label class="cdg-campo">Cargo<input id="usr-pos-cargo" type="text" maxlength="60" value="${cdEsc(u.cargo||'')}" placeholder="Ex.: Atendente, Técnico, Gestor de redes"></label>
+    <label class="cdg-campo">Equipe<input id="usr-pos-eq" type="text" maxlength="60" value="${cdEsc(u.equipe||'')}" placeholder="Ex.: Atendimento, Redes, Administrativo e financeiro"></label>
     <div class="cdg-nota" style="margin:-4px 0 14px">A equipe aparece na hora de direcionar tarefas.</div>
     <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
       <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="usrPosicaoSalvar('${em}')">Salvar</button></div>`);
 }
 async function usrPosicaoSalvar(em){
-  try{ await cdAtvRpc('radar_usr_posicao_salvar',{p_email:decodeURIComponent(em), p_superior:document.getElementById('usr-pos-sup').value||null, p_equipe:document.getElementById('usr-pos-eq').value});
+  try{ await cdAtvRpc('radar_usr_posicao_salvar',{p_email:decodeURIComponent(em), p_superior:document.getElementById('usr-pos-sup').value||null, p_equipe:document.getElementById('usr-pos-eq').value, p_cargo:document.getElementById('usr-pos-cargo').value});
     cdModal(null); toast('Posição salva.','success'); USR.lista=null; CD.atv.usuarios=null; renderUsuarios(); }
   catch(e){ toast(e.message,'error'); }
 }
