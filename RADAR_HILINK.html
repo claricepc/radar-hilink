@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030182807">
+<meta name="radar-build" content="20261030185134">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -3120,6 +3120,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
 </script>
 
 <main class="main">
+  <div id="radar-lembretes" aria-live="polite"></div>
 
   <div class="topbar">
     <div>
@@ -25923,7 +25924,7 @@ async function renderInicio(){
   if(!INI.carregando && faltaIni().length && (INI.tentativas||0) < 2 && Date.now() >= (INI.proxima||0)){
     INI.carregando = true; INI.tentativas = (INI.tentativas||0) + 1;
     box.innerHTML = '<div class="section compact-section">Juntando os números de cada área...</div>';
-    try{ await Promise.allSettled([ CD.dados.resumo ? null : cdCarregar(), OP.dados ? null : opCarregar(), CD.atv.lista ? null : cdAtvCarregar(true), IXC_CARGA.status ? null : ixcCargaStatus() ]); }catch(e){}
+    try{ await Promise.allSettled([ CD.dados.resumo ? null : cdCarregar(), OP.dados ? null : opCarregar(), CD.atv.lista ? null : cdAtvCarregar(true), IXC_CARGA.status ? null : ixcCargaStatus(), (typeof REDE!=='undefined' && !REDE.dados && typeof redeCarregar==='function') ? redeCarregar() : null ]); }catch(e){}
     INI.carregando = false;
     if(!faltaIni().length) INI.tentativas = 0;
     else if(INI.tentativas >= 2){ INI.proxima = Date.now() + 60000; INI.tentativas = 0; }
@@ -25938,6 +25939,12 @@ async function renderInicio(){
   const env = envs.reduce((t,e)=>t+(+e.enviados||0),0), resp = envs.reduce((t,e)=>t+(+e.responderam||0),0), conv = envs.reduce((t,e)=>t+(+e.converteram||0),0), abertos = envs.reduce((t,e)=>t+(+e.abertos||0),0);
   const atv = (CD.atv.lista||[]).filter(a=>a.status==='aberta'), est = atv.filter(a=>cdPrazoEstourou(a)), val = atv.filter(a=>a.validacao_solicitada_em);
   const def = up.filter(x=>x.vel<=100);
+  const rc = (typeof REDE!=='undefined' && REDE.dados && REDE.dados.casos) || null;
+  const rf = f => rc ? rc.filter(x=>x.fila===f) : [];
+  const pons = rf('noc'), ponCli = pons.reduce((t,x)=>t+(Number(x.dados&&x.dados.afetados)||0),0);
+  const campo = rf('campo'), campoAlta = campo.filter(x=>Number(x.prioridade)===1).length;
+  const cli = rf('cliente'), cliAlta = cli.filter(x=>Number(x.prioridade)===1).length;
+  const irRede = f => `go('tecnica');tecSub('casos');REDE.fila='${f}';setTimeout(()=>{try{renderRedeCasos()}catch(e){}},300)`;
   const tipos = IXC_CARGA.status?.tipos || {};
   let ult = null; try{ ult = radarFixoUltimaLeitura(IXC_CARGA.status); }catch(e){}
   const hoje = new Date(); const velho = ult && (hoje - ult) > 6*3600000;
@@ -25950,11 +25957,13 @@ async function renderInicio(){
 
   // 2. o que precisa de voce agora (em ordem de urgencia)
   const pri = [];
+  if(pons.length) pri.push(`<b class="ruim">Rede:</b> ${lk(cdNum(pons.length)+(pons.length===1?' região com falha coletiva':' regiões com falha coletiva')+', '+cdNum(ponCli)+' clientes sem internet', irRede('noc'), true)}. O NOC precisa agir antes do cliente ligar.`);
   if(perd) pri.push(`<b class="ruim">Falha grave no OPA:</b> ${lk(cdNum(perd)+' clientes responderam à oferta e foram encerrados pela IA sem atendimento', "go('oportunidades');opSub('envios')", true)}. Chame de volta hoje e corrija o fluxo antes do próximo disparo.`);
   if(g && g.pre.clientes) pri.push(`${lk(cdNum(g.pre.clientes)+' clientes estão a até 5 dias do bloqueio', "go('cobrancaDia');cdIrLista('cobrar','pre')", true)}, somando <b>${cdMoeda(g.pre.valor)}</b>. É o dinheiro mais fácil de recuperar hoje.`);
   if(est.length) pri.push(`${lk(cdNum(est.length)+(est.length===1?' atividade da equipe passou do prazo':' atividades da equipe passaram do prazo'), 'radarIrAtividades()', true)}. Fale com a responsável ou redistribua.`);
   if(abertos) pri.push(`${lk(cdNum(abertos)+' clientes que responderam à oferta ainda estão com atendimento aberto', "go('oportunidades');opSub('envios')")}. Cliente que espera esfria.`);
   if(val.length) pri.push(`${lk(cdNum(val.length)+(val.length===1?' atividade espera':' atividades esperam')+' a sua validação', 'radarIrAtividades()')}.`);
+  if(campoAlta) pri.push(`${lk(cdNum(campoAlta)+(campoAlta===1?' cliente sem sinal precisa':' clientes sem sinal precisam')+' de visita técnica com prioridade alta', irRede('campo'))}.`);
   if(g && g.rec.mais30) pri.push(`${lk(cdNum(g.rec.mais30)+' recolhimentos de equipamento estão abertos há mais de 30 dias', "go('cobrancaDia');cdIrLista('recolhimento_atd')")}.`);
   if(!pri.length) pri.push('Nada urgente agora. Use as colunas abaixo para planejar o dia.');
 
@@ -25966,7 +25975,8 @@ async function renderInicio(){
     <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
       <div class="cdg-numeros">
         ${g?num('risk','Antes do bloqueio','Cobrar',cdMoeda(g.pre.valor),cdNum(g.pre.clientes)+' clientes com 1 a 5 dias de atraso',"go('cobrancaDia');cdIrLista('cobrar','pre')"):''}
-        ${g?num('info','Vencido total','Ver',cdMoeda(g.todos.valor),cdNum(g.todos.clientes)+' clientes',"go('cobrancaDia');cdSub('onde')"):''}
+        ${rc?num(pons.length?'risk':'ok','Rede','Ver casos',cdNum(ponCli),pons.length?`clientes em ${cdNum(pons.length)} ${pons.length===1?'região':'regiões'} com falha coletiva`:'nenhuma falha coletiva agora',irRede('noc')):''}
+        ${pode?num(est.length?'risk':'ok','Equipe','Ver tarefas',cdNum(est.length),est.length?'tarefas com prazo estourado':'nenhuma tarefa atrasada','radarIrAtividades()'):''}
         ${num(perd?'risk':'ok','Campanhas','Ver envios',env?cdPct(resp,env)+'%':'-',env?`responderam · ${cdNum(conv)} converteram`:'nenhum envio ainda',"go('oportunidades');opSub('envios')")}
       </div>
       <div class="cdg-nota">Clique num número para abrir o detalhe.</div></div>
@@ -25977,6 +25987,7 @@ async function renderInicio(){
   const fin = g ? [
     it({tom:'agir', titulo:'Cobrar antes do bloqueio', numero:cdMoeda(g.pre.valor), unid:cdNum(g.pre.clientes)+' clientes', vazio:!g.pre.clientes, porque:'O cliente ainda está com a internet ligada.', acao:['Abrir lista',"go('cobrancaDia');cdIrLista('cobrar','pre')"]}),
     it({tom:'agir', titulo:'Agendar recolhimento', numero:cdNum(g.rec.clientes), unid:'clientes', vazio:!g.rec.clientes, porque:'Equipamento fora de casa é patrimônio parado.', acao:['Abrir lista',"go('cobrancaDia');cdIrLista('recolhimento_atd')"]}),
+    it({tom:'planejar', titulo:'Vencido total', numero:cdMoeda(g.todos.valor), unid:cdNum(g.todos.clientes)+' clientes', porque:'Tudo que está em aberto na carteira, de todas as idades.', acao:['Ver onde está',"go('cobrancaDia');cdSub('onde')"]}),
     it({tom:'planejar', titulo:'Recuperar mais de 90 dias', numero:cdMoeda(g.d90.valor), unid:cdNum(g.d90.clientes)+' clientes', porque:'Inadimplência antiga, precisa de régua própria.', acao:['Ver onde está',"go('cobrancaDia');cdSub('onde')"]})
   ].join('') : '<div class="cdg-nota">Os dados de cobrança ainda não carregaram.</div>';
   const com = [
@@ -25989,15 +26000,16 @@ async function renderInicio(){
     it({tom:est.length?'corrigir':'agir', titulo:'Atividades em andamento', numero:cdNum(atv.length-val.length), unid:'atividades', porque:est.length?`${cdNum(est.length)} com prazo estourado.`:'Todas dentro do prazo.', acao:['Abrir painel','radarIrAtividades()']}),
     it({tom:'planejar', titulo:'Validar o que a equipe entregou', numero:cdNum(val.length), unid:'aguardando', vazio:!val.length, porque:'A liderança confere e conclui ou devolve para ajuste.', acao:['Abrir painel','radarIrAtividades()']})
   ].join('') : '';
-  const rede = [
-    it({tom:'planejar', titulo:'Ordens de serviço abertas', numero:tipos.os?cdNum(tipos.os.registros):'-', unid:'OS', porque:'Inclui recolhimento, instalação e suporte técnico.', acao:['Abrir Saúde da Rede',"go('tecnica')"]}),
-    it({tom:'planejar', titulo:'Sinal da fibra', numero:tipos.fibra?cdNum(tipos.fibra.registros):'-', unid:'ONUs lidas', porque:'Sinal ruim tira o cliente da oferta e gera reclamação.', acao:['Abrir Saúde da Rede',"go('tecnica')"]})
-  ].join('');
+  const rede = rc ? [
+    it({tom:pons.length?'corrigir':'agir', titulo:'Falha coletiva (NOC)', numero:cdNum(pons.length), unid:(pons.length===1?'região':'regiões')+', '+cdNum(ponCli)+' clientes', vazio:!pons.length, porque:'Vários clientes da mesma caixa sem sinal ao mesmo tempo.', acao:['Ver casos',irRede('noc')]}),
+    it({tom:'agir', titulo:'Visita técnica (campo)', numero:cdNum(campo.length), unid:'clientes'+(campoAlta?', '+cdNum(campoAlta)+' com prioridade alta':''), vazio:!campo.length, porque:'Sem luz ou sinal crítico na casa do cliente.', acao:['Ver casos',irRede('campo')]}),
+    it({tom:'planejar', titulo:'Orientar o cliente', numero:cdNum(cli.length), unid:'clientes'+(cliAlta?', '+cdNum(cliAlta)+' com prioridade alta':''), vazio:!cli.length, porque:'Aparelho sem energia, quedas repetidas ou superaquecido.', acao:['Ver casos',irRede('cliente')]})
+  ].join('') : '<div class="cdg-nota">Os casos da rede ainda não carregaram.</div>';
   const colunas = `<div class="cdg-colunas">
-    <div class="cdg-col agir"><div class="cdg-col-h"><h3>Financeiro</h3><span>cobrança</span></div>${fin}</div>
+    <div class="cdg-col agir"><div class="cdg-col-h"><h3>Cobrança</h3><span>financeiro do cliente</span></div>${fin}</div>
+    <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Rede</h3><span>casos do dia</span></div>${rede}</div>
     <div class="cdg-col corrigir"><div class="cdg-col-h"><h3>Comercial</h3><span>vendas e campanhas</span></div>${com}</div>
     ${pode?`<div class="cdg-col planejar"><div class="cdg-col-h"><h3>Equipe</h3><span>atividades</span></div>${eq}</div>`:''}
-    <div class="cdg-col atencao"><div class="cdg-col-h"><h3>Rede</h3><span>técnico</span></div>${rede}</div>
   </div>`;
   const avisoParcial = (INI.parcial||[]).length ? `<div class="cdg-alerta warn" style="margin-bottom:12px"><i></i><div><b>Visão parcial.</b> Não consegui ler agora: ${INI.parcial.join(', ')}. Os outros números estão certos e os módulos funcionam normalmente. Tento de novo em 1 minuto.</div></div>` : '';
   box.innerHTML = `<div class="cdg">${avisoParcial}${status}${resumo}${colunas}</div>`;
@@ -26576,6 +26588,42 @@ function radarDistribuicao(itens, total, rotuloTotal){
   </div>`;
 }
 window.radarDistribuicao = radarDistribuicao;
+
+// ===== Alertas pessoais (só para a dona do alerta; some quando ela marca como concluído) =====
+var RADAR_LEMB = { lista:[], t:null };
+async function radarLembretesCarregar(){
+  try{ const sb=getSB(); if(!sb) return; const r=await sb.rpc('radar_meus_lembretes'); if(r.error) return; RADAR_LEMB.lista=r.data||[]; radarLembretesRender(); }catch(e){}
+  clearTimeout(RADAR_LEMB.t); RADAR_LEMB.t=setTimeout(radarLembretesCarregar, 30*60000);
+}
+function radarLembretesRender(){
+  const el=document.getElementById('radar-lembretes'); if(!el) return;
+  const tb=document.querySelector('.main > .topbar'); if(tb && tb.nextElementSibling!==el) tb.after(el);
+  const L=RADAR_LEMB.lista||[]; if(!L.length){ el.innerHTML=''; return; }
+  const dm=d=>{ const [y,m,dd]=String(d).split('-'); return dd+'/'+m; };
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  el.innerHTML=`<div style="display:grid;gap:8px;margin:0 0 14px">${L.map(x=>{
+    const prazo=new Date(x.prazo+'T00:00:00'), dias=Math.round((hoje-prazo)/86400000);
+    const [tom,chip]= x.situacao==='atrasado' ? ['risk',`Atrasado há ${dias} ${dias===1?'dia':'dias'}`] : x.situacao==='vence_hoje' ? ['warn','Vence hoje'] : ['info',`Prazo até ${dm(x.prazo)}`];
+    const [ano,mes]=String(x.competencia).split('-'); const nomeMes=new Date(+ano,+mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    const cor = tom==='risk'?'estado-risco':tom==='warn'?'estado-atencao':'azul';
+    return `<div role="alert" style="display:flex;gap:14px;align-items:center;padding:12px 16px;background:var(--superficie);border:1px solid var(--linha);border-left:5px solid var(--${cor});border-radius:10px">
+      <div style="flex:1;min-width:0"><div style="font:600 11px/1.2 var(--font-titulo);letter-spacing:.06em;text-transform:uppercase;color:var(--texto-3)">Alerta só para você</div>
+      <div style="margin-top:3px;font:700 15px/1.3 var(--font-titulo);color:var(--texto)">${cdEsc(x.titulo)} <span style="display:inline-block;margin-left:6px;padding:2px 10px;border-radius:999px;font:600 12px/1.5 var(--font-texto);color:#fff;background:var(--${cor})">${chip}</span></div>
+      <div style="margin-top:3px;font-size:13px;color:var(--texto-2)">${cdEsc(x.descricao||'')} Período: ${nomeMes}.</div></div>
+      <button type="button" class="btn sm primary" onclick="radarLembreteConcluirModal('${cdEsc(x.chave)}','${cdEsc(x.competencia)}')">Marcar como concluído</button></div>`; }).join('')}</div>`;
+}
+function radarLembreteConcluirModal(chave, comp){
+  const x=(RADAR_LEMB.lista||[]).find(y=>y.chave===chave&&y.competencia===comp); if(!x) return;
+  cdModal(`<h3>Concluir alerta</h3><p class="cdg-nota" style="margin:0 0 14px">Confirma que <b>${cdEsc(x.titulo)}</b> está concluído? O alerta sai da tela e volta só no próximo período.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+    <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="radarLembreteConcluir('${cdEsc(chave)}','${cdEsc(comp)}')">Sim, concluído</button></div>`);
+}
+async function radarLembreteConcluir(chave, comp){
+  try{ const r=await getSB().rpc('radar_lembrete_concluir',{p_chave:chave,p_competencia:comp}); if(r.error) throw new Error(r.error.message);
+    cdModal(null); toast('Alerta concluído.','success'); radarLembretesCarregar(); }catch(e){ toast(e.message,'error'); }
+}
+Object.assign(window,{radarLembretesCarregar, radarLembreteConcluirModal, radarLembreteConcluir});
+setTimeout(function tentaLemb(){ try{ const sb=getSB(); if(sb){ sb.auth.getSession().then(({data})=>{ if(data&&data.session) radarLembretesCarregar(); else setTimeout(tentaLemb,3000); }); return; } }catch(e){} setTimeout(tentaLemb,3000); }, 3000);
 
 // ===== Fotos das pessoas (subidas no Radar em Usuários e acessos) =====
 var RADAR_FOTOS = { porEmail:{}, porId:{}, porNome:{}, carregado:false };
