@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030094951">
+<meta name="radar-build" content="20261030100015">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -25533,10 +25533,22 @@ async function ixcCargaStatus(){
   IXC_CARGA.status = r.data || {};
   return IXC_CARGA.status;
 }
+const IXC_PARTES_LEITURA = [['contratos_todos','contratos'],['receber_periodo','recebimentos'],['logins','conexões'],['alteracoes_plano','alterações'],['clientes_cadastro','cadastro'],['fibra','rede'],['opa','OPA'],['planilha','planilha']];
+function ixcCargaPartes(st){
+  const ped = st && st.ultima_atualizacao ? new Date(st.ultima_atualizacao.pedido_em) : null;
+  const tipos = (st && st.tipos) || {};
+  return IXC_PARTES_LEITURA.map(([k,nome])=>({ k, nome, ok: !!(ped && tipos[k] && new Date(tipos[k].atualizado_em) >= ped) }));
+}
 function ixcCargaEmAndamento(st){
   const ult = st && st.ultima_atividade ? new Date(st.ultima_atividade) : null;
   const ped = st && st.ultima_atualizacao ? new Date(st.ultima_atualizacao.pedido_em) : null;
-  return !!((ult && (Date.now()-ult.getTime()) < 120000) || (ped && (Date.now()-ped.getTime()) < 20*60000));
+  const ativo = !!(ult && (Date.now()-ult.getTime()) < 120000);
+  if(ped && (Date.now()-ped.getTime()) < 20*60000){
+    // termina antes dos 20 minutos quando todas as partes chegaram e nada mais está sendo gravado
+    if(!ativo && ixcCargaPartes(st).every(p=>p.ok)) return false;
+    return true;
+  }
+  return ativo;
 }
 async function radarAtualizarTudo(){
   const sb=getSB(); if(!sb) return;
@@ -25572,7 +25584,7 @@ function ixcCargaCardHTML(){
         <label class="ixc-carga-data">Vencimentos de<input type="date" id="ixc-venc-de" value="${IXC_CARGA.de||ixcPadraoDe()}"></label>
         <label class="ixc-carga-data">até<input type="date" id="ixc-venc-ate" value="${IXC_CARGA.ate||ixcPadraoAte()}"></label>
         <button class="btn outline" type="button" onclick="radarAtualizarTudo()" ${andamento||IXC_CARGA.carregando?'disabled':''}>${andamento?'Atualização em andamento…':'Atualizar todos os dados'}</button>
-        <button class="btn" type="button" onclick="ixcCargaUsar()" ${!pronto||andamento||IXC_CARGA.carregando?'disabled':''}>Usar dados atualizados</button>
+        <span class="ixc-carga-nota" style="margin:0">O Radar passa a usar os dados novos sozinho quando a leitura termina.</span>
       </div>
     </div>
     <ul class="ixc-carga-lista">${linhas}</ul>
@@ -25685,12 +25697,18 @@ async function radarFixoRender(){
   const quem = ped && ped.pedido_por_nome ? ' por '+ixcEsc(String(ped.pedido_por_nome).split(' ')[0]) : '';
   let botao;
   if(IXC_CARGA.carregando) botao = `<button type="button" disabled>Carregando no Radar…</button>`;
-  else if(andamento) botao = `<button type="button" disabled>Atualizando… leva cerca de 20 min</button>`;
+  else if(andamento){ const ps=ixcCargaPartes(st), ok=ps.filter(p=>p.ok).length; botao = `<button type="button" disabled>Atualizando… ${ok} de ${ps.length} partes prontas</button>`; }
   else if(novos) botao = `<button type="button" class="novo" onclick="radarFixoCarregar()">Carregar dados novos</button>`;
   else botao = `<button type="button" onclick="radarFixoAtualizar()">Atualizar todos os dados</button>`;
   el.innerHTML = `${botao}<div class="info">${andamento && ped ? 'Pedido às '+new Date(ped.pedido_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+quem : 'Última leitura: '+(ult?ixcFmtDataHora(ult):'—')+(ped&&!andamento?quem:'')}</div>`;
   if(IXC_CARGA.carregando&&IXC_CARGA.progresso)el.querySelector('.info').textContent=IXC_CARGA.progresso;
-  if(andamento){ clearTimeout(window._radarFixoTimer); window._radarFixoTimer = setTimeout(radarFixoRender, 30000); }
+  if(andamento){ const falta=ixcCargaPartes(st).filter(p=>!p.ok).map(p=>p.nome); if(falta.length && !IXC_CARGA.carregando) el.querySelector('.info').textContent='Pedido às '+new Date(ped.pedido_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' · falta: '+falta.join(', '); clearTimeout(window._radarFixoTimer); window._radarFixoTimer = setTimeout(radarFixoRender, 30000); }
+  // dados novos prontos: o Radar passa a usar sozinho, sem precisar clicar
+  if(novos && !IXC_CARGA.carregando && !document.hidden && IXC_CARGA.autoPedido !== ped.pedido_em){
+    IXC_CARGA.autoPedido = ped.pedido_em;
+    toast('Os dados novos chegaram. Atualizando a tela…','success');
+    radarFixoCarregar();
+  }
 }
 async function radarFixoAtualizar(){
   await radarAtualizarTudo();
