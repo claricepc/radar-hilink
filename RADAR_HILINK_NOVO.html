@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030085824">
+<meta name="radar-build" content="20261030090906">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -25023,7 +25023,7 @@ function cdAtvDetalhe(tipo, i){
   if(tipo==='recolhimento_atd') return `OS ${cdEsc(d.os||'')} · ${cdEsc(d.tarefa||'')} · aberta em ${cdData(d.abertura)}${d.bairro?' · '+cdEsc(d.bairro):''}`;
   if(tipo==='avencer') return `Vence em ${cdData(d.vencimento)}${d.email?' · '+cdEsc(d.email):''}`;
   if(tipo==='sem_email') return `${cdEsc(d.situacao||'')}${d.email_atual?': '+cdEsc(d.email_atual):''}`;
-  if(String(tipo).startsWith('rede_')) return `<b>${cdEsc(d.caso_nome||'')}</b>${d.termo?' ('+cdEsc(d.termo)+')':''}. ${cdEsc(d.acao||'')}${d.rx!=null&&d.rx!==''?' · sinal '+String(d.rx).replace('.',',')+' dBm':''}${d.online==='N'?' · offline':''}${d.afetados?' · '+d.afetados+' clientes afetados':''}${d.cancel_em?' · pediu cancelamento em '+cdData(d.cancel_em):''}`;
+  if(String(tipo).startsWith('rede_')) return `<b>${cdEsc(d.caso_nome||'')}</b>${d.termo?' ('+cdEsc(d.termo)+')':''}. ${cdEsc(d.acao||'')}${d.rx!=null&&d.rx!==''&&Number(d.rx)<0&&Number(d.rx)>-40?' · sinal '+String(d.rx).replace('.',',')+' dBm':''}${d.online==='N'?' · offline':''}${d.afetados?' · '+d.afetados+' clientes afetados':''}${d.cancel_em?' · pediu cancelamento em '+cdData(d.cancel_em):''}`;
   if(tipo==='retorno_oportunidade') return `${cdEsc(d.motivo||'')}${d.oferta?' · '+cdEsc(d.oferta):''}${d.enviado_em?' · oferta enviada em '+cdData(d.enviado_em):''}`;
   if(tipo==='gerados_vencidos') return `Boleto ${d.id_titulo} emitido em ${cdData(d.emissao)} com vencimento ${cdData(d.vencimento)}${d.o_que_conferir?' · '+cdEsc(d.o_que_conferir):''}`;
   return '';
@@ -26410,8 +26410,9 @@ function redeFiltrados(fila){
 }
 function redeSinalTxt(d){
   const p=[];
-  if(d.rx!=null && d.rx!=='') p.push(`Sinal ${String(d.rx).replace('.',',')} dBm`);
-  if(d.temp!=null && d.temp!=='') p.push(`${Math.round(d.temp)} °C`);
+  const rx=Number(d.rx), tp=Number(d.temp);
+  if(d.rx!=null && d.rx!=='' && rx<0 && rx>-40) p.push(`Sinal ${String(d.rx).replace('.',',')} dBm`); else p.push('sem leitura de sinal');
+  if(d.temp!=null && d.temp!=='' && tp>0) p.push(`${Math.round(tp)} °C`);
   if(d.causa) p.push(`última queda: ${cdEsc(d.causa)}`);
   if(d.online) p.push(d.online==='N'?'<b>offline</b>':'online');
   if(d.quedas) p.push(`${d.quedas} queda(s) hoje`);
