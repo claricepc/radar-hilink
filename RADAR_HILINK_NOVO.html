@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030090906">
+<meta name="radar-build" content="20261030093338">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -24424,7 +24424,7 @@ function cdAtvModal(){
     <p class="cdg-nota" style="margin:0 0 12px">${cdEsc(CD_ATV_TIPOS[N.tipo].nome)}: <b>${cdNum(N.linhas.length)} ${unid}</b>${valor?`, ${cdMoeda(valor)}`:''}, em ${filiais.length} ${filiais.length===1?'filial':'filiais'}. A lista é salva como está agora.</p>
     <label class="cdg-campo">Nome da atividade<input id="cd-atv-nome" type="text" value="${cdEsc(N.titulo)}" maxlength="80"></label>
     <div class="cdg-campo">Quem vai tratar
-      ${pessoas.length?`<div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-atv-pessoa" value="${u.id}" data-nome="${cdEsc(u.nome)}" onchange="cdAtvDivisao()"> ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${u.ultimo_login?'':' <small>· ainda não entrou</small>'}</label>`).join('')}</div>`
+      ${pessoas.length?`<div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-atv-pessoa" value="${u.id}" data-nome="${cdEsc(u.nome)}" onchange="cdAtvDivisao()"> ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${u.equipe?' <small>· '+cdEsc(u.equipe)+'</small>':''}${u.ultimo_login?'':' <small>· ainda não entrou</small>'}</label>`).join('')}</div>`
         :`<div class="cdg-nota">Nenhuma atendente cadastrada. Use "Cadastrar atendente" no painel de atividades.</div>`}
       <div class="cdg-nota" id="cd-atv-divisao" style="margin-top:6px">Marque uma ou mais atendentes. Com mais de uma, a lista é dividida igualmente e cada uma recebe a sua atividade.</div>
     </div>
@@ -24704,7 +24704,7 @@ function cdAtvTrocarModal(id){
   cdModal(`<h3>Trocar responsável</h3>
     <p class="cdg-nota" style="margin:0 0 10px"><b>${cdEsc(a.titulo)}</b>. Hoje com ${cdEsc(a.responsavel_nome||'ninguém')}, ${cdNum(a.pendentes)} itens para tratar.</p>
     <div class="cdg-campo">Passar para
-      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="radio" name="cd-troca-p" value="${u.id}" ${u.id===a.responsavel?'disabled':''}> ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${u.id===a.responsavel?' (atual)':''}</label>`).join('')}</div></div>
+      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="radio" name="cd-troca-p" value="${u.id}" ${u.id===a.responsavel?'disabled':''}> ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${u.equipe?' <small>· '+cdEsc(u.equipe)+'</small>':''}${u.id===a.responsavel?' (atual)':''}</label>`).join('')}</div></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap"><label class="cdg-campo" style="max-width:200px">Novo prazo: dia<input id="cd-troca-prazo" type="date" min="${cdHoje()}" value="${a.prazo && a.prazo>=cdHoje() ? a.prazo : cdHoje()}"></label>
     <label class="cdg-campo" style="max-width:130px">Até as<input id="cd-troca-hora" type="time" step="900" value="${a.prazo_hora||'18:00'}"></label></div>
     <p class="cdg-nota" style="margin:-6px 0 14px">O que já foi tratado continua registrado. A nova responsável vê a atividade na hora.</p>
