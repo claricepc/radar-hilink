@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030134952">
+<meta name="radar-build" content="20261030135414">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -16744,7 +16744,9 @@ function premAtendimentoNome(nome){
 }
 function premAtendimentoAvatar(nome){
   const k=premAtendimentoKey(nome);
-  return k?PREM_AVATAR_ATENDIMENTO[k]||'':'';
+  if(!k) return '';
+  try{ const f=window.radarFotoPorNome && window.radarFotoPorNome(PREM_TIME_ATENDIMENTO[k]||k); if(f) return f; }catch(e){}
+  return PREM_AVATAR_ATENDIMENTO[k]||'';
 }
 
 // ===== Fotos do time: gestão troca clicando na foto (salvo no banco, vale para todos) =====
@@ -24374,7 +24376,7 @@ function cdAtvPainelHTML(){
       ${pessoas?`<div class="cdg-nota" style="margin:0">Tratados por: ${pessoas}</div>`:''}
       <div class="cdg-atv-acoes">
         <button type="button" class="btn sm primary" onclick="cdAtvAbrir(${a.id})" title="Ver os clientes desta atividade e o que já foi registrado">Abrir atividade</button>
-        ${!a.validacao_solicitada_em?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
+        ${!a.validacao_solicitada_em?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>${Number(a.pendentes)>1&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvDistribuirModal(${a.id})">Distribuir na equipe</button>`:''}`:''}
         ${cdAtvFluxoAcoes(a)}
       </div>
     </div>`;
@@ -24432,6 +24434,13 @@ function cdAtvNova(tipo, preset, daLista){
   if(!linhas.length){ toast('A lista está vazia: nada para gerar.','warn'); CD.atv.nova=null; return; }
   cdAtvModal();
 }
+function cdAtvPessoasOrdenadas(){
+  const lista=(CD.atv.usuarios||[]).slice(); const eu=String((_radarUser&&_radarUser.email)||'').toLowerCase();
+  const porEmail={}; lista.forEach(u=>porEmail[String(u.email).toLowerCase()]=u);
+  const abaixoDeMim=u=>{ let s=String(u.superior||'').toLowerCase(), n=0; while(s && n<6){ if(s===eu) return true; s=String((porEmail[s]||{}).superior||'').toLowerCase(); n++; } return false; };
+  const peso=u=>abaixoDeMim(u)?0:(u.perfil==='lider'?1:2);
+  return lista.sort((a,b)=>peso(a)-peso(b)||String(a.nome).localeCompare(String(b.nome),'pt-BR')).map(u=>Object.assign({},u,{minha:abaixoDeMim(u)}));
+}
 function cdAtvModal(){
   const N = CD.atv.nova; let el = document.getElementById('cd-atv-modal');
   if(!N){ if(el) el.remove(); return; }
@@ -24439,13 +24448,13 @@ function cdAtvModal(){
   const valor = N.linhas.reduce((a,x)=>a+(Number(x.valor ?? x.valor_aberto ?? x.valor_vencido)||0),0);
   const filiais = [...new Set(N.linhas.map(x=>x.filial).filter(Boolean))];
   const unid = (N.tipo==='quebra'||N.tipo==='suspeitos'||N.tipo==='gerados_vencidos')?'títulos':'clientes';
-  const pessoas = CD.atv.usuarios || [];
+  const pessoas = cdAtvPessoasOrdenadas();
   el.innerHTML = `<div class="cdg-modal-box" role="dialog" aria-modal="true" aria-labelledby="cd-atv-tit">
     <h3 id="cd-atv-tit">${String(N.tipo).startsWith('rede_')?'Direcionar tarefa da rede':'Direcionar atividade para o atendimento'}</h3>
     <p class="cdg-nota" style="margin:0 0 12px">${cdEsc(CD_ATV_TIPOS[N.tipo].nome)}: <b>${cdNum(N.linhas.length)} ${unid}</b>${valor?`, ${cdMoeda(valor)}`:''}, em ${filiais.length} ${filiais.length===1?'filial':'filiais'}. A lista é salva como está agora.</p>
     <label class="cdg-campo">Nome da atividade<input id="cd-atv-nome" type="text" value="${cdEsc(N.titulo)}" maxlength="80"></label>
     <div class="cdg-campo">Quem vai tratar
-      ${pessoas.length?`<div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-atv-pessoa" value="${u.id}" data-nome="${cdEsc(u.nome)}" onchange="cdAtvDivisao()"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${u.equipe?' <small>· '+cdEsc(u.equipe)+'</small>':''}${u.ultimo_login?'':' <small>· ainda não entrou</small>'}</label>`).join('')}</div>`
+      ${pessoas.length?`<div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-atv-pessoa" value="${u.id}" data-nome="${cdEsc(u.nome)}" onchange="cdAtvDivisao()"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança, distribui para a equipe dela)':''}${u.equipe?' <small>· '+cdEsc(u.equipe)+'</small>':''}${u.minha?' <small>· sua equipe</small>':''}${u.ultimo_login?'':' <small>· ainda não entrou</small>'}</label>`).join('')}</div>`
         :`<div class="cdg-nota">Nenhuma atendente cadastrada. Use "Cadastrar atendente" no painel de atividades.</div>`}
       <div class="cdg-nota" id="cd-atv-divisao" style="margin-top:6px">Marque uma ou mais atendentes. Com mais de uma, a lista é dividida igualmente e cada uma recebe a sua atividade.</div>
     </div>
@@ -24723,7 +24732,7 @@ function cdAtvHistoricoVoltar(){
 Object.assign(window,{cdAtvFluxoModal,cdAtvFluxoSalvar,cdAtvHistoricoModal,cdAtvHistoricoBuscar,cdAtvHistoricoDetalhe,cdAtvHistoricoVoltar});
 function cdAtvTrocarModal(id){
   const a = (CD.atv.lista||[]).find(x=>x.id===id); if(!a) return;
-  const pessoas = (CD.atv.usuarios||[]);
+  const pessoas = cdAtvPessoasOrdenadas();
   cdModal(`<h3>Trocar responsável</h3>
     <p class="cdg-nota" style="margin:0 0 10px"><b>${cdEsc(a.titulo)}</b>. Hoje com ${cdEsc(a.responsavel_nome||'ninguém')}, ${cdNum(a.pendentes)} itens para tratar.</p>
     <div class="cdg-campo">Passar para
@@ -24779,6 +24788,38 @@ async function cdAtvPrazosModal(id){
   }catch(e){if(modal.isConnected&&modal.innerHTML===conteudo){cdModal(null);toast(e.message,'error');}}
 }
 Object.assign(window,{cdAtvProrrogarModal,cdAtvProrrogar,cdAtvPrazosModal});
+
+function cdAtvDistribuirModal(id){
+  const a=(CD.atv.lista||[]).find(x=>x.id===id); if(!a) return;
+  const eu=String((_radarUser&&_radarUser.email)||'').toLowerCase();
+  const pessoas=cdAtvPessoasOrdenadas();
+  const resp=pessoas.find(u=>u.id===a.responsavel);
+  cdModal(`<h3>Distribuir na equipe</h3>
+    <p class="cdg-nota" style="margin:0 0 10px"><b>${cdEsc(a.titulo)}</b>${a.criado_por_nome?` · veio de ${cdEsc(a.criado_por_nome)}`:''}. ${cdNum(a.pendentes)} itens pendentes serão divididos por igual. O que já foi tratado fica onde está.</p>
+    <div class="cdg-campo">Dividir entre
+      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-dist-p" value="${u.id}" data-nome="${cdEsc(u.nome)}" ${u.minha&&String(u.email).toLowerCase()!==eu&&u.perfil==='atendente'?'checked':''} onchange="cdAtvDistribuirPrevia(${a.pendentes})"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${u.equipe?' <small>· '+cdEsc(u.equipe)+'</small>':''}${u.minha?' <small>· sua equipe</small>':''}</label>`).join('')}</div></div>
+    <div class="cdg-nota" id="cd-dist-previa" style="margin:4px 0 14px"></div>
+    <p class="cdg-nota" style="margin:0 0 14px">Cada pessoa recebe a sua tarefa com o mesmo prazo. A primeira marcada fica com esta tarefa; as outras recebem tarefas novas. Tudo fica no histórico.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+      <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="cdAtvDistribuir(${id})">Distribuir</button></div>`);
+  cdAtvDistribuirPrevia(a.pendentes);
+}
+function cdAtvDistribuirPrevia(n){
+  const el=document.getElementById('cd-dist-previa'); if(!el) return; n=Number(n)||0;
+  const sel=[...document.querySelectorAll('.cd-dist-p:checked')];
+  if(!sel.length){ el.textContent='Marque quem vai receber.'; return; }
+  const base=Math.floor(n/sel.length), resto=n%sel.length;
+  el.innerHTML=sel.map((s,k)=>`<b>${s.dataset.nome}</b>: ${cdNum(base+(k<resto?1:0))}`).join(' · ');
+}
+async function cdAtvDistribuir(id){
+  const sel=[...document.querySelectorAll('.cd-dist-p:checked')].map(x=>x.value);
+  if(!sel.length){ toast('Marque quem vai receber.','warn'); return; }
+  const b=document.getElementById('cd-conf-ok'); if(b){ b.disabled=true; b.textContent='Distribuindo...'; }
+  try{ const r=await cdAtvRpc('radar_atv_distribuir',{p_atividade:id, p_responsaveis:sel});
+    cdModal(null); toast(`${cdNum(r.itens)} itens divididos entre ${(r.pessoas||[]).join(', ')}.`,'success'); cdAtvCarregar(); }
+  catch(e){ toast(e.message,'error'); if(b){ b.disabled=false; b.textContent='Distribuir'; } }
+}
+Object.assign(window,{cdAtvDistribuirModal,cdAtvDistribuirPrevia,cdAtvDistribuir});
 async function cdAtvTrocar(id){
   const sel = document.querySelector('input[name="cd-troca-p"]:checked');
   if(!sel){ toast('Escolha quem vai tratar.','warn'); return; }
@@ -24954,7 +24995,7 @@ function cdAreaFocoHTML(){
         <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdPrazoTxt(a):''}</div></div>
       <button type="button" class="btn sm" onclick="cdAtvItensCarregar()">Atualizar</button>
       <button type="button" class="btn sm" onclick="CD.atv.modo='lista';renderCobrancaDia()" title="Ver todos os clientes numa lista">Ver em lista</button>
-      ${cdAtvEmExecucao(a)&&ger?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
+      ${cdAtvEmExecucao(a)&&ger?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>${Number(a.pendentes)>1&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvDistribuirModal(${a.id})">Distribuir na equipe</button>`:''}`:''}
       <button type="button" class="btn sm" onclick="cdAtvPrazosModal(${a.id})">Histórico de prazos</button>
       ${cdAtvFluxoAcoes(a)}
     </div>
@@ -25075,7 +25116,7 @@ function cdAreaListaHTML(){
         <div class="cdg-atv-meta">${cdEsc(CD_ATV_TIPOS[a.tipo]?.nome||'')} · ${a.responsavel_nome?'Responsável: '+cdEsc(a.responsavel_nome):'Sem responsável'}${a.prazo?' · prazo '+cdPrazoTxt(a):''} · criada por ${cdEsc(a.criado_por_nome||'-')}</div></div>
       ${cdAtvEmExecucao(a)?`<button type="button" class="btn sm primary" onclick="cdAtvProximo()">Pegar o próximo cliente</button>`:''}
       <button type="button" class="btn sm" onclick="cdAtvItensCarregar()">Atualizar</button>
-      ${cdAtvEmExecucao(a)&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>`:''}
+      ${cdAtvEmExecucao(a)&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvProrrogarModal(${a.id})">Prorrogar prazo</button><button type="button" class="btn sm" onclick="cdAtvTrocarModal(${a.id})">Trocar responsável</button>${Number(a.pendentes)>1&&cdPodeGerenciar()?`<button type="button" class="btn sm" onclick="cdAtvDistribuirModal(${a.id})">Distribuir na equipe</button>`:''}`:''}
       <button type="button" class="btn sm" onclick="cdAtvPrazosModal(${a.id})">Histórico de prazos</button>
       ${cdAtvFluxoAcoes(a)}
     </div>`;
@@ -25213,15 +25254,13 @@ function renderUsuarios(){
     const ult = u.ultimo_acesso ? new Date(u.ultimo_acesso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : 'nunca entrou';
     const sit = u.status!=='ativo' ? '<span class="cdg-sla-chip neutro">Inativo</span>' : !u.ultimo_acesso ? '<span class="cdg-sla-chip warn">Nunca entrou</span>' : u.trocar_senha ? '<span class="cdg-sla-chip warn">Precisa criar a senha</span>' : '<span class="cdg-sla-chip ok">Ativo</span>';
     const em = encodeURIComponent(u.email);
-    const fotoBtns = (u.pode_editar || String(u.email).toLowerCase()===String(_radarUser?.email||'').toLowerCase()) ? `<button type="button" class="cdg-mini" onclick="usrFotoEscolher('${em}')">Foto</button>` : '';
-    const acoes = !u.pode_editar ? (fotoBtns || '<span class="cdg-nota" style="margin:0">só a gestão altera</span>') : `
+    const acoes = !u.pode_editar ? '<span class="cdg-nota" style="margin:0">só a gestão altera</span>' : `
       <button type="button" class="cdg-mini" onclick="usrSenhaModal('${em}')">Redefinir senha</button>
-      <button type="button" class="cdg-mini" onclick="usrFotoEscolher('${em}')">Foto</button>
       ${u.perfil==='atendente'||u.perfil==='usuario'?`<button type="button" class="cdg-mini" onclick="usrModulosModal('${em}')">Módulos</button>`:''}
       ${admin&&!u.admin_sistema?`<button type="button" class="cdg-mini" onclick="usrEditarModal('${em}')">Editar</button>
       ${u.status==='ativo'?`<button type="button" class="cdg-mini" onclick="usrSituacao('${em}','inativo')">Desativar</button>`:`<button type="button" class="cdg-mini" onclick="usrSituacao('${em}','ativo')">Reativar</button>`}
       <button type="button" class="cdg-mini perigo-txt" onclick="usrExcluirModal('${em}')">Excluir</button>`:''}`;
-    return `<tr class="${u.status!=='ativo'?'usr-inativo':''}"><td><div style="display:flex;gap:10px;align-items:center">${radarAvatar({email:u.email,nome:u.nome},36)}<div><b>${cdEsc(u.nome||'-')}</b><small>${cdEsc(u.email)}</small></div></div></td>
+    return `<tr class="${u.status!=='ativo'?'usr-inativo':''}"><td><div style="display:flex;gap:10px;align-items:center">${usrAvatarClicavel(u,36)}<div><b>${cdEsc(u.nome||'-')}</b><small>${cdEsc(u.email)}</small></div></div></td>
       <td>${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}${u.admin_sistema?' <small>(administradora do sistema)</small>':''}<small>${usrModulosTxt(u)}</small></td><td>${sit}</td><td>${ult}</td><td class="usr-acoes">${acoes}</td></tr>`;
   }).join('');
   const perfisCad = admin ? ['atendente','lider','usuario'] : ['atendente'];
@@ -25286,7 +25325,7 @@ function usrHierarquiaHtml(){
     const mods = (u.perfil==='atendente'||u.perfil==='usuario') ? usrModulosTxt(u) : '';
     return `<div class="usr-no" style="margin-left:${nivel?22:0}px;${nivel?'border-left:2px solid var(--linha);padding-left:14px;':''}">
       <div class="cdg-box" style="display:flex;gap:12px;align-items:center;padding:10px 12px;margin:8px 0">
-        ${radarAvatar({email:u.email,nome:u.nome},38)}
+        ${usrAvatarClicavel(u,40)}
         <div style="flex:1;min-width:0">
           <div><b>${cdEsc(u.nome||u.email)}</b> <span class="cdg-sla-chip ${u.perfil==='admin'?'ok':u.perfil==='lider'?'warn':'neutro'}">${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}</span>${fs.length?` <small>· ${fs.length} ${fs.length===1?'pessoa':'pessoas'} abaixo</small>`:''}</div>
           <small>${cdEsc(u.equipe||'Equipe não informada')} · ${vePorPerfil[u.perfil]||''}${mods?' '+mods:''}</small>
@@ -25301,7 +25340,7 @@ function usrHierarquiaHtml(){
   const topo = raizes.length ? raizes.sort(ord) : ativos.filter(u=>u.perfil==='lider' && !porEmail[String(u.superior||'').toLowerCase()]).sort(ord);
   const usados = new Set(); const marca=u=>{ const k=String(u.email).toLowerCase(); if(usados.has(k)) return; usados.add(k); (filhos[k]||[]).forEach(marca); }; topo.forEach(marca);
   const resto = soltos.filter(u=>!usados.has(String(u.email).toLowerCase())).sort(ord);
-  return `<div class="cdg-nota" style="margin:12px 0 4px">Quem responde a quem. A posição define de quem a pessoa recebe tarefas e quem valida o trabalho dela; o perfil define o que ela vê.</div>
+  return `<div class="cdg-nota" style="margin:12px 0 4px">Clique no círculo da foto para trocar. Quem responde a quem. A posição define de quem a pessoa recebe tarefas e quem valida o trabalho dela; o perfil define o que ela vê.</div>
     ${topo.map(u=>no(u,0)).join('')}
     ${resto.length?`<div class="cdg-eyebrow" style="margin-top:18px">Sem posição definida (${resto.length})</div>
       <div class="cdg-nota" style="margin:2px 0 4px">Use "Posição" para dizer a quem cada uma responde.</div>${resto.map(u=>no(u,0)).join('')}`:''}`;
@@ -26513,7 +26552,7 @@ async function radarFotosCarregar(){
   try{ const sb=getSB(); if(!sb) return; const r=await sb.rpc('radar_fotos'); if(r.error) return;
     const m={porEmail:{},porId:{},porNome:{},carregado:true};
     (r.data||[]).forEach(u=>{ if(u.email) m.porEmail[u.email]=u.foto; if(u.id) m.porId[u.id]=u.foto; if(u.nome) m.porNome[radarNomeChave(u.nome)]=u.foto; });
-    RADAR_FOTOS=m; try{ renderUserBadge(); }catch(e){}
+    RADAR_FOTOS=m; try{ renderUserBadge(); }catch(e){} try{ if(STATE.activeMod==='premiacoes' && STATE.processed) refreshActiveModule(); }catch(e){}
   }catch(e){}
 }
 function radarAvatar(p, tam){
@@ -26525,6 +26564,13 @@ function radarAvatar(p, tam){
   const ini = ((partes[0]||'?')[0] + (partes.length>1 ? partes[partes.length-1][0] : '')).toUpperCase();
   let h=0; for(const c of nome) h=(h*31+c.charCodeAt(0))>>>0; const cor = ['serie-1','serie-2','serie-3','serie-4','serie-5'][h%5];
   return `<span class="radar-avatar" aria-hidden="true" style="${st};background:var(--${cor});color:#fff;font:700 ${Math.round(tam*0.38)}px/${tam}px var(--font-titulo);text-align:center">${cdEsc(ini)}</span>`;
+}
+function usrAvatarClicavel(u, tam){
+  const eu = String(u.email).toLowerCase()===String((typeof _radarUser!=='undefined'&&_radarUser&&_radarUser.email)||'').toLowerCase();
+  const pode = eu || (typeof CD!=='undefined' && (CD.perfil==='admin' || (CD.perfil==='lider' && u.perfil!=='admin')));
+  const av = radarAvatar({email:u.email,nome:u.nome},tam);
+  if(!pode) return av;
+  return `<button type="button" class="usr-av-btn" title="Clique para trocar a foto" aria-label="Trocar a foto de ${cdEsc(u.nome||u.email)}" onclick="usrFotoEscolher('${encodeURIComponent(u.email)}')" style="position:relative;padding:0;border:0;background:none;border-radius:50%;cursor:pointer;flex:none;line-height:0">${av}<span style="position:absolute;right:-2px;bottom:-2px;width:${Math.round(tam*0.42)}px;height:${Math.round(tam*0.42)}px;border-radius:50%;background:var(--azul);border:2px solid var(--superficie);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 16 16" width="${Math.round(tam*0.24)}" height="${Math.round(tam*0.24)}" fill="#fff" aria-hidden="true"><path d="M5.5 2 4.6 3.5H2.5A1.5 1.5 0 0 0 1 5v7.5A1.5 1.5 0 0 0 2.5 14h11a1.5 1.5 0 0 0 1.5-1.5V5a1.5 1.5 0 0 0-1.5-1.5h-2.1L10.5 2h-5ZM8 5.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></svg></span></button>`;
 }
 function radarFotoReduzir(arquivo){
   return new Promise((ok,erro)=>{
@@ -26546,7 +26592,7 @@ async function usrFotoRemover(emailCod){
   const r=await getSB().rpc('radar_usr_foto_salvar',{p_email:decodeURIComponent(emailCod),p_foto:null});
   if(r.error){ toast(r.error.message,'error'); return; } toast('Foto removida.','success'); await radarFotosCarregar(); try{ renderUsuarios(); }catch(e){}
 }
-Object.assign(window,{radarFotosCarregar, radarAvatar, usrFotoEscolher, usrFotoRemover});
+Object.assign(window,{radarFotosCarregar, radarAvatar, usrFotoEscolher, usrFotoRemover, usrAvatarClicavel, radarFotoPorNome:n=>RADAR_FOTOS.porNome[radarNomeChave(n)]||''});
 setTimeout(function tenta(){ try{ const sb=getSB(); if(sb){ sb.auth.getSession().then(({data})=>{ if(data&&data.session) radarFotosCarregar(); else setTimeout(tenta,3000); }); return; } }catch(e){} setTimeout(tenta,3000); }, 2500);
 
 // ===== PADRÃO VISUAL: todo gráfico passa por aqui antes de ser desenhado =====
