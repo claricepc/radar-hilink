@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030182807">
+<meta name="radar-build" content="20261030183811">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -3120,6 +3120,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
 </script>
 
 <main class="main">
+  <div id="radar-lembretes" aria-live="polite"></div>
 
   <div class="topbar">
     <div>
@@ -26576,6 +26577,37 @@ function radarDistribuicao(itens, total, rotuloTotal){
   </div>`;
 }
 window.radarDistribuicao = radarDistribuicao;
+
+// ===== Alertas pessoais (só para a dona do alerta; some quando ela marca como concluído) =====
+var RADAR_LEMB = { lista:[], t:null };
+async function radarLembretesCarregar(){
+  try{ const sb=getSB(); if(!sb) return; const r=await sb.rpc('radar_meus_lembretes'); if(r.error) return; RADAR_LEMB.lista=r.data||[]; radarLembretesRender(); }catch(e){}
+  clearTimeout(RADAR_LEMB.t); RADAR_LEMB.t=setTimeout(radarLembretesCarregar, 30*60000);
+}
+function radarLembretesRender(){
+  const el=document.getElementById('radar-lembretes'); if(!el) return;
+  const L=RADAR_LEMB.lista||[]; if(!L.length){ el.innerHTML=''; return; }
+  const dm=d=>{ const [y,m,dd]=String(d).split('-'); return dd+'/'+m; };
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  el.innerHTML=`<div style="display:grid;gap:8px;margin:0 0 14px">${L.map(x=>{
+    const prazo=new Date(x.prazo+'T00:00:00'), dias=Math.round((hoje-prazo)/86400000);
+    const [tom,chip]= x.situacao==='atrasado' ? ['risk',`Atrasado há ${dias} ${dias===1?'dia':'dias'}`] : x.situacao==='vence_hoje' ? ['warn','Vence hoje'] : ['info',`Prazo até ${dm(x.prazo)}`];
+    const [ano,mes]=String(x.competencia).split('-'); const nomeMes=new Date(+ano,+mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    return `<div class="cdg-alerta ${tom}" style="margin:0;align-items:center"><i></i><div style="flex:1"><b>${cdEsc(x.titulo)}</b> · ${chip}<br><small>${cdEsc(x.descricao||'')} Período: ${nomeMes}.</small></div>
+      <button type="button" class="btn sm primary" onclick="radarLembreteConcluirModal('${cdEsc(x.chave)}','${cdEsc(x.competencia)}')">Marcar como concluído</button></div>`; }).join('')}</div>`;
+}
+function radarLembreteConcluirModal(chave, comp){
+  const x=(RADAR_LEMB.lista||[]).find(y=>y.chave===chave&&y.competencia===comp); if(!x) return;
+  cdModal(`<h3>Concluir alerta</h3><p class="cdg-nota" style="margin:0 0 14px">Confirma que <b>${cdEsc(x.titulo)}</b> está concluído? O alerta sai da tela e volta só no próximo período.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+    <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="radarLembreteConcluir('${cdEsc(chave)}','${cdEsc(comp)}')">Sim, concluído</button></div>`);
+}
+async function radarLembreteConcluir(chave, comp){
+  try{ const r=await getSB().rpc('radar_lembrete_concluir',{p_chave:chave,p_competencia:comp}); if(r.error) throw new Error(r.error.message);
+    cdModal(null); toast('Alerta concluído.','success'); radarLembretesCarregar(); }catch(e){ toast(e.message,'error'); }
+}
+Object.assign(window,{radarLembretesCarregar, radarLembreteConcluirModal, radarLembreteConcluir});
+setTimeout(function tentaLemb(){ try{ const sb=getSB(); if(sb){ sb.auth.getSession().then(({data})=>{ if(data&&data.session) radarLembretesCarregar(); else setTimeout(tentaLemb,3000); }); return; } }catch(e){} setTimeout(tentaLemb,3000); }, 3000);
 
 // ===== Fotos das pessoas (subidas no Radar em Usuários e acessos) =====
 var RADAR_FOTOS = { porEmail:{}, porId:{}, porNome:{}, carregado:false };
