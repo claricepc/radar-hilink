@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030141108">
+<meta name="radar-build" content="20261030141732">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -9894,6 +9894,7 @@ if(window.Chart){
   };
   Object.keys(NativeChart).forEach(k=>{try{window.Chart[k]=NativeChart[k]}catch{}});
   window.Chart.prototype=NativeChart.prototype;
+  try{ Object.setPrototypeOf(window.Chart, NativeChart); }catch(e){}
 }
 
 const RADAR_THEME={
@@ -26690,7 +26691,7 @@ setTimeout(function tenta(){ try{ const sb=getSB(); if(sb){ sb.auth.getSession()
   RadarChart.__radarPadrao = true;
   window.Chart = RadarChart;
   // valor escrito na ponta da barra (só nos gráficos que eram rosca)
-  Orig.register({ id:'radarValorPonta', afterDatasetsDraw(chart, args, opts){
+  (typeof Orig.register==='function' ? Orig : Object.getPrototypeOf(Orig)).register({ id:'radarValorPonta', afterDatasetsDraw(chart, args, opts){
     if(!opts || opts.display!==true) return;
     const meta = chart.getDatasetMeta(0); if(!meta || !meta.data) return;
     const ctx = chart.ctx; ctx.save(); ctx.fillStyle = tk('texto'); ctx.font = '600 12px "Source Sans 3", Arial, sans-serif'; ctx.textBaseline = 'middle';
