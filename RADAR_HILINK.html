@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030093338">
+<meta name="radar-build" content="20261030093712">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -26380,8 +26380,8 @@ html[data-radar-tema="claro"] .sidebar .nav-item:focus-visible,html[data-radar-t
 var REDE = { dados:null, carregando:false, erro:'', fila:'', caso:'', filial:'', prio:'', busca:'', so_livres:true, edit:null, hist:null, abertos:{} };
 const REDE_FILAS = {
   cliente:{ nome:'Contato com o cliente', gestor:'Talitha', tipo:'rede_cliente', quem:'Atendimento', tom:'agir' },
-  campo:  { nome:'Demanda externa (campo)', gestor:'Akassio', tipo:'rede_campo', quem:'Equipe técnica', tom:'corrigir' },
-  noc:    { nome:'Rede (NOC)', gestor:'Gabriel', tipo:'rede_noc', quem:'NOC', tom:'planejar' }
+  campo:  { nome:'Demanda externa (campo)', gestor:'Akassio (gestor geral da técnica e do NOC)', tipo:'rede_campo', quem:'Equipe técnica', tom:'corrigir' },
+  noc:    { nome:'Rede (NOC)', gestor:'Gabriel, com o Akassio acima', tipo:'rede_noc', quem:'NOC', tom:'planejar' }
 };
 const REDE_PRIO = { 1:['Alta','risk'], 2:['Média','warn'], 3:['Baixa','info'] };
 function redeRegra(caso){ return ((REDE.dados||{}).regras||{}).casos?.[caso] || {}; }
@@ -26550,7 +26550,7 @@ function renderRedeRegras(){
        :`<p style="margin:6px 0 0">${cdEsc(c.explicacao)}</p><p style="margin:4px 0 0"><b>O que fazer:</b> ${cdEsc(c.acao)}</p>`}
    </div>`;
   box.innerHTML=`<div class="cdg-box" style="margin-bottom:12px"><div class="cdg-eyebrow">Regras da Saúde da Rede</div>
-    <p style="margin:6px 0 0">Aqui ficam os limites e o que fazer em cada caso. Quem pode mudar: a gestão, o Gabriel (NOC) e o Akassio (equipe técnica). Toda mudança fica registrada e dá para voltar atrás.</p>
+    <p style="margin:6px 0 0">Aqui ficam os limites e o que fazer em cada caso. Quem pode mudar: a gestão, o Akassio (gestor geral da técnica e do NOC) e o Gabriel (NOC). Toda mudança fica registrada e dá para voltar atrás.</p>
     <p class="cdg-nota" style="margin:6px 0 0">Versão ${D.regras_versao||1}, salva em ${redeDh(D.regras_em)}${D.regras_por?' por '+cdEsc(D.regras_por):''}.</p>
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">${D.pode_editar?(ed?`<button class="btn sm" onclick="REDE.edit=null;renderRedeRegras()">Cancelar</button>`:`<button class="btn sm primary" onclick="redeEditarIniciar()">Editar regras</button>`):'<span class="cdg-nota">Você pode ver as regras, mas não editar.</span>'}
       <button class="btn sm" onclick="${REDE.hist?'REDE.hist=null;renderRedeRegras()':'redeHistorico()'}">${REDE.hist?'Esconder histórico':'Ver histórico de mudanças'}</button></div>
