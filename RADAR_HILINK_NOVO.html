@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030134537">
+<meta name="radar-build" content="20261030134815">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -25132,7 +25132,7 @@ function cdAreaListaHTML(){
 }
 
 // ---------- Usuários e acessos (admin: tudo; líder: cadastra atendentes e redefine senha delas) ----------
-const USR = { lista:null, erro:null, busca:'', perfil:'todos', inativos:false, msg:'' };
+const USR = { lista:null, erro:null, busca:'', perfil:'todos', inativos:false, msg:'', vista:'hierarquia' };
 const USR_PERFIS = { admin:'Gestão (acesso total)', lider:'Liderança do atendimento', atendente:'Atendente', usuario:'Usuário do Radar' };
 const USR_PERFIL_DESC = {
   admin:'Vê e altera tudo no Radar, inclusive usuários.',
@@ -25213,6 +25213,7 @@ function renderUsuarios(){
     const ult = u.ultimo_acesso ? new Date(u.ultimo_acesso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : 'nunca entrou';
     const sit = u.status!=='ativo' ? '<span class="cdg-sla-chip neutro">Inativo</span>' : !u.ultimo_acesso ? '<span class="cdg-sla-chip warn">Nunca entrou</span>' : u.trocar_senha ? '<span class="cdg-sla-chip warn">Precisa criar a senha</span>' : '<span class="cdg-sla-chip ok">Ativo</span>';
     const em = encodeURIComponent(u.email);
+    const fotoBtns = (u.pode_editar || String(u.email).toLowerCase()===String(_radarUser?.email||'').toLowerCase()) ? `<button type="button" class="cdg-mini" onclick="usrFotoEscolher('${em}')">Foto</button>` : '';
     const acoes = !u.pode_editar ? (fotoBtns || '<span class="cdg-nota" style="margin:0">só a gestão altera</span>') : `
       <button type="button" class="cdg-mini" onclick="usrSenhaModal('${em}')">Redefinir senha</button>
       <button type="button" class="cdg-mini" onclick="usrFotoEscolher('${em}')">Foto</button>
@@ -25220,7 +25221,6 @@ function renderUsuarios(){
       ${admin&&!u.admin_sistema?`<button type="button" class="cdg-mini" onclick="usrEditarModal('${em}')">Editar</button>
       ${u.status==='ativo'?`<button type="button" class="cdg-mini" onclick="usrSituacao('${em}','inativo')">Desativar</button>`:`<button type="button" class="cdg-mini" onclick="usrSituacao('${em}','ativo')">Reativar</button>`}
       <button type="button" class="cdg-mini perigo-txt" onclick="usrExcluirModal('${em}')">Excluir</button>`:''}`;
-    const fotoBtns = (u.pode_editar || String(u.email).toLowerCase()===String(_radarUser?.email||'').toLowerCase()) ? `<button type="button" class="cdg-mini" onclick="usrFotoEscolher('${em}')">Foto</button>` : '';
     return `<tr class="${u.status!=='ativo'?'usr-inativo':''}"><td><div style="display:flex;gap:10px;align-items:center">${radarAvatar({email:u.email,nome:u.nome},36)}<div><b>${cdEsc(u.nome||'-')}</b><small>${cdEsc(u.email)}</small></div></div></td>
       <td>${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}${u.admin_sistema?' <small>(administradora do sistema)</small>':''}<small>${usrModulosTxt(u)}</small></td><td>${sit}</td><td>${ult}</td><td class="usr-acoes">${acoes}</td></tr>`;
   }).join('');
@@ -25252,6 +25252,11 @@ function renderUsuarios(){
         ${!admin?'<div class="cdg-nota" style="margin-top:8px">Como liderança, você cadastra atendentes e redefine a senha delas. Mudanças de perfil e exclusões são feitas pela gestão.</div>':''}
       </div>
     </div>
+    <div class="tec-subtabs" style="margin-top:16px;display:flex;gap:6px">
+      <button type="button" class="btn sm ${USR.vista==='hierarquia'?'primary':''}" onclick="USR.vista='hierarquia';renderUsuarios()">Estrutura da equipe</button>
+      <button type="button" class="btn sm ${USR.vista==='lista'?'primary':''}" onclick="USR.vista='lista';renderUsuarios()">Lista de acessos</button>
+    </div>
+    ${USR.vista==='hierarquia' ? usrHierarquiaHtml() : `
     <div class="cdg-area-f" style="margin-top:12px">
       <input type="text" placeholder="Buscar por nome ou e-mail" value="${cdEsc(USR.busca)}" oninput="USR.busca=this.value;clearTimeout(USR.t);USR.t=setTimeout(renderUsuarios,300)">
       <select onchange="USR.perfil=this.value;renderUsuarios()"><option value="todos">Todos os perfis</option>${Object.entries(USR_PERFIS).filter(([k])=>admin||k!=='admin'&&k!=='usuario').map(([k,t])=>`<option value="${k}" ${USR.perfil===k?'selected':''}>${t}</option>`).join('')}</select>
@@ -25260,9 +25265,65 @@ function renderUsuarios(){
     </div>
     ${USR.erro?`<div class="cdg-alerta risk"><i></i><div>${cdEsc(USR.erro)}</div></div>`:''}
     <div class="tbl-wrap" style="max-height:560px"><table class="decision-table usr-tab"><thead><tr><th>Pessoa</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th>Ações</th></tr></thead>
-      <tbody>${linhas||'<tr><td colspan="5">Nenhum usuário com esses filtros.</td></tr>'}</tbody></table></div>
+      <tbody>${linhas||'<tr><td colspan="5">Nenhum usuário com esses filtros.</td></tr>'}</tbody></table></div>`}
   </div>`;
 }
+
+// ===== Estrutura hierárquica da equipe =====
+function usrHierarquiaHtml(){
+  const admin = CD.perfil==='admin';
+  const ativos = (USR.lista||[]).filter(u=>u.status==='ativo');
+  const porEmail = {}; ativos.forEach(u=>porEmail[String(u.email).toLowerCase()]=u);
+  const filhos = {}; const raizes=[], soltos=[];
+  ativos.forEach(u=>{ const s=String(u.superior||'').toLowerCase();
+    if(s && porEmail[s]) (filhos[s]=filhos[s]||[]).push(u);
+    else if(u.perfil==='admin') raizes.push(u); else soltos.push(u); });
+  const ord = (a,b)=>({admin:0,lider:1,atendente:2,usuario:3}[a.perfil]-{admin:0,lider:1,atendente:2,usuario:3}[b.perfil]) || String(a.nome).localeCompare(String(b.nome),'pt-BR');
+  const vePorPerfil = { admin:'Vê e altera tudo no Radar.', lider:'Vê todos os módulos, valida e conclui tarefas, cadastra a equipe. Não altera o sistema.', atendente:'Vê as próprias tarefas e os módulos liberados.', usuario:'Vê só os módulos liberados.' };
+  const no = (u, nivel)=>{
+    const em=encodeURIComponent(u.email), k=String(u.email).toLowerCase(), fs=(filhos[k]||[]).sort(ord);
+    const pode = admin ? u.perfil!=='admin' : u.perfil==='atendente';
+    const mods = (u.perfil==='atendente'||u.perfil==='usuario') ? usrModulosTxt(u) : '';
+    return `<div class="usr-no" style="margin-left:${nivel?22:0}px;${nivel?'border-left:2px solid var(--linha);padding-left:14px;':''}">
+      <div class="cdg-box" style="display:flex;gap:12px;align-items:center;padding:10px 12px;margin:8px 0">
+        ${radarAvatar({email:u.email,nome:u.nome},38)}
+        <div style="flex:1;min-width:0">
+          <div><b>${cdEsc(u.nome||u.email)}</b> <span class="cdg-sla-chip ${u.perfil==='admin'?'ok':u.perfil==='lider'?'warn':'neutro'}">${cdEsc(USR_PERFIS[u.perfil]||u.perfil)}</span>${fs.length?` <small>· ${fs.length} ${fs.length===1?'pessoa':'pessoas'} abaixo</small>`:''}</div>
+          <small>${cdEsc(u.equipe||'Equipe não informada')} · ${vePorPerfil[u.perfil]||''}${mods?' '+mods:''}</small>
+        </div>
+        ${pode?`<button type="button" class="cdg-mini" onclick="usrPosicaoModal('${em}')">Posição</button>`:''}
+        ${pode&&(u.perfil==='atendente'||u.perfil==='usuario')?`<button type="button" class="cdg-mini" onclick="usrModulosModal('${em}')">Módulos</button>`:''}
+      </div>
+      ${fs.map(f=>no(f,nivel+1)).join('')}
+    </div>`;
+  };
+  // liderança não recebe a linha da gestão: mostra a partir dos líderes
+  const topo = raizes.length ? raizes.sort(ord) : ativos.filter(u=>u.perfil==='lider' && !porEmail[String(u.superior||'').toLowerCase()]).sort(ord);
+  const usados = new Set(); const marca=u=>{ const k=String(u.email).toLowerCase(); if(usados.has(k)) return; usados.add(k); (filhos[k]||[]).forEach(marca); }; topo.forEach(marca);
+  const resto = soltos.filter(u=>!usados.has(String(u.email).toLowerCase())).sort(ord);
+  return `<div class="cdg-nota" style="margin:12px 0 4px">Quem responde a quem. A posição define de quem a pessoa recebe tarefas e quem valida o trabalho dela; o perfil define o que ela vê.</div>
+    ${topo.map(u=>no(u,0)).join('')}
+    ${resto.length?`<div class="cdg-eyebrow" style="margin-top:18px">Sem posição definida (${resto.length})</div>
+      <div class="cdg-nota" style="margin:2px 0 4px">Use "Posição" para dizer a quem cada uma responde.</div>${resto.map(u=>no(u,0)).join('')}`:''}`;
+}
+function usrPosicaoModal(em){
+  const u = usrAchar(em); if(!u) return;
+  const k = String(u.email).toLowerCase();
+  const opcoes = (USR.lista||[]).filter(x=>x.status==='ativo' && String(x.email).toLowerCase()!==k && (x.perfil==='admin'||x.perfil==='lider'))
+    .sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt-BR'));
+  cdModal(`<h3>Posição de ${cdEsc(u.nome||u.email)}</h3>
+    <label class="cdg-campo">Responde a<select id="usr-pos-sup"><option value="">Ninguém (sem posição)</option>${opcoes.map(x=>`<option value="${cdEsc(x.email)}" ${String(u.superior||'').toLowerCase()===String(x.email).toLowerCase()?'selected':''}>${cdEsc(x.nome)} (${cdEsc(USR_PERFIS[x.perfil]||x.perfil)})</option>`).join('')}</select></label>
+    <label class="cdg-campo">Equipe<input id="usr-pos-eq" type="text" maxlength="60" value="${cdEsc(u.equipe||'')}" placeholder="Ex.: Atendimento, NOC, Técnica"></label>
+    <div class="cdg-nota" style="margin:-4px 0 14px">A equipe aparece na hora de direcionar tarefas.</div>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+      <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="usrPosicaoSalvar('${em}')">Salvar</button></div>`);
+}
+async function usrPosicaoSalvar(em){
+  try{ await cdAtvRpc('radar_usr_posicao_salvar',{p_email:decodeURIComponent(em), p_superior:document.getElementById('usr-pos-sup').value||null, p_equipe:document.getElementById('usr-pos-eq').value});
+    cdModal(null); toast('Posição salva.','success'); USR.lista=null; CD.atv.usuarios=null; renderUsuarios(); }
+  catch(e){ toast(e.message,'error'); }
+}
+Object.assign(window,{usrPosicaoModal, usrPosicaoSalvar});
 async function usrCriar(){
   const nome = document.getElementById('usr-nome').value.trim(), email = document.getElementById('usr-email').value.trim(),
         perfil = document.getElementById('usr-perfil').value, senha = document.getElementById('usr-senha').value.trim();
