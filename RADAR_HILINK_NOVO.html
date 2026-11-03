@@ -26420,24 +26420,25 @@ function opEvoMesesLista(){
 const opEvoRotulo = m => OPE_MES[+m.slice(5,7)-1]+'/'+m.slice(2,4);
 function opEvoItens(incluirEmpresarial){
   const meses = new Set(opEvoMesesLista()), emp = incluirEmpresarial ?? OPE.empresarial;
-  return (OPE.dados||[]).filter(x => meses.has(x.mes) && (OPE.filial==='Todas' || x.filial===OPE.filial) && (emp || +x.aumento <= OPE_EMPRESARIAL));
+  return (OPE.dados||[]).filter(x => meses.has(x.mes) && (OPE.filial==='Todas' || x.filial===OPE.filial) && (emp || Math.abs(+x.aumento) <= OPE_EMPRESARIAL));
 }
 function opEvoSerie(){
   const itens = opEvoItens(), por = {};
-  opEvoMesesLista().forEach(m => por[m] = { mes:m, qtd:0, conf:0, aguard:0, semf:0, aum:0, aumConf:0, aumAguard:0, inativos:0 });
+  opEvoMesesLista().forEach(m => por[m] = { mes:m, qtd:0, conf:0, aguard:0, semf:0, aum:0, aumConf:0, aumAguard:0, inativos:0, down:0, aumDown:0 });
   itens.forEach(x => { const s = por[x.mes]; if(!s) return; const a = +x.aumento||0;
+    if(x.tipo==='downgrade'){ s.down++; s.aumDown += a; return; }
     s.qtd++; s.aum += a;
     if(x.situacao==='confirmado'){ s.conf++; s.aumConf += a; } else if(x.situacao==='aguardando'){ s.aguard++; s.aumAguard += a; } else s.semf++;
     if(!x.contrato_ativo) s.inativos++; });
-  let acum = 0; const serie = Object.values(por).map(s => { acum += s.aumConf; return { ...s, acum }; });
+  let acum = 0; const serie = Object.values(por).map(s => { const liq = s.aumConf + s.aumDown; acum += liq; return { ...s, liq, acum }; });
   return { serie, itens };
 }
 function opEvoResumo(){
   const { serie, itens } = opEvoSerie();
-  const tot = serie.reduce((t,s)=>({ qtd:t.qtd+s.qtd, conf:t.conf+s.conf, aguard:t.aguard+s.aguard, aumConf:t.aumConf+s.aumConf, aumAguard:t.aumAguard+s.aumAguard, inativos:t.inativos+s.inativos }), { qtd:0, conf:0, aguard:0, aumConf:0, aumAguard:0, inativos:0 });
+  const tot = serie.reduce((t,s)=>({ qtd:t.qtd+s.qtd, conf:t.conf+s.conf, aguard:t.aguard+s.aguard, aumConf:t.aumConf+s.aumConf, aumAguard:t.aumAguard+s.aumAguard, inativos:t.inativos+s.inativos, down:t.down+s.down, aumDown:t.aumDown+s.aumDown, liq:t.liq+s.liq }), { qtd:0, conf:0, aguard:0, aumConf:0, aumAguard:0, inativos:0, down:0, aumDown:0, liq:0 });
   const fechados = serie.slice(0,-1), ult = fechados[fechados.length-1], ant = fechados[fechados.length-2];
-  const ativosHoje = itens.filter(x=>x.situacao==='confirmado' && x.contrato_ativo).reduce((t,x)=>t+(+x.aumento||0),0);
-  const empFora = OPE.empresarial ? [] : opEvoItens(true).filter(x=>+x.aumento > OPE_EMPRESARIAL);
+  const ativosHoje = itens.filter(x=>x.contrato_ativo && (x.tipo==='downgrade' || x.situacao==='confirmado')).reduce((t,x)=>t+(+x.aumento||0),0);
+  const empFora = OPE.empresarial ? [] : opEvoItens(true).filter(x=>Math.abs(+x.aumento) > OPE_EMPRESARIAL);
   return { serie, itens, tot, ult, ant, ativosHoje, empFora };
 }
 function opEvoHTML(){
@@ -26449,7 +26450,7 @@ function opEvoHTML(){
   const r = opEvoResumo(), t = r.tot;
   const varTxt = (r.ult && r.ant && r.ant.qtd) ? `${r.ult.qtd>=r.ant.qtd?'+':''}${Math.round(100*(r.ult.qtd-r.ant.qtd)/r.ant.qtd)}% contra ${opEvoRotulo(r.ant.mes)}` : '';
   const kpi = (c, titulo, valor, sub) => `<div class="cdg-num" style="--c:${c}"><div><b style="display:block;font-size:12px">${titulo}</b><small>${sub||''}</small></div><strong style="font-size:20px">${valor}</strong></div>`;
-  const linhas = r.serie.slice().reverse().map(s => `<tr><td>${opEvoRotulo(s.mes)}</td><td style="text-align:right">${cdNum(s.qtd)}</td><td style="text-align:right">${cdNum(s.conf)}</td><td style="text-align:right">${cdNum(s.aguard)}</td><td style="text-align:right">${cdNum(s.semf)}</td><td style="text-align:right">${cdMoeda(s.aum)}</td><td style="text-align:right">${cdMoeda(s.aumConf)}</td><td style="text-align:right">${cdMoeda(s.acum)}</td><td style="text-align:right">${cdNum(s.inativos)}</td></tr>`).join('');
+  const linhas = r.serie.slice().reverse().map(s => `<tr><td>${opEvoRotulo(s.mes)}</td><td style="text-align:right">${cdNum(s.qtd)}</td><td style="text-align:right">${cdNum(s.conf)}</td><td style="text-align:right">${cdNum(s.aguard)}</td><td style="text-align:right">${cdNum(s.semf)}</td><td style="text-align:right">${cdMoeda(s.aum)}</td><td style="text-align:right">${cdMoeda(s.aumConf)}</td><td style="text-align:right">${cdNum(s.down)}${s.down?' ('+cdMoeda(s.aumDown)+')':''}</td><td style="text-align:right"><b>${cdMoeda(s.liq)}</b></td><td style="text-align:right">${cdMoeda(s.acum)}</td><td style="text-align:right">${cdNum(s.inativos)}</td></tr>`).join('');
   return `<div class="section compact-section" id="ope-box">
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:12px">
       <label style="font-size:12px">Filial<br><select onchange="OPE.filial=this.value;renderOportunidades()"><option ${OPE.filial==='Todas'?'selected':''}>Todas</option>${filiais.map(f=>`<option ${OPE.filial===f?'selected':''}>${cdEsc(f)}</option>`).join('')}</select></label>
@@ -26460,14 +26461,15 @@ function opEvoHTML(){
     </div>
     <div class="cdg-numeros op-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:12px">
       ${kpi('var(--radar-blue)','Upgrades no período', cdNum(t.qtd), varTxt?`último mês fechado: ${cdNum(r.ult.qtd)} (${varTxt})`:'')}
-      ${kpi('var(--radar-green)','Aumento confirmado por mês', cdMoeda(t.aumConf), `${cdPct(t.conf,t.qtd)}% com a 1ª fatura paga`)}
+      ${kpi('var(--radar-green)','Aumento líquido por mês', cdMoeda(t.liq), `${cdMoeda(t.aumConf)} de upgrades pagos menos ${cdMoeda(-t.aumDown)} de downgrades · ${cdPct(t.conf,t.qtd)}% com a 1ª fatura paga`)}
       ${kpi('var(--radar-yellow)','Aguardando pagamento', cdMoeda(t.aumAguard), `${cdNum(t.aguard)} upgrades com a 1ª fatura em aberto`)}
-      ${kpi('var(--radar-purple)','Ainda rendendo hoje', cdMoeda(r.ativosHoje), `${cdNum(t.inativos)} contratos não estão mais ativos`)}
+      ${kpi('var(--radar-red)','Downgrades', cdNum(t.down), `reduziram ${cdMoeda(-t.aumDown)} por mês`)}
+      ${kpi('var(--radar-purple)','Ainda rendendo hoje', cdMoeda(r.ativosHoje), `${cdNum(t.inativos)} contratos com upgrade não estão mais ativos`)}
     </div>
     <div style="position:relative;height:340px"><canvas id="ope-grafico"></canvas></div>
-    <p style="font-size:11px;color:var(--radar-muted);margin:8px 0 12px">Barras: quantidade de upgrades (azul = 1ª fatura depois do upgrade paga; amarelo = ainda em aberto). Linha verde: aumento de receita mensal confirmado no mês.
-    ${r.empFora.length?` Fora do gráfico: ${cdNum(r.empFora.length)} upgrade(s) empresarial(is) somando ${cdMoeda(r.empFora.reduce((s,x)=>s+(+x.aumento||0),0))} por mês.`:''}</p>
-    <div style="overflow:auto"><table class="tbl" style="width:100%;font-size:12px"><thead><tr><th>Mês</th><th style="text-align:right">Upgrades</th><th style="text-align:right">1ª fatura paga</th><th style="text-align:right">Em aberto</th><th style="text-align:right">Sem fatura ainda</th><th style="text-align:right">Aumento total</th><th style="text-align:right">Aumento confirmado</th><th style="text-align:right">Acumulado confirmado</th><th style="text-align:right">Contrato inativo hoje</th></tr></thead><tbody>${linhas}</tbody></table></div>
+    <p style="font-size:11px;color:var(--radar-muted);margin:8px 0 12px">Barras: quantidade de upgrades (azul = 1ª fatura depois do upgrade paga; amarelo = ainda em aberto). Linha verde: aumento líquido de receita mensal (upgrades com a 1ª fatura paga menos downgrades). Mesmo critério do relatório de alterações do IXC, sem troca de plano em massa.
+    ${r.empFora.length?` Fora do gráfico: ${cdNum(r.empFora.length)} alteração(ões) empresarial(is) somando ${cdMoeda(r.empFora.reduce((s,x)=>s+(+x.aumento||0),0))} por mês.`:''}</p>
+    <div style="overflow:auto"><table class="tbl" style="width:100%;font-size:12px"><thead><tr><th>Mês</th><th style="text-align:right">Upgrades</th><th style="text-align:right">1ª fatura paga</th><th style="text-align:right">Em aberto</th><th style="text-align:right">Sem fatura ainda</th><th style="text-align:right">Aumento total</th><th style="text-align:right">Aumento confirmado</th><th style="text-align:right">Downgrades</th><th style="text-align:right">Líquido no mês</th><th style="text-align:right">Acumulado líquido</th><th style="text-align:right">Contrato inativo hoje</th></tr></thead><tbody>${linhas}</tbody></table></div>
   </div>`;
 }
 function opEvoConfig(serie, claro){
@@ -26476,12 +26478,12 @@ function opEvoConfig(serie, claro){
     data:{ labels:serie.map(s=>opEvoRotulo(s.mes)), datasets:[
       { type:'bar', label:'1ª fatura paga', data:serie.map(s=>s.conf), backgroundColor:'#0071BC', stack:'q', yAxisID:'y', order:2 },
       { type:'bar', label:'Em aberto', data:serie.map(s=>s.aguard+s.semf), backgroundColor:'#f59e0b', stack:'q', yAxisID:'y', order:2 },
-      { type:'line', label:'Aumento confirmado (R$/mês)', data:serie.map(s=>Math.round(s.aumConf*100)/100), borderColor:'#10b981', backgroundColor:'#10b981', yAxisID:'y1', tension:.3, cubicInterpolationMode:'monotone', pointRadius:4, borderWidth:3, order:1 } ] },
+      { type:'line', label:'Aumento líquido (R$/mês)', data:serie.map(s=>Math.round(s.liq*100)/100), borderColor:'#10b981', backgroundColor:'#10b981', yAxisID:'y1', tension:.3, cubicInterpolationMode:'monotone', pointRadius:4, borderWidth:3, order:1 } ] },
     options:{ responsive:!claro, maintainAspectRatio:false, animation:claro?false:undefined, devicePixelRatio:claro?1:undefined,
       plugins:{ legend:{ position:'bottom', labels:{ color:txt } }, radarValorPonta:{ display:false }, barValueLabels:{ display:false },
         tooltip:{ callbacks:{ label:c => c.dataset.yAxisID==='y1' ? `${c.dataset.label}: ${cdMoeda(c.raw)}` : `${c.dataset.label}: ${cdNum(c.raw)} upgrades` } } },
       scales:{ y:{ stacked:true, beginAtZero:true, title:{ display:true, text:'Upgrades', color:txt }, ticks:{ color:txt, precision:0 }, grid:{ color:grade } },
-        y1:{ position:'right', beginAtZero:true, title:{ display:true, text:'R$ por mês', color:txt }, ticks:{ color:txt, callback:v=>cdMoeda(v).replace(',00','') }, grid:{ display:false } },
+        y1:{ position:'right', beginAtZero:true, suggestedMin:0, title:{ display:true, text:'R$ por mês', color:txt }, ticks:{ color:txt, callback:v=>cdMoeda(v).replace(',00','') }, grid:{ display:false } },
         x:{ stacked:true, ticks:{ color:txt }, grid:{ display:false } } } },
     plugins:[{ id:'opeTotais', afterDatasetsDraw(chart){
       const m0 = chart.getDatasetMeta(0), m1 = chart.getDatasetMeta(1); if(!m1 || m1.hidden) return;
@@ -26505,7 +26507,7 @@ async function opEvoImagem(){
     const s0 = r.serie[0], s1 = r.serie[r.serie.length-1];
     g.fillStyle = '#64748b'; g.font = '18px Inter, Arial';
     g.fillText(`De ${opEvoRotulo(s0.mes)} a ${opEvoRotulo(s1.mes)} · gerado em ${new Date().toLocaleDateString('pt-BR')} · ${OPE.empresarial?'inclui':'sem'} contratos empresariais`, 50, 102);
-    const cards = [['Upgrades no período', cdNum(t.qtd), '#0071BC'], ['Aumento confirmado', cdMoeda(t.aumConf)+' / mês', '#10b981'], ['1ª fatura paga', cdPct(t.conf,t.qtd)+'%', '#2E3192'], ['Aguardando pagamento', cdMoeda(t.aumAguard), '#f59e0b']];
+    const cards = [['Upgrades no período', cdNum(t.qtd), '#0071BC'], ['Aumento líquido', cdMoeda(t.liq)+' / mês', '#10b981'], ['1ª fatura paga', cdPct(t.conf,t.qtd)+'%', '#2E3192'], ['Downgrades', cdNum(t.down)+(t.down?' ('+cdMoeda(t.aumDown)+')':''), '#ef4444']];
     cards.forEach(([tt, v, c], i) => { const x = 50 + i*330, y = 130;
       g.fillStyle = '#f8fafc'; g.fillRect(x, y, 310, 100); g.fillStyle = c; g.fillRect(x, y, 8, 100);
       g.fillStyle = '#64748b'; g.font = '17px Inter, Arial'; g.fillText(tt, x+24, y+36);
@@ -26520,8 +26522,8 @@ async function opEvoImagem(){
     g.drawImage(img, 50, 260, 1300, 560);
     ch.destroy(); box.remove();
     g.fillStyle = '#64748b'; g.font = '16px Inter, Arial';
-    g.fillText('Confirmado = a 1ª fatura depois do upgrade foi paga. Aumento = diferença entre o valor novo e o anterior do plano.', 50, 860);
-    if(r.empFora.length) g.fillText(`Fora do gráfico: ${r.empFora.length} upgrade(s) empresarial(is) somando ${cdMoeda(r.empFora.reduce((s,x)=>s+(+x.aumento||0),0))} por mês.`, 50, 888);
+    g.fillText('Aumento líquido = upgrades com a 1ª fatura depois do upgrade paga, menos downgrades. Critério do relatório de alterações do IXC.', 50, 860);
+    if(r.empFora.length) g.fillText(`Fora do gráfico: ${r.empFora.length} alteração(ões) empresarial(is) somando ${cdMoeda(r.empFora.reduce((s,x)=>s+(+x.aumento||0),0))} por mês.`, 50, 888);
     if(OPE.obs.trim()){ g.fillStyle = '#0f172a'; g.font = 'bold 20px Inter, Arial'; g.fillText('Observação: ' + OPE.obs.trim().slice(0,160), 50, 940); }
     g.fillStyle = '#94a3b8'; g.font = '14px Inter, Arial'; g.fillText('Radar Hilink', W-150, H-24);
     const a = document.createElement('a');
