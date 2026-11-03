@@ -26395,7 +26395,7 @@ function renderOportunidades(){
   box.innerHTML = `${OP.erro?`<div role="alert" class="section compact-section">Não foi possível atualizar: ${cdEsc(OP.erro)}</div>`:''}
     ${OP.carregando?'<div role="status" class="section compact-section">Recalculando as listas...</div>':''}
     ${opAbasHTML()}${OP.sub==='resumo'?opFalhasHTML():''}${opGuiaHTML()}${OP.sub==='listas'?opListaHTML():''}${OP.sub==='envios'?opAcompHTML():''}${OP.sub==='evolucao'?opEvoHTML():''}`;
-  if(OP.sub==='evolucao' && OPE.dados) opEvoGrafico();
+  if(OP.sub==='evolucao' && OPE.dados) requestAnimationFrame(opEvoGrafico);
 }
 Object.assign(window, { renderOportunidades, opCarregar, opIr, opSetFiltro, opToggle, opToggleTodos, opExportar });
 
@@ -26478,11 +26478,17 @@ function opEvoConfig(serie, claro){
       { type:'bar', label:'Em aberto', data:serie.map(s=>s.aguard+s.semf), backgroundColor:'#f59e0b', stack:'q', yAxisID:'y', order:2 },
       { type:'line', label:'Aumento confirmado (R$/mês)', data:serie.map(s=>Math.round(s.aumConf*100)/100), borderColor:'#10b981', backgroundColor:'#10b981', yAxisID:'y1', tension:.3, pointRadius:4, borderWidth:3, order:1 } ] },
     options:{ responsive:!claro, maintainAspectRatio:false, animation:claro?false:undefined,
-      plugins:{ legend:{ position:'bottom', labels:{ color:txt } }, radarValorPonta:{ display:false },
+      plugins:{ legend:{ position:'bottom', labels:{ color:txt } }, radarValorPonta:{ display:false }, barValueLabels:{ display:false },
         tooltip:{ callbacks:{ label:c => c.dataset.yAxisID==='y1' ? `${c.dataset.label}: ${cdMoeda(c.raw)}` : `${c.dataset.label}: ${cdNum(c.raw)} upgrades` } } },
       scales:{ y:{ stacked:true, beginAtZero:true, title:{ display:true, text:'Upgrades', color:txt }, ticks:{ color:txt, precision:0 }, grid:{ color:grade } },
         y1:{ position:'right', beginAtZero:true, title:{ display:true, text:'R$ por mês', color:txt }, ticks:{ color:txt, callback:v=>cdMoeda(v).replace(',00','') }, grid:{ display:false } },
-        x:{ stacked:true, ticks:{ color:txt }, grid:{ display:false } } } } };
+        x:{ stacked:true, ticks:{ color:txt }, grid:{ display:false } } } },
+    plugins:[{ id:'opeTotais', afterDatasetsDraw(chart){
+      const m0 = chart.getDatasetMeta(0), m1 = chart.getDatasetMeta(1); if(!m1 || m1.hidden) return;
+      const ctx = chart.ctx; ctx.save(); ctx.fillStyle = claro ? '#0f172a' : (getComputedStyle(document.body).color || '#0f172a');
+      ctx.font = '700 12px Inter, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      serie.forEach((s,i) => { const b = (m1.data[i] && s.aguard+s.semf ? m1.data[i] : m0.data[i]); if(!b || !s.qtd) return; ctx.fillText(String(s.qtd), b.x, b.y - 4); });
+      ctx.restore(); } }] };
 }
 function opEvoGrafico(){
   const el = document.getElementById('ope-grafico'); if(!el || typeof Chart==='undefined') return;
