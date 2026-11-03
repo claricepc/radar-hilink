@@ -16287,14 +16287,22 @@ function buildAuditoria360Rows(){
     causa:findCol(loginSample,[/causa da desconexão/i,/causa da desconexao/i]), qtd:findCol(loginSample,[/quantidade.*descon/i])
   };
   const riskOrder={'Crítico':0,Alto:1,'Atenção':2,Baixo:3};
+  // Índices: antes cada cliente varria todos os logins, OS e atendimentos OPA (milhões de comparações) e a tela travava.
+  const idx=(lista,chaves)=>{const m=new Map();lista.forEach((o,i)=>{chaves(o).forEach(k=>{if(!k)return;let a=m.get(k);if(!a)m.set(k,a=[]);a.push(i)})});return m};
+  const juntar=(lista,mapas)=>{const s=new Set();mapas.forEach(([m,ks])=>ks.forEach(k=>{const a=m.get(k);if(a)a.forEach(i=>s.add(i))}));return [...s].sort((a,b)=>a-b).map(i=>lista[i])};
+  const lgPorId=idx(logins,l=>[String(l[lgCols.id]||'').trim()]), lgPorNome=idx(logins,l=>[norm(l[lgCols.cliente]||'')]);
+  const osPorId=idx(osAll,o=>[String(o['Contrato OS']||'').trim()]), osPorNome=idx(osAll,o=>[norm(o.Cliente||'')]),
+        osPorFone=idx(osAll,o=>[phoneKey(o['Telefone OS']||'')]), osPorLogin=idx(osAll,o=>[String(o.Login||'').trim().toLowerCase()]);
+  const opaPorNome=idx(opaAll,o=>[norm(o['Nome cliente']||o.Contato||'')]), opaPorFone=idx(opaAll,o=>[o._phone||phoneKey(o.Telefone||'')]);
   const out=[...groups.values()].map(g=>{
     const ids=new Set(g.contracts.map(c=>c.id).filter(Boolean));
     const names=new Set(g.contracts.map(c=>c._cliente).filter(Boolean));
     const phones=new Set(g.contracts.map(c=>c.phone).filter(Boolean));
     const proc=[...ids].map(id=>byId.get(id)).filter(Boolean);
-    const logList=logins.filter(l=>ids.has(String(l[lgCols.id]||'').trim())||names.has(norm(l[lgCols.cliente]||'')));
-    const osList=osAll.filter(o=>ids.has(String(o['Contrato OS']||'').trim())||names.has(norm(o.Cliente||''))||phones.has(phoneKey(o['Telefone OS']||''))||proc.some(r=>String(r.Login||'').trim()&&String(r.Login||'').trim().toLowerCase()===String(o.Login||'').trim().toLowerCase()));
-    const opaList=opaAll.filter(o=>names.has(norm(o['Nome cliente']||o.Contato||''))||phones.has(o._phone||phoneKey(o.Telefone||'')));
+    const logList=juntar(logins,[[lgPorId,ids],[lgPorNome,names]]);
+    const procLogins=proc.map(r=>String(r.Login||'').trim().toLowerCase()).filter(Boolean);
+    const osList=juntar(osAll,[[osPorId,ids],[osPorNome,names],[osPorFone,phones],[osPorLogin,procLogins]]);
+    const opaList=juntar(opaAll,[[opaPorNome,names],[opaPorFone,phones]]);
     const active=g.contracts.filter(c=>c._active);
     const findings=[], tipos=new Set();
     const add=(tipo,msg)=>{findings.push(msg);tipos.add(tipo)};
