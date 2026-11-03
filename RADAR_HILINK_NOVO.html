@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="radar-build" content="20261030185134">
+<meta name="radar-build" content="20261103112231">
 <meta charset="UTF-8">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -3037,6 +3037,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
         <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('recolhimento_atd')">Agendar recolhimento</div>
         <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('suspeitos')">Corrigir no IXC</div>
         <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('avencer')">Lembrar vencimento e e-mail</div>
+        <div class="nav-sub" data-cd="carteiras" onclick="go('cobrancaDia');cdSub('carteiras')">Conferir filial x carteira</div>
         <div class="nav-item" data-mod="carneCorreios" onclick="go('carneCorreios')"><span>Envio Correios<small>carn&ecirc; de boletos via e-Carta</small></span></div>
         <div class="nav-item" data-mod="acao" onclick="go('acao')"><span>Estrat&eacute;gia de Atua&ccedil;&atilde;o<small>prioridades e plano de a&ccedil;&atilde;o</small></span></div>
       </div></div>
@@ -23918,11 +23919,11 @@ function cdCard(o){
     <div class="cd-k-label">${o.label}</div><div class="cd-k-valor">${o.valor}</div><div class="cd-k-sub">${o.sub||''}</div>
     ${o.ir?'<div class="cd-k-ver">Ver lista</div>':''}</div>`;
 }
-const CD_SUBS = [['resumo','Resumo do dia'],['onde','Onde está o dinheiro'],['listas','Listas para cobrar'],['atividades','Atividades da equipe'],['desempenho','Desempenho da equipe']];
+const CD_SUBS = [['resumo','Resumo do dia'],['onde','Onde está o dinheiro'],['listas','Listas para cobrar'],['carteiras','Filial x carteira'],['atividades','Atividades da equipe'],['desempenho','Desempenho da equipe']];
 function cdSub(k, aba){ CD.sub = k; if(aba) CD.aba = aba; renderCobrancaDia(); try{ radarTrilha('cobrancaDia'); }catch(e){} window.scrollTo({top:0,behavior:'smooth'}); }
 function cdAbasHTML(){
   const atrasadas = (CD.atv.lista||[]).filter(a=>a.status==='aberta' && typeof cdPrazoEstourou==='function' && cdPrazoEstourou(a)).length;
-  return `<div class="op-abas">${CD_SUBS.filter(([k])=>((k==='atividades'||k==='desempenho')===(CD.sub==='atividades'||CD.sub==='desempenho')) && ((k!=='atividades'&&k!=='desempenho')||cdPodeGerenciar())).map(([k,t])=>`<button type="button" class="${(CD.sub||'resumo')===k?'on':''}" onclick="cdSub('${k}')">${t}${k==='atividades'&&atrasadas?`<span class="q">${atrasadas}</span>`:''}</button>`).join('')}</div>`;
+  return `<div class="op-abas">${CD_SUBS.filter(([k])=>((k==='atividades'||k==='desempenho')===(CD.sub==='atividades'||CD.sub==='desempenho')) && ((k!=='atividades'&&k!=='desempenho'&&k!=='carteiras')||cdPodeGerenciar())).map(([k,t])=>`<button type="button" class="${(CD.sub||'resumo')===k?'on':''}" onclick="cdSub('${k}')">${t}${k==='atividades'&&atrasadas?`<span class="q">${atrasadas}</span>`:''}</button>`).join('')}</div>`;
 }
 window.cdSub = cdSub;
 function cdIrLista(aba, preset){
@@ -24202,6 +24203,7 @@ function cdGuiaHTML(){
   if(sub==='onde') return `<div class="cdg">${status}${v360}${estr}</div>`;
   if(sub==='atividades') return `<div class="cdg">${status}${cdAtvPainelHTML()}</div>`;
   if(sub==='desempenho') return `<div class="cdg">${status}${cdDesempenhoHTML()}</div>`;
+  if(sub==='carteiras') return `<div class="cdg">${cdCartHTML()}</div>`;
   if(sub==='listas') return `<div class="cdg">${status}</div>`;
   return `<div class="cdg">${status}${resumo}${colunas}${glos}</div>`;
 }
@@ -26588,6 +26590,78 @@ function radarDistribuicao(itens, total, rotuloTotal){
   </div>`;
 }
 window.radarDistribuicao = radarDistribuicao;
+
+// ===== Conferência filial x carteira de cobrança =====
+var CDC = { dados:null, carregando:false, erro:'', filtro:'pendentes', tipo:'' };
+async function cdCartCarregar(forcar){
+  if(CDC.carregando || (CDC.dados && !forcar)) return;
+  CDC.carregando=true; CDC.erro='';
+  try{ const r=await getSB().rpc('radar_div_carteira'); if(r.error) throw new Error(r.error.message); CDC.dados=r.data||{}; }
+  catch(e){ CDC.erro=e.message; }
+  CDC.carregando=false; if(CD.sub==='carteiras') renderCobrancaDia();
+}
+function cdCartHTML(){
+  if(!CDC.dados){ cdCartCarregar(); return `<div class="section compact-section"><h2 class="section-title">Filial x carteira de cobrança</h2><p class="cdg-nota">${CDC.erro?cdEsc(CDC.erro):'Conferindo contratos e boletos...'}</p></div>`; }
+  const D=CDC.dados, it=D.itens||[];
+  const pend=it.filter(x=>!x.decisao), corr=it.filter(x=>x.decisao==='corrigir_no_ixc'), ace=it.filter(x=>x.decisao==='atipico_aceito');
+  const semRegra=pend.filter(x=>x.classe==='sem_regra'), div=pend.filter(x=>x.classe==='divergente');
+  const lista = CDC.filtro==='pendentes'?pend : CDC.filtro==='corrigir'?corr : ace;
+  const vis = lista.filter(x=>!CDC.tipo || x.tipo===CDC.tipo);
+  const fmtD=v=>v?String(v).split('-').reverse().join('/'):'';
+  const nomeFil=(id,n)=>`${cdEsc(n||'Filial')} (${cdEsc(id)})`;
+  const regras=(D.regras||[]).reduce((m,r)=>{ (m[r.filial]=m[r.filial]||[]).push(r); return m; },{});
+  const linhas = vis.map(x=>`<tr>
+      <td><b>${x.tipo==='contrato'?'Contrato':'Boleto'} ${cdEsc(x.chave)}</b><small>${cdEsc(x.detalhe||'')}${x.vencimento?' · vence '+fmtD(x.vencimento):''}${x.valor?' · '+cdMoeda(x.valor):''}${x.tipo==='titulo'?' · '+cdEsc(x.situacao||''):''}</small></td>
+      <td>${cdEsc(x.cliente||'-')}<small>cliente ${cdEsc(x.id_cliente||'-')}</small></td>
+      <td>${nomeFil(x.filial,x.filial_nome)}</td>
+      <td><b class="r">${cdEsc(x.carteira)}</b><small>${x.classe==='sem_regra'?'filial sem regra':'esperada: '+cdEsc(x.esperada||'-')}</small></td>
+      <td>${x.decisao?`<small><b>${x.decisao==='atipico_aceito'?'Caso atípico aceito':'Corrigir no IXC'}</b> · ${cdEsc(x.por||'')} ${x.em?new Date(x.em).toLocaleDateString('pt-BR'):''}<br>${cdEsc(x.justificativa||'')}</small>`:''}
+        <button type="button" class="cdg-mini" onclick="cdCartJustModal('${x.tipo}','${cdEsc(x.chave)}')">${x.decisao?'Alterar':'Conferir'}</button></td></tr>`).join('');
+  const trans=(D.transicao||[]);
+  return `<div class="section compact-section">
+    <h2 class="section-title">Filial x carteira de cobrança</h2>
+    <p class="cdg-nota" style="margin:0 0 12px">Cada filial tem a carteira certa para o cliente pagar. Aqui aparecem os contratos ativos e os boletos (em aberto ou pagos nos últimos 45 dias) numa carteira que não é a da filial. Base do IXC: ${D.base_em?new Date(D.base_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'-'}.</p>
+    <div class="cdg-numeros" style="margin-bottom:12px">
+      <div class="cdg-num ${div.length?'risk':'ok'}"><div class="l">Divergentes a conferir</div><div class="v">${cdNum(div.length)}</div><div class="s">${cdNum(div.filter(x=>x.tipo==='contrato').length)} contratos, ${cdNum(div.filter(x=>x.tipo==='titulo').length)} boletos</div></div>
+      <div class="cdg-num ${semRegra.length?'warn':'ok'}"><div class="l">Filial sem regra</div><div class="v">${cdNum(semRegra.length)}</div><div class="s">precisa definir a carteira certa</div></div>
+      <div class="cdg-num info"><div class="l">Em correção no IXC</div><div class="v">${cdNum(corr.length)}</div><div class="s">saem sozinhos quando o IXC for corrigido</div></div>
+    </div>
+    ${trans.length?`<div class="cdg-alerta warn" style="margin-bottom:12px"><i></i><div><b>Carteira antiga em uso (transição, a confirmar):</b> ${trans.map(t=>`${cdNum(t.qtd)} ${t.tipo==='contrato'?'contratos':'boletos'} da filial ${cdEsc(t.filial)} na carteira ${cdEsc(t.carteira)}`).join('; ')}. Não entram como erro até a gestão decidir.</div></div>`:''}
+    <div class="cdg-area-f">
+      <select onchange="CDC.filtro=this.value;renderCobrancaDia()"><option value="pendentes" ${CDC.filtro==='pendentes'?'selected':''}>A conferir (${pend.length})</option><option value="corrigir" ${CDC.filtro==='corrigir'?'selected':''}>Corrigir no IXC (${corr.length})</option><option value="aceitos" ${CDC.filtro==='aceitos'?'selected':''}>Casos atípicos aceitos (${ace.length})</option></select>
+      <select onchange="CDC.tipo=this.value;renderCobrancaDia()"><option value="">Contratos e boletos</option><option value="contrato" ${CDC.tipo==='contrato'?'selected':''}>Só contratos</option><option value="titulo" ${CDC.tipo==='titulo'?'selected':''}>Só boletos</option></select>
+      <button type="button" class="btn sm" onclick="CDC.dados=null;renderCobrancaDia()">Atualizar</button>
+      <button type="button" class="btn sm" onclick="cdCartExportar()">Baixar lista</button>
+    </div>
+    <div class="tbl-wrap" style="max-height:560px"><table class="decision-table"><thead><tr><th>O quê</th><th>Cliente</th><th>Filial</th><th>Carteira</th><th>Conferência</th></tr></thead>
+      <tbody>${linhas||'<tr><td colspan="5">Nada aqui.</td></tr>'}</tbody></table></div>
+    <details class="cdg-guia-atv" style="margin-top:12px"><summary>Regras usadas</summary><ul class="cdg-conf-lista" style="margin-top:6px">
+      ${Object.entries(regras).map(([f,rs])=>`<li><b>Filial ${cdEsc(f)}:</b> ${rs.map(r=>`carteira ${cdEsc(r.carteira)}${r.situacao==='transicao'?' (transição, a confirmar)':''}`).join(', ')}</li>`).join('')}
+      </ul><p class="cdg-nota">As regras só mudam pela gestão. As justificativas registradas aqui servem de base para esse ajuste.</p></details>
+  </div>`;
+}
+function cdCartJustModal(tipo, chave){
+  const x=((CDC.dados||{}).itens||[]).find(y=>y.tipo===tipo&&String(y.chave)===String(chave)); if(!x) return;
+  cdModal(`<h3>Conferir ${tipo==='contrato'?'contrato':'boleto'} ${cdEsc(chave)}</h3>
+    <p class="cdg-nota" style="margin:0 0 10px">${cdEsc(x.cliente||'')} · filial ${cdEsc(x.filial)} na carteira <b>${cdEsc(x.carteira)}</b>${x.esperada?' (esperada '+cdEsc(x.esperada)+')':''}.</p>
+    <label class="cdg-campo">O que foi decidido<select id="cdc-dec"><option value="corrigir_no_ixc" ${x.decisao==='corrigir_no_ixc'?'selected':''}>Está errado: corrigir no IXC</option><option value="atipico_aceito" ${x.decisao==='atipico_aceito'?'selected':''}>Caso atípico: pode ficar assim</option></select></label>
+    <label class="cdg-campo">Justificativa<textarea id="cdc-just" rows="3" maxlength="1000" placeholder="Por que está assim? Ex.: cliente transferido de filial em setembro, carteira ainda não atualizada">${cdEsc(x.justificativa||'')}</textarea></label>
+    <p class="cdg-nota" style="margin:-4px 0 14px">A justificativa fica salva para a gestão ajustar as regras. "Corrigir no IXC" sai sozinho da lista quando o IXC for corrigido.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
+      <button type="button" class="btn sm primary" id="cd-conf-ok" onclick="cdCartJustSalvar('${tipo}','${cdEsc(chave)}')">Salvar</button></div>`);
+}
+async function cdCartJustSalvar(tipo, chave){
+  try{ const r=await getSB().rpc('radar_div_carteira_justificar',{p_tipo:tipo,p_chave:String(chave),p_decisao:document.getElementById('cdc-dec').value,p_justificativa:document.getElementById('cdc-just').value});
+    if(r.error) throw new Error(r.error.message); cdModal(null); toast('Conferência registrada.','success'); CDC.dados=null; renderCobrancaDia(); }
+  catch(e){ toast(e.message,'error'); }
+}
+function cdCartExportar(){
+  const it=((CDC.dados||{}).itens||[]); const cab=['tipo','id','cliente','id_cliente','filial','carteira','carteira_esperada','vencimento','valor','situacao','decisao','justificativa','por'];
+  const esc=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const csv=[cab.join(';'), ...it.map(x=>[x.tipo,x.chave,x.cliente,x.id_cliente,x.filial,x.carteira,x.esperada,x.vencimento,x.valor,x.situacao,x.decisao,x.justificativa,x.por].map(esc).join(';'))].join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'})); a.download='filial_x_carteira.csv'; a.click();
+}
+Object.assign(window,{cdCartCarregar,cdCartJustModal,cdCartJustSalvar,cdCartExportar});
 
 // ===== Alertas pessoais (só para a dona do alerta; some quando ela marca como concluído) =====
 var RADAR_LEMB = { lista:[], t:null };
