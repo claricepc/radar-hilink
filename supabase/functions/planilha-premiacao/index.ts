@@ -2,8 +2,8 @@ import postgres from "npm:postgres@3.4.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
 // Recebe a planilha de validação da premiação (xlsx em base64) e grava em ixc.premiacao_planilha.
-// Quem envia hoje: script do Google (Apps Script) dentro da própria planilha, com o cabeçalho x-planilha-chave
-// igual ao segredo planilha_chave do cofre (Vault) do Supabase. O cabeçalho antigo x-hilink-key (Make) ainda é aceito.
+// Modo principal: o banco chama com x-carga-chave e a função baixa a planilha do Google sozinha (ixc.config planilha_premiacao_id).
+// Também aceita receber o arquivo: x-planilha-chave (segredo planilha_chave do cofre) ou o antigo x-hilink-key.
 const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!, { prepare: false, max: 1 });
 const MESES: Record<string, number> = { janeiro:1, fevereiro:2, marco:3, abril:4, maio:5, junho:6, julho:7, agosto:8, setembro:9, outubro:10, novembro:11, dezembro:12,
   january:1, february:2, march:3, april:4, may:5, june:6, july:7, august:8, september:9, october:10, november:11, december:12 };
@@ -41,10 +41,22 @@ function compDe(cells: string[], rawCells: any[]): string | null {
 
 Deno.serve(async (req) => {
   try {
-    if (!(await autorizado(req))) return new Response("nao autorizado", { status: 401 });
-    let txt = (await req.text()).trim();
-    if (txt.startsWith("{")) { try { txt = JSON.parse(txt).arquivo ?? txt; } catch {} }
-    const bin = Uint8Array.from(atob(txt.replace(/\s/g, "")), (c) => c.charCodeAt(0));
+    let bin: Uint8Array;
+    const cc = req.headers.get("x-carga-chave") ?? "";
+    if (cc) {
+      // modo busca: o próprio Supabase baixa a planilha do Google (compartilhada como "qualquer pessoa com o link pode ver")
+      const [{ valor }] = await sql`select valor from ixc.config where chave = 'carga_direta_chave'`;
+      if (!valor || cc !== valor) return new Response("nao autorizado", { status: 401 });
+      const [{ id }] = await sql`select valor id from ixc.config where chave = 'planilha_premiacao_id'`;
+      const r = await fetch(`https://docs.google.com/spreadsheets/d/${id}/export?format=xlsx`, { redirect: "follow" });
+      if (!r.ok || !(r.headers.get("content-type") || "").includes("spreadsheet")) throw new Error(`Google nao entregou a planilha (HTTP ${r.status}). Confira se o link esta liberado.`);
+      bin = new Uint8Array(await r.arrayBuffer());
+    } else {
+      if (!(await autorizado(req))) return new Response("nao autorizado", { status: 401 });
+      let txt = (await req.text()).trim();
+      if (txt.startsWith("{")) { try { txt = JSON.parse(txt).arquivo ?? txt; } catch {} }
+      bin = Uint8Array.from(atob(txt.replace(/\s/g, "")), (c) => c.charCodeAt(0));
+    }
     const wb = XLSX.read(bin, { type: "array" });
     const out: any[] = [];
     const amostra: string[] = [];
