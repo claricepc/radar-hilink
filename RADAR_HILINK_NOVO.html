@@ -26476,8 +26476,8 @@ function opEvoConfig(serie, claro){
     data:{ labels:serie.map(s=>opEvoRotulo(s.mes)), datasets:[
       { type:'bar', label:'1ª fatura paga', data:serie.map(s=>s.conf), backgroundColor:'#0071BC', stack:'q', yAxisID:'y', order:2 },
       { type:'bar', label:'Em aberto', data:serie.map(s=>s.aguard+s.semf), backgroundColor:'#f59e0b', stack:'q', yAxisID:'y', order:2 },
-      { type:'line', label:'Aumento confirmado (R$/mês)', data:serie.map(s=>Math.round(s.aumConf*100)/100), borderColor:'#10b981', backgroundColor:'#10b981', yAxisID:'y1', tension:.3, pointRadius:4, borderWidth:3, order:1 } ] },
-    options:{ responsive:!claro, maintainAspectRatio:false, animation:claro?false:undefined,
+      { type:'line', label:'Aumento confirmado (R$/mês)', data:serie.map(s=>Math.round(s.aumConf*100)/100), borderColor:'#10b981', backgroundColor:'#10b981', yAxisID:'y1', tension:.3, cubicInterpolationMode:'monotone', pointRadius:4, borderWidth:3, order:1 } ] },
+    options:{ responsive:!claro, maintainAspectRatio:false, animation:claro?false:undefined, devicePixelRatio:claro?1:undefined,
       plugins:{ legend:{ position:'bottom', labels:{ color:txt } }, radarValorPonta:{ display:false }, barValueLabels:{ display:false },
         tooltip:{ callbacks:{ label:c => c.dataset.yAxisID==='y1' ? `${c.dataset.label}: ${cdMoeda(c.raw)}` : `${c.dataset.label}: ${cdNum(c.raw)} upgrades` } } },
       scales:{ y:{ stacked:true, beginAtZero:true, title:{ display:true, text:'Upgrades', color:txt }, ticks:{ color:txt, precision:0 }, grid:{ color:grade } },
