@@ -26457,14 +26457,23 @@ const opEvoData = d => d ? String(d).slice(8,10)+'/'+String(d).slice(5,7)+'/'+St
 const opEvoVend = id => { try{ const n = typeof vendedorNome==='function' ? vendedorNome(id) : ''; return n && n!=='Não identificado' ? n : (id&&id!=='0' ? 'Vendedor '+id : 'Não identificado'); }catch(e){ return id||''; } };
 // 1ª fatura depois do upgrade: paga, vencida sem pagamento, ou a vencer (inclui fatura ainda não gerada)
 const opEvoHoje = () => new Date().toISOString().slice(0,10);
-const opEvoVencida = x => x.tipo!=='downgrade' && x.situacao==='aguardando' && x.venc_primeira && String(x.venc_primeira) < opEvoHoje();
+// situação da 1ª fatura depois do upgrade:
+// pago | cancelou (cancelou o contrato sem pagar o valor novo) | vencida (venceu e não pagou) | avencer (ainda no prazo)
+function opEvoClasse(x){
+  if(x.situacao==='confirmado') return 'pago';
+  if(x.atual==='cancelado') return 'cancelou';
+  if(x.venc_primeira) return String(x.venc_primeira) < opEvoHoje() ? 'vencida' : 'avencer';
+  const dias = (Date.now() - new Date(String(x.data)+'T12:00:00').getTime())/864e5;
+  return dias > 45 ? 'vencida' : 'avencer';   // sem fatura encontrada: recente = ainda vai ser gerada; antiga = tratar como não paga
+}
+const opEvoVencida = x => x.tipo!=='downgrade' && opEvoClasse(x)==='vencida';
 function opEvoItens(incluirEmpresarial){
   const meses = new Set(opEvoMesesLista()), emp = incluirEmpresarial ?? OPE.empresarial;
   return (OPE.dados||[]).filter(x => meses.has(x.mes) && (OPE.filial==='Todas' || x.filial===OPE.filial) && (emp || Math.abs(+x.aumento) <= OPE_EMPRESARIAL));
 }
 function opEvoCalc(){
   const itens = opEvoItens(), por = {};
-  const novo = m => ({ mes:m, qtd:0, pagos:0, abertos:0, venc:0, aVencer:0, aumVenc:0, aum:0, aumPago:0, down:0, aumDown:0, canc:0, aumCanc:0, bloq:0 });
+  const novo = m => ({ mes:m, qtd:0, pagos:0, abertos:0, venc:0, aVencer:0, cancSemPagar:0, aumVenc:0, aum:0, aumPago:0, down:0, aumDown:0, canc:0, aumCanc:0, bloq:0 });
   opEvoMesesLista().forEach(m => por[m] = novo(m));
   const T = { ...novo('total'), hoje:0, aumBloq:0, aumAberto:0 };
   itens.forEach(x => { const s = por[x.mes]; if(!s) return; const a = +x.aumento||0;
@@ -26472,7 +26481,8 @@ function opEvoCalc(){
     s.qtd++; s.aum += a; T.qtd++; T.aum += a;
     if(x.situacao==='confirmado'){ s.pagos++; s.aumPago += a; T.pagos++; T.aumPago += a; if(x.atual!=='cancelado') T.hoje += a; }
     else { s.abertos++; T.abertos++; T.aumAberto += a;
-      if(opEvoVencida(x)){ s.venc++; s.aumVenc += a; T.venc++; T.aumVenc += a; } else { s.aVencer++; T.aVencer++; } }
+      const k = opEvoClasse(x);
+      if(k==='vencida'){ s.venc++; s.aumVenc += a; T.venc++; T.aumVenc += a; } else if(k==='cancelou'){ s.cancSemPagar++; T.cancSemPagar++; } else { s.aVencer++; T.aVencer++; } }
     if(x.atual==='cancelado'){ s.canc++; s.aumCanc += a; T.canc++; T.aumCanc += a; }
     else if(x.atual==='bloqueado'){ s.bloq++; T.bloq++; T.aumBloq += a; } });
   let acum = 0; const serie = Object.values(por).map(s => { const liq = s.aumPago + s.aumDown; acum += liq; return { ...s, liq, acum }; });
@@ -26512,7 +26522,7 @@ function opEvoPonteHTML(r){
 function opEvoDetalheHTML(r){
   if(!OPE.mesSel) return `<p style="font-size:12px;opacity:.75;margin:6px 0 14px">Passe o mouse nas barras para ver o resumo do mês. <b>Clique numa barra</b> (ou numa linha da tabela) para ver os clientes daquele mês.</p>`;
   const lista = r.itens.filter(x=>x.mes===OPE.mesSel).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
-  const pg = x => x.tipo==='downgrade' ? '<span class="ope-tag cinza">Downgrade</span>' : x.situacao==='confirmado' ? '<span class="ope-tag ok">Paga</span>' : opEvoVencida(x) ? `<span class="ope-tag ruim">Vencida em ${opEvoData(x.venc_primeira)}</span>` : `<span class="ope-tag ab">A vencer${x.venc_primeira?' em '+opEvoData(x.venc_primeira):''}</span>`;
+  const pg = x => x.tipo==='downgrade' ? '<span class="ope-tag cinza">Downgrade</span>' : x.situacao==='confirmado' ? '<span class="ope-tag ok">Paga</span>' : opEvoClasse(x)==='cancelou' ? '<span class="ope-tag cinza">Cancelou antes de pagar</span>' : opEvoClasse(x)==='vencida' ? `<span class="ope-tag ruim">${x.venc_primeira?'Vencida em '+opEvoData(x.venc_primeira):'Sem fatura paga'}</span>` : `<span class="ope-tag ab">A vencer${x.venc_primeira?' em '+opEvoData(x.venc_primeira):''}</span>`;
   const hj = x => x.atual==='cancelado' ? `<span class="ope-tag ruim">Cancelou${x.cancelado_em?' em '+opEvoData(x.cancelado_em):''}</span>` : x.atual==='bloqueado' ? '<span class="ope-tag ab">Bloqueado</span>' : '<span class="ope-tag ok">Ativo</span>';
   return `<div class="section compact-section" style="margin:6px 0 14px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><h3 style="margin:0;font-size:14px">Clientes de ${opEvoMesLongo(OPE.mesSel)} (${cdNum(lista.length)})</h3><button class="btn sm outline" onclick="OPE.mesSel=null;renderOportunidades()">Fechar</button></div>
@@ -26529,7 +26539,7 @@ function opEvoHTML(){
   const card = (c, titulo, dica, valor, sub) => `<div class="ope-card" style="--c:${c}"><b>${titulo}${opeDica(dica)}</b><strong>${valor}</strong><small>${sub}</small></div>`;
   const th = (t, d, dir) => `<th style="text-align:${dir||'right'};white-space:nowrap">${t}${d?opeDica(d):''}</th>`;
   const linhas = r.serie.slice().reverse().map(s => `<tr class="ope-clic ${OPE.mesSel===s.mes?'ope-on':''}" onclick="OPE.mesSel='${s.mes}';renderOportunidades();document.getElementById('ope-detalhe')?.scrollIntoView({behavior:'smooth',block:'start'})">
-    <td>${opEvoRotulo(s.mes)}</td><td style="text-align:right">${cdNum(s.qtd)}</td><td style="text-align:right">${cdNum(s.pagos)}</td><td style="text-align:right;${s.venc?'color:var(--radar-red);font-weight:700':''}">${s.venc?cdNum(s.venc):'-'}</td><td style="text-align:right">${s.aVencer?cdNum(s.aVencer):'-'}</td>
+    <td>${opEvoRotulo(s.mes)}</td><td style="text-align:right">${cdNum(s.qtd)}</td><td style="text-align:right">${cdNum(s.pagos)}</td><td style="text-align:right;${s.venc?'color:var(--radar-red);font-weight:700':''}">${s.venc?cdNum(s.venc):'-'}</td><td style="text-align:right">${s.aVencer?cdNum(s.aVencer):'-'}</td><td style="text-align:right">${s.cancSemPagar?cdNum(s.cancSemPagar):'-'}</td>
     <td style="text-align:right">${s.canc?cdNum(s.canc):'-'}</td><td style="text-align:right;font-weight:700">${cdMoeda(s.liq)}</td><td style="text-align:right">${s.down?cdNum(s.down)+' ('+cdMoeda(s.aumDown)+')':'-'}</td><td style="text-align:right">${cdMoeda(s.acum)}</td></tr>`).join('');
   return `<div class="section compact-section" id="ope-box">
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:10px">
@@ -26543,7 +26553,7 @@ function opEvoHTML(){
     <div class="ope-cards">
       ${card('var(--radar-blue)','Upgrades feitos','Clientes que passaram para um plano mais caro (ou de mesmo valor) no período. Mesmo critério do relatório de alterações do IXC, sem troca de plano em massa.', cdNum(T.qtd), r.ult?`último mês fechado: ${cdNum(r.ult.qtd)}${r.ant?' · mês anterior: '+cdNum(r.ant.qtd):''}`:'')}
       ${card('var(--radar-green)','Receita a mais por mês, hoje','Soma da diferença de mensalidade (plano novo menos plano antigo) dos upgrades que já pagaram a 1ª fatura e cujo contrato continua ativo, menos os downgrades. É quanto a mensalidade da base subiu por causa dos upgrades do período. Não é o dinheiro já recebido.', cdMoeda(T.hoje), `já descontados ${cdNum(T.canc)} cancelamentos${T.down?' e '+cdNum(T.down)+' downgrades':''}`)}
-      ${card('#2E3192','Já pagaram o valor novo','Percentual de upgrades cuja 1ª fatura depois da mudança de plano já foi paga. Vencida: a fatura já venceu e não foi paga (cobrar). A vencer: a fatura ainda não venceu, o cliente está no prazo.', cdPct(T.pagos,T.qtd)+'%', `${cdNum(T.pagos)} de ${cdNum(T.qtd)} · <b style="color:var(--radar-red)">${cdNum(T.venc)} vencidas sem pagar</b> · ${cdNum(T.aVencer)} a vencer`)}
+      ${card('#2E3192','Já pagaram o valor novo','Percentual de upgrades cuja 1ª fatura depois da mudança de plano já foi paga. Vencida: a fatura já venceu e não foi paga (cobrar). A vencer: a fatura ainda não venceu, o cliente está no prazo. Cancelou antes de pagar: o cliente cancelou o contrato antes de pagar o valor novo.', cdPct(T.pagos,T.qtd)+'%', `${cdNum(T.pagos)} de ${cdNum(T.qtd)} · <b style="color:var(--radar-red)">${cdNum(T.venc)} vencidas sem pagar</b> · ${cdNum(T.aVencer)} a vencer${T.cancSemPagar?' · '+cdNum(T.cancSemPagar)+' cancelaram antes de pagar':''}`)}
       ${card('var(--radar-red)','Perdas depois do upgrade','Cancelados: o cliente fez upgrade e depois cancelou o contrato; esse aumento saiu da receita. Bloqueados: contrato ativo, mas com a internet bloqueada por falta de pagamento; o aumento ainda conta, mas está em risco.', `${cdNum(T.canc)} cancelaram`, `${cdMoeda(T.aumCanc)} por mês perdidos · ${cdNum(T.bloq)} bloqueados (${cdMoeda(T.aumBloq)} por mês em risco)`)}
     </div>
     ${opEvoPonteHTML(r)}
@@ -26552,7 +26562,7 @@ function opEvoHTML(){
     <div id="ope-detalhe">${opEvoDetalheHTML(r)}</div>
     <h3 style="font-size:13px;margin:4px 0 6px">Mês a mês <span style="font-weight:400;font-size:11px;opacity:.7">(clique numa linha para ver os clientes)</span></h3>
     <div style="overflow:auto"><table class="tbl ope-tab" style="width:100%;font-size:12px"><thead><tr>
-      ${th('Mês','','left')}${th('Upgrades','Quantidade de upgrades feitos no mês.')}${th('Já pagaram','Upgrades do mês cuja 1ª fatura com o valor novo já foi paga.')}${th('Vencida sem pagar','A 1ª fatura com o valor novo já venceu e não foi paga. Precisa de cobrança.')}${th('A vencer','A 1ª fatura com o valor novo ainda não venceu (ou ainda não foi gerada). Cliente no prazo.')}${th('Cancelaram depois','Clientes que fizeram upgrade neste mês e hoje estão com o contrato cancelado.')}${th('Receita a mais no mês','Aumento de mensalidade dos upgrades do mês que já pagaram, menos os downgrades do mês.')}${th('Downgrades','Clientes que foram para um plano mais barato no mês, e quanto a mensalidade caiu.')}${th('Soma até o mês','Quanto a mensalidade da base subiu somando todos os meses do período até este.')}
+      ${th('Mês','','left')}${th('Upgrades','Quantidade de upgrades feitos no mês.')}${th('Já pagaram','Upgrades do mês cuja 1ª fatura com o valor novo já foi paga.')}${th('Vencida sem pagar','A 1ª fatura com o valor novo já venceu e não foi paga. Precisa de cobrança.')}${th('A vencer','A 1ª fatura com o valor novo ainda não venceu (ou ainda não foi gerada). Cliente no prazo.')}${th('Cancelou antes de pagar','O cliente cancelou o contrato antes de pagar a 1ª fatura com o valor novo.')}${th('Cancelaram depois','Clientes que fizeram upgrade neste mês e hoje estão com o contrato cancelado.')}${th('Receita a mais no mês','Aumento de mensalidade dos upgrades do mês que já pagaram, menos os downgrades do mês.')}${th('Downgrades','Clientes que foram para um plano mais barato no mês, e quanto a mensalidade caiu.')}${th('Soma até o mês','Quanto a mensalidade da base subiu somando todos os meses do período até este.')}
     </tr></thead><tbody>${linhas}</tbody></table></div>
   </div>`;
 }
@@ -26563,6 +26573,7 @@ function opEvoConfig(serie, claro){
       { type:'bar', label:'Já pagaram o valor novo', data:serie.map(s=>s.pagos), backgroundColor:'#0071BC', stack:'q', yAxisID:'y', order:2 },
       { type:'bar', label:'Vencida sem pagar', data:serie.map(s=>s.venc), backgroundColor:'#ef4444', stack:'q', yAxisID:'y', order:2 },
       { type:'bar', label:'A vencer', data:serie.map(s=>s.aVencer), backgroundColor:'#f59e0b', stack:'q', yAxisID:'y', order:2 },
+      { type:'bar', label:'Cancelou antes de pagar', data:serie.map(s=>s.cancSemPagar), backgroundColor:'#94a3b8', stack:'q', yAxisID:'y', order:2 },
       { type:'line', label:'Receita a mais no mês (R$)', data:serie.map(s=>Math.round(s.liq*100)/100), borderColor:'#10b981', backgroundColor:'#10b981', yAxisID:'y1', tension:.3, cubicInterpolationMode:'monotone', pointRadius:5, pointHoverRadius:8, borderWidth:3, order:1 } ] },
     options:{ responsive:!claro, maintainAspectRatio:false, animation:claro?false:undefined, devicePixelRatio:claro?1:undefined,
       interaction:{ mode:'index', intersect:false },
@@ -26574,7 +26585,7 @@ function opEvoConfig(serie, claro){
             title: it => it.length ? opEvoMesLongo(serie[it[0].dataIndex].mes) : '',
             label: () => null,
             afterBody: it => { if(!it.length) return []; const s = serie[it[0].dataIndex];
-              const l = [`Upgrades feitos: ${cdNum(s.qtd)}`, `Já pagaram o valor novo: ${cdNum(s.pagos)}`]; if(s.venc) l.push(`Vencida sem pagar: ${cdNum(s.venc)} (${cdMoeda(s.aumVenc)} por mês)`); if(s.aVencer) l.push(`A vencer: ${cdNum(s.aVencer)}`);
+              const l = [`Upgrades feitos: ${cdNum(s.qtd)}`, `Já pagaram o valor novo: ${cdNum(s.pagos)}`]; if(s.venc) l.push(`Vencida sem pagar: ${cdNum(s.venc)} (${cdMoeda(s.aumVenc)} por mês)`); if(s.aVencer) l.push(`A vencer: ${cdNum(s.aVencer)}`); if(s.cancSemPagar) l.push(`Cancelou antes de pagar: ${cdNum(s.cancSemPagar)}`);
               if(s.canc) l.push(`Cancelaram depois: ${cdNum(s.canc)} (${cdMoeda(s.aumCanc)} por mês)`);
               if(s.down) l.push(`Downgrades: ${cdNum(s.down)} (${cdMoeda(s.aumDown)} por mês)`);
               l.push(`Receita a mais no mês: ${cdMoeda(s.liq)}`, `Soma até este mês: ${cdMoeda(s.acum)} por mês`); return l; },
@@ -26583,10 +26594,10 @@ function opEvoConfig(serie, claro){
         y1:{ position:'right', beginAtZero:true, suggestedMin:0, title:{ display:true, text:'Receita a mais (R$ por mês)', color:txt }, ticks:{ color:txt, callback:v=>cdMoeda(v).replace(',00','') }, grid:{ display:false } },
         x:{ stacked:true, ticks:{ color:txt }, grid:{ display:false } } } },
     plugins:[{ id:'opeTotais', afterDatasetsDraw(chart){
-      const ms = [2,1,0].map(i=>chart.getDatasetMeta(i));
+      const ms = [3,2,1,0].map(i=>chart.getDatasetMeta(i));
       const ctx = chart.ctx; ctx.save(); ctx.fillStyle = claro ? '#0f172a' : (getComputedStyle(document.body).color || '#0f172a');
       ctx.font = '700 12px Inter, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      serie.forEach((s,i) => { const vals=[s.aVencer,s.venc,s.pagos]; let b=null; ms.forEach((m,k)=>{ if(!b && vals[k] && m && !m.hidden && m.data[i]) b=m.data[i]; }); b = b || ms[2]?.data[i]; if(!b || !s.qtd) return; ctx.fillText(String(s.qtd), b.x, b.y - 4); });
+      serie.forEach((s,i) => { const vals=[s.cancSemPagar,s.aVencer,s.venc,s.pagos]; let b=null; ms.forEach((m,k)=>{ if(!b && vals[k] && m && !m.hidden && m.data[i]) b=m.data[i]; }); b = b || ms[3]?.data[i]; if(!b || !s.qtd) return; ctx.fillText(String(s.qtd), b.x, b.y - 4); });
       ctx.restore(); } }] };
 }
 function opEvoGrafico(){
@@ -26633,7 +26644,7 @@ async function opEvoImagem(){
     ch.destroy(); box.remove();
     y += 570;
     g.fillStyle = '#64748b'; g.font = '16px Inter, Arial';
-    g.fillText('Barras: upgrades do mês (azul = já pagaram a 1ª fatura com o valor novo; vermelho = fatura vencida sem pagar; amarelo = a vencer).', 50, y); y += 24; g.fillText('Linha verde: quanto a mensalidade subiu com os upgrades do mês, menos downgrades.', 50, y); y += 26;
+    g.fillText('Barras: upgrades do mês (azul = já pagaram a 1ª fatura com o valor novo; vermelho = vencida sem pagar; amarelo = a vencer; cinza = cancelou antes de pagar).', 50, y); y += 24; g.fillText('Linha verde: quanto a mensalidade subiu com os upgrades do mês, menos downgrades.', 50, y); y += 26;
     if(r.empFora.length){ g.fillText(`Fora do gráfico: ${r.empFora.length} alteração(ões) empresarial(is) somando ${cdMoeda(r.empFora.reduce((s,x)=>s+(+x.aumento||0),0))} por mês.`, 50, y); y += 26; }
     if(OPE.obs.trim()){ g.fillStyle = '#0f172a'; g.font = 'bold 20px Inter, Arial'; y = opEvoTextoQuebrado(g, 'Observação: ' + OPE.obs.trim().slice(0,400), 50, y+12, 1300, 28); }
     const Hf = Math.min(H, y + 50); g.fillStyle = '#94a3b8'; g.font = '14px Inter, Arial'; g.fillText('Radar Hilink', W-150, Hf-18);
