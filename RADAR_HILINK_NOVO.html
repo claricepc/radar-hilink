@@ -26490,6 +26490,25 @@ function opEvoFrase(r){
   if(r.ult && r.ant && r.ant.qtd) f += ` No último mês fechado (${OPE_MES_LONGO[+r.ult.mes.slice(5,7)-1]}) foram ${cdNum(r.ult.qtd)} upgrades, ${r.ult.qtd>=r.ant.qtd?'mais':'menos'} que os ${cdNum(r.ant.qtd)} de ${OPE_MES_LONGO[+r.ant.mes.slice(5,7)-1]}.`;
   return f;
 }
+// Ponte entre o total do relatório de alterações do IXC e a "receita a mais por mês, hoje"
+function opEvoPonteHTML(r){
+  const todos = opEvoItens(true), soma = (l)=>l.reduce((t,x)=>t+(+x.aumento||0),0);
+  const ixc = soma(todos);
+  const emp = OPE.empresarial ? 0 : soma(todos.filter(x=>Math.abs(+x.aumento) > OPE_EMPRESARIAL));
+  const base = todos.filter(x=>OPE.empresarial || Math.abs(+x.aumento) <= OPE_EMPRESARIAL);
+  const canc = soma(base.filter(x=>x.atual==='cancelado'));
+  const naoPago = soma(base.filter(x=>x.tipo!=='downgrade' && x.situacao!=='confirmado' && x.atual!=='cancelado'));
+  const fim = ixc - emp - canc - naoPago;
+  const lin = (t, v, d, forte) => `<tr><td style="padding:5px 8px">${t}${d?opeDica(d):''}</td><td style="padding:5px 8px;text-align:right;white-space:nowrap;${forte?'font-weight:800;font-size:14px':''}">${v}</td></tr>`;
+  return `<details style="margin:0 0 14px" ${OPE.ponteAberta?'open':''} ontoggle="OPE.ponteAberta=this.open"><summary style="cursor:pointer;font-size:13px;font-weight:700">Como chegamos em ${cdMoeda(r.T.hoje)} a partir do total do IXC (${cdMoeda(ixc)})</summary>
+    <table style="font-size:13px;margin-top:8px;min-width:min(560px,100%)"><tbody>
+      ${lin('Diferença total no relatório de alterações do IXC', cdMoeda(ixc), 'Soma da coluna "Diferença" do relatório de alterações do IXC no mesmo período e filial: upgrades menos downgrades, de todos os contratos, pagando ou não.', true)}
+      ${emp?lin('menos contratos empresariais (fora do gráfico)', '- '+cdMoeda(emp), 'Aumentos acima de '+cdMoeda(OPE_EMPRESARIAL)+' por mês. Marque "Incluir empresariais" para somá-los.'):''}
+      ${lin('menos contratos que cancelaram depois', '- '+cdMoeda(canc), 'O cliente mudou de plano e depois cancelou. Esse aumento não existe mais na receita.')}
+      ${lin('menos upgrades que ainda não pagaram o valor novo', '- '+cdMoeda(naoPago), 'Contrato ativo, mas a 1ª fatura com o valor novo ainda não foi paga (vencida ou a vencer). Entra na conta quando for paga.')}
+      ${lin('= Receita a mais por mês, hoje', cdMoeda(fim), '', true)}
+    </tbody></table></details>`;
+}
 function opEvoDetalheHTML(r){
   if(!OPE.mesSel) return `<p style="font-size:12px;opacity:.75;margin:6px 0 14px">Passe o mouse nas barras para ver o resumo do mês. <b>Clique numa barra</b> (ou numa linha da tabela) para ver os clientes daquele mês.</p>`;
   const lista = r.itens.filter(x=>x.mes===OPE.mesSel).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
@@ -26527,6 +26546,7 @@ function opEvoHTML(){
       ${card('#2E3192','Já pagaram o valor novo','Percentual de upgrades cuja 1ª fatura depois da mudança de plano já foi paga. Vencida: a fatura já venceu e não foi paga (cobrar). A vencer: a fatura ainda não venceu, o cliente está no prazo.', cdPct(T.pagos,T.qtd)+'%', `${cdNum(T.pagos)} de ${cdNum(T.qtd)} · <b style="color:var(--radar-red)">${cdNum(T.venc)} vencidas sem pagar</b> · ${cdNum(T.aVencer)} a vencer`)}
       ${card('var(--radar-red)','Perdas depois do upgrade','Cancelados: o cliente fez upgrade e depois cancelou o contrato; esse aumento saiu da receita. Bloqueados: contrato ativo, mas com a internet bloqueada por falta de pagamento; o aumento ainda conta, mas está em risco.', `${cdNum(T.canc)} cancelaram`, `${cdMoeda(T.aumCanc)} por mês perdidos · ${cdNum(T.bloq)} bloqueados (${cdMoeda(T.aumBloq)} por mês em risco)`)}
     </div>
+    ${opEvoPonteHTML(r)}
     <div style="position:relative;height:340px"><canvas id="ope-grafico"></canvas></div>
     ${r.empFora.length?`<p style="font-size:11px;opacity:.75;margin:6px 0 0">Fora do gráfico: ${cdNum(r.empFora.length)} alteração(ões) empresarial(is) somando ${cdMoeda(r.empFora.reduce((s,x)=>s+(+x.aumento||0),0))} por mês. Marque "Incluir empresariais" para ver.</p>`:''}
     <div id="ope-detalhe">${opEvoDetalheHTML(r)}</div>
