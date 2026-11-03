@@ -3048,6 +3048,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
         <div class="nav-sub" onclick="go('oportunidades');opSub('planos')">Por plano</div>
         <div class="nav-sub" onclick="go('oportunidades');opSub('listas')">Listas para o OPA</div>
         <div class="nav-sub" onclick="go('oportunidades');opSub('envios')">Envios e resultado</div>
+        <div class="nav-sub" onclick="go('oportunidades');opSub('evolucao')">Evolu&ccedil;&atilde;o dos upgrades</div>
         <div class="nav-item" data-mod="premiacoes" onclick="go('premiacoes');premSub('resumo')"><span>Premia&ccedil;&atilde;o<small>folha, vendas e atendimento</small></span></div>
         <div class="nav-sub" data-prem="resumo" onclick="go('premiacoes');premSub('resumo')">Resumo</div>
         <div class="nav-sub" data-prem="conferencia" onclick="go('premiacoes');premSub('conferencia')">Conferir antes de pagar</div>
@@ -26376,7 +26377,7 @@ function opFalhasProtocolos(){
   el.innerHTML = `<div class="cdg-tabwrap" style="margin-top:8px"><table class="cdg-tab op-tab"><thead><tr><th>Protocolo</th><th>Contato</th><th>Hora</th><th>O que aconteceu</th></tr></thead><tbody>${ps.map(p=>`<tr><td>${cdEsc(p.protocolo)}</td><td>${cdEsc(cdFoneOpa(p.contato)||p.contato)}</td><td>${new Date(p.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td><td>${cdEsc(p.tipo)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 Object.assign(window,{opFalhasExportar, opFalhasProtocolos});
-const OP_SUBS = [['resumo','Resumo'],['aptos','Quem pode receber'],['planos','Por plano'],['listas','Listas para o OPA'],['envios','Envios e resultado']];
+const OP_SUBS = [['resumo','Resumo'],['aptos','Quem pode receber'],['planos','Por plano'],['listas','Listas para o OPA'],['envios','Envios e resultado'],['evolucao','Evolução dos upgrades']];
 function opSub(k){ OP.sub = k; renderOportunidades(); radarTrilha('oportunidades'); window.scrollTo({top:0,behavior:'smooth'}); }
 function opAbasHTML(){
   const envs=(OP.acomp?.envios)||[], perd=envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
@@ -26393,9 +26394,135 @@ function renderOportunidades(){
   }
   box.innerHTML = `${OP.erro?`<div role="alert" class="section compact-section">Não foi possível atualizar: ${cdEsc(OP.erro)}</div>`:''}
     ${OP.carregando?'<div role="status" class="section compact-section">Recalculando as listas...</div>':''}
-    ${opAbasHTML()}${OP.sub==='resumo'?opFalhasHTML():''}${opGuiaHTML()}${OP.sub==='listas'?opListaHTML():''}${OP.sub==='envios'?opAcompHTML():''}`;
+    ${opAbasHTML()}${OP.sub==='resumo'?opFalhasHTML():''}${opGuiaHTML()}${OP.sub==='listas'?opListaHTML():''}${OP.sub==='envios'?opAcompHTML():''}${OP.sub==='evolucao'?opEvoHTML():''}`;
+  if(OP.sub==='evolucao' && OPE.dados) opEvoGrafico();
 }
 Object.assign(window, { renderOportunidades, opCarregar, opIr, opSetFiltro, opToggle, opToggleTodos, opExportar });
+
+/* ===================== EVOLUÇÃO DOS UPGRADES (Oportunidades) =====================
+   Gráfico mensal de upgrades: quantidade, aumento de receita e se a 1ª fatura depois do upgrade foi paga.
+   Fonte: radar_upgrade_evolucao (alterações de plano do IXC + faturas). Aumento acima de R$ 300 = empresarial, fica separado. */
+const OPE = { dados:null, carregando:false, erro:null, filial:'Todas', meses:12, empresarial:false, obs:'' };
+const OPE_EMPRESARIAL = 300;
+const OPE_MES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+async function opEvoCarregar(){
+  const sb = getSB(); if(!sb || OPE.carregando) return;
+  OPE.carregando = true; OPE.erro = null;
+  try{ const r = await sb.rpc('radar_upgrade_evolucao', { p_meses:24 }); if(r.error) throw new Error(r.error.message); OPE.dados = r.data || []; }
+  catch(e){ OPE.erro = e.message; }
+  finally{ OPE.carregando = false; if(OP.sub==='evolucao') renderOportunidades(); }
+}
+function opEvoMesesLista(){
+  const out = [], h = new Date(); h.setDate(1);
+  for(let i=OPE.meses-1;i>=0;i--){ const d = new Date(h.getFullYear(), h.getMonth()-i, 1); out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')); }
+  return out;
+}
+const opEvoRotulo = m => OPE_MES[+m.slice(5,7)-1]+'/'+m.slice(2,4);
+function opEvoItens(incluirEmpresarial){
+  const meses = new Set(opEvoMesesLista()), emp = incluirEmpresarial ?? OPE.empresarial;
+  return (OPE.dados||[]).filter(x => meses.has(x.mes) && (OPE.filial==='Todas' || x.filial===OPE.filial) && (emp || +x.aumento <= OPE_EMPRESARIAL));
+}
+function opEvoSerie(){
+  const itens = opEvoItens(), por = {};
+  opEvoMesesLista().forEach(m => por[m] = { mes:m, qtd:0, conf:0, aguard:0, semf:0, aum:0, aumConf:0, aumAguard:0, inativos:0 });
+  itens.forEach(x => { const s = por[x.mes]; if(!s) return; const a = +x.aumento||0;
+    s.qtd++; s.aum += a;
+    if(x.situacao==='confirmado'){ s.conf++; s.aumConf += a; } else if(x.situacao==='aguardando'){ s.aguard++; s.aumAguard += a; } else s.semf++;
+    if(!x.contrato_ativo) s.inativos++; });
+  let acum = 0; const serie = Object.values(por).map(s => { acum += s.aumConf; return { ...s, acum }; });
+  return { serie, itens };
+}
+function opEvoResumo(){
+  const { serie, itens } = opEvoSerie();
+  const tot = serie.reduce((t,s)=>({ qtd:t.qtd+s.qtd, conf:t.conf+s.conf, aguard:t.aguard+s.aguard, aumConf:t.aumConf+s.aumConf, aumAguard:t.aumAguard+s.aumAguard, inativos:t.inativos+s.inativos }), { qtd:0, conf:0, aguard:0, aumConf:0, aumAguard:0, inativos:0 });
+  const fechados = serie.slice(0,-1), ult = fechados[fechados.length-1], ant = fechados[fechados.length-2];
+  const ativosHoje = itens.filter(x=>x.situacao==='confirmado' && x.contrato_ativo).reduce((t,x)=>t+(+x.aumento||0),0);
+  const empFora = OPE.empresarial ? [] : opEvoItens(true).filter(x=>+x.aumento > OPE_EMPRESARIAL);
+  return { serie, itens, tot, ult, ant, ativosHoje, empFora };
+}
+function opEvoHTML(){
+  if(!OPE.dados){
+    if(!OPE.carregando && !OPE.erro) setTimeout(opEvoCarregar, 0);
+    return `<div class="section compact-section">${OPE.erro?`Não foi possível carregar: ${cdEsc(OPE.erro)} <button class="btn sm" onclick="OPE.erro=null;opEvoCarregar()">Tentar novamente</button>`:'Montando a evolução dos upgrades...'}</div>`;
+  }
+  const filiais = [...new Set((OPE.dados||[]).map(x=>x.filial).filter(Boolean))].sort();
+  const r = opEvoResumo(), t = r.tot;
+  const varTxt = (r.ult && r.ant && r.ant.qtd) ? `${r.ult.qtd>=r.ant.qtd?'+':''}${Math.round(100*(r.ult.qtd-r.ant.qtd)/r.ant.qtd)}% contra ${opEvoRotulo(r.ant.mes)}` : '';
+  const kpi = (c, titulo, valor, sub) => `<div class="cdg-num" style="--c:${c}"><div><b style="display:block;font-size:12px">${titulo}</b><small>${sub||''}</small></div><strong style="font-size:20px">${valor}</strong></div>`;
+  const linhas = r.serie.slice().reverse().map(s => `<tr><td>${opEvoRotulo(s.mes)}</td><td style="text-align:right">${cdNum(s.qtd)}</td><td style="text-align:right">${cdNum(s.conf)}</td><td style="text-align:right">${cdNum(s.aguard)}</td><td style="text-align:right">${cdNum(s.semf)}</td><td style="text-align:right">${cdMoeda(s.aum)}</td><td style="text-align:right">${cdMoeda(s.aumConf)}</td><td style="text-align:right">${cdMoeda(s.acum)}</td><td style="text-align:right">${cdNum(s.inativos)}</td></tr>`).join('');
+  return `<div class="section compact-section" id="ope-box">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:12px">
+      <label style="font-size:12px">Filial<br><select onchange="OPE.filial=this.value;renderOportunidades()"><option ${OPE.filial==='Todas'?'selected':''}>Todas</option>${filiais.map(f=>`<option ${OPE.filial===f?'selected':''}>${cdEsc(f)}</option>`).join('')}</select></label>
+      <label style="font-size:12px">Período<br><select onchange="OPE.meses=+this.value;renderOportunidades()">${[6,12,24].map(n=>`<option value="${n}" ${OPE.meses===n?'selected':''}>Últimos ${n} meses</option>`).join('')}</select></label>
+      <label style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" ${OPE.empresarial?'checked':''} onchange="OPE.empresarial=this.checked;renderOportunidades()"> Incluir empresariais (aumento acima de ${cdMoeda(OPE_EMPRESARIAL)})</label>
+      <label style="font-size:12px;flex:1;min-width:220px">Observação para a imagem<br><input type="text" style="width:100%" maxlength="160" value="${cdEsc(OPE.obs)}" placeholder="Ex.: disparos de upgrade suspensos de agosto a outubro" oninput="OPE.obs=this.value"></label>
+      <button class="btn" onclick="opEvoImagem()">Baixar imagem</button>
+    </div>
+    <div class="cdg-numeros op-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:12px">
+      ${kpi('var(--radar-blue)','Upgrades no período', cdNum(t.qtd), varTxt?`último mês fechado: ${cdNum(r.ult.qtd)} (${varTxt})`:'')}
+      ${kpi('var(--radar-green)','Aumento confirmado por mês', cdMoeda(t.aumConf), `${cdPct(t.conf,t.qtd)}% com a 1ª fatura paga`)}
+      ${kpi('var(--radar-yellow)','Aguardando pagamento', cdMoeda(t.aumAguard), `${cdNum(t.aguard)} upgrades com a 1ª fatura em aberto`)}
+      ${kpi('var(--radar-purple)','Ainda rendendo hoje', cdMoeda(r.ativosHoje), `${cdNum(t.inativos)} contratos não estão mais ativos`)}
+    </div>
+    <div style="position:relative;height:340px"><canvas id="ope-grafico"></canvas></div>
+    <p style="font-size:11px;color:var(--radar-muted);margin:8px 0 12px">Barras: quantidade de upgrades (azul = 1ª fatura depois do upgrade paga; amarelo = ainda em aberto). Linha verde: aumento de receita mensal confirmado no mês.
+    ${r.empFora.length?` Fora do gráfico: ${cdNum(r.empFora.length)} upgrade(s) empresarial(is) somando ${cdMoeda(r.empFora.reduce((s,x)=>s+(+x.aumento||0),0))} por mês.`:''}</p>
+    <div style="overflow:auto"><table class="tbl" style="width:100%;font-size:12px"><thead><tr><th>Mês</th><th style="text-align:right">Upgrades</th><th style="text-align:right">1ª fatura paga</th><th style="text-align:right">Em aberto</th><th style="text-align:right">Sem fatura ainda</th><th style="text-align:right">Aumento total</th><th style="text-align:right">Aumento confirmado</th><th style="text-align:right">Acumulado confirmado</th><th style="text-align:right">Contrato inativo hoje</th></tr></thead><tbody>${linhas}</tbody></table></div>
+  </div>`;
+}
+function opEvoConfig(serie, claro){
+  const txt = claro ? '#0f172a' : undefined, grade = claro ? '#e6edf5' : undefined;
+  return { type:'bar',
+    data:{ labels:serie.map(s=>opEvoRotulo(s.mes)), datasets:[
+      { type:'bar', label:'1ª fatura paga', data:serie.map(s=>s.conf), backgroundColor:'#0071BC', stack:'q', yAxisID:'y', order:2 },
+      { type:'bar', label:'Em aberto', data:serie.map(s=>s.aguard+s.semf), backgroundColor:'#f59e0b', stack:'q', yAxisID:'y', order:2 },
+      { type:'line', label:'Aumento confirmado (R$/mês)', data:serie.map(s=>Math.round(s.aumConf*100)/100), borderColor:'#10b981', backgroundColor:'#10b981', yAxisID:'y1', tension:.3, pointRadius:4, borderWidth:3, order:1 } ] },
+    options:{ responsive:!claro, maintainAspectRatio:false, animation:claro?false:undefined,
+      plugins:{ legend:{ position:'bottom', labels:{ color:txt } }, radarValorPonta:{ display:false },
+        tooltip:{ callbacks:{ label:c => c.dataset.yAxisID==='y1' ? `${c.dataset.label}: ${cdMoeda(c.raw)}` : `${c.dataset.label}: ${cdNum(c.raw)} upgrades` } } },
+      scales:{ y:{ stacked:true, beginAtZero:true, title:{ display:true, text:'Upgrades', color:txt }, ticks:{ color:txt, precision:0 }, grid:{ color:grade } },
+        y1:{ position:'right', beginAtZero:true, title:{ display:true, text:'R$ por mês', color:txt }, ticks:{ color:txt, callback:v=>cdMoeda(v).replace(',00','') }, grid:{ display:false } },
+        x:{ stacked:true, ticks:{ color:txt }, grid:{ display:false } } } } };
+}
+function opEvoGrafico(){
+  const el = document.getElementById('ope-grafico'); if(!el || typeof Chart==='undefined') return;
+  try{ CHARTS['ope']?.destroy(); }catch(e){}
+  CHARTS['ope'] = new Chart(el, opEvoConfig(opEvoResumo().serie, false));
+}
+async function opEvoImagem(){
+  try{
+    const r = opEvoResumo(), t = r.tot, W = 1400, H = 1000, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H; const g = cv.getContext('2d');
+    g.fillStyle = '#ffffff'; g.fillRect(0,0,W,H);
+    g.fillStyle = '#0071BC'; g.fillRect(0,0,W,10);
+    g.fillStyle = '#0f172a'; g.font = 'bold 34px Inter, Arial'; g.fillText('Evolução dos upgrades' + (OPE.filial==='Todas'?' — todas as filiais':' — '+OPE.filial), 50, 70);
+    const s0 = r.serie[0], s1 = r.serie[r.serie.length-1];
+    g.fillStyle = '#64748b'; g.font = '18px Inter, Arial';
+    g.fillText(`De ${opEvoRotulo(s0.mes)} a ${opEvoRotulo(s1.mes)} · gerado em ${new Date().toLocaleDateString('pt-BR')} · ${OPE.empresarial?'inclui':'sem'} contratos empresariais`, 50, 102);
+    const cards = [['Upgrades no período', cdNum(t.qtd), '#0071BC'], ['Aumento confirmado', cdMoeda(t.aumConf)+' / mês', '#10b981'], ['1ª fatura paga', cdPct(t.conf,t.qtd)+'%', '#2E3192'], ['Aguardando pagamento', cdMoeda(t.aumAguard), '#f59e0b']];
+    cards.forEach(([tt, v, c], i) => { const x = 50 + i*330, y = 130;
+      g.fillStyle = '#f8fafc'; g.fillRect(x, y, 310, 100); g.fillStyle = c; g.fillRect(x, y, 8, 100);
+      g.fillStyle = '#64748b'; g.font = '17px Inter, Arial'; g.fillText(tt, x+24, y+36);
+      g.fillStyle = '#0f172a'; g.font = 'bold 30px Inter, Arial'; g.fillText(v, x+24, y+78); });
+    const hc = document.createElement('canvas'); hc.width = 1300; hc.height = 560; hc.style.cssText = 'position:fixed;left:-99999px;top:0';
+    document.body.appendChild(hc);
+    const ch = new Chart(hc, opEvoConfig(r.serie, true));
+    await new Promise(res => setTimeout(res, 60));
+    const img = new Image(); img.src = ch.toBase64Image('image/png', 1);
+    await new Promise(res => { img.onload = res; img.onerror = res; });
+    g.drawImage(img, 50, 260, 1300, 560);
+    ch.destroy(); hc.remove();
+    g.fillStyle = '#64748b'; g.font = '16px Inter, Arial';
+    g.fillText('Confirmado = a 1ª fatura depois do upgrade foi paga. Aumento = diferença entre o valor novo e o anterior do plano.', 50, 860);
+    if(r.empFora.length) g.fillText(`Fora do gráfico: ${r.empFora.length} upgrade(s) empresarial(is) somando ${cdMoeda(r.empFora.reduce((s,x)=>s+(+x.aumento||0),0))} por mês.`, 50, 888);
+    if(OPE.obs.trim()){ g.fillStyle = '#0f172a'; g.font = 'bold 20px Inter, Arial'; g.fillText('Observação: ' + OPE.obs.trim().slice(0,160), 50, 940); }
+    g.fillStyle = '#94a3b8'; g.font = '14px Inter, Arial'; g.fillText('Radar Hilink', W-150, H-24);
+    const a = document.createElement('a');
+    a.download = `upgrades_${cdSlug(OPE.filial==='Todas'?'todas':OPE.filial)}_${new Date().toISOString().slice(0,10)}.png`;
+    a.href = cv.toDataURL('image/png'); document.body.appendChild(a); a.click(); a.remove();
+  }catch(e){ console.warn('[Radar] imagem upgrades', e); toast('Não foi possível gerar a imagem.','warn'); }
+}
+Object.assign(window, { OPE, opEvoCarregar, opEvoImagem, opEvoGrafico });
 
 
 document.addEventListener('DOMContentLoaded', ()=>setTimeout(ixcCargaRender, 1500));
