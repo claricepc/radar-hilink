@@ -10085,7 +10085,9 @@ function availableCompetencias(){
 }
 function receiptPersonTypeById(){
   const raw=STATE.raw?.recebimentos||[];
-  const out={};if(!raw.length)return out;
+  // Cache: o mapa era recalculado a cada contrato (43 mil recebimentos x 10 mil contratos) e travava o Comercial.
+  const c=receiptPersonTypeById._c; if(c&&c.raw===raw&&c.n===raw.length)return c.out;
+  const out={};receiptPersonTypeById._c={raw,n:raw.length,out};if(!raw.length)return out;
   const s=raw[0], col=p=>findCol(s,p);
   const cols={tipo:col([/tipo pessoa/i,/pessoa/i]),idRec:col([/id contrato recorrente/i,/contrato recorrente/i]),idPri:col([/id contrato principal/i,/contrato principal/i]),idAvul:col([/id contrato avulso/i,/contrato avulso/i]),idVinc:col([/id contratos vinculados/i,/contratos vinculados/i])};
   const counts={};
