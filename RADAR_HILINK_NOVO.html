@@ -21557,7 +21557,7 @@ function renderPremiacoesView(){
       return {...v,idx:i,byTipo,receita,revisao};
     });
     salesRows.sort((a,b)=>Number(b.receita||0)-Number(a.receita||0)||String(a.nome).localeCompare(String(b.nome),'pt-BR'));
-    const maxReceita=Math.max(1,...salesRows.map(v=>v.receita));
+    STATE.premSales={rows:salesRows, avatar, tipos:tiposVenda};
     const totalTipo=tiposVenda.reduce((acc,t)=>{
       acc[t]={qtd:0,receita:0};
       salesRows.forEach(v=>{acc[t].qtd+=v.byTipo[t].qtd;acc[t].receita+=v.byTipo[t].receita;});
@@ -21580,25 +21580,9 @@ function renderPremiacoesView(){
               <div class="prem-sales-chart-title">Receita por tipo de ação por vendedora</div>
               <div class="prem-sales-chart-sub">Composição de receita identificada nas vendas aprovadas</div>
             </div>
-            <div class="prem-sales-legend">
-              <span><i style="background:#7c3fd3"></i>Vendas</span>
-              <span><i style="background:#16b978"></i>Upgrade</span>
-            </div>
+            <div class="prem-sales-legend" id="prem-sales-legend">${premSalesLegendHTML()}</div>
           </div>
-          <div class="prem-sales-bars">${salesRows.map(v=>{
-            const pctTotal=Math.max(4,(v.receita/maxReceita)*100);
-            return `<div class="prem-sales-bar-row" data-premk="seller_${v.idx}">
-              <div class="prem-sales-seller"><div class="prem-att-avatar">${avatar(v.nome)}</div><b title="${escAttr(v.nome)}">${escHtml(v.nome)}</b></div>
-              <div class="prem-sales-stack" style="width:${pctTotal.toFixed(1)}%">
-                ${tiposVenda.map(t=>{
-                  const w=v.receita?Math.max(v.byTipo[t].receita/v.receita*100, v.byTipo[t].receita>0?4:0):0;
-                  const cls=t==='Upgrade'?'up':(t==='Instalação'?'inst':'reat');
-                  return `<span class="${cls}" style="width:${w.toFixed(1)}%" title="${escAttr(t)}: ${escAttr(brl(v.byTipo[t].receita))}">${v.byTipo[t].receita>0?brl(v.byTipo[t].receita):''}</span>`;
-                }).join('')}
-              </div>
-              <div class="prem-sales-row-total">${brl(v.receita)}</div>
-            </div>`;
-          }).join('')}</div>
+          <div class="prem-sales-bars" id="prem-sales-bars">${premSalesBarsHTML()}</div>
         </div>
         <div class="prem-sales-detail">
           <div class="prem-sales-detail-title">Desempenho por vendedora detalhado</div>
@@ -26398,6 +26382,40 @@ function renderOportunidades(){
   if(OP.sub==='evolucao' && OPE.dados) requestAnimationFrame(opEvoGrafico);
 }
 Object.assign(window, { renderOportunidades, opCarregar, opIr, opSetFiltro, opToggle, opToggleTodos, opExportar });
+
+/* Receita por tipo de ação por vendedora: clicar na legenda liga/desliga o tipo, reordena e refaz os totais */
+window.PREM_TIPOS_ON = window.PREM_TIPOS_ON || { Vendas:true, Upgrade:true };
+function premSalesLegendHTML(){
+  const cor = { Vendas:'#0071BC', Upgrade:'#16b978' };
+  return Object.keys(cor).map(t=>{ const on = PREM_TIPOS_ON[t]!==false;
+    return `<button type="button" onclick="premSalesTipo('${t}')" title="${on?'Clique para esconder':'Clique para mostrar'} ${t}" style="border:0;background:none;cursor:pointer;font:inherit;color:inherit;padding:2px 6px;opacity:${on?1:.4};text-decoration:${on?'none':'line-through'}"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;background:${cor[t]}"></i>${t}</button>`; }).join('');
+}
+function premSalesBarsHTML(){
+  const st = STATE.premSales; if(!st || !st.rows) return '';
+  const on = st.tipos.filter(t=>PREM_TIPOS_ON[t]!==false);
+  const rows = st.rows.map(v=>({ v, vis: on.reduce((s,t)=>s+(v.byTipo[t]?.receita||0),0) }))
+    .filter(x=>x.vis>0).sort((a,b)=>b.vis-a.vis || String(a.v.nome).localeCompare(String(b.v.nome),'pt-BR'));
+  if(!rows.length) return '<div style="padding:12px;font-size:12px;opacity:.7">Nenhuma receita para os tipos escolhidos.</div>';
+  const max = Math.max(1, ...rows.map(x=>x.vis));
+  const total = rows.reduce((s,x)=>s+x.vis,0);
+  return rows.map(({v,vis})=>{
+    const pctTotal = Math.max(4, vis/max*100);
+    return `<div class="prem-sales-bar-row" data-premk="seller_${v.idx}">
+      <div class="prem-sales-seller"><div class="prem-att-avatar">${st.avatar(v.nome)}</div><b title="${escAttr(v.nome)}">${escHtml(v.nome)}</b></div>
+      <div class="prem-sales-stack" style="width:${pctTotal.toFixed(1)}%">
+        ${on.map(t=>{ const rec = v.byTipo[t]?.receita||0; const w = vis ? Math.max(rec/vis*100, rec>0?4:0) : 0; const cls = t==='Upgrade'?'up':'reat';
+          return `<span class="${cls}" style="width:${w.toFixed(1)}%" title="${escAttr(t)}: ${escAttr(brl(rec))} (${v.byTipo[t]?.qtd||0})">${rec>0?brl(rec):''}</span>`; }).join('')}
+      </div>
+      <div class="prem-sales-row-total">${brl(vis)}</div>
+    </div>`; }).join('') + `<div class="prem-sales-bar-row" style="border-top:1px solid rgba(143,163,184,.35);padding-top:6px"><div class="prem-sales-seller"><b>Total${on.length<st.tipos.length?' ('+on.join(', ')+')':''}</b></div><div></div><div class="prem-sales-row-total">${brl(total)}</div></div>`;
+}
+function premSalesTipo(t){
+  PREM_TIPOS_ON[t] = PREM_TIPOS_ON[t]===false;
+  if(!Object.values(PREM_TIPOS_ON).some(Boolean)) Object.keys(PREM_TIPOS_ON).forEach(k=>PREM_TIPOS_ON[k]=true);
+  const b = document.getElementById('prem-sales-bars'); if(b) b.innerHTML = premSalesBarsHTML();
+  const l = document.getElementById('prem-sales-legend'); if(l) l.innerHTML = premSalesLegendHTML();
+}
+Object.assign(window, { premSalesBarsHTML, premSalesLegendHTML, premSalesTipo });
 
 /* ===================== EVOLUÇÃO DOS UPGRADES (Oportunidades) =====================
    Gráfico mensal de upgrades: quantidade, aumento de receita e se a 1ª fatura depois do upgrade foi paga.
