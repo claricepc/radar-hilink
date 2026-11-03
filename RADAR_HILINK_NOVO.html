@@ -26618,14 +26618,18 @@ async function opEvoImagem(){
       g.fillStyle = '#64748b'; g.font = '17px Inter, Arial'; g.fillText(tt, x+24, y+34);
       g.fillStyle = '#0f172a'; g.font = 'bold 27px Inter, Arial'; g.fillText(v, x+24, y+74); });
     y += 120;
-    const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-99999px;top:0;width:1300px;height:540px';
-    const hc = document.createElement('canvas'); box.appendChild(hc); document.body.appendChild(box);
-    const cfg = opEvoConfig(r.serie, true); cfg.options.responsive = true;
+    // gráfico desenhado num canvas de tamanho fixo (1300x540, sem escala de tela) para não esticar a imagem
+    const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-99999px;top:0;width:1300px;height:540px;overflow:hidden';
+    const hc = document.createElement('canvas'); hc.width = 1300; hc.height = 540;
+    hc.style.cssText = 'width:1300px!important;height:540px!important;max-width:none!important;max-height:none!important;display:block';
+    box.appendChild(hc); document.body.appendChild(box);
+    const cfg = opEvoConfig(r.serie, true); cfg.options.responsive = false; cfg.options.maintainAspectRatio = false; cfg.options.devicePixelRatio = 1;
     const ch = new Chart(hc, cfg);
     await new Promise(res => setTimeout(res, 80));
-    const img = new Image(); img.src = ch.toBase64Image('image/png', 1);
+    const img = new Image(); img.src = hc.toDataURL('image/png');
     await new Promise(res => { img.onload = res; img.onerror = res; });
-    g.drawImage(img, 50, y, 1300, 540);
+    const iw = img.naturalWidth || 1300, ih = img.naturalHeight || 540, dw = 1300, dh = Math.round(dw * ih / iw);
+    g.drawImage(img, 50, y, dw, dh);
     ch.destroy(); box.remove();
     y += 570;
     g.fillStyle = '#64748b'; g.font = '16px Inter, Arial';
