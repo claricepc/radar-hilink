@@ -27156,6 +27156,7 @@ function diciRender(){
     else if(arq && arq.salvando) st = '<span class="dici-tag ab">Salvando no Drive...</span>';
     else if(noDrive) st = `<a class="dici-tag ok" href="${cdEsc(noDrive.drive_url)}" target="_blank" rel="noopener">Arquivo no Drive</a>`;
     else if(arq && arq.erroDrive) st = `<span class="dici-tag ruim">Drive: ${cdEsc(arq.erroDrive)}</span> <button class="btn sm outline" onclick="diciSalvarDrive(DICI.arquivos.find(x=>x.filial==='${f}'))">Tentar de novo</button>`;
+    else if(arq) st = '<span class="dici-tag ab">Corrigido, ainda não salvo no Drive</span>';
     else st = '<span class="dici-tag cinza">Falta o arquivo do IXC</span>';
     const avisos = arq && arq.avisos.length ? `<div style="font-size:11px;color:var(--radar-orange);margin-top:3px">${cdEsc(arq.avisos[0])}</div>` : '';
     const dados = arq && !arq.erros.length ? `<div style="font-size:11px;opacity:.75;margin-top:3px">${cdNum(arq.linhas)} linhas · ${cdNum(arq.acessos)} acessos · ${cdNum(arq.ativos)} contratos ativos no Radar</div>` : (noDrive&&noDrive.detalhe&&noDrive.detalhe.acessos?`<div style="font-size:11px;opacity:.75;margin-top:3px">${cdNum(noDrive.detalhe.acessos)} acessos</div>`:'');
@@ -27181,6 +27182,7 @@ function diciRender(){
     ${pasta?`<p class="cdg-nota" style="margin:10px 0 0"><a href="${cdEsc(pasta)}" target="_blank" rel="noopener">Abrir a pasta do mês no Drive</a></p>`:''}
     <div class="cdg-modal-acoes" style="margin-top:14px"><button type="button" class="btn sm" onclick="cdModal(null)">Fechar</button>
       <button type="button" class="btn sm primary" ${todos?'':'disabled title="Falta anexar recibos ou marcar o e-mail"'} onclick="radarLembreteConcluir('dici_anatel','${cdEsc(DICI.comp)}')">Concluir a DICI do mês</button></div>`);
+  const bx = document.querySelector('#cd-conf-modal .cdg-modal-box'); if(bx){ bx.style.maxWidth='880px'; bx.style.width='calc(100vw - 32px)'; }
   const box = document.getElementById('cd-conf-modal');
   if(box && !box.dataset.diciDrop){ box.dataset.diciDrop = '1';
     box.addEventListener('dragover', e=>{ e.preventDefault(); });
