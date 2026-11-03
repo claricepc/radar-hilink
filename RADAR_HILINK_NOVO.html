@@ -27146,8 +27146,7 @@ function diciRender(){
   const [a,m] = DICI.ref.split('-'), reg = DICI.registros||[];
   const tem = (f,cat) => reg.filter(x=>x.filial===f && x.categoria===cat).slice(-1)[0];
   const pasta = reg.map(x=>x.detalhe&&x.detalhe.pastaUrl).filter(Boolean).slice(-1)[0];
-  const assunto = encodeURIComponent(`IG - Arquivo DICI SCM ${m}/${a}`);
-  const corpo = encodeURIComponent(`Prezados,\n\nEncaminho em anexo o arquivo DICI SCM referente a ${m}/${a}.\n\nAtt.\nClarice Possidônio`);
+  const assunto = encodeURIComponent(`DICI SCM ${m}/${a} - IG Telecom`);
   const linhaFilial = f => {
     const info = DICI_FILIAIS[f], arq = DICI.arquivos.find(x=>x.filial===f), noDrive = tem(f,'arquivo'), rec = tem(f,'recibo'), mail = tem(f,'email');
     const portal = DICI_PORTAL.includes(f);
@@ -27163,15 +27162,15 @@ function diciRender(){
     const baixar = arq && !arq.erros.length ? `<button class="btn sm outline" onclick="diciBaixar('${f}')">Baixar para enviar</button>` : '';
     const fim = portal
       ? (rec ? `<a class="dici-tag ok" href="${cdEsc(rec.drive_url)}" target="_blank" rel="noopener">Recibo anexado</a>` : `<label class="btn sm ${noDrive?'primary':'outline'}" style="cursor:pointer">Anexar recibo da Anatel<input type="file" accept=".pdf,image/*" style="display:none" ${DICI.enviando?'disabled':''} onchange="diciRecibo('${f}',this)"></label>`)
-      : (mail ? '<span class="dici-tag ok">E-mail enviado</span>' : `<a class="btn sm outline" href="mailto:contato@acisp.net.br?cc=caroline@hilink.com.br&subject=${assunto}&body=${corpo}">Abrir e-mail</a> <button class="btn sm ${noDrive?'primary':'outline'}" onclick="diciMarcarEmail('${f}')">Já enviei o e-mail</button>`);
-    return `<tr><td><b>${cdEsc(info.nome)}</b><br><small style="opacity:.7">filial ${f} · ${portal?'portal da Anatel':'e-mail para a ACISP'}</small></td><td>${st}${dados}${avisos}</td><td style="white-space:nowrap">${baixar} ${fim}</td></tr>`;
+      : (mail ? '<span class="dici-tag ok">E-mail enviado</span>' : `<a class="btn sm outline" href="mailto:contato@acisp.net.br?cc=caroline@hilink.com.br&subject=${assunto}" title="Anexe o arquivo baixado. A ACISP faz o envio no portal da Anatel.">Abrir e-mail</a> <button class="btn sm ${noDrive?'primary':'outline'}" onclick="diciMarcarEmail('${f}')">Já enviei o e-mail</button>`);
+    return `<tr><td><b>${cdEsc(info.nome)}</b><br><small style="opacity:.7">filial ${f} · ${portal?'você envia no portal da Anatel':'só o arquivo por e-mail; a ACISP envia na Anatel'}</small></td><td>${st}${dados}${avisos}</td><td style="white-space:nowrap">${baixar} ${fim}</td></tr>`;
   };
   const todos = DICI_PORTAL.every(f=>tem(f,'recibo')) && DICI_EMAIL.every(f=>tem(f,'email'));
   cdModal(`<h3>DICI Anatel de ${m}/${a}</h3>
     <ol style="margin:0 0 12px 18px;padding:0;font-size:13px;line-height:1.6">
       <li>No IXC, exporte o arquivo DICI de cada filial (1, 4, 5, 6 e 7) e arraste todos aqui. O Radar corrige o formato, confere e salva no Drive.</li>
-      <li>Clique em "Baixar para enviar" e mande no portal da Anatel. O da IG vai por e-mail.</li>
-      <li>Anexe o recibo de cada filial do portal e marque o e-mail da IG. Aí o alerta pode ser concluído.</li>
+      <li>Clique em "Baixar para enviar". Filiais 1, 4, 5 e 6: você envia no portal da Anatel. IG: mande só o arquivo por e-mail para a ACISP, que faz o envio por lá (não tem recibo).</li>
+      <li>Anexe o recibo da Anatel das filiais 1, 4, 5 e 6 e marque "Já enviei o e-mail" da IG. Aí o alerta pode ser concluído.</li>
     </ol>
     <label style="display:block;border:2px dashed var(--linha);border-radius:10px;padding:16px;text-align:center;cursor:pointer;margin-bottom:12px">
       <b>Clique ou arraste aqui os arquivos CSV do IXC</b><br><small style="opacity:.7">pode mandar os cinco de uma vez</small>
