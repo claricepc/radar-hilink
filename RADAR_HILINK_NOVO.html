@@ -26536,7 +26536,7 @@ function opEvoHTML(){
       <label style="font-size:12px">Filial<br><select onchange="OPE.filial=this.value;OPE.mesSel=null;renderOportunidades()"><option ${OPE.filial==='Todas'?'selected':''}>Todas</option>${filiais.map(f=>`<option ${OPE.filial===f?'selected':''}>${cdEsc(f)}</option>`).join('')}</select></label>
       <label style="font-size:12px">Período<br><select onchange="OPE.meses=this.value==='ano'?'ano':+this.value;OPE.mesSel=null;renderOportunidades()"><option value="ano" ${OPE.meses==='ano'?'selected':''}>Este ano (${new Date().getFullYear()})</option>${[6,12,24].map(n=>`<option value="${n}" ${OPE.meses===n?'selected':''}>Últimos ${n} meses</option>`).join('')}</select></label>
       <label style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" ${OPE.empresarial?'checked':''} onchange="OPE.empresarial=this.checked;renderOportunidades()"> Incluir empresariais${opeDica('Contratos com aumento acima de '+cdMoeda(OPE_EMPRESARIAL)+' por mês (link dedicado, empresa). Ficam fora por padrão para um contrato grande não esconder a tendência das vendas para residências.')}</label>
-      <label style="font-size:12px;flex:1;min-width:220px">Observação para a imagem<br><input type="text" style="width:100%" maxlength="160" value="${cdEsc(OPE.obs)}" placeholder="Ex.: disparos de upgrade suspensos de agosto a outubro" oninput="OPE.obs=this.value"></label>
+      <label style="font-size:12px;flex:1;min-width:220px">Observação para a imagem<br><input type="text" style="width:100%" maxlength="400" value="${cdEsc(OPE.obs)}" placeholder="Ex.: disparos de upgrade suspensos de agosto a outubro" oninput="OPE.obs=this.value"></label>
       <button class="btn" onclick="opEvoImagem()">Baixar imagem</button>
     </div>
     <div class="ope-frase">${opEvoFrase(r)}</div>
@@ -26635,7 +26635,7 @@ async function opEvoImagem(){
     g.fillStyle = '#64748b'; g.font = '16px Inter, Arial';
     g.fillText('Barras: upgrades do mês (azul = já pagaram a 1ª fatura com o valor novo; vermelho = fatura vencida sem pagar; amarelo = a vencer).', 50, y); y += 24; g.fillText('Linha verde: quanto a mensalidade subiu com os upgrades do mês, menos downgrades.', 50, y); y += 26;
     if(r.empFora.length){ g.fillText(`Fora do gráfico: ${r.empFora.length} alteração(ões) empresarial(is) somando ${cdMoeda(r.empFora.reduce((s,x)=>s+(+x.aumento||0),0))} por mês.`, 50, y); y += 26; }
-    if(OPE.obs.trim()){ g.fillStyle = '#0f172a'; g.font = 'bold 20px Inter, Arial'; opEvoTextoQuebrado(g, 'Observação: ' + OPE.obs.trim().slice(0,200), 50, y+12, 1300, 28); }
+    if(OPE.obs.trim()){ g.fillStyle = '#0f172a'; g.font = 'bold 20px Inter, Arial'; opEvoTextoQuebrado(g, 'Observação: ' + OPE.obs.trim().slice(0,400), 50, y+12, 1300, 28); }
     g.fillStyle = '#94a3b8'; g.font = '14px Inter, Arial'; g.fillText('Radar Hilink', W-150, H-22);
     const a = document.createElement('a');
     a.download = `upgrades_${cdSlug(OPE.filial==='Todas'?'todas':OPE.filial)}_${new Date().toISOString().slice(0,10)}.png`;
