@@ -3048,6 +3048,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
         <div class="nav-sub" onclick="go('oportunidades');opSub('planos')">Por plano</div>
         <div class="nav-sub" onclick="go('oportunidades');opSub('listas')">Listas para o OPA</div>
         <div class="nav-sub" onclick="go('oportunidades');opSub('envios')">Envios e resultado</div>
+        <div class="nav-sub" onclick="go('oportunidades');opSub('evolucao')">Evolu&ccedil;&atilde;o dos upgrades</div>
         <div class="nav-item" data-mod="premiacoes" onclick="go('premiacoes');premSub('resumo')"><span>Premia&ccedil;&atilde;o<small>folha, vendas e atendimento</small></span></div>
         <div class="nav-sub" data-prem="resumo" onclick="go('premiacoes');premSub('resumo')">Resumo</div>
         <div class="nav-sub" data-prem="conferencia" onclick="go('premiacoes');premSub('conferencia')">Conferir antes de pagar</div>
@@ -21556,7 +21557,7 @@ function renderPremiacoesView(){
       return {...v,idx:i,byTipo,receita,revisao};
     });
     salesRows.sort((a,b)=>Number(b.receita||0)-Number(a.receita||0)||String(a.nome).localeCompare(String(b.nome),'pt-BR'));
-    const maxReceita=Math.max(1,...salesRows.map(v=>v.receita));
+    STATE.premSales={rows:salesRows, avatar, tipos:tiposVenda};
     const totalTipo=tiposVenda.reduce((acc,t)=>{
       acc[t]={qtd:0,receita:0};
       salesRows.forEach(v=>{acc[t].qtd+=v.byTipo[t].qtd;acc[t].receita+=v.byTipo[t].receita;});
@@ -21579,25 +21580,9 @@ function renderPremiacoesView(){
               <div class="prem-sales-chart-title">Receita por tipo de ação por vendedora</div>
               <div class="prem-sales-chart-sub">Composição de receita identificada nas vendas aprovadas</div>
             </div>
-            <div class="prem-sales-legend">
-              <span><i style="background:#7c3fd3"></i>Vendas</span>
-              <span><i style="background:#16b978"></i>Upgrade</span>
-            </div>
+            <div class="prem-sales-legend" id="prem-sales-legend">${premSalesLegendHTML()}</div>
           </div>
-          <div class="prem-sales-bars">${salesRows.map(v=>{
-            const pctTotal=Math.max(4,(v.receita/maxReceita)*100);
-            return `<div class="prem-sales-bar-row" data-premk="seller_${v.idx}">
-              <div class="prem-sales-seller"><div class="prem-att-avatar">${avatar(v.nome)}</div><b title="${escAttr(v.nome)}">${escHtml(v.nome)}</b></div>
-              <div class="prem-sales-stack" style="width:${pctTotal.toFixed(1)}%">
-                ${tiposVenda.map(t=>{
-                  const w=v.receita?Math.max(v.byTipo[t].receita/v.receita*100, v.byTipo[t].receita>0?4:0):0;
-                  const cls=t==='Upgrade'?'up':(t==='Instalação'?'inst':'reat');
-                  return `<span class="${cls}" style="width:${w.toFixed(1)}%" title="${escAttr(t)}: ${escAttr(brl(v.byTipo[t].receita))}">${v.byTipo[t].receita>0?brl(v.byTipo[t].receita):''}</span>`;
-                }).join('')}
-              </div>
-              <div class="prem-sales-row-total">${brl(v.receita)}</div>
-            </div>`;
-          }).join('')}</div>
+          <div class="prem-sales-bars" id="prem-sales-bars">${premSalesBarsHTML()}</div>
         </div>
         <div class="prem-sales-detail">
           <div class="prem-sales-detail-title">Desempenho por vendedora detalhado</div>
@@ -26376,7 +26361,7 @@ function opFalhasProtocolos(){
   el.innerHTML = `<div class="cdg-tabwrap" style="margin-top:8px"><table class="cdg-tab op-tab"><thead><tr><th>Protocolo</th><th>Contato</th><th>Hora</th><th>O que aconteceu</th></tr></thead><tbody>${ps.map(p=>`<tr><td>${cdEsc(p.protocolo)}</td><td>${cdEsc(cdFoneOpa(p.contato)||p.contato)}</td><td>${new Date(p.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td><td>${cdEsc(p.tipo)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 Object.assign(window,{opFalhasExportar, opFalhasProtocolos});
-const OP_SUBS = [['resumo','Resumo'],['aptos','Quem pode receber'],['planos','Por plano'],['listas','Listas para o OPA'],['envios','Envios e resultado']];
+const OP_SUBS = [['resumo','Resumo'],['aptos','Quem pode receber'],['planos','Por plano'],['listas','Listas para o OPA'],['envios','Envios e resultado'],['evolucao','Evolução dos upgrades']];
 function opSub(k){ OP.sub = k; renderOportunidades(); radarTrilha('oportunidades'); window.scrollTo({top:0,behavior:'smooth'}); }
 function opAbasHTML(){
   const envs=(OP.acomp?.envios)||[], perd=envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
@@ -26393,9 +26378,267 @@ function renderOportunidades(){
   }
   box.innerHTML = `${OP.erro?`<div role="alert" class="section compact-section">Não foi possível atualizar: ${cdEsc(OP.erro)}</div>`:''}
     ${OP.carregando?'<div role="status" class="section compact-section">Recalculando as listas...</div>':''}
-    ${opAbasHTML()}${OP.sub==='resumo'?opFalhasHTML():''}${opGuiaHTML()}${OP.sub==='listas'?opListaHTML():''}${OP.sub==='envios'?opAcompHTML():''}`;
+    ${opAbasHTML()}${OP.sub==='resumo'?opFalhasHTML():''}${opGuiaHTML()}${OP.sub==='listas'?opListaHTML():''}${OP.sub==='envios'?opAcompHTML():''}${OP.sub==='evolucao'?opEvoHTML():''}`;
+  if(OP.sub==='evolucao' && OPE.dados) requestAnimationFrame(opEvoGrafico);
 }
 Object.assign(window, { renderOportunidades, opCarregar, opIr, opSetFiltro, opToggle, opToggleTodos, opExportar });
+
+/* Receita por tipo de ação por vendedora: clicar na legenda liga/desliga o tipo, reordena e refaz os totais */
+window.PREM_TIPOS_ON = window.PREM_TIPOS_ON || { Vendas:true, Upgrade:true };
+function premSalesLegendHTML(){
+  const cor = { Vendas:'#0071BC', Upgrade:'#16b978' };
+  return Object.keys(cor).map(t=>{ const on = PREM_TIPOS_ON[t]!==false;
+    return `<button type="button" onclick="premSalesTipo('${t}')" title="${on?'Clique para esconder':'Clique para mostrar'} ${t}" style="border:0;background:none;cursor:pointer;font:inherit;color:inherit;padding:2px 6px;opacity:${on?1:.4};text-decoration:${on?'none':'line-through'}"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;background:${cor[t]}"></i>${t}</button>`; }).join('');
+}
+function premSalesBarsHTML(){
+  const st = STATE.premSales; if(!st || !st.rows) return '';
+  const on = st.tipos.filter(t=>PREM_TIPOS_ON[t]!==false);
+  const rows = st.rows.map(v=>({ v, vis: on.reduce((s,t)=>s+(v.byTipo[t]?.receita||0),0) }))
+    .filter(x=>x.vis>0).sort((a,b)=>b.vis-a.vis || String(a.v.nome).localeCompare(String(b.v.nome),'pt-BR'));
+  if(!rows.length) return '<div style="padding:12px;font-size:12px;opacity:.7">Nenhuma receita para os tipos escolhidos.</div>';
+  const max = Math.max(1, ...rows.map(x=>x.vis));
+  const total = rows.reduce((s,x)=>s+x.vis,0);
+  return rows.map(({v,vis})=>{
+    const pctTotal = Math.max(4, vis/max*100);
+    return `<div class="prem-sales-bar-row" data-premk="seller_${v.idx}">
+      <div class="prem-sales-seller"><div class="prem-att-avatar">${st.avatar(v.nome)}</div><b title="${escAttr(v.nome)}">${escHtml(v.nome)}</b></div>
+      <div class="prem-sales-stack" style="width:${pctTotal.toFixed(1)}%">
+        ${on.map(t=>{ const rec = v.byTipo[t]?.receita||0; const w = vis ? Math.max(rec/vis*100, rec>0?4:0) : 0; const cls = t==='Upgrade'?'up':'reat';
+          return `<span class="${cls}" style="width:${w.toFixed(1)}%" title="${escAttr(t)}: ${escAttr(brl(rec))} (${v.byTipo[t]?.qtd||0})">${rec>0?brl(rec):''}</span>`; }).join('')}
+      </div>
+      <div class="prem-sales-row-total">${brl(vis)}</div>
+    </div>`; }).join('') + `<div class="prem-sales-bar-row" style="border-top:1px solid rgba(143,163,184,.35);padding-top:6px"><div class="prem-sales-seller"><b>Total${on.length<st.tipos.length?' ('+on.join(', ')+')':''}</b></div><div></div><div class="prem-sales-row-total">${brl(total)}</div></div>`;
+}
+function premSalesTipo(t){
+  PREM_TIPOS_ON[t] = PREM_TIPOS_ON[t]===false;
+  if(!Object.values(PREM_TIPOS_ON).some(Boolean)) Object.keys(PREM_TIPOS_ON).forEach(k=>PREM_TIPOS_ON[k]=true);
+  const b = document.getElementById('prem-sales-bars'); if(b) b.innerHTML = premSalesBarsHTML();
+  const l = document.getElementById('prem-sales-legend'); if(l) l.innerHTML = premSalesLegendHTML();
+}
+Object.assign(window, { premSalesBarsHTML, premSalesLegendHTML, premSalesTipo });
+
+/* ===================== EVOLUÇÃO DOS UPGRADES (Oportunidades) =====================
+   Responde: quantos upgrades foram feitos, quanto a receita mensal subiu, quantos já pagaram o valor novo e o que se perdeu depois.
+   Fonte: radar_upgrade_evolucao (relatório de alterações do IXC + faturas + situação atual do contrato).
+   Mesmo critério do relatório de alterações do IXC (upgrade, upgrade com troca de vencimento e downgrade; sem troca de plano em massa).
+   Aumento acima de R$ 300 = contrato empresarial: fica fora por padrão para não distorcer a tendência. */
+const OPE = { dados:null, carregando:false, erro:null, filial:'Todas', meses:'ano', empresarial:false, obs:'', mesSel:null };
+const OPE_EMPRESARIAL = 300;
+const OPE_MES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const OPE_MES_LONGO = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+(function(){ if(document.getElementById('ope-css')) return; const st = document.createElement('style'); st.id = 'ope-css';
+  st.textContent = `.ope-dica{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;background:rgba(143,163,184,.28);font-size:11px;font-weight:800;cursor:help;position:relative;margin-left:6px;vertical-align:middle;font-style:normal}
+  .ope-dica:hover::after,.ope-dica:focus::after{content:attr(data-dica);position:absolute;z-index:60;left:50%;top:24px;transform:translateX(-50%);width:280px;background:#0f172a;color:#fff;padding:9px 11px;border-radius:8px;font-size:12px;font-weight:400;line-height:1.4;white-space:normal;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+  .ope-frase{font-size:15px;line-height:1.55;margin:4px 0 14px;padding:12px 16px;border-radius:10px;background:color-mix(in srgb,var(--radar-blue) 8%,transparent);border-left:5px solid var(--radar-blue)}
+  .ope-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px}
+  .ope-card{border:1.5px solid color-mix(in srgb,var(--c) 40%,transparent);border-left:6px solid var(--c);border-radius:10px;padding:12px 14px;background:color-mix(in srgb,var(--c) 7%,transparent)}
+  .ope-card b{font-size:12px;display:flex;align-items:center}.ope-card strong{display:block;font-size:24px;margin:6px 0 2px}.ope-card small{display:block;font-size:12px;opacity:.8;line-height:1.4}
+  .ope-tab tr.ope-clic{cursor:pointer}.ope-tab tr.ope-clic:hover td{background:color-mix(in srgb,var(--radar-blue) 8%,transparent)}.ope-tab tr.ope-on td{background:color-mix(in srgb,var(--radar-blue) 14%,transparent);font-weight:700}
+  .ope-tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+  .ope-tag.ok{background:#dcfce7;color:#166534}.ope-tag.ab{background:#fef3c7;color:#92400e}.ope-tag.ruim{background:#fee2e2;color:#991b1b}.ope-tag.cinza{background:#e2e8f0;color:#334155}`;
+  document.head.appendChild(st); })();
+const opeDica = t => `<i class="ope-dica" tabindex="0" data-dica="${cdEsc(t)}">?</i>`;
+async function opEvoCarregar(){
+  const sb = getSB(); if(!sb || OPE.carregando) return;
+  OPE.carregando = true; OPE.erro = null;
+  try{ const r = await sb.rpc('radar_upgrade_evolucao', { p_meses:24 }); if(r.error) throw new Error(r.error.message); OPE.dados = r.data || []; }
+  catch(e){ OPE.erro = e.message; }
+  finally{ OPE.carregando = false; if(OP.sub==='evolucao') renderOportunidades(); }
+}
+function opEvoMesesLista(){
+  const out = [], h = new Date(); h.setDate(1);
+  const n = OPE.meses==='ano' ? h.getMonth()+1 : +OPE.meses;
+  for(let i=n-1;i>=0;i--){ const d = new Date(h.getFullYear(), h.getMonth()-i, 1); out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')); }
+  return out;
+}
+const opEvoRotulo = m => OPE_MES[+m.slice(5,7)-1]+'/'+m.slice(2,4);
+const opEvoMesLongo = m => OPE_MES_LONGO[+m.slice(5,7)-1]+' de '+m.slice(0,4);
+const opEvoData = d => d ? String(d).slice(8,10)+'/'+String(d).slice(5,7)+'/'+String(d).slice(0,4) : '';
+const opEvoVend = id => { try{ const n = typeof vendedorNome==='function' ? vendedorNome(id) : ''; return n && n!=='Não identificado' ? n : (id&&id!=='0' ? 'Vendedor '+id : 'Não identificado'); }catch(e){ return id||''; } };
+// 1ª fatura depois do upgrade: paga, vencida sem pagamento, ou a vencer (inclui fatura ainda não gerada)
+const opEvoHoje = () => new Date().toISOString().slice(0,10);
+const opEvoVencida = x => x.tipo!=='downgrade' && x.situacao==='aguardando' && x.venc_primeira && String(x.venc_primeira) < opEvoHoje();
+function opEvoItens(incluirEmpresarial){
+  const meses = new Set(opEvoMesesLista()), emp = incluirEmpresarial ?? OPE.empresarial;
+  return (OPE.dados||[]).filter(x => meses.has(x.mes) && (OPE.filial==='Todas' || x.filial===OPE.filial) && (emp || Math.abs(+x.aumento) <= OPE_EMPRESARIAL));
+}
+function opEvoCalc(){
+  const itens = opEvoItens(), por = {};
+  const novo = m => ({ mes:m, qtd:0, pagos:0, abertos:0, venc:0, aVencer:0, aumVenc:0, aum:0, aumPago:0, down:0, aumDown:0, canc:0, aumCanc:0, bloq:0 });
+  opEvoMesesLista().forEach(m => por[m] = novo(m));
+  const T = { ...novo('total'), hoje:0, aumBloq:0, aumAberto:0 };
+  itens.forEach(x => { const s = por[x.mes]; if(!s) return; const a = +x.aumento||0;
+    if(x.tipo==='downgrade'){ s.down++; s.aumDown += a; T.down++; T.aumDown += a; if(x.atual!=='cancelado') T.hoje += a; return; }
+    s.qtd++; s.aum += a; T.qtd++; T.aum += a;
+    if(x.situacao==='confirmado'){ s.pagos++; s.aumPago += a; T.pagos++; T.aumPago += a; if(x.atual!=='cancelado') T.hoje += a; }
+    else { s.abertos++; T.abertos++; T.aumAberto += a;
+      if(opEvoVencida(x)){ s.venc++; s.aumVenc += a; T.venc++; T.aumVenc += a; } else { s.aVencer++; T.aVencer++; } }
+    if(x.atual==='cancelado'){ s.canc++; s.aumCanc += a; T.canc++; T.aumCanc += a; }
+    else if(x.atual==='bloqueado'){ s.bloq++; T.bloq++; T.aumBloq += a; } });
+  let acum = 0; const serie = Object.values(por).map(s => { const liq = s.aumPago + s.aumDown; acum += liq; return { ...s, liq, acum }; });
+  const fechados = serie.slice(0,-1), ult = fechados[fechados.length-1], ant = fechados[fechados.length-2];
+  const empFora = OPE.empresarial ? [] : opEvoItens(true).filter(x=>Math.abs(+x.aumento) > OPE_EMPRESARIAL);
+  return { serie, itens, T, ult, ant, empFora };
+}
+function opEvoFrase(r){
+  const T = r.T, s0 = r.serie[0], s1 = r.serie[r.serie.length-1];
+  const periodo = OPE.meses==='ano' ? `Em ${s1.mes.slice(0,4)} (até ${OPE_MES_LONGO[+s1.mes.slice(5,7)-1]})` : `De ${opEvoRotulo(s0.mes)} a ${opEvoRotulo(s1.mes)}`;
+  const quem = OPE.filial==='Todas' ? 'a Hilink' : OPE.filial;
+  let f = `${periodo}, ${quem} fez <b>${cdNum(T.qtd)} upgrades</b>. Hoje eles trazem <b>${cdMoeda(T.hoje)} a mais por mês</b> na receita. `
+    + `<b>${cdPct(T.pagos,T.qtd)}%</b> dos clientes já pagaram a primeira fatura com o valor novo.`;
+  if(T.canc || T.bloq) f += ` Depois do upgrade, ${T.canc?`<b>${cdNum(T.canc)} cancelaram</b>`:''}${T.canc&&T.bloq?' e ':''}${T.bloq?`<b>${cdNum(T.bloq)} estão bloqueados</b> por falta de pagamento`:''}.`;
+  if(r.ult && r.ant && r.ant.qtd) f += ` No último mês fechado (${OPE_MES_LONGO[+r.ult.mes.slice(5,7)-1]}) foram ${cdNum(r.ult.qtd)} upgrades, ${r.ult.qtd>=r.ant.qtd?'mais':'menos'} que os ${cdNum(r.ant.qtd)} de ${OPE_MES_LONGO[+r.ant.mes.slice(5,7)-1]}.`;
+  return f;
+}
+// Ponte entre o total do relatório de alterações do IXC e a "receita a mais por mês, hoje"
+function opEvoPonteHTML(r){
+  const todos = opEvoItens(true), soma = (l)=>l.reduce((t,x)=>t+(+x.aumento||0),0);
+  const ixc = soma(todos);
+  const emp = OPE.empresarial ? 0 : soma(todos.filter(x=>Math.abs(+x.aumento) > OPE_EMPRESARIAL));
+  const base = todos.filter(x=>OPE.empresarial || Math.abs(+x.aumento) <= OPE_EMPRESARIAL);
+  const canc = soma(base.filter(x=>x.atual==='cancelado'));
+  const naoPago = soma(base.filter(x=>x.tipo!=='downgrade' && x.situacao!=='confirmado' && x.atual!=='cancelado'));
+  const fim = ixc - emp - canc - naoPago;
+  const lin = (t, v, d, forte) => `<tr><td style="padding:5px 8px">${t}${d?opeDica(d):''}</td><td style="padding:5px 8px;text-align:right;white-space:nowrap;${forte?'font-weight:800;font-size:14px':''}">${v}</td></tr>`;
+  return `<details style="margin:0 0 14px" ${OPE.ponteAberta?'open':''} ontoggle="OPE.ponteAberta=this.open"><summary style="cursor:pointer;font-size:13px;font-weight:700">Como chegamos em ${cdMoeda(r.T.hoje)} a partir do total do IXC (${cdMoeda(ixc)})</summary>
+    <table style="font-size:13px;margin-top:8px;min-width:min(560px,100%)"><tbody>
+      ${lin('Diferença total no relatório de alterações do IXC', cdMoeda(ixc), 'Soma da coluna "Diferença" do relatório de alterações do IXC no mesmo período e filial: upgrades menos downgrades, de todos os contratos, pagando ou não.', true)}
+      ${emp?lin('menos contratos empresariais (fora do gráfico)', '- '+cdMoeda(emp), 'Aumentos acima de '+cdMoeda(OPE_EMPRESARIAL)+' por mês. Marque "Incluir empresariais" para somá-los.'):''}
+      ${lin('menos contratos que cancelaram depois', '- '+cdMoeda(canc), 'O cliente mudou de plano e depois cancelou. Esse aumento não existe mais na receita.')}
+      ${lin('menos upgrades que ainda não pagaram o valor novo', '- '+cdMoeda(naoPago), 'Contrato ativo, mas a 1ª fatura com o valor novo ainda não foi paga (vencida ou a vencer). Entra na conta quando for paga.')}
+      ${lin('= Receita a mais por mês, hoje', cdMoeda(fim), '', true)}
+    </tbody></table></details>`;
+}
+function opEvoDetalheHTML(r){
+  if(!OPE.mesSel) return `<p style="font-size:12px;opacity:.75;margin:6px 0 14px">Passe o mouse nas barras para ver o resumo do mês. <b>Clique numa barra</b> (ou numa linha da tabela) para ver os clientes daquele mês.</p>`;
+  const lista = r.itens.filter(x=>x.mes===OPE.mesSel).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+  const pg = x => x.tipo==='downgrade' ? '<span class="ope-tag cinza">Downgrade</span>' : x.situacao==='confirmado' ? '<span class="ope-tag ok">Paga</span>' : opEvoVencida(x) ? `<span class="ope-tag ruim">Vencida em ${opEvoData(x.venc_primeira)}</span>` : `<span class="ope-tag ab">A vencer${x.venc_primeira?' em '+opEvoData(x.venc_primeira):''}</span>`;
+  const hj = x => x.atual==='cancelado' ? `<span class="ope-tag ruim">Cancelou${x.cancelado_em?' em '+opEvoData(x.cancelado_em):''}</span>` : x.atual==='bloqueado' ? '<span class="ope-tag ab">Bloqueado</span>' : '<span class="ope-tag ok">Ativo</span>';
+  return `<div class="section compact-section" style="margin:6px 0 14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><h3 style="margin:0;font-size:14px">Clientes de ${opEvoMesLongo(OPE.mesSel)} (${cdNum(lista.length)})</h3><button class="btn sm outline" onclick="OPE.mesSel=null;renderOportunidades()">Fechar</button></div>
+    <div style="overflow:auto;max-height:380px"><table class="tbl" style="width:100%;font-size:12px"><thead><tr><th>Cliente</th><th>Contrato</th><th>Data</th><th>Vendedor</th><th style="text-align:right">Antes</th><th style="text-align:right">Depois</th><th style="text-align:right">Diferença</th><th>1ª fatura</th><th>Hoje</th></tr></thead>
+    <tbody>${lista.map(x=>`<tr><td>${cdEsc(x.nome||('Cliente '+x.cliente))}</td><td>${cdEsc(x.contrato)}</td><td>${opEvoData(x.data)}</td><td>${cdEsc(opEvoVend(x.vendedor))}</td><td style="text-align:right">${cdMoeda(x.valor_anterior)}</td><td style="text-align:right">${cdMoeda(x.valor_novo)}</td><td style="text-align:right;font-weight:700">${cdMoeda(x.aumento)}</td><td>${pg(x)}</td><td>${hj(x)}</td></tr>`).join('') || '<tr><td colspan="9">Nenhuma alteração neste mês.</td></tr>'}</tbody></table></div></div>`;
+}
+function opEvoHTML(){
+  if(!OPE.dados){
+    if(!OPE.carregando && !OPE.erro) setTimeout(opEvoCarregar, 0);
+    return `<div class="section compact-section">${OPE.erro?`Não foi possível carregar: ${cdEsc(OPE.erro)} <button class="btn sm" onclick="OPE.erro=null;opEvoCarregar()">Tentar novamente</button>`:'Montando a evolução dos upgrades...'}</div>`;
+  }
+  const filiais = [...new Set((OPE.dados||[]).map(x=>x.filial).filter(Boolean))].sort();
+  const r = opEvoCalc(), T = r.T;
+  const card = (c, titulo, dica, valor, sub) => `<div class="ope-card" style="--c:${c}"><b>${titulo}${opeDica(dica)}</b><strong>${valor}</strong><small>${sub}</small></div>`;
+  const th = (t, d, dir) => `<th style="text-align:${dir||'right'};white-space:nowrap">${t}${d?opeDica(d):''}</th>`;
+  const linhas = r.serie.slice().reverse().map(s => `<tr class="ope-clic ${OPE.mesSel===s.mes?'ope-on':''}" onclick="OPE.mesSel='${s.mes}';renderOportunidades();document.getElementById('ope-detalhe')?.scrollIntoView({behavior:'smooth',block:'start'})">
+    <td>${opEvoRotulo(s.mes)}</td><td style="text-align:right">${cdNum(s.qtd)}</td><td style="text-align:right">${cdNum(s.pagos)}</td><td style="text-align:right;${s.venc?'color:var(--radar-red);font-weight:700':''}">${s.venc?cdNum(s.venc):'-'}</td><td style="text-align:right">${s.aVencer?cdNum(s.aVencer):'-'}</td>
+    <td style="text-align:right">${s.canc?cdNum(s.canc):'-'}</td><td style="text-align:right;font-weight:700">${cdMoeda(s.liq)}</td><td style="text-align:right">${s.down?cdNum(s.down)+' ('+cdMoeda(s.aumDown)+')':'-'}</td><td style="text-align:right">${cdMoeda(s.acum)}</td></tr>`).join('');
+  return `<div class="section compact-section" id="ope-box">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:10px">
+      <label style="font-size:12px">Filial<br><select onchange="OPE.filial=this.value;OPE.mesSel=null;renderOportunidades()"><option ${OPE.filial==='Todas'?'selected':''}>Todas</option>${filiais.map(f=>`<option ${OPE.filial===f?'selected':''}>${cdEsc(f)}</option>`).join('')}</select></label>
+      <label style="font-size:12px">Período<br><select onchange="OPE.meses=this.value==='ano'?'ano':+this.value;OPE.mesSel=null;renderOportunidades()"><option value="ano" ${OPE.meses==='ano'?'selected':''}>Este ano (${new Date().getFullYear()})</option>${[6,12,24].map(n=>`<option value="${n}" ${OPE.meses===n?'selected':''}>Últimos ${n} meses</option>`).join('')}</select></label>
+      <label style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" ${OPE.empresarial?'checked':''} onchange="OPE.empresarial=this.checked;renderOportunidades()"> Incluir empresariais${opeDica('Contratos com aumento acima de '+cdMoeda(OPE_EMPRESARIAL)+' por mês (link dedicado, empresa). Ficam fora por padrão para um contrato grande não esconder a tendência das vendas para residências.')}</label>
+      <label style="font-size:12px;flex:1;min-width:220px">Observação para a imagem<br><input type="text" style="width:100%" maxlength="160" value="${cdEsc(OPE.obs)}" placeholder="Ex.: disparos de upgrade suspensos de agosto a outubro" oninput="OPE.obs=this.value"></label>
+      <button class="btn" onclick="opEvoImagem()">Baixar imagem</button>
+    </div>
+    <div class="ope-frase">${opEvoFrase(r)}</div>
+    <div class="ope-cards">
+      ${card('var(--radar-blue)','Upgrades feitos','Clientes que passaram para um plano mais caro (ou de mesmo valor) no período. Mesmo critério do relatório de alterações do IXC, sem troca de plano em massa.', cdNum(T.qtd), r.ult?`último mês fechado: ${cdNum(r.ult.qtd)}${r.ant?' · mês anterior: '+cdNum(r.ant.qtd):''}`:'')}
+      ${card('var(--radar-green)','Receita a mais por mês, hoje','Soma da diferença de mensalidade (plano novo menos plano antigo) dos upgrades que já pagaram a 1ª fatura e cujo contrato continua ativo, menos os downgrades. É quanto a mensalidade da base subiu por causa dos upgrades do período. Não é o dinheiro já recebido.', cdMoeda(T.hoje), `já descontados ${cdNum(T.canc)} cancelamentos${T.down?' e '+cdNum(T.down)+' downgrades':''}`)}
+      ${card('#2E3192','Já pagaram o valor novo','Percentual de upgrades cuja 1ª fatura depois da mudança de plano já foi paga. Vencida: a fatura já venceu e não foi paga (cobrar). A vencer: a fatura ainda não venceu, o cliente está no prazo.', cdPct(T.pagos,T.qtd)+'%', `${cdNum(T.pagos)} de ${cdNum(T.qtd)} · <b style="color:var(--radar-red)">${cdNum(T.venc)} vencidas sem pagar</b> · ${cdNum(T.aVencer)} a vencer`)}
+      ${card('var(--radar-red)','Perdas depois do upgrade','Cancelados: o cliente fez upgrade e depois cancelou o contrato; esse aumento saiu da receita. Bloqueados: contrato ativo, mas com a internet bloqueada por falta de pagamento; o aumento ainda conta, mas está em risco.', `${cdNum(T.canc)} cancelaram`, `${cdMoeda(T.aumCanc)} por mês perdidos · ${cdNum(T.bloq)} bloqueados (${cdMoeda(T.aumBloq)} por mês em risco)`)}
+    </div>
+    ${opEvoPonteHTML(r)}
+    <div style="position:relative;height:340px"><canvas id="ope-grafico"></canvas></div>
+    ${r.empFora.length?`<p style="font-size:11px;opacity:.75;margin:6px 0 0">Fora do gráfico: ${cdNum(r.empFora.length)} alteração(ões) empresarial(is) somando ${cdMoeda(r.empFora.reduce((s,x)=>s+(+x.aumento||0),0))} por mês. Marque "Incluir empresariais" para ver.</p>`:''}
+    <div id="ope-detalhe">${opEvoDetalheHTML(r)}</div>
+    <h3 style="font-size:13px;margin:4px 0 6px">Mês a mês <span style="font-weight:400;font-size:11px;opacity:.7">(clique numa linha para ver os clientes)</span></h3>
+    <div style="overflow:auto"><table class="tbl ope-tab" style="width:100%;font-size:12px"><thead><tr>
+      ${th('Mês','','left')}${th('Upgrades','Quantidade de upgrades feitos no mês.')}${th('Já pagaram','Upgrades do mês cuja 1ª fatura com o valor novo já foi paga.')}${th('Vencida sem pagar','A 1ª fatura com o valor novo já venceu e não foi paga. Precisa de cobrança.')}${th('A vencer','A 1ª fatura com o valor novo ainda não venceu (ou ainda não foi gerada). Cliente no prazo.')}${th('Cancelaram depois','Clientes que fizeram upgrade neste mês e hoje estão com o contrato cancelado.')}${th('Receita a mais no mês','Aumento de mensalidade dos upgrades do mês que já pagaram, menos os downgrades do mês.')}${th('Downgrades','Clientes que foram para um plano mais barato no mês, e quanto a mensalidade caiu.')}${th('Soma até o mês','Quanto a mensalidade da base subiu somando todos os meses do período até este.')}
+    </tr></thead><tbody>${linhas}</tbody></table></div>
+  </div>`;
+}
+function opEvoConfig(serie, claro){
+  const txt = claro ? '#0f172a' : undefined, grade = claro ? '#e6edf5' : undefined;
+  return { type:'bar',
+    data:{ labels:serie.map(s=>opEvoRotulo(s.mes)), datasets:[
+      { type:'bar', label:'Já pagaram o valor novo', data:serie.map(s=>s.pagos), backgroundColor:'#0071BC', stack:'q', yAxisID:'y', order:2 },
+      { type:'bar', label:'Vencida sem pagar', data:serie.map(s=>s.venc), backgroundColor:'#ef4444', stack:'q', yAxisID:'y', order:2 },
+      { type:'bar', label:'A vencer', data:serie.map(s=>s.aVencer), backgroundColor:'#f59e0b', stack:'q', yAxisID:'y', order:2 },
+      { type:'line', label:'Receita a mais no mês (R$)', data:serie.map(s=>Math.round(s.liq*100)/100), borderColor:'#10b981', backgroundColor:'#10b981', yAxisID:'y1', tension:.3, cubicInterpolationMode:'monotone', pointRadius:5, pointHoverRadius:8, borderWidth:3, order:1 } ] },
+    options:{ responsive:!claro, maintainAspectRatio:false, animation:claro?false:undefined, devicePixelRatio:claro?1:undefined,
+      interaction:{ mode:'index', intersect:false },
+      onClick: claro ? undefined : (e, el, ch) => { const i = el && el.length ? el[0].index : null; if(i===null) return; OPE.mesSel = serie[i].mes; renderOportunidades(); setTimeout(()=>document.getElementById('ope-detalhe')?.scrollIntoView({behavior:'smooth',block:'start'}),80); },
+      onHover: claro ? undefined : (e, el) => { const c = e?.native?.target; if(c) c.style.cursor = el && el.length ? 'pointer' : 'default'; },
+      plugins:{ legend:{ position:'bottom', labels:{ color:txt } }, radarValorPonta:{ display:false }, barValueLabels:{ display:false },
+        tooltip:{ enabled:!claro, padding:12, bodySpacing:4, footerFont:{ weight:'normal', style:'italic' },
+          callbacks:{
+            title: it => it.length ? opEvoMesLongo(serie[it[0].dataIndex].mes) : '',
+            label: () => null,
+            afterBody: it => { if(!it.length) return []; const s = serie[it[0].dataIndex];
+              const l = [`Upgrades feitos: ${cdNum(s.qtd)}`, `Já pagaram o valor novo: ${cdNum(s.pagos)}`]; if(s.venc) l.push(`Vencida sem pagar: ${cdNum(s.venc)} (${cdMoeda(s.aumVenc)} por mês)`); if(s.aVencer) l.push(`A vencer: ${cdNum(s.aVencer)}`);
+              if(s.canc) l.push(`Cancelaram depois: ${cdNum(s.canc)} (${cdMoeda(s.aumCanc)} por mês)`);
+              if(s.down) l.push(`Downgrades: ${cdNum(s.down)} (${cdMoeda(s.aumDown)} por mês)`);
+              l.push(`Receita a mais no mês: ${cdMoeda(s.liq)}`, `Soma até este mês: ${cdMoeda(s.acum)} por mês`); return l; },
+            footer: () => 'Clique para ver os clientes deste mês' } } },
+      scales:{ y:{ stacked:true, beginAtZero:true, title:{ display:true, text:'Quantidade de upgrades', color:txt }, ticks:{ color:txt, precision:0 }, grid:{ color:grade } },
+        y1:{ position:'right', beginAtZero:true, suggestedMin:0, title:{ display:true, text:'Receita a mais (R$ por mês)', color:txt }, ticks:{ color:txt, callback:v=>cdMoeda(v).replace(',00','') }, grid:{ display:false } },
+        x:{ stacked:true, ticks:{ color:txt }, grid:{ display:false } } } },
+    plugins:[{ id:'opeTotais', afterDatasetsDraw(chart){
+      const ms = [2,1,0].map(i=>chart.getDatasetMeta(i));
+      const ctx = chart.ctx; ctx.save(); ctx.fillStyle = claro ? '#0f172a' : (getComputedStyle(document.body).color || '#0f172a');
+      ctx.font = '700 12px Inter, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      serie.forEach((s,i) => { const vals=[s.aVencer,s.venc,s.pagos]; let b=null; ms.forEach((m,k)=>{ if(!b && vals[k] && m && !m.hidden && m.data[i]) b=m.data[i]; }); b = b || ms[2]?.data[i]; if(!b || !s.qtd) return; ctx.fillText(String(s.qtd), b.x, b.y - 4); });
+      ctx.restore(); } }] };
+}
+function opEvoGrafico(){
+  const el = document.getElementById('ope-grafico'); if(!el || typeof Chart==='undefined') return;
+  try{ CHARTS['ope']?.destroy(); }catch(e){}
+  CHARTS['ope'] = new Chart(el, opEvoConfig(opEvoCalc().serie, false));
+}
+function opEvoTextoQuebrado(g, texto, x, y, larg, alt){
+  const pal = texto.split(' '); let lin = '';
+  pal.forEach(p => { const t = lin ? lin+' '+p : p; if(g.measureText(t).width > larg){ g.fillText(lin, x, y); y += alt; lin = p; } else lin = t; });
+  if(lin) g.fillText(lin, x, y); return y + alt;
+}
+async function opEvoImagem(){
+  try{
+    const r = opEvoCalc(), T = r.T, W = 1400, H = 1060, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H; const g = cv.getContext('2d');
+    g.fillStyle = '#ffffff'; g.fillRect(0,0,W,H);
+    g.fillStyle = '#0071BC'; g.fillRect(0,0,W,10);
+    g.fillStyle = '#0f172a'; g.font = 'bold 34px Inter, Arial'; g.fillText('Evolução dos upgrades' + (OPE.filial==='Todas'?' — todas as filiais':' — '+OPE.filial), 50, 68);
+    const s0 = r.serie[0], s1 = r.serie[r.serie.length-1];
+    g.fillStyle = '#64748b'; g.font = '18px Inter, Arial';
+    g.fillText(`De ${opEvoRotulo(s0.mes)} a ${opEvoRotulo(s1.mes)} · gerado em ${new Date().toLocaleDateString('pt-BR')} · ${OPE.empresarial?'inclui':'sem'} contratos empresariais`, 50, 98);
+    g.fillStyle = '#0f172a'; g.font = '20px Inter, Arial';
+    let y = opEvoTextoQuebrado(g, opEvoFrase(r).replace(/<[^>]+>/g,''), 50, 138, 1300, 28);
+    const cards = [['Upgrades feitos', cdNum(T.qtd), '#0071BC'], ['Receita a mais por mês, hoje', cdMoeda(T.hoje), '#10b981'], ['Já pagaram o valor novo', cdPct(T.pagos,T.qtd)+'%', '#2E3192'], ['Cancelaram depois', cdNum(T.canc)+' ('+cdMoeda(T.aumCanc)+'/mês)', '#ef4444']];
+    y += 6;
+    cards.forEach(([tt, v, c], i) => { const x = 50 + i*330;
+      g.fillStyle = '#f8fafc'; g.fillRect(x, y, 310, 96); g.fillStyle = c; g.fillRect(x, y, 8, 96);
+      g.fillStyle = '#64748b'; g.font = '17px Inter, Arial'; g.fillText(tt, x+24, y+34);
+      g.fillStyle = '#0f172a'; g.font = 'bold 27px Inter, Arial'; g.fillText(v, x+24, y+74); });
+    y += 120;
+    const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-99999px;top:0;width:1300px;height:540px';
+    const hc = document.createElement('canvas'); box.appendChild(hc); document.body.appendChild(box);
+    const cfg = opEvoConfig(r.serie, true); cfg.options.responsive = true;
+    const ch = new Chart(hc, cfg);
+    await new Promise(res => setTimeout(res, 80));
+    const img = new Image(); img.src = ch.toBase64Image('image/png', 1);
+    await new Promise(res => { img.onload = res; img.onerror = res; });
+    g.drawImage(img, 50, y, 1300, 540);
+    ch.destroy(); box.remove();
+    y += 570;
+    g.fillStyle = '#64748b'; g.font = '16px Inter, Arial';
+    g.fillText('Barras: upgrades do mês (azul = já pagaram a 1ª fatura com o valor novo; vermelho = fatura vencida sem pagar; amarelo = a vencer).', 50, y); y += 24; g.fillText('Linha verde: quanto a mensalidade subiu com os upgrades do mês, menos downgrades.', 50, y); y += 26;
+    if(r.empFora.length){ g.fillText(`Fora do gráfico: ${r.empFora.length} alteração(ões) empresarial(is) somando ${cdMoeda(r.empFora.reduce((s,x)=>s+(+x.aumento||0),0))} por mês.`, 50, y); y += 26; }
+    if(OPE.obs.trim()){ g.fillStyle = '#0f172a'; g.font = 'bold 20px Inter, Arial'; opEvoTextoQuebrado(g, 'Observação: ' + OPE.obs.trim().slice(0,200), 50, y+12, 1300, 28); }
+    g.fillStyle = '#94a3b8'; g.font = '14px Inter, Arial'; g.fillText('Radar Hilink', W-150, H-22);
+    const a = document.createElement('a');
+    a.download = `upgrades_${cdSlug(OPE.filial==='Todas'?'todas':OPE.filial)}_${new Date().toISOString().slice(0,10)}.png`;
+    a.href = cv.toDataURL('image/png'); document.body.appendChild(a); a.click(); a.remove();
+  }catch(e){ console.warn('[Radar] imagem upgrades', e); toast('Não foi possível gerar a imagem.','warn'); }
+}
+Object.assign(window, { OPE, opEvoCarregar, opEvoImagem, opEvoGrafico });
 
 
 document.addEventListener('DOMContentLoaded', ()=>setTimeout(ixcCargaRender, 1500));
