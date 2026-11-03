@@ -26190,7 +26190,7 @@ const OP_FUNIL = [
   ['plano fora da regra','Plano empresarial, dedicado, IP fixo ou teste'],
   ['já no plano mais alto','Já está no 1 giga ou paga mais que a próxima oferta'],
   ['tem fatura vencida','Tem fatura vencida (vai para a cobrança)'],
-  ['já recusou oferta de upgrade no OPA','Já recusou oferta (etiqueta UPGRADE OFERTADO no OPA)'],
+  ['já recusou oferta de upgrade no OPA','Já recusou oferta (etiqueta UPGRADE RECUSADO - NÃO OFERTAR no OPA)'],
   ['cliente há menos de 6 meses','Cliente há menos de 6 meses'],
   ['atrasou 2 ou mais das últimas 6 faturas','Atrasou 2 ou mais das últimas 6 faturas'],
   ['liberação em confiança','Está com liberação em confiança'],
@@ -26290,7 +26290,7 @@ function opAcompHTML(){
     ${num('Em aberto', cdNum(sel.abertos), 'atendimentos ainda sem fim', sel.abertos?'warn':'ok')}
     ${num('Conversão', cdPct(sel.converteram,sel.enviados)+'%', `${cdNum(sel.converteram)} mudaram de plano no IXC · ${cdNum(sel.motivo_upgrade)} com motivo UPGRADE no OPA`, sel.converteram?'ok':'info')}
     ${num('Receita nova', cdMoeda(sel.receita), 'a mais por mês, já no IXC', sel.receita?'ok':'info')}
-    ${num('Recusaram', cdNum(sel.recusaram), 'com etiqueta UPGRADE OFERTADO')}
+    ${num('Recusaram', cdNum(sel.recusaram), 'com etiqueta UPGRADE RECUSADO - NÃO OFERTAR')}
   </div>`;
   const cam = OP_CAMINHOS.map(([k,rot,tom])=>{ const n=(sel.clientes||[]).filter(c=>c.caminho===k).length; return n?`<button type="button" class="btn sm ${OP.acompCaminho===k?'primary':''}" onclick="OP.acompCaminho=OP.acompCaminho==='${k}'?'':'${k}';renderOportunidades()">${rot} (${cdNum(n)})</button>`:''; }).join(' ');
   const cl = (sel.clientes||[]).filter(c=>!OP.acompCaminho || c.caminho===OP.acompCaminho);
@@ -26321,13 +26321,13 @@ function opFalhasHTML(){
   const espera = envs.flatMap(e=>(e.clientes||[]).filter(c=>c.aberto && c.resposta && (Date.now()-new Date(c.resposta).getTime()) > 30*60000)).length;
   if(!perd && !geral && !espera) return '';
   const partes = [];
-  if(perd) partes.push(`<b>${cdNum(perd)} clientes responderam à oferta e foram encerrados pela IA sem atendimento.</b> São vendas perdidas e, se for recusa, falta a etiqueta UPGRADE OFERTADO.`);
+  if(perd) partes.push(`<b>${cdNum(perd)} clientes responderam à oferta e foram encerrados pela IA sem atendimento.</b> São vendas perdidas e, se for recusa, falta a etiqueta UPGRADE RECUSADO - NÃO OFERTAR.`);
   if(geral) partes.push(`Nas últimas 24 horas o OPA teve <b>${cdNum(f.ia_0s||0)} atendimentos fechados pela Fernanda em 0 segundo, sem etiqueta</b>${f.ia_venda_sem_atendente?`, e <b>${cdNum(f.ia_venda_sem_atendente)} etiquetados para venda e fechados pela IA</b>`:''}, sem nenhum atendente depois. Nos 10 dias anteriores isso não aconteceu nenhuma vez.`);
   if(espera) partes.push(`<b>${cdNum(espera)} clientes que responderam estão esperando há mais de 30 minutos</b> com o atendimento em aberto.`);
   return `<div role="alert" class="section compact-section" style="border:2px solid #E5484D;background:rgba(229,72,77,.10)">
     <div style="font-weight:900;color:#E5484D;letter-spacing:.03em;margin-bottom:6px">FALHA GRAVE NO FLUXO DO OPA: CLIENTE ENCERRADO SEM TRATAMENTO</div>
     ${partes.map(p=>`<p style="margin:4px 0;font-size:13px;line-height:1.5">${p}</p>`).join('')}
-    <p style="margin:8px 0 4px;font-size:12px"><b>O que fazer:</b> 1. Chamar de volta hoje quem foi encerrado. 2. Ajustar no OPA para que toda resposta à campanha vá direto para o setor de venda, sem triagem da IA. 3. Se o encerramento for a opção "não quero", o fluxo precisa aplicar a etiqueta UPGRADE OFERTADO.</p>
+    <p style="margin:8px 0 4px;font-size:12px"><b>O que fazer:</b> 1. Chamar de volta hoje quem foi encerrado. 2. Ajustar no OPA para que toda resposta à campanha vá direto para o setor de venda, sem triagem da IA. 3. Se o encerramento for a opção "não quero", o fluxo precisa aplicar a etiqueta UPGRADE RECUSADO - NÃO OFERTAR.</p>
     <div class="cdg-botoes" style="margin-top:8px">
       ${perd?`<button type="button" class="cdg-ir" onclick="OP.acompCaminho='fechado pela IA em 0 s';opSub('envios')">Ver quem foi encerrado</button>`:''}
       ${perd?`<button type="button" class="cdg-ir cdg-gerar" onclick="opGerarAtividade(['fechado pela IA em 0 s','triagem da IA sem atendente'])">Gerar atividade: chamar de volta</button>`:''}
@@ -26659,7 +26659,7 @@ Object.assign(window, { OPE, opEvoCarregar, opEvoImagem, opEvoGrafico });
 /* ===================== INTERESSADOS QUE NÃO FECHARAM (Oportunidades) =====================
    Clientes que demonstraram interesse em upgrade no OPA nos últimos 90 dias e não fizeram upgrade depois.
    Sinais: motivo "UPGRADE DE PLANO" (pediu upgrade) ou etiqueta "VENDA ATIVA | OFERTAR UPGRADE" (marcado para ofertar).
-   Fora sempre: etiqueta "UPGRADE OFERTADO" (recusou e pediu para não receber mais ofertas) e quem já foi para uma lista do OPA nos últimos 30 dias.
+   Fora sempre: etiqueta "UPGRADE RECUSADO - NÃO OFERTAR" (recusou e pediu para não receber mais ofertas) e quem já foi para uma lista do OPA nos últimos 30 dias.
    Fonte: radar_upgrade_interessados. A exportação para o OPA é registrada como lista de upgrade (entra em "Envios e resultado"). */
 const OPI = { dados:null, carregando:false, erro:null, f:{ filial:'Todas', situacao:'pronto para ofertar', sinal:'Todos', origem:'Todas', busca:'' }, sel:new Set(), limite:100, exportando:false };
 async function opIntCarregar(){
@@ -26697,7 +26697,7 @@ function opIntHTML(){
     <td>${x.sinal==='pediu upgrade'?'<span class="ope-tag ok">Pediu upgrade</span>':'<span class="ope-tag cinza">Marcado para ofertar</span>'}<br><small style="opacity:.7">${cdEsc(x.origem)}</small></td>
     <td>${tagSit(x)}</td></tr>`).join('');
   return `<div class="section compact-section" id="opi-box">
-    <div class="ope-frase">Nos últimos 90 dias, <b>${cdNum(todos.length)} clientes</b> demonstraram interesse em upgrade no OPA e <b>não fizeram upgrade depois</b>. Deles, <b>${cdNum(cont('pronto para ofertar'))} estão em dia</b> e podem receber a oferta agora. Quem recusou e pediu para não receber mais ofertas (etiqueta "UPGRADE OFERTADO") já está fora.</div>
+    <div class="ope-frase">Nos últimos 90 dias, <b>${cdNum(todos.length)} clientes</b> demonstraram interesse em upgrade no OPA e <b>não fizeram upgrade depois</b>. Deles, <b>${cdNum(cont('pronto para ofertar'))} estão em dia</b> e podem receber a oferta agora. Quem recusou e pediu para não receber mais ofertas (etiqueta "UPGRADE RECUSADO - NÃO OFERTAR") já está fora.</div>
     <div class="ope-cards">
       ${card('var(--radar-green)','Prontos para ofertar','Contrato ativo, sem fatura vencida e internet liberada. Podem receber a oferta agora.', cdNum(cont('pronto para ofertar')), 'clique para ver a lista', 'pronto para ofertar')}
       ${card('var(--radar-red)','Com fatura vencida','Antes de ofertar upgrade, regularizar o débito. Oferecer upgrade a quem está devendo aumenta o risco de inadimplência.', cdNum(cont('com fatura vencida')), 'cobrar antes de ofertar', 'com fatura vencida')}
