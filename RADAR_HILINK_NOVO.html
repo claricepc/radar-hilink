@@ -26687,7 +26687,7 @@ function opIntHTML(){
   const cont = k => todos.filter(x=>x.situacao===k).length;
   const filiais = [...new Set(todos.map(x=>x.filial).filter(Boolean))].sort();
   const sel = (k, lista, todosTxt) => `<select onchange="opIntSet('${k}',this.value)"><option ${f[k]===todosTxt?'selected':''}>${todosTxt}</option>${lista.map(v=>`<option ${f[k]===v?'selected':''}>${cdEsc(v)}</option>`).join('')}</select>`;
-  const card = (c, titulo, dica, valor, sub, k) => `<div class="ope-card" style="--c:${c};cursor:pointer" onclick="opIntSet('situacao','${k}')"><b>${titulo}${opeDica(dica)}</b><strong>${valor}</strong><small>${sub}</small></div>`;
+  const card = (c, titulo, dica, valor, sub, k, campo) => `<div class="ope-card" style="--c:${c};cursor:pointer" onclick="opIntSet('${campo||'situacao'}','${k}')"><b>${titulo}${opeDica(dica)}</b><strong>${valor}</strong><small>${sub}</small></div>`;
   const tagSit = x => x.situacao==='pronto para ofertar' ? '<span class="ope-tag ok">Pronto para ofertar</span>' : x.situacao==='bloqueado' ? '<span class="ope-tag ab">Bloqueado</span>' : `<span class="ope-tag ruim">${cdNum(x.vencidas)} vencida(s) · ${cdMoeda(x.valor_vencido)}</span>`;
   const linhas = ls.slice(0, OPI.limite).map(x => `<tr>
     <td><input type="checkbox" ${OPI.sel.has(String(x.cliente))?'checked':''} onchange="opIntToggle('${x.cliente}',this)" aria-label="Selecionar ${cdEsc(x.nome)}"></td>
@@ -26702,7 +26702,7 @@ function opIntHTML(){
       ${card('var(--radar-green)','Prontos para ofertar','Contrato ativo, sem fatura vencida e internet liberada. Podem receber a oferta agora.', cdNum(cont('pronto para ofertar')), 'clique para ver a lista', 'pronto para ofertar')}
       ${card('var(--radar-red)','Com fatura vencida','Antes de ofertar upgrade, regularizar o débito. Oferecer upgrade a quem está devendo aumenta o risco de inadimplência.', cdNum(cont('com fatura vencida')), 'cobrar antes de ofertar', 'com fatura vencida')}
       ${card('var(--radar-yellow)','Bloqueados','Internet bloqueada (por falta de pagamento ou manualmente). Resolver o bloqueio antes de ofertar.', cdNum(cont('bloqueado')), 'resolver antes de ofertar', 'bloqueado')}
-      ${card('var(--radar-blue)','Pediram upgrade','O próprio cliente falou de upgrade no atendimento (motivo "UPGRADE DE PLANO"). É o grupo mais quente.', cdNum(todos.filter(x=>x.sinal==='pediu upgrade').length), 'de todas as situações', 'Todas')}
+      ${card('var(--radar-blue)','Pediram upgrade','O próprio cliente falou de upgrade no atendimento (motivo "UPGRADE DE PLANO"). É o grupo mais quente.', cdNum(todos.filter(x=>x.sinal==='pediu upgrade').length), 'clique para filtrar', 'pediu upgrade', 'sinal')}
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:10px">
       <label style="font-size:12px">Filial<br>${sel('filial', filiais, 'Todas')}</label>
