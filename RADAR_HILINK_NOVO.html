@@ -26420,7 +26420,7 @@ Object.assign(window, { premSalesBarsHTML, premSalesLegendHTML, premSalesTipo })
 /* ===================== EVOLUÇÃO DOS UPGRADES (Oportunidades) =====================
    Gráfico mensal de upgrades: quantidade, aumento de receita e se a 1ª fatura depois do upgrade foi paga.
    Fonte: radar_upgrade_evolucao (alterações de plano do IXC + faturas). Aumento acima de R$ 300 = empresarial, fica separado. */
-const OPE = { dados:null, carregando:false, erro:null, filial:'Todas', meses:12, empresarial:false, obs:'' };
+const OPE = { dados:null, carregando:false, erro:null, filial:'Todas', meses:'ano', empresarial:false, obs:'' };
 const OPE_EMPRESARIAL = 300;
 const OPE_MES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 async function opEvoCarregar(){
@@ -26432,7 +26432,8 @@ async function opEvoCarregar(){
 }
 function opEvoMesesLista(){
   const out = [], h = new Date(); h.setDate(1);
-  for(let i=OPE.meses-1;i>=0;i--){ const d = new Date(h.getFullYear(), h.getMonth()-i, 1); out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')); }
+  const n = OPE.meses==='ano' ? h.getMonth()+1 : +OPE.meses;
+  for(let i=n-1;i>=0;i--){ const d = new Date(h.getFullYear(), h.getMonth()-i, 1); out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')); }
   return out;
 }
 const opEvoRotulo = m => OPE_MES[+m.slice(5,7)-1]+'/'+m.slice(2,4);
@@ -26472,7 +26473,7 @@ function opEvoHTML(){
   return `<div class="section compact-section" id="ope-box">
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:12px">
       <label style="font-size:12px">Filial<br><select onchange="OPE.filial=this.value;renderOportunidades()"><option ${OPE.filial==='Todas'?'selected':''}>Todas</option>${filiais.map(f=>`<option ${OPE.filial===f?'selected':''}>${cdEsc(f)}</option>`).join('')}</select></label>
-      <label style="font-size:12px">Período<br><select onchange="OPE.meses=+this.value;renderOportunidades()">${[6,12,24].map(n=>`<option value="${n}" ${OPE.meses===n?'selected':''}>Últimos ${n} meses</option>`).join('')}</select></label>
+      <label style="font-size:12px">Período<br><select onchange="OPE.meses=this.value==='ano'?'ano':+this.value;renderOportunidades()"><option value="ano" ${OPE.meses==='ano'?'selected':''}>Este ano (${new Date().getFullYear()})</option>${[6,12,24].map(n=>`<option value="${n}" ${OPE.meses===n?'selected':''}>Últimos ${n} meses</option>`).join('')}</select></label>
       <label style="font-size:12px;display:flex;gap:6px;align-items:center"><input type="checkbox" ${OPE.empresarial?'checked':''} onchange="OPE.empresarial=this.checked;renderOportunidades()"> Incluir empresariais (aumento acima de ${cdMoeda(OPE_EMPRESARIAL)})</label>
       <label style="font-size:12px;flex:1;min-width:220px">Observação para a imagem<br><input type="text" style="width:100%" maxlength="160" value="${cdEsc(OPE.obs)}" placeholder="Ex.: disparos de upgrade suspensos de agosto a outubro" oninput="OPE.obs=this.value"></label>
       <button class="btn" onclick="opEvoImagem()">Baixar imagem</button>
