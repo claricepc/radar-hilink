@@ -3073,7 +3073,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
         <div class="nav-sub" data-cd="desempenho" onclick="go('cobrancaDia');cdSub('desempenho')">Desempenho da equipe</div>
       </div></div>
     <div class="nav-group nav-hub nav-area" data-area="config"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Configura&ccedil;&otilde;es</div><div class="nav-group-items">
-        <div class="nav-item" data-mod="setup" onclick="go('setup')"><span>Fonte dos dados<small>leitura do IXC, OPA e planilha</small></span></div>
+        <div class="nav-item" data-mod="setup" style="display:none"></div>
         <div class="nav-item" data-mod="relatorios" onclick="go('relatorios')"><span>Relat&oacute;rios Personalizados<small>LOA, cartas e documentos</small></span></div>
         <div class="nav-item" data-mod="usuarios" onclick="go('usuarios')" style="display:none"><span>Usu&aacute;rios e acessos<small>cadastro e permiss&otilde;es</small></span></div>
       </div></div>
@@ -8607,7 +8607,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
             </tr>
           </thead>
           <tbody id="cc-preview-tbody">
-            <tr><td colspan="14" style="text-align:center;color:var(--radar-soft,#6b7280);padding:24px">Carregue o relatório no Setup para ver a prévia.</td></tr>
+            <tr><td colspan="14" style="text-align:center;color:var(--radar-soft,#6b7280);padding:24px">Clique em buscar os dados do IXC para ver a prévia.</td></tr>
           </tbody>
         </table>
       </div>
@@ -9642,7 +9642,7 @@ const ANALYSIS_HELP = {
     sub:'Guia curto do fluxo do Radar com o EDI Correios, sem encher a tela principal de texto.',
     cards:[
       ['1. Preparação no Radar',[
-        'Carregue <b>RADAR HILINK | CORREIOS</b> e <b>Ordens de Serviço</b> no Setup.',
+        'O Radar busca <b>RADAR HILINK | CORREIOS</b> e as <b>Ordens de Serviço</b> direto do IXC.',
         'O Radar usa o assunto <b>TEC | ENTREGA DE CARNE</b>, remove OS Finalizada/Cancelada e cruza com os boletos.',
         'Revise alertas de endereço, banco, QR Code, segunda via e vencimento antes de exportar.'
       ]],
@@ -10607,6 +10607,8 @@ function renderModuleError(mod,err){
   console.error('[Radar] Erro ao renderizar módulo',mod,err);
 }
 function go(mod){
+  // O módulo de carregar relatórios saiu do menu: o Radar lê tudo direto do IXC. Quem pedir "setup" vai para a Visão geral.
+  if(mod==='setup') mod='inicio';
   // Premiação: sem base carregada, busca direto do IXC (banco) em vez de pedir upload
   // Módulos que usam a base do IXC: sem base carregada, busca direto do banco em vez de pedir upload
   const SEM_BASE=['setup','historico','propostas','relatorios','carneCorreios','cobrancaDia','oportunidades','inicio','usuarios'];
@@ -23033,7 +23035,7 @@ function renderAcs(){
   const rows=acsRows();
   const auditRows=rows.filter(r=>!r._ignoreIpAudit);
   if(!rows.length){
-    document.getElementById('acs-insights').innerHTML='<div class="insight attention"><h4>Relatorio ACS nao carregado</h4><div class="big">0</div><p>Volte ao Setup, envie o ACS.csv e clique em Analisar base.</p></div>';
+    document.getElementById('acs-insights').innerHTML='<div class="insight attention"><h4>Relatorio ACS nao carregado</h4><div class="big">0</div><p>Os dados do ACS ainda não são lidos automaticamente do IXC.</p></div>';
     document.querySelector('#acs-tbl thead').innerHTML='';
     document.querySelector('#acs-tbl tbody').innerHTML='<tr><td style="padding:24px;color:#6b7280">Nenhum dado ACS processado.</td></tr>';
     return;
@@ -23285,7 +23287,7 @@ function currentOpaFilter(){
 function renderAtendimento(){
   const rows=opaRows();
   if(!rows.length){
-    document.getElementById('opa-insights').innerHTML='<div class="insight attention"><h4>OPA nao carregado</h4><div class="big">0</div><p>Volte ao Setup, envie o OPA.csv e clique em Analisar relatorios.</p></div>';
+    document.getElementById('opa-insights').innerHTML='<div class="insight attention"><h4>OPA nao carregado</h4><div class="big">0</div><p>Os atendimentos do OPA ainda não foram lidos. Use o botão Atualizar todos os dados.</p></div>';
     return;
   }
   const uniq=new Set(rows.map(r=>r._phone||r._nome).filter(Boolean));
@@ -29732,7 +29734,7 @@ function processarCarneCorreios(){
       CC.clientes=[]; CC.filtered=[];
       ccSetCorreiosExportButtonsDisabled(true);
       const _info=document.getElementById('cc-filial-info');
-      if(_info)_info.innerHTML='<span style="color:#ef4444">OS não carregada — carregue no Setup (passo 6)</span>';
+      if(_info)_info.innerHTML='<span style="color:#ef4444">OS não carregada. Use o botão Atualizar todos os dados.</span>';
       return; // bloqueio — não processar sem OS
     } else {
       cpfsPermitidos=new Set();
@@ -29955,7 +29957,7 @@ function processarCarneCorreios(){
     const cpfLimpo=cpf.startsWith('_nokey_')?(cpfCad||''):cpf;
     if(!cadastroClienteId){
       alertas.push({t:'SEM ID CLIENTE IXC',cls:'erro'});
-      correcoes.push('ID do cadastro do cliente no IXC não localizado. Carregue o relatório <b>Cadastro de Clientes</b> no Setup ou inclua uma coluna explícita de <b>ID Cliente</b> no Query RADAR HILINK | CORREIOS.');
+      correcoes.push('ID do cadastro do cliente no IXC não localizado. Atualize os dados do IXC (Cadastro de clientes) ou inclua uma coluna explícita de <b>ID Cliente</b> no Query RADAR HILINK | CORREIOS.');
       hasErr=true;
     }
     if(!cpfLimpo){
@@ -29973,7 +29975,7 @@ function processarCarneCorreios(){
     const endFinal=endRec||(endCad?(endCad+(numCad?' '+numCad:'')):'')||(endContrato?(endContrato+(numContrato?' '+numContrato:'')):'')||'';
     if(!endFinal){
       alertas.push({t:'SEM ENDEREÇO',cls:'erro'});
-      correcoes.push('Preencha o campo <b>Endereço</b> no cadastro do cliente no IXC. Se disponível, carregue o relatório de Cadastro de Clientes no Setup para obter o endereço automaticamente.');
+      correcoes.push('Preencha o campo <b>Endereço</b> no cadastro do cliente no IXC. Se disponível, atualize os dados do IXC (Cadastro de clientes) para obter o endereço automaticamente.');
       hasErr=true;
     }
     const cepRec=String(b0['CEP']||'').trim();
@@ -29982,7 +29984,7 @@ function processarCarneCorreios(){
     const cepFinal=cepRec||cepCad||cepContrato||'';
     if(!cepFinal){
       alertas.push({t:'SEM CEP',cls:'erro'});
-      correcoes.push('Preencha o campo <b>CEP</b> no cadastro do cliente no IXC. Se disponível, carregue o relatório de Cadastro de Clientes no Setup para obter o CEP automaticamente.');
+      correcoes.push('Preencha o campo <b>CEP</b> no cadastro do cliente no IXC. Se disponível, atualize os dados do IXC (Cadastro de clientes) para obter o CEP automaticamente.');
       hasErr=true;
     }
     const bairroRec=String(b0['Bairro']||'').trim();
@@ -30008,7 +30010,7 @@ function processarCarneCorreios(){
     const ufRaw=ufRec||ufCad||ufContrato||'';
     if(!ufRaw){
       alertas.push({t:'SEM UF',cls:'erro'});
-      correcoes.push('Preencha o campo <b>UF</b> no cadastro do cliente no IXC. Se disponível, carregue o relatório de Cadastro de Clientes no Setup para obter a UF automaticamente.');
+      correcoes.push('Preencha o campo <b>UF</b> no cadastro do cliente no IXC. Se disponível, atualize os dados do IXC (Cadastro de clientes) para obter a UF automaticamente.');
       hasErr=true;
     } else if(/^\d+$/.test(ufRaw)){
       alertas.push({t:'UF NUMÉRICA',cls:'erro'});
