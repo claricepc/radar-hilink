@@ -12,6 +12,32 @@ function diciFilialPorCnpj(cnpj){
   return null;
 }
 function diciNomeArq(f, cat, ext){ const [a,m] = DICI.ref.split('-'); return `${cat==='recibo'?'recibo_':''}dici_${a}_${m} (${DICI_FILIAIS[f]?.slug||('filial'+f)}).${ext}`; }
+function diciRestaurar(){
+  for(const f of [...DICI_PORTAL,...DICI_EMAIL]){
+    const saved=DICI.registros.filter(x=>String(x.filial)===f&&x.categoria==='rascunho').slice(-1)[0];
+    if(!saved?.detalhe?.texto)continue;
+    const current=DICI.arquivos.find(x=>x.filial===f);
+    if(current&&!current.rascunhoSalvo)continue;
+    const r=diciCorrigir(saved.detalhe.texto,saved.detalhe.original||saved.nome);
+    if(r.erros.length)continue;
+    Object.assign(r,{versao:saved.detalhe.versao,downloadEm:saved.detalhe.downloadEm,rascunhoSalvo:true});
+    const drive=DICI.registros.filter(x=>String(x.filial)===f&&x.categoria==='arquivo').slice(-1)[0];
+    if(drive?.detalhe?.versao===r.versao)r.salvo=drive.drive_url;
+    DICI.arquivos=DICI.arquivos.filter(x=>x.filial!==f);DICI.arquivos.push(r);
+  }
+}
+async function diciGuardar(r){
+  if(!r||r.erros.length)return false;
+  const resp=await getSB().rpc('radar_obrig_marcar',{p_tipo:'dici',p_competencia:DICI.ref,p_filial:r.filial,p_categoria:'rascunho',p_nome:diciNomeArq(r.filial,'arquivo','csv'),p_detalhe:{texto:r.texto,original:r.nomeOrig,versao:r.versao,downloadEm:r.downloadEm||null,acessos:r.acessos,linhas:r.linhas}});
+  if(resp.error)throw new Error(resp.error.message);
+  r.rascunhoSalvo=true;r.erroRascunho='';return true;
+}
+async function diciGuardarNovamente(f){
+  const r=DICI.arquivos.find(x=>x.filial===f);if(!r||DICI.enviando)return;
+  DICI.enviando=true;
+  try{await diciGuardar(r);await diciRecarregar();}catch(e){r.erroRascunho=e.message;toast(e.message,'error');}
+  finally{DICI.enviando=false;diciRender();}
+}
 async function diciAbrir(comp){
   if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(comp)){toast('Competencia invalida.','error');return;}
   if(DICI.enviando||DICI.arquivos.some(x=>x.salvando)){toast('Aguarde o salvamento em andamento.','error');return;}
@@ -25,6 +51,7 @@ async function diciRecarregar(){
     const [a, b] = await Promise.all([sb.rpc('radar_obrig_arquivos',{p_tipo:'dici',p_competencia:DICI.ref}), sb.rpc('radar_dici_ativos')]);
     if(a.error||b.error)throw new Error(a.error?.message||b.error?.message);
     DICI.registros = a.data||[]; DICI.ativos = b.data||{}; DICI.erroConsulta='';
+    diciRestaurar();
   }catch(e){DICI.registros=[];DICI.ativos={};DICI.erroConsulta='Nao foi possivel conferir os registros: '+e.message;}
 }
 function diciLer(arq){
@@ -65,8 +92,18 @@ function diciCorrigir(texto, nomeOrig){
 async function diciArquivos(input){
   if(DICI.enviando||DICI.arquivos.some(x=>x.salvando)){toast('Aguarde o salvamento em andamento.','error');return;}
   const lista = [...(input.files||[])]; input.value = '';
-  for(const a of lista){ const r = diciCorrigir(await diciLer(a), a.name); DICI.arquivos = DICI.arquivos.filter(x=>!(r.filial && x.filial===r.filial)); DICI.arquivos.push(r); }
-  diciRender();
+  DICI.enviando=true;
+  try{
+    for(const a of lista){
+      const r=diciCorrigir(await diciLer(a),a.name);
+      const prev=DICI.arquivos.find(x=>x.filial===r.filial);
+      if(prev?.texto===r.texto&&!r.erros.length)continue;
+      r.versao=crypto.randomUUID();
+      DICI.arquivos=DICI.arquivos.filter(x=>!(r.filial&&x.filial===r.filial));DICI.arquivos.push(r);
+      if(!r.erros.length){try{await diciGuardar(r);}catch(e){r.erroRascunho=e.message;toast('Arquivo ainda nao guardado no Radar: '+e.message,'error');}}
+    }
+    await diciRecarregar();
+  }finally{DICI.enviando=false;diciRender();}
 }
 function diciB64Texto(t){ const b = new TextEncoder().encode(t); let s = ''; for(let i=0;i<b.length;i+=0x8000) s += String.fromCharCode.apply(null, b.subarray(i,i+0x8000)); return btoa(s); }
 function diciB64Arq(arq){ return new Promise(ok=>{ const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.readAsDataURL(arq); }); }
@@ -80,14 +117,23 @@ async function diciSalvarDrive(r){
   r.erroDrive='';
   r.salvando = true; diciRender();
   try{ const nome = diciNomeArq(r.filial,'arquivo','csv');
-    const d = await diciEnviar({ tipo:'dici', competencia:DICI.ref, filial:r.filial, categoria:'arquivo', nome, mime:'text/csv', base64:diciB64Texto(r.texto), detalhe:{ acessos:r.acessos, linhas:r.linhas, original:r.nomeOrig } });
+    if(!r.rascunhoSalvo)await diciGuardar(r);
+    const d = await diciEnviar({ tipo:'dici', competencia:DICI.ref, filial:r.filial, categoria:'arquivo', nome, mime:'text/csv', base64:diciB64Texto(r.texto), detalhe:{ acessos:r.acessos, linhas:r.linhas, original:r.nomeOrig,versao:r.versao } });
     r.salvo = d.url; r.nome = nome; await diciRecarregar(); }
   catch(e){ r.erroDrive = e.message; toast('Drive: '+e.message,'error'); }
   finally{ r.salvando = false; diciRender(); }
 }
-function diciBaixar(f){
+async function diciBaixar(f){
   const r = DICI.arquivos.find(x=>x.filial===f); if(!r) return;
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([r.texto],{type:'text/csv;charset=utf-8'})); a.download = diciNomeArq(f,'arquivo','csv'); document.body.appendChild(a); a.click(); a.remove();
+  if(DICI.enviando)return;
+  DICI.enviando=true;
+  try{
+    if(!r.rascunhoSalvo)await diciGuardar(r);
+    const a = document.createElement('a'); const url=URL.createObjectURL(new Blob([r.texto],{type:'text/csv;charset=utf-8'}));a.href=url; a.download = diciNomeArq(f,'arquivo','csv'); document.body.appendChild(a); a.click(); a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    r.downloadEm=new Date().toISOString();r.rascunhoSalvo=false;
+    try{await diciGuardar(r);}catch(e){r.erroRascunho=e.message;toast('Download solicitado, mas o registro nao foi salvo: '+e.message,'error');}
+  }catch(e){toast('Nao foi possivel guardar o arquivo: '+e.message,'error');}
+  finally{DICI.enviando=false;diciRender();}
 }
 async function diciRecibo(f, input){
   const arq = input.files && input.files[0]; input.value = ''; if(!arq) return;
@@ -106,7 +152,7 @@ async function diciMarcarEmail(f){
 function diciRender(){
   if(!document.getElementById('dici-css')){ const st=document.createElement('style'); st.id='dici-css'; st.textContent='.dici-tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;text-decoration:none}.dici-tag.ok{background:#dcfce7;color:#166534}.dici-tag.ab{background:#fef3c7;color:#92400e}.dici-tag.ruim{background:#fee2e2;color:#991b1b}.dici-tag.cinza{background:#e2e8f0;color:#334155}#cd-conf-modal .cdg-modal-box{max-width:860px;width:calc(100vw - 32px)}'; document.head.appendChild(st); }
   const [a,m] = DICI.ref.split('-'), reg = DICI.registros||[];
-  const tem = (f,cat) => reg.filter(x=>x.filial===f && x.categoria===cat).slice(-1)[0];
+  const tem = (f,cat) => reg.filter(x=>String(x.filial)===f && x.categoria===cat).slice(-1)[0];
   const pasta = reg.map(x=>x.detalhe&&x.detalhe.pastaUrl).filter(Boolean).slice(-1)[0];
   const assunto = encodeURIComponent(`DICI SCM ${m}/${a} - IG Telecom`);
   const linhaFilial = f => {
@@ -115,20 +161,22 @@ function diciRender(){
     let st = '';
     if(arq && arq.erros.length) st = `<span class="dici-tag ruim">${cdEsc(arq.erros[0])}</span>`;
     else if(arq && arq.salvando) st = '<span class="dici-tag ab">Salvando no Drive...</span>';
-    else if(arq && !arq.salvo && !arq.erroDrive) st = `<span class="dici-tag ab">Conferido, aguardando salvar</span> <button class="btn sm outline" ${DICI.erroConsulta?'disabled':''} onclick="diciSalvarDrive(DICI.arquivos.find(x=>x.filial==='${f}'))">${noDrive?'Salvar nova versao no Drive':'Salvar no Drive'}</button>`;
-    else if(noDrive) st = `<a class="dici-tag ok" href="${cdEsc(noDrive.drive_url)}" target="_blank" rel="noopener">Arquivo no Drive</a>`;
+    else if(arq && arq.erroRascunho) st = `<span class="dici-tag ruim">Ainda nao guardado no Radar: ${cdEsc(arq.erroRascunho)}</span> <button class="btn sm outline" onclick="diciGuardarNovamente('${f}')">Guardar novamente</button>`;
     else if(arq && arq.erroDrive) st = `<span class="dici-tag ruim">Drive: ${cdEsc(arq.erroDrive)}</span> <button class="btn sm outline" onclick="diciSalvarDrive(DICI.arquivos.find(x=>x.filial==='${f}'))">Tentar de novo</button>`;
+    else if(arq && !arq.salvo) st = `<span class="dici-tag ${arq.rascunhoSalvo?'ok':'ab'}">${arq.rascunhoSalvo?'Arquivo guardado no Radar':'Guardando no Radar...'}</span> <span class="dici-tag ab">Pendente no Drive</span> <button class="btn sm outline" ${DICI.erroConsulta||DICI.enviando?'disabled':''} onclick="diciSalvarDrive(DICI.arquivos.find(x=>x.filial==='${f}'))">${noDrive?'Salvar nova versao no Drive':'Salvar no Drive'}</button>`;
+    else if(noDrive) st = `<a class="dici-tag ok" href="${cdEsc(noDrive.drive_url)}" target="_blank" rel="noopener">Arquivo no Drive</a>`;
     else if(arq) st = '<span class="dici-tag ab">Corrigido, ainda não salvo no Drive</span>';
     else st = '<span class="dici-tag cinza">Falta o arquivo do IXC</span>';
     const avisos = arq && arq.avisos.length ? `<div style="font-size:11px;color:var(--radar-orange);margin-top:3px">${cdEsc(arq.avisos[0])}</div>` : '';
     const dados = arq && !arq.erros.length ? `<div style="font-size:11px;opacity:.75;margin-top:3px">${cdNum(arq.linhas)} linhas · ${cdNum(arq.acessos)} acessos · ${cdNum(arq.ativos)} contratos ativos no Radar</div>` : (noDrive&&noDrive.detalhe&&noDrive.detalhe.acessos?`<div style="font-size:11px;opacity:.75;margin-top:3px">${cdNum(noDrive.detalhe.acessos)} acessos</div>`:'');
-    const baixar = arq && !arq.erros.length ? `<button class="btn sm outline" onclick="diciBaixar('${f}')">Baixar para enviar</button>` : '';
+    const baixar = arq && !arq.erros.length ? `<button class="btn sm outline" ${DICI.enviando?'disabled':''} onclick="diciBaixar('${f}')">${arq.downloadEm?'Baixar novamente':'Baixar para enviar'}</button>` : (noDrive?`<a class="btn sm outline" href="${cdEsc(noDrive.drive_url)}" target="_blank" rel="noopener">Abrir arquivo no Drive</a>`:'');
+    const progresso=arq?.downloadEm?`<div style="font-size:11px;margin-top:4px">Download solicitado em ${cdEsc(new Date(arq.downloadEm).toLocaleString('pt-BR'))}</div>`:'';
     const fim = portal
-      ? (rec ? `<a class="dici-tag ok" href="${cdEsc(rec.drive_url)}" target="_blank" rel="noopener">Recibo anexado</a>` : `<label class="btn sm ${noDrive?'primary':'outline'}" style="cursor:pointer">Anexar recibo da Anatel<input type="file" accept=".pdf,image/*" style="display:none" ${DICI.enviando?'disabled':''} onchange="diciRecibo('${f}',this)"></label>`)
+      ? (rec ? `<a class="dici-tag ok" href="${cdEsc(rec.drive_url)}" target="_blank" rel="noopener">Recibo anexado</a>` : `<span class="dici-tag ab">Recibo pendente</span> <label class="btn sm ${noDrive?'primary':'outline'}" style="cursor:pointer">Anexar recibo da Anatel<input type="file" accept=".pdf,image/*" style="display:none" ${DICI.enviando?'disabled':''} onchange="diciRecibo('${f}',this)"></label>`)
       : (mail ? '<span class="dici-tag ok">E-mail enviado</span>' : `<a class="btn sm outline" href="mailto:contato@acisp.net.br?cc=caroline@hilink.com.br&subject=${assunto}" title="Anexe o arquivo baixado. A ACISP faz o envio no portal da Anatel.">Abrir e-mail</a> <button class="btn sm ${noDrive?'primary':'outline'}" onclick="diciMarcarEmail('${f}')">Já enviei o e-mail</button>`);
-    return `<tr><td><b>${cdEsc(info.nome)}</b><br><small style="opacity:.7">filial ${f} · ${portal?'você envia no portal da Anatel':'só o arquivo por e-mail; a ACISP envia na Anatel'}</small></td><td>${st}${dados}${avisos}</td><td style="white-space:nowrap">${baixar} ${fim}</td></tr>`;
+    return `<tr><td><b>${cdEsc(info.nome)}</b><br><small style="opacity:.7">filial ${f} · ${portal?'você envia no portal da Anatel':'só o arquivo por e-mail; a ACISP envia na Anatel'}</small></td><td>${st}${dados}${avisos}${progresso}</td><td>${baixar} ${fim}</td></tr>`;
   };
-  const todos = !DICI.erroConsulta && !DICI.arquivos.some(r=>r.erros.length||!r.salvo||r.salvando) && [...DICI_PORTAL,...DICI_EMAIL].every(f=>tem(f,'arquivo')) && DICI_PORTAL.every(f=>tem(f,'recibo')) && DICI_EMAIL.every(f=>tem(f,'email'));
+  const todos = !DICI.enviando && !DICI.erroConsulta && !DICI.arquivos.some(r=>r.erros.length||!r.salvo||r.salvando) && [...DICI_PORTAL,...DICI_EMAIL].every(f=>tem(f,'arquivo')) && DICI_PORTAL.every(f=>tem(f,'recibo')) && DICI_EMAIL.every(f=>tem(f,'email'));
   cdModal(`<h3>DICI Anatel de ${m}/${a}</h3>
     ${DICI.erroConsulta?`<p role="alert" style="color:var(--radar-red)">${cdEsc(DICI.erroConsulta)}</p>`:''}
     <ol style="margin:0 0 12px 18px;padding:0;font-size:13px;line-height:1.6">
