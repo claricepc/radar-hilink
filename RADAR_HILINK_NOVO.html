@@ -12185,8 +12185,25 @@ function processAcsRows(raw){
       'Ultimo informe':String(r[ultInfC]||'').trim(),
       'Situacao de auditoria':situacao,
       'Acao sugerida':acsSuggestedAction(situacao, online, cls.inRange, cls.valid, missingCad),
-      _validIp:cls.valid,_inRange:cls.inRange,_online:online,_missingCad:missingCad,_ignoreIpAudit:isMesh
+      _validIp:cls.valid,_inRange:cls.inRange,_online:online,_missingCad:missingCad,_ignoreIpAudit:isMesh,
+      _fonteLogin:String(r.Fonte||'')==='Login IXC'
     };
+  });
+}
+// O IXC não entrega a tela de dispositivos do ACS pela integração. Enquanto não houver acesso ao IXC ACS,
+// a auditoria é montada com o que o Radar já lê: login (IP, online, última conexão), fibra (modelo e serial da ONU)
+// e contrato (status). O IP é o da navegação do login, não o informado pelo ACS; por isso a checagem de PRESET fica desligada.
+function acsMontarDoIxc(){
+  const L=STATE.raw.logins||[], F=STATE.raw.fibra||[], C=STATE.raw.contratos||[];
+  if(!L.length) return [];
+  const fib={}; F.forEach(r=>{ const k=String(r.Login||'').trim().toLowerCase(); if(k) fib[k]=r; });
+  const ct={}; C.forEach(r=>{ const k=String(r.ID||r['ID Contrato']||'').trim(); if(k) ct[k]=r; });
+  return L.filter(l=>String(l.Ativo||'')!=='Não').map(l=>{
+    const f=fib[String(l.Login||'').trim().toLowerCase()]||{}, c=ct[String(l['ID contrato']||'').trim()]||{};
+    return { 'Fonte':'Login IXC', 'Cliente':l.Cliente||'', 'Login':l.Login||'', 'Modelo':f['ONU tipo']||'', 'Número serial':f['MAC/Serial']||'',
+      'IPV4':l.IPV4||'', 'Status':String(l.Online||'')==='Sim'?'Online':'Offline',
+      'Status contrato':c['Status Contrato']||'', 'Status internet':c['Status Acesso']||'',
+      'Última atualização':l['Última conexão inicial']||'', 'Último informe':'' };
   });
 }
 function enrichAcsRowsWithFibra(acsRows,fibraRaw){
@@ -12215,7 +12232,7 @@ function enrichAcsRowsWithFibra(acsRows,fibraRaw){
     r['MAC/Serial Fibra']=mac;
     r['Modelo Fibra']=modeloFibra;
     r['Tecnologia por MAC']=isOnt?'ONT':(mac?'ONU provável':'Não identificado');
-    r['Auditoria Preset']=isOnt&&r['Classificacao do IP']!=='PRESET HILINK'&&!r._ignoreIpAudit?'ONT sem PRESET':'';
+    r['Auditoria Preset']=isOnt&&r['Classificacao do IP']!=='PRESET HILINK'&&!r._ignoreIpAudit&&!r._fonteLogin?'ONT sem PRESET':'';
     r._isOntFibra=isOnt;
     r._ontSemPreset=!!r['Auditoria Preset'];
     if(r._ontSemPreset&&r['Acao sugerida']==='Sem acao critica'){
@@ -23082,7 +23099,7 @@ function renderAcs(){
   const ignorados=rows.filter(r=>r._ignoreIpAudit).length;
   const ontSemPreset=rows.filter(r=>r._ontSemPreset).length;
   const pct=n=>rows.length?(n/rows.length*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':'0,00%';
-  document.getElementById('acs-insights').innerHTML=`
+  document.getElementById('acs-insights').innerHTML=`${rows.some(r=>r._fonteLogin)?'<div class="insight" style="grid-column:1/-1"><h4>De onde vêm estes dados</h4><p>Montado a partir do login, da fibra e do contrato no IXC (o IXC não libera a tela do ACS pela integração). O IP é o de navegação do cliente. Status e último informe do ACS e a checagem de PRESET entram quando o acesso ao IXC ACS for ligado.</p></div>':''}
     <div class="insight clickable" data-acsk="total"><span class="pct">${pct(rows.length)}</span><h4>Total no ACS</h4><div class="big">${rows.length}</div><p>Equipamentos carregados.</p></div>
     <div class="insight win clickable" data-acsk="dentro"><span class="pct">${pct(dentro)}</span><h4>Dentro da rede Hilink</h4><div class="big">${dentro}</div><p>IP em faixa oficial.</p></div>
     <div class="insight attention clickable" data-acsk="ontsempreset"><span class="pct">${pct(ontSemPreset)}</span><h4>ONT sem PRESET</h4><div class="big">${ontSemPreset}</div><p>MAC 54504C com IP fora do preset ACS.</p></div>
@@ -25866,6 +25883,9 @@ async function ixcCargaUsar(destino){
         if(STATE.processed) STATE.processed.alteracoes = processAlteracoesRows(rows);
       }
       setUploadCardLoaded(t.key, rows.length);
+    }
+    if(!(STATE.raw.acs||[]).length || String(STATE.files.acs||'').startsWith('IXC (logins')){
+      const acs=acsMontarDoIxc(); if(acs.length){ STATE.raw.acs=acs; STATE.files.acs='IXC (logins, fibra e contratos) · '+acs.length.toLocaleString('pt-BR')+' equipamentos'; try{setUploadCardLoaded('acs', acs.length)}catch(e){} }
     }
     const bp=document.getElementById('btn-process'); if(bp) bp.disabled = !hasAnyRawReport();
     renderModuleUnlocks();
