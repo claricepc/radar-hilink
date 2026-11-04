@@ -3082,7 +3082,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
         <div class="nav-sub" data-cd="desempenho" onclick="go('cobrancaDia');cdSub('desempenho')">Desempenho da equipe</div>
       </div></div>
     <div class="nav-group nav-hub nav-area" data-area="config"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Configura&ccedil;&otilde;es</div><div class="nav-group-items">
-        <div class="nav-item" data-mod="setup" onclick="go('setup')"><span>Carregar Relat&oacute;rios<small>upload manual</small></span></div>
+        <div class="nav-item" data-mod="setup" style="display:none"></div>
         <div class="nav-item" data-mod="relatorios" onclick="go('relatorios')"><span>Relat&oacute;rios Personalizados<small>LOA, cartas e documentos</small></span></div>
         <div class="nav-item" data-mod="usuarios" onclick="go('usuarios')" style="display:none"><span>Usu&aacute;rios e acessos<small>cadastro e permiss&otilde;es</small></span></div>
       </div></div>
@@ -3175,7 +3175,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
         </div>
         <button class="btn primary cd-atalho-btn" type="button">Ver cobran&ccedil;a de hoje</button>
       </div>
-      <div class="cd-sep">Outras an&aacute;lises ainda precisam dos relat&oacute;rios abaixo</div>
+      <div class="cd-sep">Envio manual de relat&oacute;rios: s&oacute; se a leitura autom&aacute;tica falhar (ou para o ACS, que ainda n&atilde;o &eacute; lido sozinho)</div>
       <div class="upload-dropzone" id="setup-dropzone" onclick="document.getElementById('setup-drop-input').click()">
         <input type="file" id="setup-drop-input" accept=".csv" multiple onchange="onUploadFiles(this.files)">
         <strong>Arraste seus relatórios aqui</strong>
@@ -8616,7 +8616,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
             </tr>
           </thead>
           <tbody id="cc-preview-tbody">
-            <tr><td colspan="14" style="text-align:center;color:var(--radar-soft,#6b7280);padding:24px">Carregue o relatório no Setup para ver a prévia.</td></tr>
+            <tr><td colspan="14" style="text-align:center;color:var(--radar-soft,#6b7280);padding:24px">Clique em buscar os dados do IXC para ver a prévia.</td></tr>
           </tbody>
         </table>
       </div>
@@ -9651,7 +9651,7 @@ const ANALYSIS_HELP = {
     sub:'Guia curto do fluxo do Radar com o EDI Correios, sem encher a tela principal de texto.',
     cards:[
       ['1. Preparação no Radar',[
-        'Carregue <b>RADAR HILINK | CORREIOS</b> e <b>Ordens de Serviço</b> no Setup.',
+        'O Radar busca <b>RADAR HILINK | CORREIOS</b> e as <b>Ordens de Serviço</b> direto do IXC.',
         'O Radar usa o assunto <b>TEC | ENTREGA DE CARNE</b>, remove OS Finalizada/Cancelada e cruza com os boletos.',
         'Revise alertas de endereço, banco, QR Code, segunda via e vencimento antes de exportar.'
       ]],
@@ -10094,7 +10094,9 @@ function availableCompetencias(){
 }
 function receiptPersonTypeById(){
   const raw=STATE.raw?.recebimentos||[];
-  const out={};if(!raw.length)return out;
+  // Cache: o mapa era recalculado a cada contrato (43 mil recebimentos x 10 mil contratos) e travava o Comercial.
+  const c=receiptPersonTypeById._c; if(c&&c.raw===raw&&c.n===raw.length)return c.out;
+  const out={};receiptPersonTypeById._c={raw,n:raw.length,out};if(!raw.length)return out;
   const s=raw[0], col=p=>findCol(s,p);
   const cols={tipo:col([/tipo pessoa/i,/pessoa/i]),idRec:col([/id contrato recorrente/i,/contrato recorrente/i]),idPri:col([/id contrato principal/i,/contrato principal/i]),idAvul:col([/id contrato avulso/i,/contrato avulso/i]),idVinc:col([/id contratos vinculados/i,/contratos vinculados/i])};
   const counts={};
@@ -10614,9 +10616,12 @@ function renderModuleError(mod,err){
   console.error('[Radar] Erro ao renderizar módulo',mod,err);
 }
 function go(mod){
+  // O módulo de carregar relatórios saiu do menu: o Radar lê tudo direto do IXC. Quem pedir "setup" vai para a Visão geral.
+  if(mod==='setup') mod='inicio';
   // Premiação: sem base carregada, busca direto do IXC (banco) em vez de pedir upload
   // Módulos que usam a base do IXC: sem base carregada, busca direto do banco em vez de pedir upload
-  if(['premiacoes','tecnica','acao'].includes(mod) && !STATE.processed && typeof ixcCargaUsar==='function' && getRadarUser?.()){
+  const SEM_BASE=['setup','historico','propostas','relatorios','carneCorreios','cobrancaDia','oportunidades','inicio','usuarios'];
+  if(!SEM_BASE.includes(mod) && !STATE.processed && typeof ixcCargaUsar==='function' && getRadarUser?.()){
     if(!(IXC_CARGA && IXC_CARGA.carregando)){ toast('Buscando os dados direto do IXC...','success'); ixcCargaUsar(mod); }
     return;
   }
@@ -11501,7 +11506,8 @@ const FILIAIS_NOME={
   '5':'HILINK IGARASSU',
   '6':'HILINK JABOATAO',
   '7':'HILINK COHAB',
-  '13':'IGA - PIRAJUI/NOVA CRUZ',
+  '13':'NANDO- NET SUPER VELOZ',
+  '14':'PABLOM FIBRA TELECOM',
 };
 const FILIAIS_DADOS_FATURAMENTO={
   default:{label:'Consolidado Hilink',razao:'HILINK SERVICOS DE COMUNICACAO E MULTIMIDIA SCM LTDA',cnpj:'12.082.987/0001-10'},
@@ -11511,7 +11517,8 @@ const FILIAIS_DADOS_FATURAMENTO={
   '5':{label:'HILINK IGARASSU',razao:'SANTOS & CARVALHO COMUNICACAO MULTIMIDIA LTDA',cnpj:'24.940.558/0001-15'},
   '6':{label:'HILINK JABOATAO',razao:'OLIVIVEIRA & POSSIDONIO COMUNICACAO E MULTIMIDIA LTDA',cnpj:'16.099.342/0001-40'},
   '7':{label:'HILINK COHAB',razao:'IG TELECOM ME',cnpj:'15.165.435/0001-63'},
-  '13':{label:'IGA - PIRAJUI/NOVA CRUZ',razao:'SANTOS & CARVALHO COMUNICACAO MULTIMIDIA LTDA',cnpj:'24.940.558/0001-15'},
+  '13':{label:'NANDO- NET SUPER VELOZ',razao:'NANDONET PROVEDOR DE INTERNET SUPER VELOZ LTDA',cnpj:'57.722.072/0001-60'},
+  '14':{label:'PABLOM FIBRA TELECOM',razao:'PABLOM FIBRA TELECOM',cnpj:'58.636.237/0001-43'},
 };
 const FILIAIS_EXCLUIR_ANALISE=new Set(['10']);
 function limpaId(v){return String(v||'').replace(/^="?|"?$/g,'').trim()}
@@ -16291,14 +16298,22 @@ function buildAuditoria360Rows(){
     causa:findCol(loginSample,[/causa da desconexão/i,/causa da desconexao/i]), qtd:findCol(loginSample,[/quantidade.*descon/i])
   };
   const riskOrder={'Crítico':0,Alto:1,'Atenção':2,Baixo:3};
+  // Índices: antes cada cliente varria todos os logins, OS e atendimentos OPA (milhões de comparações) e a tela travava.
+  const idx=(lista,chaves)=>{const m=new Map();lista.forEach((o,i)=>{chaves(o).forEach(k=>{if(!k)return;let a=m.get(k);if(!a)m.set(k,a=[]);a.push(i)})});return m};
+  const juntar=(lista,mapas)=>{const s=new Set();mapas.forEach(([m,ks])=>ks.forEach(k=>{const a=m.get(k);if(a)a.forEach(i=>s.add(i))}));return [...s].sort((a,b)=>a-b).map(i=>lista[i])};
+  const lgPorId=idx(logins,l=>[String(l[lgCols.id]||'').trim()]), lgPorNome=idx(logins,l=>[norm(l[lgCols.cliente]||'')]);
+  const osPorId=idx(osAll,o=>[String(o['Contrato OS']||'').trim()]), osPorNome=idx(osAll,o=>[norm(o.Cliente||'')]),
+        osPorFone=idx(osAll,o=>[phoneKey(o['Telefone OS']||'')]), osPorLogin=idx(osAll,o=>[String(o.Login||'').trim().toLowerCase()]);
+  const opaPorNome=idx(opaAll,o=>[norm(o['Nome cliente']||o.Contato||'')]), opaPorFone=idx(opaAll,o=>[o._phone||phoneKey(o.Telefone||'')]);
   const out=[...groups.values()].map(g=>{
     const ids=new Set(g.contracts.map(c=>c.id).filter(Boolean));
     const names=new Set(g.contracts.map(c=>c._cliente).filter(Boolean));
     const phones=new Set(g.contracts.map(c=>c.phone).filter(Boolean));
     const proc=[...ids].map(id=>byId.get(id)).filter(Boolean);
-    const logList=logins.filter(l=>ids.has(String(l[lgCols.id]||'').trim())||names.has(norm(l[lgCols.cliente]||'')));
-    const osList=osAll.filter(o=>ids.has(String(o['Contrato OS']||'').trim())||names.has(norm(o.Cliente||''))||phones.has(phoneKey(o['Telefone OS']||''))||proc.some(r=>String(r.Login||'').trim()&&String(r.Login||'').trim().toLowerCase()===String(o.Login||'').trim().toLowerCase()));
-    const opaList=opaAll.filter(o=>names.has(norm(o['Nome cliente']||o.Contato||''))||phones.has(o._phone||phoneKey(o.Telefone||'')));
+    const logList=juntar(logins,[[lgPorId,ids],[lgPorNome,names]]);
+    const procLogins=proc.map(r=>String(r.Login||'').trim().toLowerCase()).filter(Boolean);
+    const osList=juntar(osAll,[[osPorId,ids],[osPorNome,names],[osPorFone,phones],[osPorLogin,procLogins]]);
+    const opaList=juntar(opaAll,[[opaPorNome,names],[opaPorFone,phones]]);
     const active=g.contracts.filter(c=>c._active);
     const findings=[], tipos=new Set();
     const add=(tipo,msg)=>{findings.push(msg);tipos.add(tipo)};
@@ -23054,7 +23069,7 @@ function renderAcs(){
   const rows=acsRows();
   const auditRows=rows.filter(r=>!r._ignoreIpAudit);
   if(!rows.length){
-    document.getElementById('acs-insights').innerHTML='<div class="insight attention"><h4>Relatorio ACS nao carregado</h4><div class="big">0</div><p>Volte ao Setup, envie o ACS.csv e clique em Analisar base.</p></div>';
+    document.getElementById('acs-insights').innerHTML='<div class="insight attention"><h4>Relatorio ACS nao carregado</h4><div class="big">0</div><p>Os dados do ACS ainda não são lidos automaticamente do IXC.</p></div>';
     document.querySelector('#acs-tbl thead').innerHTML='';
     document.querySelector('#acs-tbl tbody').innerHTML='<tr><td style="padding:24px;color:#6b7280">Nenhum dado ACS processado.</td></tr>';
     return;
@@ -23306,7 +23321,7 @@ function currentOpaFilter(){
 function renderAtendimento(){
   const rows=opaRows();
   if(!rows.length){
-    document.getElementById('opa-insights').innerHTML='<div class="insight attention"><h4>OPA nao carregado</h4><div class="big">0</div><p>Volte ao Setup, envie o OPA.csv e clique em Analisar relatorios.</p></div>';
+    document.getElementById('opa-insights').innerHTML='<div class="insight attention"><h4>OPA nao carregado</h4><div class="big">0</div><p>Os atendimentos do OPA ainda não foram lidos. Use o botão Atualizar todos os dados.</p></div>';
     return;
   }
   const uniq=new Set(rows.map(r=>r._phone||r._nome).filter(Boolean));
@@ -23314,7 +23329,8 @@ function renderAtendimento(){
   const ia=rows.filter(r=>r._ia).length;
   const espera=avg(rows.map(r=>r._esperaSec).filter(Boolean));
   const atendimento=avg(rows.map(r=>r._tmaRealSec).filter(v=>v!==null&&v!==undefined));
-  const recCount=Object.entries(rows.reduce((acc,r)=>{const k=r._phone||r._nome;if(k)acc[k]=(acc[k]||0)+1;return acc},{})).filter(x=>x[1]>=3).length;
+  const recPorContato=rows.reduce((acc,r)=>{const k=r._phone||r._nome;if(k)acc[k]=(acc[k]||0)+1;return acc},{});
+  const recCount=Object.values(recPorContato).filter(v=>v>=3).length;
   const curtos=rows.filter(r=>r._tmaRealSec!==null&&r._tmaRealSec!==undefined&&r._tmaRealSec<60);
   const criticos=rows.filter(r=>r._opaAuditStatus==='CRITICO');
   const naoElegiveis=rows.filter(r=>r._opaAuditStatus==='NAO ELEGIVEL');
@@ -23336,7 +23352,7 @@ function renderAtendimento(){
   const maps={
     total:rows,
     clientes:rows,
-    rec:rows.filter(r=>{const k=r._phone||r._nome;return k&&rows.filter(x=>(x._phone||x._nome)===k).length>=3}),
+    rec:rows.filter(r=>{const k=r._phone||r._nome;return k&&recPorContato[k]>=3}),
     risco:rows.filter(r=>r._risco),
     curtos,
     criticos,
@@ -27114,6 +27130,7 @@ async function radarLembreteConcluir(chave, comp){
     cdModal(null); toast('Alerta concluído.','success'); radarLembretesCarregar(); }catch(e){ toast(e.message,'error'); }
 }
 Object.assign(window,{radarLembretesCarregar, radarLembreteConcluirModal, radarLembreteConcluir});
+
 setTimeout(function tentaLemb(){ try{ const sb=getSB(); if(sb){ sb.auth.getSession().then(({data})=>{ if(data&&data.session) radarLembretesCarregar(); else setTimeout(tentaLemb,3000); }); return; } }catch(e){} setTimeout(tentaLemb,3000); }, 3000);
 
 // ===== Fotos das pessoas (subidas no Radar em Usuários e acessos) =====
@@ -29644,7 +29661,7 @@ function processarCarneCorreios(){
       CC.clientes=[]; CC.filtered=[];
       ccSetCorreiosExportButtonsDisabled(true);
       const _info=document.getElementById('cc-filial-info');
-      if(_info)_info.innerHTML='<span style="color:#ef4444">OS não carregada — carregue no Setup (passo 6)</span>';
+      if(_info)_info.innerHTML='<span style="color:#ef4444">OS não carregada. Use o botão Atualizar todos os dados.</span>';
       return; // bloqueio — não processar sem OS
     } else {
       cpfsPermitidos=new Set();
@@ -29867,7 +29884,7 @@ function processarCarneCorreios(){
     const cpfLimpo=cpf.startsWith('_nokey_')?(cpfCad||''):cpf;
     if(!cadastroClienteId){
       alertas.push({t:'SEM ID CLIENTE IXC',cls:'erro'});
-      correcoes.push('ID do cadastro do cliente no IXC não localizado. Carregue o relatório <b>Cadastro de Clientes</b> no Setup ou inclua uma coluna explícita de <b>ID Cliente</b> no Query RADAR HILINK | CORREIOS.');
+      correcoes.push('ID do cadastro do cliente no IXC não localizado. Atualize os dados do IXC (Cadastro de clientes) ou inclua uma coluna explícita de <b>ID Cliente</b> no Query RADAR HILINK | CORREIOS.');
       hasErr=true;
     }
     if(!cpfLimpo){
@@ -29885,7 +29902,7 @@ function processarCarneCorreios(){
     const endFinal=endRec||(endCad?(endCad+(numCad?' '+numCad:'')):'')||(endContrato?(endContrato+(numContrato?' '+numContrato:'')):'')||'';
     if(!endFinal){
       alertas.push({t:'SEM ENDEREÇO',cls:'erro'});
-      correcoes.push('Preencha o campo <b>Endereço</b> no cadastro do cliente no IXC. Se disponível, carregue o relatório de Cadastro de Clientes no Setup para obter o endereço automaticamente.');
+      correcoes.push('Preencha o campo <b>Endereço</b> no cadastro do cliente no IXC. Se disponível, atualize os dados do IXC (Cadastro de clientes) para obter o endereço automaticamente.');
       hasErr=true;
     }
     const cepRec=String(b0['CEP']||'').trim();
@@ -29894,7 +29911,7 @@ function processarCarneCorreios(){
     const cepFinal=cepRec||cepCad||cepContrato||'';
     if(!cepFinal){
       alertas.push({t:'SEM CEP',cls:'erro'});
-      correcoes.push('Preencha o campo <b>CEP</b> no cadastro do cliente no IXC. Se disponível, carregue o relatório de Cadastro de Clientes no Setup para obter o CEP automaticamente.');
+      correcoes.push('Preencha o campo <b>CEP</b> no cadastro do cliente no IXC. Se disponível, atualize os dados do IXC (Cadastro de clientes) para obter o CEP automaticamente.');
       hasErr=true;
     }
     const bairroRec=String(b0['Bairro']||'').trim();
@@ -29920,7 +29937,7 @@ function processarCarneCorreios(){
     const ufRaw=ufRec||ufCad||ufContrato||'';
     if(!ufRaw){
       alertas.push({t:'SEM UF',cls:'erro'});
-      correcoes.push('Preencha o campo <b>UF</b> no cadastro do cliente no IXC. Se disponível, carregue o relatório de Cadastro de Clientes no Setup para obter a UF automaticamente.');
+      correcoes.push('Preencha o campo <b>UF</b> no cadastro do cliente no IXC. Se disponível, atualize os dados do IXC (Cadastro de clientes) para obter a UF automaticamente.');
       hasErr=true;
     } else if(/^\d+$/.test(ufRaw)){
       alertas.push({t:'UF NUMÉRICA',cls:'erro'});
