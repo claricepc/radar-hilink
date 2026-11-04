@@ -27101,7 +27101,7 @@ function radarLembretesRender(){
       <div style="flex:1;min-width:0"><div style="font:600 11px/1.2 var(--font-titulo);letter-spacing:.06em;text-transform:uppercase;color:var(--texto-3)">Alerta só para você</div>
       <div style="margin-top:3px;font:700 15px/1.3 var(--font-titulo);color:var(--texto)">${cdEsc(x.titulo)} <span style="display:inline-block;margin-left:6px;padding:2px 10px;border-radius:999px;font:600 12px/1.5 var(--font-texto);color:#fff;background:var(--${cor})">${chip}</span></div>
       <div style="margin-top:3px;font-size:13px;color:var(--texto-2)">${cdEsc(x.descricao||'')} Período: ${nomeMes}.</div></div>
-      <button type="button" class="btn sm primary" onclick="radarLembreteConcluirModal('${cdEsc(x.chave)}','${cdEsc(x.competencia)}')">Marcar como concluído</button></div>`; }).join('')}</div>`;
+      ${x.chave==='dici_anatel' ? `<button type="button" class="btn sm primary" onclick="diciAbrir('${cdEsc(x.competencia)}')">Abrir DICI do mês</button>` : `<button type="button" class="btn sm primary" onclick="radarLembreteConcluirModal('${cdEsc(x.chave)}','${cdEsc(x.competencia)}')">Marcar como concluído</button>`}</div>`; }).join('')}</div>`;
 }
 function radarLembreteConcluirModal(chave, comp){
   const x=(RADAR_LEMB.lista||[]).find(y=>y.chave===chave&&y.competencia===comp); if(!x) return;
@@ -30720,4 +30720,5 @@ async function _doGerarCorreiosZip(selecionados){
 </script>
 <!-- radar-build: opa-csv-drill-2026-06-30-1542 -->
 <script src="faturamento-ixc.js?v=20261104"></script>
+<script src="dici-anatel.js?v=20261104"></script>
 </html>
