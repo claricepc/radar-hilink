@@ -409,6 +409,9 @@ body{font-family:'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif;background
 .nav-item.active .badge-mini{background:rgba(255,255,255,.25);color:#fff}
 .nav-group-items{overflow:hidden;}
 .nav-group.collapsed .nav-group-items{display:none;}
+.sidebar .nav-area .nav-sub:not(.nav-sub-open){display:none!important}
+.sidebar .nav-item[aria-expanded]::after{content:'+';margin-left:auto}
+.sidebar .nav-item[aria-expanded="true"]::after{content:'-'}
 .nav-section.toggleable{cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;}
 .nav-section.toggleable:hover{color:#6b7280;}
 .nav-arrow{font-size:9px;transition:transform .2s;margin-right:2px;opacity:.6;}
@@ -25906,12 +25909,43 @@ document.addEventListener('DOMContentLoaded', ()=>setTimeout(radarFixoRender, 25
 const RADAR_AREA_DE = { inicio:'Início', cobrancaDia:'Financeiro', carneCorreios:'Financeiro', acao:'Financeiro', oportunidades:'Comercial', premiacoes:'Comercial', propostas:'Comercial', tecnica:'Rede', setup:'Configurações', relatorios:'Configurações', usuarios:'Configurações' };
 const RADAR_NOME_DE = { inicio:'Visão geral', cobrancaDia:'Cobrança do Dia', carneCorreios:'Envio Correios', acao:'Estratégia de Atuação', oportunidades:'Oportunidades', premiacoes:'Premiação', propostas:'Propostas Corporativas', tecnica:'Saúde da Rede', setup:'Carregar Relatórios', relatorios:'Relatórios Personalizados', usuarios:'Usuários e acessos' };
 function radarAreaToggle(el){ el.closest('.nav-area')?.classList.toggle('collapsed'); }
+// Only explicit menu clicks expand subfolders; rendering a module does not.
+document.querySelectorAll('.nav-area .nav-item').forEach(item=>{
+  const subs=[];
+  for(let el=item.nextElementSibling;el?.classList.contains('nav-sub');el=el.nextElementSibling)subs.push(el);
+  if(!subs.length)return;
+  const navigate=item.onclick;
+  item.setAttribute('role','button');
+  item.setAttribute('tabindex','0');
+  item.setAttribute('aria-expanded','false');
+  const setOpen=open=>{
+    item.setAttribute('aria-expanded',String(open));
+    subs.forEach(sub=>sub.classList.toggle('nav-sub-open',open));
+  };
+  item.onclick=function(event){
+    const open=item.getAttribute('aria-expanded')!=='true';
+    setOpen(open);
+    if(open&&navigate)navigate.call(this,event);
+  };
+  item.addEventListener('keydown',event=>{
+    if(event.key==='Enter'||event.key===' '){event.preventDefault();item.click();}
+  });
+});
 function radarMenuBuscar(q){
   q = String(q||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
   document.querySelectorAll('.nav-area').forEach(g=>{
     let algum = false;
     g.querySelectorAll('.nav-item,.nav-sub').forEach(it=>{ const t = it.textContent.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); const ok = !q || t.includes(q); it.classList.toggle('busca-off', !ok); if(ok && getComputedStyle(it).display!=='none') algum = true; });
     g.style.display = algum || !q ? '' : 'none'; if(q) g.classList.remove('collapsed');
+    g.querySelectorAll('.nav-sub').forEach(sub=>{
+      let item=sub.previousElementSibling;
+      while(item&&!item.classList.contains('nav-item'))item=item.previousElementSibling;
+      sub.classList.toggle('nav-sub-open',!!q||item?.getAttribute('aria-expanded')==='true');
+    });
+    if(q){
+      g.style.display='';
+      g.style.display=[...g.querySelectorAll('.nav-item,.nav-sub')].some(it=>!it.classList.contains('busca-off')&&getComputedStyle(it).display!=='none')?'':'none';
+    }
   });
 }
 function radarTrilha(mod){
