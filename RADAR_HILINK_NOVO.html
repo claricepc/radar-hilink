@@ -425,6 +425,12 @@ body{font-family:'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif;background
 .topbar{background:#fff;border-radius:10px;padding:16px 22px;border:1px solid #e5e7eb;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 /* Oculta topbar global quando premiações está ativa — usa header próprio */
 body[data-active-mod="premiacoes"] #global-filters{display:none!important}
+body[data-active-mod="relatorios"] #global-filters,
+body[data-active-mod="relatorios"] #context-badge{display:none!important}
+#mod-relatorios .fat-document-fields{margin:14px 0}
+#mod-relatorios .fat-document-fields>summary{cursor:pointer;font-weight:700;padding:10px 0}
+#mod-relatorios .fat-paper .prop-paper-head>div{min-width:0;max-width:100%}
+#mod-relatorios .fat-paper .prop-paper-head strong{overflow-wrap:anywhere}
 body[data-active-mod="oportunidades"] #global-filters{display:none!important}
 #mod-oportunidades .op-tab th,#mod-oportunidades .op-tab td{text-align:left;vertical-align:top}
 #mod-oportunidades .op-cards{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;gap:8px!important}
@@ -9226,15 +9232,14 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
       </div>
     </details>
     <details class="section prop-section fat-section report-model">
-      <summary class="report-model-summary"><h2 class="section-title">Declaracao de Faturamento <span class="help">Contas a Receber em papel timbrado para bancos, fornecedores e atualizacao cadastral</span></h2></summary>
+      <summary class="report-model-summary"><h2 class="section-title">Declaracao de Faturamento</h2></summary>
       <div class="prop-grid fat-grid">
         <div class="prop-panel">
           <div class="prop-panel-head">
-            <h3>DECLARACAO DE FATURAMENTO</h3>
-            <span>Recebimentos do IXC por mes, em papel timbrado.</span>
+            <h3>Periodo e recebimentos</h3>
           </div>
           <div class="prop-form two">
-            <label>Periodo rapido
+            <label>Periodo
               <select id="fat-preset">
                 <option value="tri">Ultimos 3 meses fechados</option>
                 <option value="sem">Ultimos 6 meses fechados</option>
@@ -9264,8 +9269,12 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
                 <option value="filial">Separado por filial</option>
               </select>
             </label>
+          </div>
+          <details class="fat-document-fields">
+            <summary>Dados da declaracao e assinatura</summary>
+            <div class="prop-form two">
             <label>Solicitante / destino <input id="fat-destino" placeholder="Ex.: Banco, fornecedor ou cadastro"></label>
-            <label>Empresa declarada
+            <label>Empresa no documento
               <select id="fat-empresa"><option value="auto">Automatica pela filial</option></select>
             </label>
             <label>Razao social <input id="fat-razao" value="HILINK SERVICOS DE COMUNICACAO E MULTIMIDIA SCM LTDA"></label>
@@ -9288,6 +9297,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
               <small class="prop-help">Use quando precisar declarar um valor revisado. O PDF e o CSV usam o valor manual enquanto esta opcao estiver marcada.</small>
             </label>
           </div>
+          </details>
           <div class="prop-actions">
             <button id="fat-consultar" class="btn sm primary" onclick="fatAtualizarIxc()">Consultar recebimentos</button>
             <button data-fat-export class="btn sm" onclick="baixarFaturamentoPdfTimbrado()" disabled>Baixar PDF timbrado</button>
