@@ -9242,18 +9242,22 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
                 <option value="custom">Personalizado</option>
               </select>
             </label>
-            <label>Data base
-              <select id="fat-date-base">
-                <option value="emissao">Emissao</option>
-                <option value="vencimento">Vencimento</option>
-                <option value="pagamento" selected>Pagamento</option>
-              </select>
-            </label>
             <label>Data inicial <input id="fat-data-de" type="date"></label>
             <label>Data final <input id="fat-data-ate" type="date"></label>
-            <label>Filial
-              <select id="fat-filial"><option value="Todas">Todas</option></select>
-            </label>
+            <div>
+              <span style="font-size:11px;font-weight:700">FILIAIS</span>
+              <details id="fat-filiais-menu" style="margin-top:6px">
+                <summary id="fat-filiais-resumo">Todas as filiais</summary>
+                <div id="fat-filiais-opcoes" style="display:grid;gap:8px;padding:12px 0"></div>
+              </details>
+            </div>
+            <div>
+              <span style="font-size:11px;font-weight:700">CARTEIRAS DE COBRANCA</span>
+              <details id="fat-carteiras-menu" style="margin-top:6px">
+                <summary id="fat-carteiras-resumo">Todas as carteiras</summary>
+                <div id="fat-carteiras-opcoes" style="display:grid;gap:8px;padding:12px 0"></div>
+              </details>
+            </div>
             <label>Apresentacao
               <select id="fat-modo">
                 <option value="consolidado" selected>Consolidado</option>
@@ -9297,7 +9301,6 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
             <button class="btn sm" onclick="baixarFaturamentoPdfTimbrado()">Baixar PDF timbrado</button>
             <button class="btn sm" onclick="baixarFaturamentoCsv()">Baixar CSV</button>
           </div>
-          <div class="fat-hint">Dica: para faturamento contabil use <b>Emissao</b>. Para analise de carteira por periodo use <b>Vencimento</b>. Para caixa recebido use <b>Pagamento</b>.</div>
           <div id="fat-manual-editor" class="fat-manual-box"></div>
         </div>
         <div class="prop-preview-wrap">
@@ -20342,7 +20345,7 @@ const FAT_MANUAL_KEY='radar_fat_valores_manuais';
 let FAT_VALORES_MANUAIS={};
 try{FAT_VALORES_MANUAIS=JSON.parse(localStorage.getItem(FAT_MANUAL_KEY)||'{}')||{};}catch(e){FAT_VALORES_MANUAIS={};}
 function fatManualEnabled(){return !!document.getElementById('fat-manual')?.checked;}
-function fatManualKey(row){return String(row.filial||'Consolidado')+'|'+String(row.mes||'');}
+function fatManualKey(row){const carteiras=fatCarteirasSelecionadas(),filiais=fatFiliaisSelecionadas();return String(row.filial||'Consolidado')+'|'+String(row.mes||'')+(carteiras===null&&filiais===null?'':'|filiais:'+(filiais===null?'Todas':filiais.join(','))+'|carteiras:'+(carteiras===null?'Todas':carteiras.join(',')));}
 function fatManualValue(key){const v=FAT_VALORES_MANUAIS[key];return Number.isFinite(Number(v))?Number(v):null;}
 function fatSaveManualValues(){try{localStorage.setItem(FAT_MANUAL_KEY,JSON.stringify(FAT_VALORES_MANUAIS));}catch(e){}}
 function setFaturamentoManualValor(key,value){
@@ -20388,6 +20391,41 @@ function removeFaturamentoAssinatura(){
   toast('Assinatura removida','success');
 }
 function fatRows(){return (STATE.raw&&Array.isArray(STATE.raw.recebimentos))?STATE.raw.recebimentos:[];}
+let FAT_CARTEIRAS=null;
+let FAT_FILIAIS=null;
+function fatFiliaisSelecionadas(){return FAT_FILIAIS===null?null:[...FAT_FILIAIS].sort((a,b)=>a.localeCompare(b,'pt-BR',{numeric:true}));}
+function fatFilialUnica(){const ids=fatFiliaisSelecionadas();return ids?.length===1?ids[0]:'Todas';}
+function fatFilialToggle(input){
+  if(input.dataset.todas==='1')FAT_FILIAIS=input.checked?null:new Set();
+  else{
+    if(FAT_FILIAIS===null)FAT_FILIAIS=new Set();
+    if(input.checked)FAT_FILIAIS.add(input.value);else FAT_FILIAIS.delete(input.value);
+  }
+  fatApplyEmpresaFromFilial(true);
+  renderFaturamentoPreview();
+}
+function fatCarteirasSelecionadas(){return FAT_CARTEIRAS===null?null:[...FAT_CARTEIRAS].sort((a,b)=>a.localeCompare(b,'pt-BR',{numeric:true}));}
+function fatCarteiraCol(){return fatCol(fatRows()[0]||{},['Carteira de cobranca','Carteira de cobrança','ID carteira cobranca','id_carteira_cobranca']);}
+function fatCarteiraId(row,col){return limpaId(row[col])||'sem-carteira';}
+function fatCarteiraToggle(input){
+  if(input.dataset.todas==='1'){
+    FAT_CARTEIRAS=input.checked?null:new Set();
+  }else{
+    if(FAT_CARTEIRAS===null)FAT_CARTEIRAS=new Set();
+    if(input.checked)FAT_CARTEIRAS.add(input.value);else FAT_CARTEIRAS.delete(input.value);
+  }
+  renderFaturamentoPreview();
+}
+function fatFillCarteiras(){
+  const box=document.getElementById('fat-carteiras-opcoes'), resumo=document.getElementById('fat-carteiras-resumo');
+  if(!box||!resumo)return;
+  const col=fatCarteiraCol(), selected=fatCarteirasSelecionadas();
+  const ids=[...new Set([...fatRows().map(r=>fatCarteiraId(r,col)),...(selected||[])])].sort((a,b)=>a.localeCompare(b,'pt-BR',{numeric:true}));
+  const label=id=>id==='sem-carteira'?'Sem carteira informada':'Carteira '+id;
+  resumo.textContent=selected===null?'Todas as carteiras':selected.length?selected.map(label).join(', '):'Nenhuma carteira selecionada';
+  box.innerHTML='<label style="display:flex;flex-direction:row;align-items:center;gap:8px;text-transform:none;letter-spacing:0"><input type="checkbox" style="width:auto" data-todas="1" '+(selected===null?'checked':'')+' onchange="fatCarteiraToggle(this)">Todas as carteiras</label>'+
+    ids.map(id=>'<label style="display:flex;flex-direction:row;align-items:center;gap:8px;text-transform:none;letter-spacing:0"><input type="checkbox" style="width:auto" value="'+escAttr(id)+'" '+(selected!==null&&selected.includes(id)?'checked':'')+' onchange="fatCarteiraToggle(this)">'+escHtml(label(id))+'</label>').join('');
+}
 function fatFold(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
 function fatCol(row, variants){
   if(!row)return '';
@@ -20400,10 +20438,8 @@ function fatCols(){
   const r=fatRows()[0]||{};
   return {id:fatCol(r,['ID']),filial:fatCol(r,['Filial']),status:fatCol(r,['Status']),emissao:fatCol(r,['Emissao','Emissão']),venc:fatCol(r,['Vencimento']),valor:fatCol(r,['Valor']),baixado:fatCol(r,['Valor baixado']),aberto:fatCol(r,['Valor aberto']),cliente:fatCol(r,['Cliente']),recebido:fatCol(r,['Valor recebido']),pagamento:fatCol(r,['Data pagamento']),credito:fatCol(r,['Data credito','Data crédito']),baixa:fatCol(r,['Data baixa']),cancelado:fatCol(r,['Valor cancelado']),dataCancel:fatCol(r,['Data cancelamento']),motivoCancel:fatCol(r,['Motivo cancelamento']),tipoPessoa:fatCol(r,['Tipo pessoa'])};
 }
-function fatDate(row, cols, base){
-  if(base==='vencimento')return parseDateTime(row[cols.venc])||parseDate(row[cols.venc]);
-  if(base==='pagamento')return parseDateTime(row[cols.pagamento])||parseDateTime(row[cols.baixa])||parseDateTime(row[cols.credito])||parseDate(row[cols.pagamento]);
-  return parseDateTime(row[cols.emissao])||parseDate(row[cols.emissao]);
+function fatDate(row, cols){
+  return parseDateTime(row[cols.pagamento])||parseDate(row[cols.pagamento]);
 }
 function fatIsoInput(d){return d instanceof Date&&!isNaN(d)?d.toISOString().slice(0,10):'';}
 function fatDateLabel(d){return d instanceof Date&&!isNaN(d)?d.toLocaleDateString('pt-BR'):'';}
@@ -20445,7 +20481,7 @@ function fatFillEmpresas(){
   if(cur&&['auto','default',...keys].includes(cur))el.value=cur;
 }
 function fatApplyEmpresaFromFilial(force=false){
-  const filial=document.getElementById('fat-filial')?.value||'Todas';
+  const filial=fatFilialUnica();
   const empresa=document.getElementById('fat-empresa')?.value||'auto';
   const dados=fatEmpresaDados(empresa==='auto'?filial:empresa);
   const razao=document.getElementById('fat-razao'), cnpj=document.getElementById('fat-cnpj');
@@ -20453,13 +20489,16 @@ function fatApplyEmpresaFromFilial(force=false){
   if(cnpj&&(force||!cnpj.dataset.manual))cnpj.value=dados.cnpj||'';
 }
 function fatFillFiliais(){
-  const el=document.getElementById('fat-filial'); if(!el)return;
-  const cur=el.value||'Todas', cols=fatCols();
-  const vals=[...new Set(fatRows().map(r=>limpaId(r[cols.filial])).filter(Boolean))].sort((a,b)=>String(filialNome(a)).localeCompare(String(filialNome(b)),'pt-BR'));
-  el.innerHTML='<option value="Todas">Todas</option>'+vals.map(v=>'<option value="'+escAttr(v)+'">'+escHtml(filialNome(v))+'</option>').join('');
-  if(cur&&[...vals,'Todas'].includes(cur))el.value=cur;
+  const el=document.getElementById('fat-filiais-opcoes'),resumo=document.getElementById('fat-filiais-resumo'); if(!el||!resumo)return;
+  const cols=fatCols(),selected=fatFiliaisSelecionadas();
+  const vals=[...new Set([...fatRows().map(r=>limpaId(r[cols.filial])).filter(Boolean),...(selected||[])])].sort((a,b)=>String(filialNome(a)).localeCompare(String(filialNome(b)),'pt-BR'));
+  resumo.textContent=selected===null?'Todas as filiais':selected.length?selected.map(filialNome).join(', '):'Nenhuma filial selecionada';
+  const style='display:flex;flex-direction:row;align-items:center;gap:8px;text-transform:none;letter-spacing:0';
+  el.innerHTML='<label style="'+style+'"><input type="checkbox" style="width:auto" data-todas="1" '+(selected===null?'checked':'')+' onchange="fatFilialToggle(this)">Todas as filiais</label>'+
+    vals.map(id=>'<label style="'+style+'"><input type="checkbox" style="width:auto" value="'+escAttr(id)+'" '+(selected!==null&&selected.includes(id)?'checked':'')+' onchange="fatFilialToggle(this)">'+escHtml(filialNome(id))+'</label>').join('');
   fatFillEmpresas();
   fatApplyEmpresaFromFilial(false);
+  fatFillCarteiras();
 }
 function fatConfig(){
   fatSetPresetDates(false);
@@ -20477,7 +20516,8 @@ function fatApplyStatus(row, cols, cfg){
 }
 function fatFilteredRows(){
   const rows=fatRows(), cols=fatCols(), cfg=fatConfig();
-  return rows.map(r=>({r,d:fatDate(r,cols,cfg.base)})).filter(x=>x.d&&(!cfg.de||x.d>=cfg.de)&&(!cfg.ate||x.d<=cfg.ate)).filter(x=>cfg.filial==='Todas'||limpaId(x.r[cols.filial])===cfg.filial).filter(x=>fatApplyStatus(x.r,cols,cfg)).map(x=>x.r);
+  const carteiras=fatCarteirasSelecionadas(), carteiraCol=fatCarteiraCol(),filiais=fatFiliaisSelecionadas();
+  return rows.map(r=>({r,d:fatDate(r,cols,cfg.base)})).filter(x=>x.d&&(!cfg.de||x.d>=cfg.de)&&(!cfg.ate||x.d<=cfg.ate)).filter(x=>filiais===null?(cfg.filial==='Todas'||limpaId(x.r[cols.filial])===cfg.filial):filiais.includes(limpaId(x.r[cols.filial]))).filter(x=>carteiras===null||carteiras.includes(fatCarteiraId(x.r,carteiraCol))).filter(x=>fatApplyStatus(x.r,cols,cfg)).map(x=>x.r);
 }
 function fatBuildReport(){
   const rows=fatFilteredRows(), cols=fatCols(), cfg=fatConfig(), groups=new Map();
