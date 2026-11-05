@@ -25927,7 +25927,8 @@ async function radarFixoRender(){
   if(IXC_CARGA.carregando&&IXC_CARGA.progresso)el.querySelector('.info').textContent=IXC_CARGA.progresso;
   if(andamento){ const falta=ixcCargaPartes(st).filter(p=>!p.ok).map(p=>p.nome); if(falta.length && !IXC_CARGA.carregando) el.querySelector('.info').textContent='Pedido às '+new Date(ped.pedido_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' · falta: '+falta.join(', '); clearTimeout(window._radarFixoTimer); window._radarFixoTimer = setTimeout(radarFixoRender, 30000); }
   // dados novos prontos: o Radar passa a usar sozinho, sem precisar clicar
-  if(novos && !IXC_CARGA.carregando && !document.hidden && IXC_CARGA.autoPedido !== ped.pedido_em){
+  // só recarrega sozinho quem já tem a base aberta; quem está só na Visão geral não precisa esperar a base inteira
+  if(novos && STATE.processed && !IXC_CARGA.carregando && !document.hidden && IXC_CARGA.autoPedido !== ped.pedido_em){
     IXC_CARGA.autoPedido = ped.pedido_em;
     toast('Os dados novos chegaram. Atualizando a tela…','success');
     radarFixoCarregar();
@@ -26017,7 +26018,7 @@ function radarTrilha(mod){
 }
 function radarIrAtividades(){ go('cobrancaDia'); cdSub('atividades'); }
 function radarAreasVisiveis(){ document.querySelectorAll('.nav-area').forEach(g=>{ const vis=[...g.querySelectorAll('.nav-item')].some(it=>getComputedStyle(it).display!=='none'); const sub=g.querySelector('.nav-sub'); if(!vis && !(g.dataset.area==='equipe' && typeof cdPodeGerenciar==='function' && cdPodeGerenciar())) g.style.display='none'; else if(!document.getElementById('nav-busca')?.value) g.style.display=''; }); }
-(function(){ const _go = go; go = function(mod){ const r = _go.apply(this, arguments); try{ radarTrilha(mod); radarAreasVisiveis(); radarAreaDoModulo(STATE.activeMod||mod); }catch(e){} return r; }; window.go = go; })();
+(function(){ const _go = go; go = function(mod){ const r = _go.apply(this, arguments); try{ document.body.dataset.radarMod = STATE.activeMod||mod; radarTrilha(mod); radarAreasVisiveis(); radarAreaDoModulo(STATE.activeMod||mod); }catch(e){} return r; }; window.go = go; })();
 (function(){ const orig = window.radarAplicarModulos; if(typeof orig==='function'){ window.radarAplicarModulos = radarAplicarModulos = function(){ const r = orig.apply(this, arguments); try{ radarAreasVisiveis(); }catch(e){} return r; }; } })();
 
 /* ===================== INICIO: os numeros de cada area ===================== */
@@ -26025,12 +26026,12 @@ const INI = { carregando:false };
 async function renderInicio(){
   const box = document.getElementById('mod-inicio'); if(!box) return;
   const pode = typeof cdPodeGerenciar==='function' ? cdPodeGerenciar() : true;
-  const faltaIni = ()=>[!CD.dados.resumo&&'cobrança', !OP.dados&&'oportunidades', !CD.atv.lista&&'atividades'].filter(Boolean);
+  const faltaIni = ()=>[!CD.dados.resumo&&'cobrança', !OP.dados&&'oportunidades', !CD.atv.lista&&'atividades', !INI.vg&&'indicadores'].filter(Boolean);
   // no máximo 2 tentativas seguidas; depois mostra o que tem e só tenta de novo após 1 minuto
   if(!INI.carregando && faltaIni().length && (INI.tentativas||0) < 2 && Date.now() >= (INI.proxima||0)){
     INI.carregando = true; INI.tentativas = (INI.tentativas||0) + 1;
     box.innerHTML = '<div class="section compact-section">Juntando os números de cada área...</div>';
-    try{ await Promise.allSettled([ CD.dados.resumo ? null : cdCarregar(), OP.dados ? null : opCarregar(), CD.atv.lista ? null : cdAtvCarregar(true), IXC_CARGA.status ? null : ixcCargaStatus(), (typeof REDE!=='undefined' && !REDE.dados && typeof redeCarregar==='function') ? redeCarregar() : null ]); }catch(e){}
+    try{ await Promise.allSettled([ INI.vg ? null : vgCarregar(), CD.dados.resumo ? null : cdCarregar(), OP.dados ? null : opCarregar(), CD.atv.lista ? null : cdAtvCarregar(true), IXC_CARGA.status ? null : ixcCargaStatus(), (typeof REDE!=='undefined' && !REDE.dados && typeof redeCarregar==='function') ? redeCarregar() : null ]); }catch(e){}
     INI.carregando = false;
     if(!faltaIni().length) INI.tentativas = 0;
     else if(INI.tentativas >= 2){ INI.proxima = Date.now() + 60000; INI.tentativas = 0; }
@@ -26065,7 +26066,9 @@ async function renderInicio(){
   const pri = [];
   if(pons.length) pri.push(`<b class="ruim">Rede:</b> ${lk(cdNum(pons.length)+(pons.length===1?' região com falha coletiva':' regiões com falha coletiva')+', '+cdNum(ponCli)+' clientes sem internet', irRede('noc'), true)}. O NOC precisa agir antes do cliente ligar.`);
   if(perd) pri.push(`<b class="ruim">Falha grave no OPA:</b> ${lk(cdNum(perd)+' clientes responderam à oferta e foram encerrados pela IA sem atendimento', "go('oportunidades');opSub('envios')", true)}. Chame de volta hoje e corrija o fluxo antes do próximo disparo.`);
-  if(g && g.pre.clientes) pri.push(`${lk(cdNum(g.pre.clientes)+' clientes estão a até 5 dias do bloqueio', "go('cobrancaDia');cdIrLista('cobrar','pre')", true)}, somando <b>${cdMoeda(g.pre.valor)}</b>. É o dinheiro mais fácil de recuperar hoje.`);
+  const bqP = (INI.bq||[]).find(b=>b.clientes>=10) || (INI.bq||[])[0];
+  if(bqP) pri.push(`${lk(cdNum(bqP.clientes)+(bqP.clientes===1?' cliente será bloqueado':' clientes serão bloqueados')+' em '+new Date(bqP.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'}), `radarBloqueioLista('${bqP.data}')`, true)} se não pagarem, somando <b>${cdMoeda(bqP.valor)}</b> em aberto hoje. Dispare a cobrança na véspera.`);
+  else if(g && g.pre.clientes) pri.push(`${lk(cdNum(g.pre.clientes)+' clientes estão a até 5 dias do bloqueio', "go('cobrancaDia');cdIrLista('cobrar','pre')", true)}, somando <b>${cdMoeda(g.pre.valor)}</b>. É o dinheiro mais fácil de recuperar hoje.`);
   if(est.length) pri.push(`${lk(cdNum(est.length)+(est.length===1?' atividade da equipe passou do prazo':' atividades da equipe passaram do prazo'), 'radarIrAtividades()', true)}. Fale com a responsável ou redistribua.`);
   if(abertos) pri.push(`${lk(cdNum(abertos)+' clientes que responderam à oferta ainda estão com atendimento aberto', "go('oportunidades');opSub('envios')")}. Cliente que espera esfria.`);
   if(val.length) pri.push(`${lk(cdNum(val.length)+(val.length===1?' atividade espera':' atividades esperam')+' a sua validação', 'radarIrAtividades()')}.`);
@@ -26118,9 +26121,110 @@ async function renderInicio(){
     ${pode?`<div class="cdg-col planejar"><div class="cdg-col-h"><h3>Equipe</h3><span>atividades</span></div>${eq}</div>`:''}
   </div>`;
   const avisoParcial = (INI.parcial||[]).length ? `<div class="cdg-alerta warn" style="margin-bottom:12px"><i></i><div><b>Visão parcial.</b> Não consegui ler agora: ${INI.parcial.join(', ')}. Os outros números estão certos e os módulos funcionam normalmente. Tento de novo em 1 minuto.</div></div>` : '';
-  box.innerHTML = `<div class="cdg">${avisoParcial}${status}${resumo}${colunas}</div>`;
+  const fazer = pri.slice(0,5).map((p,i)=>`<li><span class="vg-n">${i+1}</span><div>${p}</div></li>`).join('');
+  box.innerHTML = `<div class="cdg vg">${avisoParcial}
+    ${vgCabecalhoHTML(ult, velho)}
+    ${vgIndicadoresHTML({ pons, ponCli, campoAlta })}
+    <div class="vg-sec"><div class="vg-sec-h"><h3>Fazer hoje</h3><span>em ordem de urgência, todas as marcas · os trechos sublinhados abrem a lista</span></div>
+      <ol class="vg-fazer">${fazer}</ol>${pri.length>5?`<div class="cdg-nota">Mais ${pri.length-5} ${pri.length-5===1?'item':'itens'} nas áreas abaixo.</div>`:''}</div>
+    <div class="vg-sec"><div class="vg-sec-h"><h3>Por área</h3><span>clique para abrir a tela</span></div>${colunas}</div>
+  </div>`;
 }
 window.renderInicio = renderInicio;
+
+// ===== Visão geral gerencial: indicadores lidos prontos do banco (abre em segundos, sem carregar a base) =====
+async function vgCarregar(){
+  try{ const sb=getSB(); const m = INI.marca && INI.marca!=='Todas' ? INI.marca : null;
+    const [a,b] = await Promise.all([sb.rpc('radar_visao_geral',{p_marca:m}), sb.rpc('radar_bloqueios_proximos',{p_marca:m})]);
+    if(a.error) throw a.error; INI.vg = a.data||{}; INI.bq = b.error ? [] : (b.data||[]); INI.vgErro=null;
+  }catch(e){ INI.vgErro = e.message||String(e); INI.vg = INI.vg||null; }
+}
+async function vgMarca(m){ INI.marca=m; INI.vg=null; const box=document.getElementById('vg-ind'); if(box) box.style.opacity='.5'; await vgCarregar(); if(STATE.activeMod==='inicio') renderInicio(); }
+function vgSpark(vals, cor){
+  const v=(vals||[]).map(Number).filter(x=>isFinite(x)); if(v.length<2) return '';
+  const w=120,h=30,mn=Math.min(...v),mx=Math.max(...v),dx=w/(v.length-1),sy=x=>mx===mn?h/2:h-2-(x-mn)/(mx-mn)*(h-4);
+  const pts=v.map((x,i)=>`${(i*dx).toFixed(1)},${sy(x).toFixed(1)}`).join(' ');
+  return `<svg class="vg-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${cor||'var(--azul)'}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${((v.length-1)*dx).toFixed(1)}" cy="${sy(v[v.length-1]).toFixed(1)}" r="2.6" fill="${cor||'var(--azul)'}"/></svg>`;
+}
+function vgDelta(atual, anterior, bomQuandoSobe, fmt, rot){
+  if(anterior==null || !isFinite(+anterior)) return '';
+  const d=(+atual)-(+anterior); if(!d) return `<span class="vg-delta">igual ${rot}</span>`;
+  const bom = bomQuandoSobe ? d>0 : d<0;
+  return `<span class="vg-delta ${bom?'bom':'ruim'}">${d>0?'+':'−'}${fmt(Math.abs(d))} ${rot}</span>`;
+}
+function vgCabecalhoHTML(ult, velho){
+  const marcas=['Todas','Hilink','NandoNet','Pablom'], m=INI.marca||'Todas';
+  return `<div class="vg-top">
+    <div class="vg-marcas" role="group" aria-label="Marca">${marcas.map(x=>`<button type="button" class="${x===m?'on':''}" onclick="vgMarca('${x}')">${x==='NandoNet'?'Nandonet':x}</button>`).join('')}</div>
+    <span class="vg-leitura ${velho||!ult?'warn':''}">${ult?`Dados do IXC de ${ixcFmtDataHora(ult)}`:'Leitura do IXC desconhecida'}${velho?' · use Atualizar todos os dados antes de decidir':''}</span></div>`;
+}
+function vgIndicadoresHTML(rd){
+  const v=INI.vg; if(!v) return `<div class="vg-sec" id="vg-ind"><div class="cdg-nota">${INI.vgErro?'Não consegui ler os indicadores agora: '+cdEsc(INI.vgErro):'Lendo os indicadores...'}</div></div>`;
+  const brl0=x=>(Number(x)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  const serie=v.serie||[], saldoSerie=serie.map(s=>s.ativacoes-s.cancelamentos), saldo=(v.ativacoes_mes||0)-(v.cancel_mes||0);
+  const pctRec = v.previsto_mes ? Math.round(v.recebido_mes/v.previsto_mes*100) : 0;
+  const pctVencPago = v.vencido_ate_hoje_mes ? Math.round(v.recebido_ate_hoje_mes/v.vencido_ate_hoje_mes*100) : 0;
+  const pctAnt = v.previsto_mes_ant ? Math.round(v.recebido_mes_ant/v.previsto_mes_ant*100) : 0;
+  const bqs=(INI.bq||[]), bqMain = bqs.find(b=>b.clientes>=10) || bqs[0];
+  const dsem=d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}).replace('.','');
+  const inadSubiu = v.vencido_valor_ant!=null && v.vencido_valor > v.vencido_valor_ant;
+  const motivos = Object.entries(v.cancel_motivos||{}).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${cdEsc(k)} ${n}`).join(' · ');
+  const card=(tom, rot, valor, sub, extra, js, spark)=>`<div class="vg-card ${tom}" role="button" tabindex="0" onclick="${js}" onkeydown="if(event.key==='Enter'){${js}}">
+      <div class="vg-l">${rot}</div><div class="vg-v">${valor}</div>${spark||''}<div class="vg-s">${sub}</div>${extra?`<div class="vg-x">${extra}</div>`:''}</div>`;
+  const cards=[
+    card(saldo<0?'atencao':'', 'Base ativa', cdNum(v.base_ativa),
+      `Saldo do mês: <b class="${saldo<0?'ruim':'bom'}">${saldo>0?'+':''}${cdNum(saldo)}</b> (${cdNum(v.ativacoes_mes)} entradas, ${cdNum(v.cancel_mes)} saídas)`,
+      vgDelta(v.ativacoes_mes, v.ativacoes_mes_ant, true, cdNum, 'entradas que no mesmo dia do mês passado'),
+      "go('oportunidades')", vgSpark(saldoSerie)),
+    card('', 'Recebido no mês', brl0(v.recebido_mes),
+      `${pctRec}% dos ${brl0(v.previsto_mes)} previstos para o mês`,
+      `Dos boletos que já venceram, ${pctVencPago}% foram pagos. Mês passado fechou com ${pctAnt}% recebido.`,
+      "go('cobrancaDia');cdSub('onde')", ''),
+    card(inadSubiu?'atencao':'', 'Inadimplência', brl0(v.vencido_valor),
+      `${cdNum(v.vencido_clientes)} clientes com boleto vencido${v.previsto_mes?` · ${Math.round(v.vencido_valor/v.previsto_mes*100)}% do faturamento do mês`:''}`,
+      vgDelta(v.vencido_valor, v.vencido_valor_ant, false, brl0, 'em 7 dias'),
+      "go('cobrancaDia');cdSub('onde')", vgSpark((v.vencido_serie||[]).map(s=>s.valor), inadSubiu?'var(--estado-atencao)':'var(--azul)')),
+    card(bqMain&&bqMain.clientes>=10?'atencao':'', 'Próximo bloqueio', bqMain?`${cdNum(bqMain.clientes)} <small>clientes</small>`:'Nenhum',
+      bqMain?`${dsem(bqMain.data)} · ${brl0(bqMain.valor)} em aberto hoje`:'nos próximos 10 dias',
+      bqs.length>1?bqs.filter(b=>b!==bqMain).slice(0,3).map(b=>`${dsem(b.data)}: ${cdNum(b.clientes)}`).join(' · '):'O número cai conforme os clientes pagam.',
+      bqMain?`radarBloqueioLista('${bqMain.data}')`:"go('cobrancaDia')", ''),
+    card(rd.pons.length?'risco':'', 'Sem internet agora', rd.pons.length?`${cdNum(rd.ponCli)} <small>clientes</small>`:'0',
+      rd.pons.length?`em ${cdNum(rd.pons.length)} ${rd.pons.length===1?'região':'regiões'} com falha coletiva`:'nenhuma falha coletiva agora',
+      rd.campoAlta?`${cdNum(rd.campoAlta)} visitas técnicas com prioridade alta`:'',
+      "go('tecnica');tecSub('casos')", ''),
+    card(v.cancel_mes>v.cancel_mes_ant?'atencao':'', 'Cancelamentos do mês', cdNum(v.cancel_mes),
+      motivos||'nenhum cancelamento real no mês',
+      vgDelta(v.cancel_mes, v.cancel_mes_ant, false, cdNum, 'que no mesmo dia do mês passado') + (v.cancel_limpeza_mes?` <span class="vg-delta">+${cdNum(v.cancel_limpeza_mes)} limpeza de base</span>`:''),
+      "go('oportunidades')", vgSpark(serie.map(s=>s.cancelamentos), 'var(--texto-3)'))
+  ];
+  return `<div class="vg-sec" id="vg-ind"><div class="vg-cards">${cards.join('')}</div>
+    <div class="cdg-nota">${cdEsc(v.marca||'Todas')==='Todas'?'Todas as marcas':'Marca: '+cdEsc(v.marca)} · cancelamentos sem contar limpeza de base · linhas pequenas: últimos 6 meses (inadimplência: últimas leituras)</div></div>`;
+}
+Object.assign(window,{vgMarca});
+(function(){ if(document.getElementById('vg-css')) return; const st=document.createElement('style'); st.id='vg-css'; st.textContent=`
+.vg .vg-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.vg .vg-marcas{display:inline-flex;border:1px solid var(--linha);border-radius:999px;overflow:hidden;background:var(--superficie)}
+.vg .vg-marcas button{border:0;background:transparent;padding:6px 14px;font:600 12.5px var(--font-texto);color:var(--texto-2);cursor:pointer}
+.vg .vg-marcas button.on{background:var(--azul);color:var(--sobre-azul)}
+.vg .vg-leitura{font-size:12px;color:var(--texto-3)} .vg .vg-leitura.warn{color:var(--atencao);font-weight:600}
+.vg .vg-sec{margin:0 0 16px}
+.vg .vg-sec-h{display:flex;align-items:baseline;gap:10px;margin:0 0 8px} .vg .vg-sec-h h3{margin:0;font:700 14px var(--font-titulo);color:var(--texto)} .vg .vg-sec-h span{font-size:12px;color:var(--texto-3)}
+.vg .vg-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.vg .vg-card{position:relative;background:var(--superficie);border:1px solid var(--linha);border-top:3px solid var(--linha);border-radius:12px;padding:12px 14px;cursor:pointer;min-height:132px;transition:box-shadow .15s}
+.vg .vg-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.vg .vg-card.atencao{border-top-color:var(--estado-atencao)} .vg .vg-card.risco{border-top-color:var(--estado-risco)}
+.vg .vg-l{font:700 11px/1.2 var(--font-titulo);letter-spacing:.06em;text-transform:uppercase;color:var(--texto-3)}
+.vg .vg-v{margin-top:6px;font:800 26px/1.1 var(--font-titulo);color:var(--texto)} .vg .vg-v small{font-size:13px;font-weight:600;color:var(--texto-3)}
+.vg .vg-card.risco .vg-v{color:var(--risco)}
+.vg .vg-spark{position:absolute;right:14px;top:30px;width:110px;height:30px}
+.vg .vg-s{margin-top:6px;font-size:12.5px;color:var(--texto-2);line-height:1.35} .vg .vg-x{margin-top:4px;font-size:12px;color:var(--texto-3);line-height:1.35}
+.vg b.bom,.vg .vg-delta.bom{color:var(--ok)} .vg b.ruim,.vg .vg-delta.ruim{color:var(--risco)} .vg .vg-delta{font-weight:600}
+.vg .vg-fazer{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.vg .vg-fazer li{display:flex;gap:10px;align-items:flex-start;background:var(--superficie);border:1px solid var(--linha);border-radius:10px;padding:9px 12px;font-size:13.5px;color:var(--texto)}
+.vg .vg-fazer li p,.vg .vg-fazer li div{margin:0}
+.vg .vg-n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--azul-suave);color:var(--azul-forte);font:700 12px/22px var(--font-titulo);text-align:center}
+body[data-radar-mod="inicio"] #gf-data-de-wrap,body[data-radar-mod="inicio"] #gf-data-ate-wrap,body[data-radar-mod="inicio"] #gf-filial-wrap,body[data-radar-mod="inicio"] #global-filters > button,body[data-radar-mod="inicio"] #page-meta .tag,body[data-radar-mod="inicio"] #context-badge{display:none!important}
+`; document.head.appendChild(st); })();
 
 /* ===================== AVISO DE VERSAO NOVA DO RADAR ===================== */
 const RADAR_VER = { etag:null, checouCarga:false };
