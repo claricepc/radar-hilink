@@ -24934,6 +24934,7 @@ async function cdAtvCriar(){
   if(criadas) toast(`${criadas} ${criadas===1?'atividade direcionada':'atividades direcionadas'} com ${cdNum(itens)} itens${repetidos?`. ${cdNum(repetidos)} já estavam em outra atividade`:''}.`,'success');
   if(falhas.length) toast(falhas.join(' | '),'warn');
   await cdAtvCarregar();
+  try{ const r=await getSB().rpc('radar_op_ia_pendentes'); if(!r.error){ INI.iaPend=r.data||[]; if(STATE.activeMod==='inicio') renderInicio(); } }catch(e){}
 }
 // ---------- cadastro de atendentes (gestão e liderança) ----------
 function cdAtendenteModal(abrir){
@@ -26410,7 +26411,7 @@ async function renderInicio(){
   INI.parcial = faltaIni();
   let g = null; try{ g = cdGuiaDados(); }catch(e){}
   const d = OP.dados||{}, up = d.upgrade||[], re = d.reativacao||[];
-  const envs = (OP.acomp?.envios)||[], perd = envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
+  const envs = (OP.acomp?.envios)||[], perd = Array.isArray(INI.iaPend) ? INI.iaPend.length : envs.reduce((t,e)=>t+(+e.ia0||0)+(+e.triagem||0),0);
   const env = envs.reduce((t,e)=>t+(+e.enviados||0),0), resp = envs.reduce((t,e)=>t+(+e.responderam||0),0), conv = envs.reduce((t,e)=>t+(+e.converteram||0),0), abertos = envs.reduce((t,e)=>t+(+e.abertos||0),0);
   const atv = (CD.atv.lista||[]).filter(a=>a.status==='aberta'), est = atv.filter(a=>cdPrazoEstourou(a)), val = atv.filter(a=>a.validacao_solicitada_em);
   const def = up.filter(x=>x.vel<=100);
@@ -26433,7 +26434,7 @@ async function renderInicio(){
   // 2. o que precisa de voce agora (em ordem de urgencia)
   const pri = [];
   if(pons.length) pri.push(`<b class="ruim">Rede:</b> ${lk(cdNum(pons.length)+(pons.length===1?' região com falha coletiva':' regiões com falha coletiva')+', '+cdNum(ponCli)+' clientes sem internet', irRede('noc'), true)}. O NOC precisa agir antes do cliente ligar.`);
-  if(perd) pri.push(`<b class="ruim">Falha grave no OPA:</b> ${lk(cdNum(perd)+' clientes responderam à oferta e foram encerrados pela IA sem atendimento', "go('oportunidades');opSub('envios')", true)}. Chame de volta hoje e corrija o fluxo antes do próximo disparo.`);
+  if(perd) pri.push(`<b class="ruim">Oferta de upgrade sem retorno:</b> ${lk(cdNum(perd)+(perd===1?' cliente respondeu':' clientes responderam')+' à oferta, a IA encerrou a conversa e ninguém da equipe falou com '+(perd===1?'ele':'eles'), "vgIaPendentes()", true)}. Gere uma atividade para uma atendente chamar de volta. O alerta sai sozinho quando o cliente entra numa atividade, fala com alguém da equipe no OPA, faz o upgrade ou recusa.`);
   const bqP = (INI.bq||[]).find(b=>b.clientes>=10) || (INI.bq||[])[0];
   if(bqP) pri.push(`${lk(cdNum(bqP.clientes)+(bqP.clientes===1?' cliente será bloqueado':' clientes serão bloqueados')+' em '+new Date(bqP.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'}), `radarBloqueioLista('${bqP.data}')`, true)} se não pagarem, somando <b>${cdMoeda(bqP.valor)}</b> em aberto hoje. Dispare a cobrança na véspera.`);
   else if(g && g.pre.clientes) pri.push(`${lk(cdNum(g.pre.clientes)+' clientes estão a até 5 dias do bloqueio', "go('cobrancaDia');cdIrLista('cobrar','pre')", true)}, somando <b>${cdMoeda(g.pre.valor)}</b>. É o dinheiro mais fácil de recuperar hoje.`);
@@ -26468,7 +26469,7 @@ async function renderInicio(){
     it({tom:'planejar', titulo:'Recuperar mais de 90 dias', numero:cdMoeda(g.d90.valor), unid:cdNum(g.d90.clientes)+' clientes', porque:'Inadimplência antiga, precisa de régua própria.', acao:['Ver onde está',"go('cobrancaDia');cdSub('onde')"]})
   ].join('') : '<div class="cdg-nota">Os dados de cobrança ainda não carregaram.</div>';
   const com = [
-    it({tom:perd?'corrigir':'agir', titulo:perd?'Chamar de volta quem a IA encerrou':'Acompanhar os envios', numero:perd?cdNum(perd):(env?cdPct(resp,env)+'%':'-'), unid:perd?'clientes':'responderam', porque:perd?'Responderam à oferta e ninguém atendeu.':'Engajamento e conversão de cada envio.', acao:[perd?'Ver e gerar atividade':'Ver envios',"go('oportunidades');opSub('envios')"]}),
+    it({tom:perd?'corrigir':'agir', titulo:perd?'Chamar de volta quem a IA encerrou':'Acompanhar os envios', numero:perd?cdNum(perd):(env?cdPct(resp,env)+'%':'-'), unid:perd?'clientes':'responderam', porque:perd?'Responderam à oferta, a IA encerrou e ninguém da equipe falou com eles ainda.':'Engajamento e conversão de cada envio.', acao:[perd?'Ver e gerar atividade':'Ver envios',perd?"vgIaPendentes()":"go('oportunidades');opSub('envios')"]}),
     it({tom:'agir', titulo:'Migrar planos defasados', numero:cdNum(def.length), unid:'contratos até 100 mega', vazio:!def.length, porque:'Plano antigo e equipamento defasado: maior risco de trocar de provedor.', acao:['Ver por plano',"go('oportunidades');opSub('planos')"]}),
     it({tom:'planejar', titulo:'Reativar ex-clientes', numero:cdNum(re.length), unid:'dos últimos 2 anos', vazio:!re.length, porque:'Todos podem voltar. Comece por quem saiu há até 6 meses.', acao:['Abrir lista',"go('oportunidades');opIr('reativacao',{prioridade:'Alta'})"]}),
     it({tom:'planejar', titulo:'Premiação do mês', porque:'Folha, vendas, atendimento e divergências com a planilha.', acao:['Abrir Premiação',"go('premiacoes')"]})
@@ -26503,8 +26504,8 @@ window.renderInicio = renderInicio;
 // ===== Visão geral gerencial: indicadores lidos prontos do banco (abre em segundos, sem carregar a base) =====
 async function vgCarregar(){
   try{ const sb=getSB(); const m = INI.marca && INI.marca!=='Todas' ? INI.marca : null;
-    const [a,b,c,g] = await Promise.all([sb.rpc('radar_visao_geral',{p_marca:m}), sb.rpc('radar_bloqueios_proximos',{p_marca:m}), sb.rpc('radar_base_resumo',{p_marca:m}), sb.rpc('radar_vg_graficos',{p_marca:m})]);
-    if(a.error) throw a.error; INI.vg = a.data||{}; INI.bq = b.error ? [] : (b.data||[]); INI.base = c.error ? null : c.data; INI.gr = g.error ? null : g.data; INI.vgErro=null;
+    const [a,b,c,g,ia] = await Promise.all([sb.rpc('radar_visao_geral',{p_marca:m}), sb.rpc('radar_bloqueios_proximos',{p_marca:m}), sb.rpc('radar_base_resumo',{p_marca:m}), sb.rpc('radar_vg_graficos',{p_marca:m}), sb.rpc('radar_op_ia_pendentes')]);
+    if(a.error) throw a.error; INI.vg = a.data||{}; INI.bq = b.error ? [] : (b.data||[]); INI.base = c.error ? null : c.data; INI.gr = g.error ? null : g.data; INI.iaPend = ia.error ? null : (ia.data||[]); INI.vgErro=null;
   }catch(e){ INI.vgErro = e.message||String(e); INI.vg = INI.vg||null; }
 }
 // Base ativa: contratos com status Ativo no IXC, abertos pela situação da internet.
@@ -26552,6 +26553,23 @@ function vgExportarOpa(){
   toast(`${nomes.length} arquivo(s): ${nomes.join(', ')}.${semFone?' '+semFone+' sem celular válido ficaram de fora.':''}`,'success');
 }
 Object.assign(window,{vgLista,vgExportarOpa});
+function vgIaPendentes(){
+  const rows=(INI.iaPend||[]).map(x=>({...x, enviado:cdData(String(x.enviado_em||'').slice(0,10)), caminho_txt:x.caminho==='fechado pela IA em 0 s'?'IA encerrou na hora':'IA fez a triagem e encerrou'}));
+  VG_LISTA_ATUAL={tipo:'ia', titulo:'Chamar de volta - encerrados pela IA', rows};
+  openDrill('Responderam à oferta e ninguém da equipe atendeu', rows, [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'enviado',label:'Oferta enviada em'},{k:'oferta',label:'Oferta'},{k:'caminho_txt',label:'O que aconteceu'}],
+    {sub:`${cdNum(rows.length)} clientes ainda sem retorno da equipe`, contextOnly:true,
+     contextHtml:`<div class="vg-lista-ctx"><div>Estes clientes responderam à oferta de upgrade, mas a IA (Fernanda) encerrou a conversa e nenhuma pessoa da equipe falou com eles depois. Eles saem desta lista sozinhos quando entram numa atividade "chamar de volta", falam com alguém da equipe no OPA, fazem o upgrade ou recusam.</div>
+       <button type="button" class="btn sm primary" onclick="try{closeDrill()}catch(e){};vgIaGerarAtividade()">Gerar atividade: chamar de volta</button></div>`});
+}
+async function vgIaGerarAtividade(){
+  if(typeof cdPodeGerenciar==='function' && !cdPodeGerenciar()){ toast('Só a gestão e a liderança geram atividades.','warn'); return; }
+  const linhas=(INI.iaPend||[]).map(x=>({id_cliente:x.id_cliente, nome:x.nome, filial:x.filial, telefone:x.telefone}));
+  if(!linhas.length){ toast('Ninguém para chamar de volta.','warn'); return; }
+  if(!CD.atv.usuarios || !CD.atv.usuarios.length) await cdAtvCarregar(true);
+  CD.atv.nova = { tipo:'retorno_oportunidade', preset:'', linhas, titulo:'Chamar de volta: encerrados pela IA '+cdData(cdHoje()).slice(0,5), filtro:'oportunidades', porFilial:false, prazo:cdSlaPadrao('retorno_oportunidade',''), responsavel:'' };
+  cdAtvModal();
+}
+Object.assign(window,{vgIaPendentes,vgIaGerarAtividade});
 function vgBaseCardHTML(v){
   const b=INI.base, tot=b?b.contratos:v.base_ativa;
   const saldo=(v.ativacoes_mes||0)-(v.cancel_mes||0);
@@ -26623,15 +26641,18 @@ function vgIndicadoresHTML(rd){
     const pct=x=>tot?(x/tot*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%':'';
     const partes=[
       {k:'recebido', rot:'Recebido', n:Number(rc.recebido)||0, cor:'#30A46C', cli:rc.cli_recebido, exp:'Boletos com vencimento neste mês que já foram pagos'},
-      {k:'no_prazo', rot:'A receber, dentro do vencimento', n:Number(rc.no_prazo)||0, cor:'#4DA3E0', cli:rc.cli_no_prazo, exp:'Boletos deste mês que ainda não venceram (inclui os que vencem hoje)'},
-      {k:'atraso', rot:'A receber, em atraso', n:Number(rc.atraso)||0, cor:'#E5484D', cli:rc.cli_atraso, exp:'Boletos deste mês que já venceram e não foram pagos'}];
+      ...(rc.hoje!=null ? [
+        {k:'hoje', rot:'Vence hoje', n:Number(rc.hoje)||0, cor:'#F5A524', cli:rc.cli_hoje, exp:'Boletos que vencem hoje e ainda não foram pagos. Se não pagarem, amanhã entram em atraso'},
+        {k:'a_vencer', rot:'A vencer (de amanhã até o fim do mês)', n:Number(rc.a_vencer)||0, cor:'#4DA3E0', cli:rc.cli_a_vencer, exp:'Boletos deste mês que vencem de amanhã em diante'}]
+      : [{k:'no_prazo', rot:'A receber, dentro do vencimento', n:Number(rc.no_prazo)||0, cor:'#4DA3E0', cli:rc.cli_no_prazo, exp:'Boletos deste mês que ainda não venceram (inclui os que vencem hoje)'}]),
+      {k:'atraso', rot:'Em atraso (venceu neste mês e não pagou)', n:Number(rc.atraso)||0, cor:'#E5484D', cli:rc.cli_atraso, exp:'Boletos deste mês que já venceram e não foram pagos'}];
     partes.forEach(p=>{ p.fmt=brl0(p.n); p.js=`vgLista('${p.k}','Receita do mês: ${p.rot}','${p.exp}.')`; });
     receitaCard=`<div class="vg-card vg-base vg-rec" onclick="vgLista('atraso','Receita do mês: A receber, em atraso','Boletos deste mês que já venceram e não foram pagos.')" role="button" tabindex="0">
       <div class="vg-l">Receita do mês · boletos com vencimento em ${new Date().toLocaleDateString('pt-BR',{month:'long'})}</div>
       <div class="vg-base-corpo">${vgDonut(partes, tot||1, pct(partes[0].n))}
         <div class="vg-base-dir"><div class="vg-v">${brl0(tot)} <small>a receber no mês</small></div>
           <div class="vg-base-leg">${partes.map(p=>`<button type="button" onclick="event.stopPropagation();${p.js}" title="${p.exp}. Clique para ver a lista."><i style="background:${p.cor}"></i><span>${p.rot} <small>(${cdNum(p.cli||0)} clientes)</small></span><b>${brl0(p.n)}</b><em>${pct(p.n)}</em></button>`).join('')}</div></div></div>
-      <div class="vg-base-nota"><b>Como ler:</b> só os boletos que vencem neste mês. O atraso de meses anteriores está no cartão Inadimplência. Mês passado fechou com ${pctAnt}% recebido.</div></div>`;
+      <div class="vg-base-nota"><b>Como ler:</b> só os boletos com vencimento neste mês. Quem vence hoje ainda não está atrasado; amanhã, quem não pagou passa para "em atraso". O atraso dos meses anteriores (outubro para trás) está no cartão Inadimplência. Mês passado fechou com ${pctAnt}% recebido.</div></div>`;
   } else {
     receitaCard=card('', 'Recebido no mês', brl0(v.recebido_mes), `${pctRec}% dos ${brl0(v.previsto_mes)} previstos para o mês`, '', "go('cobrancaDia');cdSub('onde')", '', 'vg-base');
   }
