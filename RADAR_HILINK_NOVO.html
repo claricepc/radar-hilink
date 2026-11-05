@@ -26852,12 +26852,18 @@ Object.assign(window,{vgMarca});
 .vg .vg-base-leg small{color:var(--texto-3)}
 .vg-lista-ctx{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px}
 .vg .vg-base-corpo{display:flex;gap:14px;align-items:center;margin-top:6px}
-.vg .vg-donut{width:96px;height:96px;flex:0 0 96px}
+.vg .vg-donut{width:150px;height:150px;flex:0 0 150px}
+@media (max-width:1300px){.vg .vg-donut{width:124px;height:124px;flex:0 0 124px}}
 .vg .vg-donut circle:hover{stroke-width:19}
 .vg .vg-base-dir{flex:1;min-width:0}
 .vg .vg-base .vg-v{margin-top:0}
 .vg .vg-base-leg{display:flex;flex-direction:column;gap:2px;margin-top:6px}
-.vg .vg-base-leg button{display:grid;grid-template-columns:12px 1fr auto 52px;align-items:center;gap:8px;background:transparent;border:0;border-radius:6px;padding:3px 6px;margin:0 -6px;font-size:12.5px;color:var(--texto-2);cursor:pointer;text-align:left}
+.vg .vg-base-leg button{display:grid;grid-template-columns:10px minmax(0,1fr) auto 44px;align-items:center;gap:6px;background:transparent;border:0;border-radius:5px;padding:1px 5px;margin:0 -5px;font-size:12px;line-height:1.25;color:var(--texto-2);cursor:pointer;text-align:left}
+.vg .vg-base-leg{gap:0!important;max-width:420px}
+.vg .vg-base-leg i{width:10px!important;height:10px!important}
+.vg .vg-base-leg em{font-size:11px}
+.vg .vg-base-corpo{gap:18px!important}
+.vg .vg-donut-c{font-size:12px!important}
 .vg .vg-base-leg button:hover{background:rgba(77,163,224,.12)}
 .vg .vg-base-leg button span{text-decoration:underline dotted;text-underline-offset:3px}
 .vg .vg-base-leg i{width:12px;height:12px;border-radius:3px}
