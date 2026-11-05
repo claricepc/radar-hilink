@@ -2564,6 +2564,12 @@ body.radar-modo-atendente .nav-sub{display:none!important}
 .ini-card .ln.ok b{color:#4CC38A}
 .ini-card .ln button{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left;text-decoration:underline dotted}
 .ini-card .ir{margin-top:8px;font-size:11px;color:#2da3ff;font-weight:700}
+
+.vg-sit-tab{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0 8px}
+.vg-sit-tab th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted,#888);padding:4px 6px;border-bottom:1px solid var(--line,#ddd)}
+.vg-sit-tab td{padding:5px 6px;border-bottom:1px solid var(--line,#eee);vertical-align:top}
+.vg-sit-tab tr{cursor:pointer}.vg-sit-tab tbody tr:hover,.vg-sit-tab tr.on{background:rgba(77,163,224,.12)}
+.vg-sit-tab td:nth-child(2),.vg-sit-tab td:nth-child(3){white-space:nowrap}
 </style>
 <style>
 .cd-atalho{display:flex;align-items:center;gap:18px;justify-content:space-between;margin:0 0 14px;padding:18px 20px;border-radius:12px;cursor:pointer;
@@ -26633,10 +26639,32 @@ async function vgLista(tipo, titulo, explicacao){
   const cancel=tipo.startsWith('cancel:');
   const cols = cancel
     ? [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'contrato',label:'Contrato'},{k:'data_cancelamento',label:'Cancelado em'},{k:'motivo',label:'Motivo'},{k:'obs',label:'Observação do IXC'}]
-    : [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'titulos',label:'Boletos'},{k:'valor',label:'Valor'},{k:'vencimento',label:'Vencimento mais antigo'},{k:'dias_atraso',label:'Dias de atraso'}].concat(tipo.startsWith('inad_')?[{k:'bloqueio',label:'Bloqueio'}]:[]);
+    : [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'titulos',label:'Boletos'},{k:'valor',label:'Valor'},{k:'vencimento',label:'Vencimento mais antigo'},{k:'dias_atraso',label:'Dias de atraso'}].concat(tipo.startsWith('inad_')?[{k:'bloqueio',label:'Bloqueio'},{k:'situacao',label:'Situação do contrato'}]:[]);
+  VG_LISTA_ATUAL.cols=cols; VG_LISTA_ATUAL.explicacao=explicacao; VG_LISTA_ATUAL.m=m;
+  vgListaAbrir(rows, '');
+}
+// Ação recomendada por situação do contrato (inadimplência acima de 90 dias). O IXC não cancela sozinho: só para de gerar boletos depois de 2 em aberto.
+const VG_SIT_ACAO={
+  'Ativo e bloqueado':'Ocupa a base sem pagar e o IXC já parou de gerar boletos. Decidir: negociar a dívida ou cancelar o contrato e recolher o equipamento.',
+  'Ativo e liberado (navegando)':'Está navegando com mais de 90 dias de dívida. Verificar por que não bloqueou (desbloqueio de confiança, promessa, contrato errado) e bloquear ou negociar.',
+  'Cancelado':'Contrato já encerrado com dívida residual. Cobrança de dívida e, se não houver acordo, negativação. Conferir se o equipamento foi recolhido.',
+  'Sem contrato encontrado':'O boleto não está ligado a um contrato que o Radar conhece. Verificar no IXC antes de cobrar.',
+  'Pré-contrato':'Boleto de contrato que nunca foi ativado. Verificar no IXC se a cobrança procede ou se deve ser cancelada.',
+  'Desistiu':'Cliente desistiu antes da ativação. Verificar no IXC se a cobrança procede ou se deve ser cancelada.'};
+function vgListaAbrir(rows, grupo){
+  const L=VG_LISTA_ATUAL; if(!L) return;
+  const cancel=L.tipo.startsWith('cancel:'), m=L.m;
   const total=rows.reduce((a,x)=>a+(Number(x.valor)||0),0);
-  openDrill(titulo+(m?' ('+m+')':''), rows, cols, {sub:`${cdNum(rows.length)} ${cancel?'contratos':'clientes'}${cancel?'':' · '+cdMoeda(total)}`, contextOnly:true,
-    contextHtml:`<div class="vg-lista-ctx"><div>${explicacao||''}</div><button type="button" class="btn sm primary" onclick="vgExportarOpa()">Exportar para o OPA (um arquivo por linha)</button><span class="cdg-nota" style="margin:0">Leva o que estiver filtrado na busca. Hilink sai em um arquivo só; Nandonet e Pablom separados. Nada é enviado: o arquivo vai para você subir no OPA.</span></div>`});
+  let resumo='';
+  if(L.tipo==='inad_mais90'){
+    const g={}; L.rows.forEach(x=>{ const k=x.situacao||'Sem contrato encontrado'; (g[k] ||= {n:0,v:0}); g[k].n++; g[k].v+=Number(x.valor)||0; });
+    const ord=Object.keys(g).sort((a,b)=>g[b].n-g[a].n);
+    resumo=`<div class="cdg-nota" style="margin:6px 0">O IXC não cancela o contrato sozinho aos 90 dias: ele para de gerar novos boletos depois que 2 ficam em aberto. Por isso a decisão sobre cada grupo é da gestão.</div>
+    <table class="vg-sit-tab"><thead><tr><th>Situação do contrato</th><th>Clientes</th><th>Valor</th><th>O que fazer</th></tr></thead><tbody>${ord.map(k=>`<tr class="${grupo===k?'on':''}" onclick="vgListaGrupo('${k.replace(/'/g,"\\'")}')" title="Clique para ver só este grupo"><td><b>${k}</b></td><td>${cdNum(g[k].n)}</td><td>${cdMoeda(g[k].v)}</td><td>${VG_SIT_ACAO[k]||''}</td></tr>`).join('')}</tbody></table>
+    ${grupo?`<button type="button" class="btn sm" onclick="vgListaGrupo('')">Ver todos os grupos</button>`:''}`;
+  }
+  openDrill(L.titulo+(grupo?' · '+grupo:'')+(m?' ('+m+')':''), rows, L.cols, {sub:`${cdNum(rows.length)} ${cancel?'contratos':'clientes'}${cancel?'':' · '+cdMoeda(total)}`, contextOnly:true,
+    contextHtml:`<div class="vg-lista-ctx"><div>${L.explicacao||''}</div>${resumo}<button type="button" class="btn sm primary" onclick="vgExportarOpa()">Exportar para o OPA (um arquivo por linha)</button><span class="cdg-nota" style="margin:0">Leva o que estiver filtrado na busca. Hilink sai em um arquivo só; Nandonet e Pablom separados. Nada é enviado: o arquivo vai para você subir no OPA.</span></div>`});
 }
 function vgExportarOpa(){
   const rows=(typeof DRILL_STATE!=='undefined' && DRILL_STATE.filtered) || (VG_LISTA_ATUAL&&VG_LISTA_ATUAL.rows) || [];
@@ -26647,7 +26675,8 @@ function vgExportarOpa(){
   nomes.forEach((n,i)=>setTimeout(()=>cdBaixar(`${cdSlug(n)}_${slug}_${data}.csv`, ['name,whatsapp', ...[...grupos[n]].map(([f,x])=>`${cdCsvCampo(x.nome)},${f}`)].join('\r\n')), i*400));
   toast(`${nomes.length} arquivo(s): ${nomes.join(', ')}.${semFone?' '+semFone+' sem celular válido ficaram de fora.':''}`,'success');
 }
-Object.assign(window,{vgLista,vgExportarOpa});
+function vgListaGrupo(k){ const L=VG_LISTA_ATUAL; if(!L) return; try{closeDrill()}catch(e){} vgListaAbrir(k?L.rows.filter(x=>(x.situacao||'Sem contrato encontrado')===k):L.rows, k); }
+Object.assign(window,{vgLista,vgExportarOpa,vgListaGrupo});
 function vgIaPendentes(){
   const rows=(INI.iaPend||[]).map(x=>({...x, enviado:cdData(String(x.enviado_em||'').slice(0,10)), caminho_txt:x.caminho==='fechado pela IA em 0 s'?'IA encerrou na hora':'IA fez a triagem e encerrou'}));
   VG_LISTA_ATUAL={tipo:'ia', titulo:'Chamar de volta - encerrados pela IA', rows};
