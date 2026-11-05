@@ -24459,7 +24459,7 @@ function cdGuiaHTML(){
       ${tile({tom:'ok', l:`Recebido em ${cdData(g.pag.dia)}`, v:cdMoeda(g.pag.valor), s:`${cdNum(g.pag.qt)} pagamentos`,
         extra:`<div class="cdm-chips">${vPag!=null?chip(vPag,'mesmo dia da semana passada',false):'<span class="cdm-chip neutro">comparação semanal disponível com 7 dias de histórico</span>'}</div>
           <div class="cdm-barra ok"><i style="width:${Math.max(0,100-(g.pag.pctAtraso||0))}%"></i></div><div class="cdm-d">${100-(g.pag.pctAtraso||0)}% pagos em dia, ${g.pag.pctAtraso||0}% depois do vencimento</div>`})}
-      ${tile({tom:'grafite', l:'Parado há mais de 90 dias', v:cdMoeda(g.d90.valor), s:`${g.pct90}% do valor cobrável`, js:"cdIrLista('cobrar','d90')",
+      ${tile({tom:'grafite', l:'Parado há mais de 90 dias', v:cdMoeda(g.d90.valor), s:`${cdNum(g.d90.clientes)} clientes cobráveis · ${g.pct90}% do valor cobrável`, js:"cdIrLista('cobrar','d90')",
         extra:`<div class="cdm-barra grafite"><i style="width:${Math.min(100,g.pct90)}%"></i></div><div class="cdm-d">Precisa de régua própria de recuperação, separada da cobrança do dia</div>`})}
     </div>
     <div class="cdg-nota">Vencido total soma todos os clientes com boleto vencido, inclusive quem está fora da cobrança. Antes do bloqueio conta só quem pode ser cobrado hoje. O IXC bloqueia 5 dias depois do vencimento (fim de semana ou feriado, no próximo dia útil).</div>
