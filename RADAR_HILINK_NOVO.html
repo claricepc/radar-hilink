@@ -26466,7 +26466,7 @@ function radarTrilha(mod){
 }
 function radarIrAtividades(){ go('cobrancaDia'); cdSub('atividades'); }
 function radarAreasVisiveis(){ document.querySelectorAll('.nav-area').forEach(g=>{ const vis=[...g.querySelectorAll('.nav-item')].some(it=>getComputedStyle(it).display!=='none'); const sub=g.querySelector('.nav-sub'); if(!vis && !(g.dataset.area==='equipe' && typeof cdPodeGerenciar==='function' && cdPodeGerenciar())) g.style.display='none'; else if(!document.getElementById('nav-busca')?.value) g.style.display=''; }); }
-(function(){ const _go = go; go = function(mod){ const r = _go.apply(this, arguments); try{ document.body.dataset.radarMod = STATE.activeMod||mod; radarTrilha(mod); radarAreasVisiveis(); radarAreaDoModulo(STATE.activeMod||mod); }catch(e){} return r; }; window.go = go; })();
+(function(){ const _go = go; go = function(mod){ const r = _go.apply(this, arguments); try{ document.body.dataset.radarMod = STATE.activeMod||mod; radarTrilha(mod); radarAreasVisiveis(); radarAreaDoModulo(STATE.activeMod||mod); }catch(e){} try{ if((STATE.activeMod||mod)==='tecnica' || mod==='tecnica'){ let t=0; const tenta=()=>{ if(document.getElementById('rede-capa') && getSB()){ redeCapaCarregar(); } else if(t++<40) setTimeout(tenta,500); }; setTimeout(tenta,300); } }catch(e){} return r; }; window.go = go; })();
 (function(){ const orig = window.radarAplicarModulos; if(typeof orig==='function'){ window.radarAplicarModulos = radarAplicarModulos = function(){ const r = orig.apply(this, arguments); try{ radarAreasVisiveis(); }catch(e){} return r; }; } })();
 
 /* ===================== INICIO: os numeros de cada area ===================== */
