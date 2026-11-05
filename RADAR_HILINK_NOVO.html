@@ -27136,16 +27136,19 @@ Object.assign(window,{cdCartCarregar,cdCartJustModal,cdCartJustSalvar,cdCartExpo
 // ===== Alertas pessoais (só para a dona do alerta; some quando ela marca como concluído) =====
 var RADAR_LEMB = { lista:[], t:null };
 async function radarLembretesCarregar(){
-  try{ const sb=getSB(); if(!sb) return; const r=await sb.rpc('radar_meus_lembretes'); if(r.error) return; RADAR_LEMB.lista=r.data||[]; radarLembretesRender(); }catch(e){}
+  try{ const sb=getSB(); if(!sb) return;
+    const [r, b] = await Promise.all([sb.rpc('radar_meus_lembretes'), sb.rpc('radar_alertas_bloqueio')]);
+    if(!r.error) RADAR_LEMB.lista=r.data||[]; RADAR_LEMB.bloq = b.error ? [] : (b.data||[]);
+    radarLembretesRender(); }catch(e){}
   clearTimeout(RADAR_LEMB.t); RADAR_LEMB.t=setTimeout(radarLembretesCarregar, 30*60000);
 }
 function radarLembretesRender(){
   const el=document.getElementById('radar-lembretes'); if(!el) return;
   const tb=document.querySelector('.main > .topbar'); if(tb && tb.nextElementSibling!==el) tb.after(el);
-  const L=RADAR_LEMB.lista||[]; if(!L.length){ el.innerHTML=''; return; }
+  const L=RADAR_LEMB.lista||[]; const BQ=radarBloqueioHTML(); if(!L.length){ el.innerHTML=BQ; return; }
   const dm=d=>{ const [y,m,dd]=String(d).split('-'); return dd+'/'+m; };
   const hoje=new Date(); hoje.setHours(0,0,0,0);
-  el.innerHTML=`<div style="display:grid;gap:8px;margin:0 0 14px">${L.map(x=>{
+  el.innerHTML=BQ+`<div style="display:grid;gap:8px;margin:0 0 14px">${L.map(x=>{
     const prazo=new Date(x.prazo+'T00:00:00'), dias=Math.round((hoje-prazo)/86400000);
     const [tom,chip]= x.situacao==='atrasado' ? ['risk',`Atrasado há ${dias} ${dias===1?'dia':'dias'}`] : x.situacao==='vence_hoje' ? ['warn','Vence hoje'] : ['info',`Prazo até ${dm(x.prazo)}`];
     const [ano,mes]=String(x.competencia).split('-'); const nomeMes=new Date(+ano,+mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
@@ -27156,6 +27159,42 @@ function radarLembretesRender(){
       <div style="margin-top:3px;font-size:13px;color:var(--texto-2)">${cdEsc(x.descricao||'')} Período: ${nomeMes}.</div></div>
       ${x.chave==='dici_anatel' ? `<button type="button" class="btn sm primary" onclick="diciAbrir('${cdEsc(x.competencia)}')">Abrir DICI do mês</button>` : `<button type="button" class="btn sm primary" onclick="radarLembreteConcluirModal('${cdEsc(x.chave)}','${cdEsc(x.competencia)}')">Marcar como concluído</button>`}</div>`; }).join('')}</div>`;
 }
+// ===== Alerta de bloqueio (véspera e dia), só para a gestão. Regra validada no IXC: 5 dias corridos após o vencimento,
+// passando para o próximo dia útil (a rotina do IXC não roda em fim de semana e feriado). Cada pessoa marca ciente.
+function radarBloqueioHTML(){
+  const A=(RADAR_LEMB.bloq||[]).filter(a=>!a.removido_por_mim); if(!A.length) return '';
+  const dsem=d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'});
+  const dm=d=>{ const [y,m,dd]=String(d).split('-'); return dd+'/'+m; };
+  return `<div style="display:grid;gap:8px;margin:0 0 10px">${A.map(a=>{
+    const quando = a.tipo==='hoje' ? 'Hoje é dia de bloqueio' : `Amanhã é dia de bloqueio (${dsem(a.data_bloqueio)})`;
+    const venc = (a.vencimentos||[]).map(dm).join(', ');
+    const marcas = (a.por_marca||[]).map(m=>`${cdEsc(m.marca)}: ${cdNum(m.clientes)}`).join(' · ');
+    const cientes = (a.cientes||[]).map(c=>`${cdEsc(String(c.nome||'').split(' ')[0])} ${new Date(c.em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`).join(', ');
+    return `<div role="alert" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:var(--risco-suave);border:1px solid var(--estado-risco);border-left:6px solid var(--estado-risco);border-radius:10px">
+      <div style="flex:1;min-width:260px"><div style="font:700 11px/1.2 var(--font-titulo);letter-spacing:.06em;text-transform:uppercase;color:var(--risco)">Atenção: ${quando}</div>
+        <div style="margin-top:4px;font:700 16px/1.3 var(--font-titulo);color:var(--texto)">${cdNum(a.clientes)} ${a.clientes===1?'cliente será bloqueado':'clientes serão bloqueados'} pela rotina automática do IXC · ${cdMoeda(a.valor)} em aberto</div>
+        <div style="margin-top:3px;font-size:13px;color:var(--texto-2)">Boletos com vencimento em ${venc}. ${marcas}. ${a.tipo==='hoje'?'O número cai ao longo do dia conforme os clientes pagam.':'Dá tempo de disparar a cobrança hoje para evitar o bloqueio.'}</div>
+        ${cientes?`<div style="margin-top:4px;font-size:12px;color:var(--texto-3)">Ciente: ${cientes}</div>`:''}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button type="button" class="btn sm primary" onclick="radarBloqueioLista('${cdEsc(a.data_bloqueio)}')">Ver lista</button>
+        <button type="button" class="btn sm outline" onclick="radarAlertaCiente('bloqueio','${cdEsc(a.ref)}','manter')">Ciente, manter na tela</button>
+        <button type="button" class="btn sm outline" onclick="radarAlertaCiente('bloqueio','${cdEsc(a.ref)}','remover')">Ciente, pode remover</button>
+      </div></div>`; }).join('')}</div>`;
+}
+async function radarAlertaCiente(chave, ref, acao){
+  try{ const r=await getSB().rpc('radar_alerta_ciente',{p_chave:chave,p_ref:ref,p_acao:acao}); if(r.error) throw new Error(r.error.message);
+    toast(acao==='remover'?'Ciente registrado. O alerta saiu da sua tela.':'Ciente registrado.','success'); radarLembretesCarregar(); }
+  catch(e){ toast(e.message,'error'); }
+}
+async function radarBloqueioLista(data){
+  try{ const r=await getSB().rpc('radar_bloqueio_lista',{p_data:data}); if(r.error) throw new Error(r.error.message);
+    const rows=(r.data||[]).map(x=>({ 'Marca':x.marca, 'Filial':x.filial, 'Cód. cliente':x.id_cliente, 'Cliente':x.nome, 'Telefone':x.telefone, 'Contrato':x.contrato, 'Vencimento':cdData(x.vencimento), 'Valor':cdMoeda(x.valor) }));
+    openDrill('Bloqueio de '+new Date(data+'T12:00:00').toLocaleDateString('pt-BR')+': quem ainda não pagou', rows,
+      ['Marca','Filial','Cód. cliente','Cliente','Telefone','Contrato','Vencimento','Valor'].map(k=>({k,label:k})),
+      {contextOnly:true, action:'Lista lida do IXC (boletos em aberto e contrato ativo). Para disparar, use a Cobrança do Dia > Cobrar antes do bloqueio, pela linha de cada marca. Nada é enviado sem aprovação.'});
+  }catch(e){ toast(e.message,'error'); }
+}
+Object.assign(window,{radarAlertaCiente, radarBloqueioLista});
 function radarLembreteConcluirModal(chave, comp){
   const x=(RADAR_LEMB.lista||[]).find(y=>y.chave===chave&&y.competencia===comp); if(!x) return;
   cdModal(`<h3>Concluir alerta</h3><p class="cdg-nota" style="margin:0 0 14px">Confirma que <b>${cdEsc(x.titulo)}</b> está concluído? O alerta sai da tela e volta só no próximo período.</p>
