@@ -26340,10 +26340,53 @@ window.renderInicio = renderInicio;
 // ===== Visão geral gerencial: indicadores lidos prontos do banco (abre em segundos, sem carregar a base) =====
 async function vgCarregar(){
   try{ const sb=getSB(); const m = INI.marca && INI.marca!=='Todas' ? INI.marca : null;
-    const [a,b] = await Promise.all([sb.rpc('radar_visao_geral',{p_marca:m}), sb.rpc('radar_bloqueios_proximos',{p_marca:m})]);
-    if(a.error) throw a.error; INI.vg = a.data||{}; INI.bq = b.error ? [] : (b.data||[]); INI.vgErro=null;
+    const [a,b,c] = await Promise.all([sb.rpc('radar_visao_geral',{p_marca:m}), sb.rpc('radar_bloqueios_proximos',{p_marca:m}), sb.rpc('radar_base_resumo',{p_marca:m})]);
+    if(a.error) throw a.error; INI.vg = a.data||{}; INI.bq = b.error ? [] : (b.data||[]); INI.base = c.error ? null : c.data; INI.vgErro=null;
   }catch(e){ INI.vgErro = e.message||String(e); INI.vg = INI.vg||null; }
 }
+// Base ativa: contratos com status Ativo no IXC, abertos pela situação da internet.
+const VG_BASE_GRUPOS=[
+  ['navegando','Liberado, navegando','#30A46C','internet liberada no IXC'],
+  ['bloq_auto','Bloqueio automático','#F5A524','bloqueado pelo IXC por atraso'],
+  ['bloq_manual','Bloqueio manual','#E5484D','bloqueado por alguém da equipe'],
+  ['outros','Outra situação','#8FA3B8','outros status de internet no IXC']
+];
+function vgDonut(partes, total){
+  const r=40, C=2*Math.PI*r; let acc=0;
+  const arcos=partes.filter(p=>p.n>0).map(p=>{ const len=p.n/total*C; const a=`<circle r="${r}" cx="50" cy="50" fill="none" stroke="${p.cor}" stroke-width="16" stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" transform="rotate(-90 50 50)" style="cursor:pointer" onclick="event.stopPropagation();vgBaseLista('${p.k}')"><title>${p.rot}: ${cdNum(p.n)}</title></circle>`; acc+=len; return a; }).join('');
+  return `<svg viewBox="0 0 100 100" class="vg-donut" role="img" aria-label="Divisão da base ativa">${arcos}</svg>`;
+}
+function vgBaseCardHTML(v){
+  const b=INI.base, tot=b?b.contratos:v.base_ativa;
+  const saldo=(v.ativacoes_mes||0)-(v.cancel_mes||0);
+  const partes=b?VG_BASE_GRUPOS.map(([k,rot,cor,exp])=>({k,rot,cor,exp,n:Number((b.grupos||{})[k])||0})).filter(p=>p.n>0||p.k!=='outros'):[];
+  const pct=n=>tot?(n/tot*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%':'';
+  const outros=b&&b.outros_status?Object.entries(b.outros_status).map(([k,n])=>`${cdEsc(k)}: ${cdNum(n)}`).join(', '):'';
+  return `<div class="vg-card vg-base" onclick="vgBaseLista('todos')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')vgBaseLista('todos')" title="Abrir a lista de todos os contratos ativos">
+    <div class="vg-l">Base ativa · contada por contrato</div>
+    <div class="vg-base-corpo">
+      ${b?vgDonut(partes,tot):''}
+      <div class="vg-base-dir">
+        <div class="vg-v">${cdNum(tot)} <small>contratos ativos</small></div>
+        ${b?`<div class="vg-base-leg">${partes.map(p=>`<button type="button" onclick="event.stopPropagation();vgBaseLista('${p.k}')" title="${p.exp}. Clique para ver a lista."><i style="background:${p.cor}"></i><span>${p.rot}</span><b>${cdNum(p.n)}</b><em>${pct(p.n)}</em></button>`).join('')}</div>`:''}
+      </div>
+    </div>
+    <div class="vg-base-nota"><b>O que é contado:</b> contratos com status <b>Ativo</b> no IXC, inclusive os bloqueados (bloqueado continua ativo até ser cancelado).${b?` São <b>${cdNum(b.clientes)} clientes</b>, porque alguns têm mais de um contrato. Logins ativos: <b>${cdNum(b.logins_ativos)}</b>, dos quais ${cdNum(b.logins_online)} estão online agora. Login não entra nesta conta.`:''}${outros?` Outra situação: ${outros}.`:''}</div>
+    <div class="vg-s" style="margin-top:6px"><button type="button" class="vg-link" onclick="event.stopPropagation();go('oportunidades')">Saldo do mês: <b class="${saldo<0?'ruim':'bom'}">${saldo>0?'+':''}${cdNum(saldo)}</b> (${cdNum(v.ativacoes_mes)} entradas, ${cdNum(v.cancel_mes)} saídas)</button> ${vgDelta(v.ativacoes_mes, v.ativacoes_mes_ant, true, cdNum, 'entradas que no mesmo dia do mês passado')}</div>
+  </div>`;
+}
+async function vgBaseLista(grupo){
+  const sb=getSB(); if(!sb) return;
+  const m = INI.marca && INI.marca!=='Todas' ? INI.marca : null;
+  const nome = grupo==='todos' ? 'Base ativa: todos os contratos ativos' : 'Base ativa: '+(VG_BASE_GRUPOS.find(g=>g[0]===grupo)||[,grupo])[1];
+  toast('Buscando a lista...','success');
+  const r=await sb.rpc('radar_base_lista',{p_marca:m, p_grupo:grupo});
+  if(r.error){ toast('Não consegui abrir a lista: '+r.error.message,'error'); return; }
+  const rows=(r.data||[]).map(x=>({...x, ativacao:cdData(x.ativacao), pago_ate:cdData(x.pago_ate)}));
+  openDrill(nome+(m?' ('+m+')':''), rows, [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód. cliente'},{k:'cliente',label:'Cliente'},{k:'contrato',label:'Contrato'},{k:'situacao',label:'Situação da internet'},{k:'online',label:'Login online agora'},{k:'bairro',label:'Bairro'},{k:'ativacao',label:'Ativação'},{k:'pago_ate',label:'Pago até'}],
+    {sub:`${cdNum(rows.length)} contratos com status Ativo no IXC. Cada linha é um contrato; um cliente pode aparecer mais de uma vez.`});
+}
+window.vgBaseLista=vgBaseLista;
 async function vgMarca(m){ INI.marca=m; INI.vg=null; const box=document.getElementById('vg-ind'); if(box) box.style.opacity='.5'; await vgCarregar(); if(STATE.activeMod==='inicio') renderInicio(); }
 function vgSpark(vals, cor){
   const v=(vals||[]).map(Number).filter(x=>isFinite(x)); if(v.length<2) return '';
@@ -26377,10 +26420,7 @@ function vgIndicadoresHTML(rd){
   const card=(tom, rot, valor, sub, extra, js, spark)=>`<div class="vg-card ${tom}" role="button" tabindex="0" onclick="${js}" onkeydown="if(event.key==='Enter'){${js}}">
       <div class="vg-l">${rot}</div><div class="vg-v">${valor}</div>${spark||''}<div class="vg-s">${sub}</div>${extra?`<div class="vg-x">${extra}</div>`:''}</div>`;
   const cards=[
-    card(saldo<0?'atencao':'', 'Base ativa', cdNum(v.base_ativa),
-      `Saldo do mês: <b class="${saldo<0?'ruim':'bom'}">${saldo>0?'+':''}${cdNum(saldo)}</b> (${cdNum(v.ativacoes_mes)} entradas, ${cdNum(v.cancel_mes)} saídas)`,
-      vgDelta(v.ativacoes_mes, v.ativacoes_mes_ant, true, cdNum, 'entradas que no mesmo dia do mês passado'),
-      "go('oportunidades')", vgSpark(saldoSerie)),
+    vgBaseCardHTML(v),
     card('', 'Recebido no mês', brl0(v.recebido_mes),
       `${pctRec}% dos ${brl0(v.previsto_mes)} previstos para o mês`,
       `Dos boletos que já venceram, ${pctVencPago}% foram pagos. Mês passado fechou com ${pctAnt}% recebido.`,
@@ -26408,6 +26448,22 @@ function vgIndicadoresHTML(rd){
 Object.assign(window,{vgMarca});
 (function(){ if(document.getElementById('vg-css')) return; const st=document.createElement('style'); st.id='vg-css'; st.textContent=`
 .vg .vg-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.vg .vg-card.vg-base{grid-column:span 2;border-top-color:#30A46C}
+@media (max-width:700px){.vg .vg-card.vg-base{grid-column:auto}}
+.vg .vg-base-corpo{display:flex;gap:14px;align-items:center;margin-top:6px}
+.vg .vg-donut{width:96px;height:96px;flex:0 0 96px}
+.vg .vg-donut circle:hover{stroke-width:19}
+.vg .vg-base-dir{flex:1;min-width:0}
+.vg .vg-base .vg-v{margin-top:0}
+.vg .vg-base-leg{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.vg .vg-base-leg button{display:grid;grid-template-columns:12px 1fr auto 52px;align-items:center;gap:8px;background:transparent;border:0;border-radius:6px;padding:3px 6px;margin:0 -6px;font-size:12.5px;color:var(--texto-2);cursor:pointer;text-align:left}
+.vg .vg-base-leg button:hover{background:rgba(77,163,224,.12)}
+.vg .vg-base-leg button span{text-decoration:underline dotted;text-underline-offset:3px}
+.vg .vg-base-leg i{width:12px;height:12px;border-radius:3px}
+.vg .vg-base-leg b{color:var(--texto);font-weight:700}
+.vg .vg-base-leg em{font-style:normal;color:var(--texto-3);text-align:right}
+.vg .vg-base-nota{margin-top:8px;padding:7px 9px;border-radius:8px;background:rgba(77,163,224,.09);font-size:11.5px;line-height:1.4;color:var(--texto-2)}
+.vg .vg-link{background:transparent;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;text-align:left}
 .vg .vg-marcas{display:inline-flex;border:1px solid var(--linha);border-radius:999px;overflow:hidden;background:var(--superficie)}
 .vg .vg-marcas button{border:0;background:transparent;padding:6px 14px;font:600 12.5px var(--font-texto);color:var(--texto-2);cursor:pointer}
 .vg .vg-marcas button.on{background:var(--azul);color:var(--sobre-azul)}
