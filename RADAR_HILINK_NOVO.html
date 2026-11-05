@@ -2602,6 +2602,14 @@ body.radar-modo-atendente .nav-sub{display:none!important}
 .cdm-chip.bom{background:rgba(48,164,108,.14);color:#1F7A4D}.cdm-chip.ruim{background:rgba(209,52,56,.12);color:#B42318}.cdm-chip.neutro{background:rgba(0,113,188,.08);color:#0071BC;font-weight:600}
 .cdm-barra{height:8px;border-radius:5px;background:rgba(0,113,188,.12);overflow:hidden}.cdm-barra i{display:block;height:100%;background:#D13438;border-radius:5px}
 .cdm-barra.ok i{background:#30A46C}.cdm-barra.grafite i{background:#5B6470}
+.cdm-analise{background:var(--card,#fff);border:1px solid var(--line,#dde3ea);border-radius:12px;padding:14px 16px}
+.cdm-an-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:8px 0 6px}
+@media(max-width:900px){.cdm-an-grid{grid-template-columns:1fr}}
+.cdm-an{border-left:4px solid #0071BC;background:rgba(0,113,188,.05);border-radius:8px;padding:10px 14px}
+.cdm-an.risk{border-left-color:#D13438;background:rgba(209,52,56,.06)}.cdm-an.ok{border-left-color:#30A46C;background:rgba(48,164,108,.07)}.cdm-an.grafite{border-left-color:#5B6470;background:rgba(91,100,112,.07)}
+.cdm-an-t{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+.cdm-an.risk .cdm-an-t{color:#B42318}.cdm-an.info .cdm-an-t{color:#0071BC}.cdm-an.ok .cdm-an-t{color:#1F7A4D}.cdm-an.grafite .cdm-an-t{color:#3B3F46}
+.cdm-an p{margin:0;font-size:15px;line-height:1.5}.cdm-an .cdg-link{font-size:15px}
 </style>
 <style>
 .cd-atalho{display:flex;align-items:center;gap:18px;justify-content:space-between;margin:0 0 14px;padding:18px 20px;border-radius:12px;cursor:pointer;
@@ -24450,7 +24458,15 @@ function cdGuiaHTML(){
     ? `<b>Prioridade do dia:</b> cobrar <button type="button" class="cdg-link r" onclick="cdIrLista('cobrar','pre')">${cdNum(g.pre.clientes)} ${g.pre.clientes===1?'cliente':'clientes'} antes do bloqueio</button> (${cdMoeda(g.pre.valor)}). Cada bloqueio vira ligação, desgaste e risco de cancelamento.`
     : `<b>Prioridade do dia:</b> ninguém cobrável está para bloquear hoje. Foque na recuperação dos bloqueados.`;
   const resumo = `<div class="cdm">
-    <div class="cdm-prio">${prioridade}</div>
+    <div class="cdm-analise"><div class="cdg-eyebrow">O dia em poucas linhas</div>
+      <div class="cdm-an-grid">
+        <div class="cdm-an risk"><div class="cdm-an-t">Prioridade do dia</div><p>${p2}</p></div>
+        <div class="cdm-an info"><div class="cdm-an-t">Vencido</div><p>${p1}</p></div>
+        <div class="cdm-an ok"><div class="cdm-an-t">Pagamentos</div><p>${p3}</p></div>
+        ${p4?`<div class="cdm-an grafite"><div class="cdm-an-t">Mais de 90 dias</div><p>${p4}</p></div>`:''}
+      </div>
+      <div class="cdg-nota">Os trechos sublinhados abrem a lista de clientes.</div></div>
+    <div class="cdg-eyebrow" style="margin:14px 0 8px">Números que guiam o dia</div>
     <div class="cdm-grid">
       ${tile({tom:'risk', l:'Antes do bloqueio', v:cdMoeda(g.pre.valor), s:`${cdNum(g.pre.clientes)} clientes ainda sem bloqueio`, js:"cdIrLista('cobrar','pre')",
         extra: pctSaiu!=null ? `<div class="cdm-barra"><i style="width:${pctSaiu}%"></i></div><div class="cdm-d">${pctSaiu}% da lista de ${dAnt} já saiu (${cdMoeda(preSaiu)} de ${cdMoeda(preOnt)}), paga ou corrigida</div>` : ''})}
