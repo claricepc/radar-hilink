@@ -26384,7 +26384,7 @@ async function vgBaseLista(grupo){
   if(r.error){ toast('Não consegui abrir a lista: '+r.error.message,'error'); return; }
   const rows=(r.data||[]).map(x=>({...x, ativacao:cdData(x.ativacao), pago_ate:cdData(x.pago_ate)}));
   openDrill(nome+(m?' ('+m+')':''), rows, [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód. cliente'},{k:'cliente',label:'Cliente'},{k:'contrato',label:'Contrato'},{k:'situacao',label:'Situação da internet'},{k:'online',label:'Login online agora'},{k:'bairro',label:'Bairro'},{k:'ativacao',label:'Ativação'},{k:'pago_ate',label:'Pago até'}],
-    {sub:`${cdNum(rows.length)} contratos com status Ativo no IXC. Cada linha é um contrato; um cliente pode aparecer mais de uma vez.`});
+    {sub:`${cdNum(rows.length)} contratos com status Ativo no IXC`, contextOnly:true, action:'Cada linha é um contrato com status Ativo no IXC (bloqueado continua ativo até ser cancelado). Um cliente pode aparecer mais de uma vez se tiver mais de um contrato. "Login online agora" vem da última leitura do IXC.'});
 }
 window.vgBaseLista=vgBaseLista;
 async function vgMarca(m){ INI.marca=m; INI.vg=null; const box=document.getElementById('vg-ind'); if(box) box.style.opacity='.5'; await vgCarregar(); if(STATE.activeMod==='inicio') renderInicio(); }
