@@ -27970,7 +27970,17 @@ setTimeout(function tenta(){ try{ const sb=getSB(); if(sb){ sb.auth.getSession()
       if(!config || !config.data) return config;
       const fonte = '"Source Sans 3","Segoe UI",Arial,sans-serif';
       let tipo = config.type;
+      // nitidez: desenha sempre em resolução dupla (evita gráfico embaçado em tela comum e quando o gráfico nasce escondido)
+      config.options = config.options || {};
+      config.options.devicePixelRatio = Math.max(2, window.devicePixelRatio||1);
+      // rosca/pizza voltam a ser rosca (antes eram convertidas em barra): mistura de tipos deixa a tela mais fácil de ler
       if(tipo==='doughnut'||tipo==='pie'){
+        const ds0=(config.data.datasets||[])[0]; if(ds0){ ds0.borderWidth = 2; ds0.borderColor = tk('superficie'); ds0.hoverOffset = 6; }
+        if(!config.options.cutout && tipo==='doughnut') config.options.cutout = '62%';
+        config.options.plugins = config.options.plugins || {};
+        config.options.plugins.legend = Object.assign({ position:'right' }, config.options.plugins.legend||{});
+      }
+      if(false){
         const ds = (config.data.datasets||[])[0]||{}; const total=(ds.data||[]).reduce((a,v)=>a+(Number(v)||0),0);
         const o = config.options||{};
         config = { type:'bar', data:{ labels:config.data.labels, datasets:[{ label:ds.label||'Quantidade', data:ds.data, backgroundColor:ds.backgroundColor }] },
