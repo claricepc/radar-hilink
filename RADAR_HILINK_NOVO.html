@@ -8371,6 +8371,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
       </div>
     </div>
 
+    <div id="rede-capa" class="vg"></div>
     <div id="tec-abas"></div>
     <div class="tec-view-tabs" id="tec-view-tabs">
       <button class="tec-view-tab active" data-tec-view="diagnostico" onclick="switchTecView('diagnostico')">Diagnóstico</button>
@@ -12855,10 +12856,75 @@ function tecAplicarSub(){
   const box=document.getElementById('tec-abas');
   if(box) box.innerHTML=`<div class="op-abas" style="margin-top:4px">${TEC_SUBS.map(([s,t])=>`<button type="button" class="${k===s?'on':''}" onclick="tecSub('${s}')">${t}</button>`).join('')}</div>`;
   if(k==='casos'||k==='impacto'||k==='regras'){ try{ redeRender(); }catch(e){ console.error('[Rede]',e); } }
+  try{ const cap=document.getElementById('rede-capa'); if(cap){ cap.style.display = (k==='regras'||k==='tecnico') ? 'none' : ''; } redeCapaCarregar(); }catch(e){}
   setTimeout(()=>{ ['tec-ch-saude','tec-ch-filial','tec-ch-prevencao-status','tec-ch-prevencao-camadas'].forEach(id=>{ try{ if(CHARTS&&CHARTS[id]) CHARTS[id].resize(); }catch(e){} }); },60);
   try{ radarTrilha('tecnica'); }catch(e){}
 }
 function tecSub(k){ TEC_UI.sub = TEC_SUBS.some(x=>x[0]===k) ? k : 'casos'; tecAplicarSub(); window.scrollTo({top:0,behavior:'smooth'}); }
+// ===== Capa da Saúde da Rede: a manchete do módulo. Mesmos números da Visão geral (mesma fonte: casos de rede do banco). =====
+var REDE_CAPA = { dados:null, carregando:false };
+async function redeCapaCarregar(forcar){
+  const sb=getSB(); if(!sb || REDE_CAPA.carregando) return; if(REDE_CAPA.dados && !forcar) return redeCapaRender();
+  REDE_CAPA.carregando=true;
+  try{
+    if(!window.RADAR_OLT){ const o=await sb.rpc('radar_rede_transmissores'); if(!o.error) window.RADAR_OLT=o.data||{}; }
+    const r=await sb.rpc('radar_rede_capa'); if(!r.error) REDE_CAPA.dados=r.data||{};
+  }catch(e){ console.warn('[Rede] capa', e); }
+  finally{ REDE_CAPA.carregando=false; redeCapaRender(); }
+}
+function redeCapaFiltrar(fila, caso){ try{ REDE.fila=fila||''; REDE.caso=caso||''; REDE.so_livres=false; }catch(e){} tecSub('casos'); setTimeout(()=>document.getElementById('rede-casos')?.scrollIntoView({behavior:'smooth'}),250); }
+function redeCapaRender(){
+  const box=document.getElementById('rede-capa'); if(!box) return;
+  const d=REDE_CAPA.dados; if(!d){ box.innerHTML = REDE_CAPA.carregando?'<div class="cdg-nota" style="margin:6px 0 10px">Carregando a capa da rede...</div>':''; return; }
+  const n=v=>Number(v)||0, pct=(v,t)=>t?(v/t*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%':'';
+  const brl0=x=>(Number(x)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  const leg=(partes,tot)=>`<div class="vg-base-leg">${partes.map(p=>`<button type="button" onclick="event.stopPropagation();${p.js}" title="${p.exp||''}"><i style="background:${p.cor}"></i><span>${p.rot}</span><b>${cdNum(p.n)}</b><em>${pct(p.n,tot)}</em></button>`).join('')}</div>`;
+  const pizza=(cls, rot, valor, unid, partes, nota, centro)=>{ const tot=partes.reduce((a,p)=>a+p.n,0)||1;
+    return `<div class="vg-card ${cls}"><div class="vg-l">${rot}</div><div class="vg-base-corpo">${vgDonut(partes.filter(p=>p.n>0), tot, centro)}<div class="vg-base-dir"><div class="vg-v">${valor} <small>${unid}</small></div>${leg(partes,tot)}</div></div>${nota?`<div class="vg-base-nota">${nota}</div>`:''}</div>`; };
+  // 1) sinal óptico da base
+  const sg=d.sinal||{}, lim=d.limites||{};
+  const sinal=[
+    {rot:'Bom', n:n(sg.bom), cor:'#30A46C', exp:`melhor que ${lim.atencao} dBm`, js:"tecSub('diagnostico')"},
+    {rot:'Atenção', n:n(sg.atencao), cor:'#F5A524', exp:`entre ${lim.atencao} e ${lim.fraco} dBm`, js:"tecSub('diagnostico')"},
+    {rot:'Fraco', n:n(sg.fraco), cor:'#E5484D', exp:`pior que ${lim.fraco} dBm`, js:"redeCapaFiltrar('','sinal_critico')"},
+    {rot:'Sem leitura', n:n(sg.sem_leitura), cor:'#8FA3B8', exp:'a OLT não informou o sinal', js:"tecSub('diagnostico')"}];
+  const totS=sinal.reduce((a,p)=>a+p.n,0);
+  // 2) problemas por tipo (clientes)
+  const ct=d.casos_tipo||{};
+  const tipos=[['coletivo_pon','Falha coletiva (porta ou ramal)','#B42318'],['sem_luz','Sem luz na fibra','#E5484D'],['sinal_critico','Sinal fraco individual','#F76B15'],['energia_offline','Sem energia na casa','#8E4EC6'],['quedas_repetidas','Quedas repetidas','#F5A524'],['temperatura','Aparelho muito quente','#4DA3E0']]
+    .map(([k,rot,cor])=>({rot, n:n(ct[k]), cor, js:`redeCapaFiltrar('','${k}')`, exp:'Clique para ver os casos'}));
+  const totT=tipos.reduce((a,p)=>a+p.n,0);
+  // 3) filas
+  const fl=d.filas||{};
+  const filas=[['cliente','ATENDIMENTO','#4DA3E0'],['campo','TÉCNICO DE CAMPO','#F5A524'],['noc','NOC','#E5484D']].map(([k,rot,cor])=>({rot:`${rot} <small>(${cdNum(n((fl[k]||{}).alta))} alta)</small>`, n:n((fl[k]||{}).casos), cor, js:`redeCapaFiltrar('${k}','')`, exp:'Clique para ver a fila'}));
+  const totF=filas.reduce((a,p)=>a+p.n,0);
+  // linha 2: barras
+  const col=d.coletivos||[], colCli=col.reduce((a,c)=>a+n(c.afetados),0);
+  const colOff=col.reduce((a,c)=>a+(c.clientes||[]).filter(x=>x.online!=='S').length,0);
+  const barCol = col.length ? vgBarras(col.map(c=>({rot:cdEsc(radarPonNome(c.pon)).slice(0,40), n:n(c.afetados), cor:c.diagnostico==='ramal'?'#F5A524':'#E5484D', txt:`${n(c.afetados)} de ${n(c.total)} <small>${c.diagnostico==='ramal'?'ramal · campo':'porta · NOC'}</small>`, js:`vgRedePon('${cdEsc(c.pon)}')`}))) : '<div class="vg-x">nenhuma falha coletiva agora</div>';
+  const olt=d.por_olt||[];
+  const barOlt = vgBarras(olt.slice(0,6).map(o=>({rot:cdEsc(o.nome).slice(0,30), n:n(o.fracos), cor:'#F76B15', txt:`${cdNum(o.fracos)} <small>fracos</small>`, js:"tecSub('onde')"})));
+  const imp=(d.impacto||[]).filter(x=>x.caso!=='saudavel');
+  const rotImp={coletivo_pon:'Falha coletiva',sem_luz:'Sem luz',sinal_critico:'Sinal fraco',energia_offline:'Sem energia',quedas_repetidas:'Quedas repetidas',temperatura:'Muito quente',sinal_atencao:'Sinal em atenção',sem_leitura:'Sem leitura'};
+  const totImp=imp.reduce((a,x)=>a+n(x.receita),0);
+  const barImp = vgBarras(imp.sort((a,b)=>n(b.receita)-n(a.receita)).slice(0,6).map(x=>({rot:rotImp[x.caso]||x.caso, n:n(x.receita), cor:'#8E4EC6', txt:`${brl0(x.receita)} <small>${cdNum(x.clientes)} cli.</small>`, js:`redeCapaFiltrar('','${x.caso}')`})));
+  const cardB=(rot,valor,sub,html,cls)=>`<div class="vg-card ${cls||''}"><div class="vg-l">${rot}</div><div class="vg-v">${valor}</div>${sub?`<div class="vg-s">${sub}</div>`:''}${html}</div>`;
+  box.innerHTML = `<div class="vg-cards rede-capa-l1">
+      ${pizza('', 'Sinal óptico da base · clientes liberados', cdNum(totS), 'clientes', sinal, `Mesmo limite em toda a tela: pior que ${lim.fraco} dBm é fraco.`, pct(n(sg.bom),totS))}
+      ${pizza('', 'Problemas de rede por tipo', cdNum(totT), 'clientes com problema', tipos, 'Clique num tipo para ver os casos.')}
+      ${pizza('', 'Filas de trabalho', cdNum(totF), 'casos', filas, 'Cada fila tem o seu departamento.')}
+    </div>
+    <div class="vg-cards rede-capa-l2">
+      ${cardB('Falha coletiva agora', `${cdNum(colCli)} <small>clientes em ${cdNum(col.length)} ${col.length===1?'porta':'portas'}</small>`, col.length?`${cdNum(colCli-colOff)} navegando · <b class="ruim">${cdNum(colOff)} sem conexão</b> · igual à Visão geral`:'', barCol, col.length?'atencao':'')}
+      ${cardB('OLTs com mais clientes de sinal fraco', cdNum(n(sg.fraco)), 'clientes com sinal fraco na base', barOlt)}
+      ${cardB('Mensalidades dos clientes com problema', brl0(totImp), 'por mês, por tipo de problema', barImp)}
+    </div>
+    <div class="cdg-nota" style="margin:2px 0 12px">Leitura dos casos: ${d.calculado_em?new Date(d.calculado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'-'} · tudo é clicável</div>`;
+}
+window.redeCapaFiltrar=redeCapaFiltrar; window.redeCapaCarregar=redeCapaCarregar;
+(function(){ const st=document.createElement('style'); st.textContent=`#rede-capa .vg-cards{display:grid;gap:12px;margin:0 0 12px}#rede-capa .rede-capa-l1,#rede-capa .rede-capa-l2{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+#rede-capa .vg-card{grid-column:auto!important}@media (max-width:1100px){#rede-capa .rede-capa-l1,#rede-capa .rede-capa-l2{grid-template-columns:1fr!important}}
+#mod-tecnica .tec-view-panel[data-tec-sub~="diagnostico"] .tec-charts-row:first-of-type{display:none}`; document.head.appendChild(st); })();
 window.tecSub = tecSub;
 if(typeof renderTecnica==='function' && !window._tecSubWrap){
   window._tecSubWrap = true;
@@ -26430,7 +26496,7 @@ async function renderInicio(){
   const def = up.filter(x=>x.vel<=100);
   const rc = (typeof REDE!=='undefined' && REDE.dados && REDE.dados.casos) || null;
   const rf = f => rc ? rc.filter(x=>x.fila===f) : [];
-  const pons = rf('noc'), ponCli = pons.reduce((t,x)=>t+(Number(x.dados&&x.dados.afetados)||0),0);
+  const pons = rc ? rc.filter(x=>x.caso==='coletivo_pon') : [], ponCli = pons.reduce((t,x)=>t+(Number(x.dados&&x.dados.afetados)||0),0);
   const campo = rf('campo'), campoAlta = campo.filter(x=>Number(x.prioridade)===1).length;
   const cli = rf('cliente'), cliAlta = cli.filter(x=>Number(x.prioridade)===1).length;
   const irRede = f => `go('tecnica');tecSub('casos');REDE.fila='${f}';setTimeout(()=>{try{renderRedeCasos()}catch(e){}},300)`;
