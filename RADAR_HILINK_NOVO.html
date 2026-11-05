@@ -2565,13 +2565,18 @@ body.radar-modo-atendente .nav-sub{display:none!important}
 .ini-card .ln button{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left;text-decoration:underline dotted}
 .ini-card .ir{margin-top:8px;font-size:11px;color:#2da3ff;font-weight:700}
 
-.vg-sit-tab{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0 8px}
-.vg-sit-tab th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted,#888);padding:4px 6px;border-bottom:1px solid var(--line,#ddd)}
-.vg-lista-ctx .vg-sit-tab{flex:1 1 100%;max-width:1100px}
-.vg-sit-tab td{padding:5px 6px;border-bottom:1px solid var(--line,#eee);vertical-align:top;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;max-width:none!important}
-.vg-sit-tab td:nth-child(4){min-width:420px}
-.vg-sit-tab tr{cursor:pointer}.vg-sit-tab tbody tr:hover,.vg-sit-tab tr.on{background:rgba(77,163,224,.12)}
-.vg-sit-tab td:nth-child(2),.vg-sit-tab td:nth-child(3){white-space:nowrap}
+.vg-sit{flex:1 1 100%;display:grid;grid-template-columns:220px 1fr;gap:14px 20px;align-items:start;margin:4px 0 6px}
+.vg-sit-graf{display:flex;flex-direction:column;align-items:center;gap:6px}
+.vg-sit-graf .vg-donut{width:190px!important;height:190px!important}
+.vg-sit-tot{text-align:center}.vg-sit-tot b{display:block;font-size:22px}.vg-sit-tot span{font-size:13px;color:var(--muted,#667)}
+.vg-sit-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.vg-sit-card{text-align:left;background:var(--card,#fff);border:1px solid var(--line,#dde3ea);border-radius:10px;padding:10px 12px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:5px}
+.vg-sit-card:hover,.vg-sit-card.on{border-color:#4DA3E0;box-shadow:0 0 0 2px rgba(77,163,224,.25)}
+.vg-sit-top{display:flex;align-items:center;gap:8px}.vg-sit-top i{width:12px;height:12px;border-radius:3px;flex:none}.vg-sit-top b{font-size:15px}
+.vg-sit-num{font-size:14px}.vg-sit-num strong{font-size:22px;margin-right:2px}.vg-sit-num span{display:block;font-size:14px;font-weight:600;color:var(--muted,#556)}
+.vg-sit-acao{font-size:13.5px;line-height:1.4;color:var(--texto,#334)}
+.vg-sit-nota{grid-column:1/-1;font-size:13.5px;color:var(--muted,#556)}
+@media(max-width:900px){.vg-sit{grid-template-columns:1fr}}
 </style>
 <style>
 .cd-atalho{display:flex;align-items:center;gap:18px;justify-content:space-between;margin:0 0 14px;padding:18px 20px;border-radius:12px;cursor:pointer;
@@ -26653,6 +26658,7 @@ const VG_SIT_ACAO={
   'Sem contrato encontrado':'O boleto não está ligado a um contrato que o Radar conhece. Verificar no IXC antes de cobrar.',
   'Pré-contrato':'Boleto de contrato que nunca foi ativado. Verificar no IXC se a cobrança procede ou se deve ser cancelada.',
   'Desistiu':'Cliente desistiu antes da ativação. Verificar no IXC se a cobrança procede ou se deve ser cancelada.'};
+const VG_SIT_COR={'Ativo e bloqueado':'#E5484D','Ativo e liberado (navegando)':'#F5A524','Sem contrato encontrado':'#94A3B8','Cancelado':'#475569','Pré-contrato':'#4DA3E0','Desistiu':'#8E4EC6'};
 function vgListaAbrir(rows, grupo){
   const L=VG_LISTA_ATUAL; if(!L) return;
   const cancel=L.tipo.startsWith('cancel:'), m=L.m;
@@ -26660,10 +26666,19 @@ function vgListaAbrir(rows, grupo){
   let resumo='';
   if(L.tipo==='inad_mais90'){
     const g={}; L.rows.forEach(x=>{ const k=x.situacao||'Sem contrato encontrado'; (g[k] ||= {n:0,v:0}); g[k].n++; g[k].v+=Number(x.valor)||0; });
-    const ord=Object.keys(g).sort((a,b)=>g[b].n-g[a].n);
-    resumo=`<div class="cdg-nota" style="margin:6px 0">O IXC não cancela o contrato sozinho aos 90 dias: ele para de gerar novos boletos depois que 2 ficam em aberto. Por isso a decisão sobre cada grupo é da gestão.</div>
-    <table class="vg-sit-tab"><thead><tr><th>Situação do contrato</th><th>Clientes</th><th>Valor</th><th>O que fazer</th></tr></thead><tbody>${ord.map(k=>`<tr class="${grupo===k?'on':''}" onclick="vgListaGrupo('${k.replace(/'/g,"\\'")}')" title="Clique para ver só este grupo"><td><b>${k}</b></td><td>${cdNum(g[k].n)}</td><td>${cdMoeda(g[k].v)}</td><td>${VG_SIT_ACAO[k]||''}</td></tr>`).join('')}</tbody></table>
-    ${grupo?`<button type="button" class="btn sm" onclick="vgListaGrupo('')">Ver todos os grupos</button>`:''}`;
+    const ord=Object.keys(g).sort((a,b)=>g[b].v-g[a].v), totN=L.rows.length, totV=L.rows.reduce((a,x)=>a+(Number(x.valor)||0),0);
+    const brl0=x=>(Number(x)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+    const pct=v=>totV?(v/totV*100).toLocaleString('pt-BR',{maximumFractionDigits:0})+'%':'';
+    const js=k=>`vgListaGrupo('${k.replace(/'/g,"\\'")}')`;
+    const partes=ord.map(k=>({k, rot:k, n:g[k].v, fmt:brl0(g[k].v), cor:VG_SIT_COR[k]||'#94A3B8', js:js(k)}));
+    resumo=`<div class="vg-sit">
+      <div class="vg-sit-graf">${vgDonut(partes, totV||1, cdNum(totN))}<div class="vg-sit-tot"><b>${brl0(totV)}</b><span>${cdNum(totN)} clientes com mais de 90 dias</span></div></div>
+      <div class="vg-sit-cards">${ord.map(k=>`<button type="button" class="vg-sit-card${grupo===k?' on':''}" onclick="${js(k)}" title="Clique para ver só este grupo">
+        <div class="vg-sit-top"><i style="background:${VG_SIT_COR[k]||'#94A3B8'}"></i><b>${k}</b></div>
+        <div class="vg-sit-num"><strong>${cdNum(g[k].n)}</strong> clientes <span>${brl0(g[k].v)} · ${pct(g[k].v)}</span></div>
+        <div class="vg-sit-acao">${VG_SIT_ACAO[k]||''}</div></button>`).join('')}</div>
+      <div class="vg-sit-nota">O IXC não cancela o contrato sozinho aos 90 dias: ele para de gerar novos boletos depois que 2 ficam em aberto. Por isso a decisão sobre cada grupo é da gestão. Clique num grupo para ver só esses clientes.</div>
+      ${grupo?`<button type="button" class="btn sm" onclick="vgListaGrupo('')">Ver todos os grupos</button>`:''}</div>`;
   }
   openDrill(L.titulo+(grupo?' · '+grupo:'')+(m?' ('+m+')':''), rows, L.cols, {sub:`${cdNum(rows.length)} ${cancel?'contratos':'clientes'}${cancel?'':' · '+cdMoeda(total)}`, contextOnly:true,
     contextHtml:`<div class="vg-lista-ctx"><div>${L.explicacao||''}</div>${resumo}<button type="button" class="btn sm primary" onclick="vgExportarOpa()">Exportar para o OPA (um arquivo por linha)</button><span class="cdg-nota" style="margin:0">Leva o que estiver filtrado na busca. Hilink sai em um arquivo só; Nandonet e Pablom separados. Nada é enviado: o arquivo vai para você subir no OPA.</span></div>`});
@@ -26714,7 +26729,7 @@ function cdCapaHTML(){
   rec.forEach(p=>{ p.fmt=brl0(p.n); p.js=`vgLista('${p.k}','Receita do mês: ${p.rot}','${p.exp}.')`; });
   const totR=rec.reduce((a,p)=>a+p.n,0);
   // 2) inadimplência por faixa (igual às barras da Visão geral)
-  const fx=[['pre','Ainda não bloqueou','#F5A524','vencidos que ainda não chegaram à data de bloqueio'],['d30','Bloqueado, até 30 dias','#E5484D','já passaram do bloqueio, até 30 dias de atraso'],['d90','31 a 90 dias','#B42318','atraso de 31 a 90 dias'],['mais90','Mais de 90 dias','#475569','acima de 90 dias, perto ou depois do cancelamento automático']]
+  const fx=[['pre','Ainda não bloqueou','#F5A524','vencidos que ainda não chegaram à data de bloqueio'],['d30','Bloqueado, até 30 dias','#E5484D','já passaram do bloqueio, até 30 dias de atraso'],['d90','31 a 90 dias','#B42318','atraso de 31 a 90 dias'],['mais90','Mais de 90 dias','#475569','acima de 90 dias; o IXC não cancela sozinho, mas para de gerar boletos depois de 2 em aberto']]
     .map(([k,rot,cor,exp])=>({rot, n:n((inad[k]||{}).valor), cli:(inad[k]||{}).clientes, cor, fmt:brl0((inad[k]||{}).valor), exp, js:`vgLista('inad_${k}','Inadimplência: ${rot}','Clientes com boleto vencido em aberto: ${exp}.')`}));
   const totI=fx.reduce((a,p)=>a+p.n,0);
   // 3) base por situação (igual à Visão geral)
@@ -26889,7 +26904,7 @@ function vgIndicadoresHTML(rd){
     receitaCard=card('', 'Recebido no mês', brl0(v.recebido_mes), `${pctRec}% dos ${brl0(v.previsto_mes)} previstos para o mês`, '', "go('cobrancaDia');cdSub('onde')", '', 'vg-base');
   }
   const totInad=['pre','d30','d90','mais90'].reduce((a,k)=>a+(Number((inad[k]||{}).valor)||0),0);
-  const fxInad=[['pre','Ainda não bloqueou','#F5A524','vence o prazo de bloqueio hoje ou depois'],['d30','Bloqueado, até 30 dias','#E5484D','já passou do bloqueio e tem até 30 dias de atraso'],['d90','31 a 90 dias','#B42318','atraso de 31 a 90 dias'],['mais90','Mais de 90 dias','#475569','atraso acima de 90 dias, perto ou depois do cancelamento automático']];
+  const fxInad=[['pre','Ainda não bloqueou','#F5A524','vence o prazo de bloqueio hoje ou depois'],['d30','Bloqueado, até 30 dias','#E5484D','já passou do bloqueio e tem até 30 dias de atraso'],['d90','31 a 90 dias','#B42318','atraso de 31 a 90 dias'],['mais90','Mais de 90 dias','#475569','atraso acima de 90 dias; o IXC não cancela sozinho, mas para de gerar boletos depois de 2 em aberto']];
   const inadBarras=vgBarras(fxInad.map(([k,rot,cor,exp])=>{ const o=inad[k]||{}; return {rot, n:Number(o.valor)||0, cor, txt:`${brl0(o.valor)} <small>${cdNum(o.clientes||0)} cli.</small>`, js:`vgLista('inad_${k}','Inadimplência: ${rot}','Clientes com boleto vencido em aberto, contando pelo boleto mais antigo: ${exp}.')`}; }));
   const bqBarras = bqs.length ? vgBarras(bqs.slice(0,5).map(b=>({rot:dsem(b.data), n:b.clientes, cor:b===bqMain?'#E5484D':'#F5A524', txt:`${cdNum(b.clientes)} cli. <small>${brl0(b.valor)}</small>`, js:`radarBloqueioLista('${b.data}')`}))) : '';
   const nomeReg=x=>x.dados&&x.dados.pon ? radarPonNome(x.dados.pon) : String((x.dados&&(x.dados.caso_nome||x.dados.regiao||x.dados.caixa))||x.titulo||x.nome||x.chave||'Região');
