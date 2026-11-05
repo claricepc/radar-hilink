@@ -23088,7 +23088,7 @@ function renderAcs(){
   const rows=acsRows();
   const auditRows=rows.filter(r=>!r._ignoreIpAudit);
   if(!rows.length){
-    document.getElementById('acs-insights').innerHTML='<div class="insight attention"><h4>Relatorio ACS nao carregado</h4><div class="big">0</div><p>Os dados do ACS ainda não são lidos automaticamente do IXC.</p></div>';
+    document.getElementById('acs-insights').innerHTML='<div class="insight attention"><h4>Relatorio ACS nao carregado</h4><div class="big">0</div><p>Os equipamentos do ACS ainda não foram lidos. Use o botão Atualizar todos os dados.</p></div>';
     document.querySelector('#acs-tbl thead').innerHTML='';
     document.querySelector('#acs-tbl tbody').innerHTML='<tr><td style="padding:24px;color:#6b7280">Nenhum dado ACS processado.</td></tr>';
     return;
