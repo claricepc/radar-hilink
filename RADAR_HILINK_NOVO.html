@@ -26608,6 +26608,12 @@ function vgRedeDiagnostico(d){
       <span><b>Clientes na porta</b> ${cdNum(d.total)} (${cdNum(d.online)} online)</span><span><b>Com sinal fraco</b> ${cdNum(d.fracos)} de ${cdNum(lidos)} lidos (${pct}%)</span><span><b>Sem leitura de sinal</b> ${cdNum(d.sem_sinal)}</span>
       <span><b>Sinal médio dos fracos</b> ${d.rx_medio_fracos??'-'} dBm</span><span><b>Sinal médio dos bons</b> ${d.rx_medio_bons??'-'} dBm</span><span><b>Leitura</b> ${cdEsc(d.leitura_em||'')}</span></div>
     <div><b>Última queda dos fracos:</b> ${causas||'sem registro'}</div>
+    ${(()=>{ const cx=(d.caixas||[]); if(!cx.length) return `<div><b>Caixas (CTO):</b> nenhuma caixa cadastrada no IXC para este transmissor perto dos clientes. Sem isso não dá para apontar a caixa.</div>`;
+      const conc = cx[0].fracos>=3 && cx[0].fracos >= (d.fracos||0)*0.5;
+      const txt = conc ? `<b>${cdEsc(cx[0].nome)}</b> concentra ${cx[0].fracos} dos ${d.fracos} clientes fracos: é a caixa para verificar primeiro.`
+        : `Os clientes fracos estão em ${cx.length} caixas diferentes, sem uma que concentre o problema. ${pct>=50?'Isso reforça que o defeito está antes das caixas (porta ou cabo principal).':'Isso reforça que são problemas individuais (drop, conector ou ONU).'}`;
+      return `<div><b>Caixas (CTO) dos clientes fracos</b> <small>(caixa mais próxima de cada cliente, pelo mapa do IXC)</small>: ${txt}</div>
+        <div class="vg-diag-cx">${cx.slice(0,6).map(c=>`<span><b>${cdEsc(c.nome)}</b> ${c.fracos} fraco(s) de ${c.clientes} cliente(s) · ${c.rx_fracos??'-'} dBm${c.lat?` · <a href="https://www.google.com/maps?q=${c.lat},${c.lon}" target="_blank" rel="noopener">mapa</a>`:''}</span>`).join('')}${cx.length>6?`<span>e mais ${cx.length-6}</span>`:''}</div>`; })()}
     <div><b>Quem age:</b> ${quem}. ${mapa}</div>
     <div class="cdg-nota" style="margin:0">Referência: sinal bom entre -8 e -25 dBm; de -25 a -27 atenção; pior que -27 dBm é fraco e o cliente começa a ter quedas e lentidão.</div></div>`};
 }
@@ -26622,11 +26628,12 @@ async function vgRedePon(pon){
   VG_LISTA_ATUAL={tipo:'pon', titulo:'PON '+pon, rows:rows.map(x=>({...x, telefone:''}))};
   if(!window.RADAR_OLT){ try{ const o=await sb.rpc('radar_rede_transmissores'); if(!o.error) window.RADAR_OLT=o.data||{}; }catch(e){} }
   const olt=radarOlt(d.transmissor);
-  openDrill(`${olt?olt.descricao+' · ':''}PON ${pon}: ${dg.tit}`, rows, [{k:'situacao_sinal',label:'Sinal'},{k:'rx',label:'RX (dBm)'},{k:'tx',label:'TX'},{k:'nome',label:'Cliente'},{k:'id_cliente',label:'Cód.'},{k:'filial',label:'Filial'},{k:'bairro',label:'Bairro'},{k:'endereco',label:'Endereço'},{k:'online_txt',label:'Online'},{k:'causa',label:'Última queda'},{k:'desconexoes',label:'Desconexões'},{k:'onu',label:'ONU nº'},{k:'temperatura',label:'Temp. ONU'},{k:'voltagem',label:'Tensão'},{k:'concentrador',label:'Concentrador'}],
+  openDrill(`${olt?olt.descricao+' · ':''}PON ${pon}: ${dg.tit}`, rows, [{k:'situacao_sinal',label:'Sinal'},{k:'rx',label:'RX (dBm)'},{k:'tx',label:'TX'},{k:'nome',label:'Cliente'},{k:'id_cliente',label:'Cód.'},{k:'filial',label:'Filial'},{k:'bairro',label:'Bairro'},{k:'endereco',label:'Endereço'},{k:'online_txt',label:'Online'},{k:'causa',label:'Última queda'},{k:'desconexoes',label:'Desconexões'},{k:'caixa_provavel',label:'Caixa provável'},{k:'dist_caixa_m',label:'Distância da caixa (m)'},{k:'onu',label:'ONU nº'},{k:'temperatura',label:'Temp. ONU'},{k:'voltagem',label:'Tensão'},{k:'concentrador',label:'Concentrador'}],
     {sub:`${olt?olt.descricao+' ('+olt.pop+')':'Transmissor '+d.transmissor} · slot/porta ${d.slot_porta} · ${cdNum(d.fracos)} fracos de ${cdNum(d.total)} clientes`, contextOnly:true, contextHtml:dg.html});
 }
 Object.assign(window,{vgRedePon});
 (function(){ const st=document.createElement('style'); st.textContent=`.vg-diag{display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.45}.vg-diag-tit{font-weight:800;font-size:15px}
+.vg-diag-cx{display:flex;flex-wrap:wrap;gap:6px}.vg-diag-cx span{background:rgba(77,163,224,.10);border-radius:6px;padding:3px 8px;font-size:12px}
 .vg-diag-grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 16px;font-size:12.5px}.vg-diag-grade b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;opacity:.7}
 @media (max-width:800px){.vg-diag-grade{grid-template-columns:1fr 1fr}}`; document.head.appendChild(st); })();
 function vgBaseCardHTML(v){
