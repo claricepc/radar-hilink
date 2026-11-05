@@ -26852,12 +26852,18 @@ Object.assign(window,{vgMarca});
 .vg .vg-base-leg small{color:var(--texto-3)}
 .vg-lista-ctx{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12.5px}
 .vg .vg-base-corpo{display:flex;gap:14px;align-items:center;margin-top:6px}
-.vg .vg-donut{width:96px;height:96px;flex:0 0 96px}
+.vg .vg-donut{width:150px;height:150px;flex:0 0 150px}
+@media (max-width:1300px){.vg .vg-donut{width:124px;height:124px;flex:0 0 124px}}
 .vg .vg-donut circle:hover{stroke-width:19}
 .vg .vg-base-dir{flex:1;min-width:0}
 .vg .vg-base .vg-v{margin-top:0}
 .vg .vg-base-leg{display:flex;flex-direction:column;gap:2px;margin-top:6px}
-.vg .vg-base-leg button{display:grid;grid-template-columns:12px 1fr auto 52px;align-items:center;gap:8px;background:transparent;border:0;border-radius:6px;padding:3px 6px;margin:0 -6px;font-size:12.5px;color:var(--texto-2);cursor:pointer;text-align:left}
+.vg .vg-base-leg button{display:grid;grid-template-columns:10px minmax(0,1fr) auto 44px;align-items:center;gap:6px;background:transparent;border:0;border-radius:5px;padding:1px 5px;margin:0 -5px;font-size:12px;line-height:1.25;color:var(--texto-2);cursor:pointer;text-align:left}
+.vg .vg-base-leg{gap:0!important;max-width:420px}
+.vg .vg-base-leg i{width:10px!important;height:10px!important}
+.vg .vg-base-leg em{font-size:11px}
+.vg .vg-base-corpo{gap:18px!important}
+.vg .vg-donut-c{font-size:12px!important}
 .vg .vg-base-leg button:hover{background:rgba(77,163,224,.12)}
 .vg .vg-base-leg button span{text-decoration:underline dotted;text-underline-offset:3px}
 .vg .vg-base-leg i{width:12px;height:12px;border-radius:3px}
@@ -28135,7 +28141,7 @@ function redeEmAtv(){ return new Set((REDE.dados?.em_atividade)||[]); }
 function redeFiltrados(fila){
   const ea = redeEmAtv(), q = (REDE.busca||'').toLowerCase().trim();
   return ((REDE.dados?.casos)||[]).filter(c=>
-    (!fila || c.fila===fila) && (!REDE.caso || c.caso===REDE.caso) && (!REDE.filial || c.filial===REDE.filial) &&
+    (!fila || c.fila===fila) && (!REDE.caso || c.caso===REDE.caso) && (!REDE.filiais || REDE.filiais.includes(c.filial)) &&
     (!REDE.prio || String(c.prioridade)===REDE.prio) && (!REDE.so_livres || !ea.has(c.chave)) &&
     (!q || [c.nome,c.chave,c.telefone,c.filial,c.dados?.pon].join(' ').toLowerCase().includes(q)));
 }
@@ -28169,48 +28175,68 @@ function redeCasoLinha(c){
     ${lista}
   </div>`;
 }
+function redeFilialSel(acao, v, marcado){
+  const todas=[...new Set(((REDE.dados&&REDE.dados.casos)||[]).map(c=>c.filial).filter(Boolean))].sort();
+  REDE.filiais = rfAplicarSelecao(REDE.filiais, todas, acao, v, marcado); renderRedeCasos();
+}
+function redeTirarFiltro(k){ if(k==='filiais') REDE.filiais=null; else if(k==='so_livres') REDE.so_livres=false; else REDE[k]=''; renderRedeCasos(); }
+function redeLimpar(){ REDE.fila=''; REDE.caso=''; REDE.prio=''; REDE.filiais=null; REDE.busca=''; REDE.so_livres=true; renderRedeCasos(); }
+function redeVer(chave){ REDE.abertos[chave]=!REDE.abertos[chave]; renderRedeCasos(); }
 function renderRedeCasos(){
   const box=document.getElementById('rede-casos'); if(!box) return;
   if(!REDE.dados){ box.innerHTML = `<div class="cdg-box">${REDE.erro?`Não foi possível carregar: ${cdEsc(REDE.erro)} <button class="btn sm" onclick="redeCarregar(true)">Tentar de novo</button>`:'Montando os casos do dia...'}</div>`; redeCarregar(); return; }
   const D=REDE.dados, todos=D.casos||[], ea=redeEmAtv();
   const gerente = typeof cdPodeGerenciar==='function' && cdPodeGerenciar();
-  const porFila = f => todos.filter(c=>c.fila===f);
-  const cards = Object.entries(REDE_FILAS).map(([f,F])=>{
-    const ls=porFila(f), livres=ls.filter(c=>!ea.has(c.chave)), alta=livres.filter(c=>c.prioridade===1).length;
-    return `<div class="cdg-item ${F.tom}">
-      <div class="t"><span>${F.nome}</span></div>
-      <div class="n">${cdNum(livres.length)}<small>casos sem tarefa</small></div>
-      <div class="p">${alta?`<b>${alta} de prioridade alta.</b> `:''}${ls.length-livres.length?`${ls.length-livres.length} já estão em tarefa. `:''}Departamento: ${F.quem.toUpperCase()}.</div>
-      <div class="cdg-botoes"><button type="button" class="cdg-ir" onclick="REDE.fila='${f}';renderRedeCasos()">Ver lista</button>${gerente&&livres.length?`<button type="button" class="cdg-ir cdg-gerar" onclick="redeGerarAtividade('${f}')">Gerar tarefa</button>`:''}</div>
-    </div>`; }).join('');
-  const casosOpts = Object.entries(D.regras?.casos||{}).sort((a,b)=>a[1].ordem-b[1].ordem).map(([k,v])=>`<option value="${k}" ${REDE.caso===k?'selected':''}>${cdEsc(v.nome)}${v.ativo?'':' (desligado)'}</option>`).join('');
+  const regras=D.regras?.casos||{};
   const filiais=[...new Set(todos.map(c=>c.filial).filter(Boolean))].sort();
   const ls = redeFiltrados(REDE.fila);
-  const mostra = ls.slice(0,200);
-  const desligados = Object.values(D.regras?.casos||{}).filter(v=>!v.ativo).map(v=>v.nome);
-  box.innerHTML = `
-    <div class="cdg-box" style="margin-bottom:12px">
-      <div class="cdg-eyebrow">Casos do dia</div>
-      <p style="margin:6px 0 0">O Radar separa cada problema de rede em uma fila, diz o que fazer e o prazo. O gestor de cada fila gera a tarefa e escolhe quem executa. Quando a leitura seguinte mostrar o problema resolvido, o item é baixado sozinho.</p>
-      <p class="cdg-nota" style="margin:6px 0 0">Leitura da rede: ${redeDh(D.base_em)} · casos calculados em ${redeDh(D.calculado_em)} · regras versão ${D.regras_versao||1}${D.regras_por?' ('+cdEsc(D.regras_por)+')':''}. ${D.resumo?.campo_com_os?`${D.resumo.campo_com_os} clientes com OS já aberta ficaram fora da fila de campo.`:''}${desligados.length?` Casos desligados nas regras: ${desligados.map(cdEsc).join(', ')}.`:''}</p>
-    </div>
-    <div class="cdg-colunas" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:12px">${cards}</div>
-    <div class="cdg-box">
-      <div class="op-abas">${[['','Todas as filas'],...Object.entries(REDE_FILAS).map(([f,F])=>[f,F.nome])].map(([f,t])=>`<button type="button" class="${REDE.fila===f?'on':''}" onclick="REDE.fila='${f}';renderRedeCasos()">${t}</button>`).join('')}</div>
-      <div class="rede-filtros">
-        <select onchange="REDE.caso=this.value;renderRedeCasos()"><option value="">Todos os casos</option>${casosOpts}</select>
-        <select onchange="REDE.prio=this.value;renderRedeCasos()"><option value="">Todas as prioridades</option>${[1,2,3].map(p=>`<option value="${p}" ${REDE.prio===String(p)?'selected':''}>${REDE_PRIO[p][0]}</option>`).join('')}</select>
-        <select onchange="REDE.filial=this.value;renderRedeCasos()"><option value="">Todas as filiais</option>${filiais.map(f=>`<option ${REDE.filial===f?'selected':''}>${cdEsc(f)}</option>`).join('')}</select>
-        <input type="search" placeholder="Buscar cliente, telefone ou PON" value="${cdEsc(REDE.busca)}" onchange="REDE.busca=this.value;renderRedeCasos()">
-        <label class="cd-chk"><input type="checkbox" ${REDE.so_livres?'checked':''} onchange="REDE.so_livres=this.checked;renderRedeCasos()"> Só os que ainda não estão em tarefa</label>
-        <span style="flex:1"></span>
-        <button type="button" class="btn sm" onclick="redeExportar()">Baixar lista</button>
-        ${gerente&&REDE.fila&&ls.length?`<button type="button" class="btn sm primary" onclick="redeGerarAtividade('${REDE.fila}')">Gerar tarefa com estes ${cdNum(ls.length)}</button>`:''}
+  REDE.limite = REDE.limite || 100;
+  const mostra = ls.slice(0, REDE.limite);
+  const sel=(id,rot,val,opts,campo)=>`<label class="rf-campo">${rot} <select onchange="REDE['${campo}']=this.value;REDE.limite=100;renderRedeCasos()">${opts.map(([k,t])=>`<option value="${k}" ${String(val||'')===String(k)?'selected':''}>${t}</option>`).join('')}</select></label>`;
+  const filaOpts=[['','Todas'],...Object.entries(REDE_FILAS).map(([f,F])=>[f,F.quem.toUpperCase()])];
+  const casoOpts=[['','Todos'],...Object.entries(regras).sort((a,b)=>a[1].ordem-b[1].ordem).filter(([k,v])=>v.ativo).map(([k,v])=>[k,cdEsc(v.nome)])];
+  const prioOpts=[['','Todas'],...[1,2,3].map(p=>[String(p),REDE_PRIO[p][0]])];
+  const chips=[];
+  if(REDE.fila) chips.push(['fila','Fila: '+REDE_FILAS[REDE.fila].quem.toUpperCase()]);
+  if(REDE.caso) chips.push(['caso','Tipo: '+(regras[REDE.caso]?.nome||REDE.caso)]);
+  if(REDE.prio) chips.push(['prio','Prioridade: '+REDE_PRIO[REDE.prio][0]]);
+  if(REDE.filiais) chips.push(['filiais','Filial: '+rfFiliaisRotulo(REDE.filiais, filiais)]);
+  if(REDE.busca) chips.push(['busca','Busca: '+REDE.busca]);
+  if(REDE.so_livres) chips.push(['so_livres','Só sem tarefa']);
+  const acoes = rfDd('rede-acoes','Ações',`<div class="rf-menu">
+      ${gerente?`<button type="button" ${REDE.fila&&ls.length?'':'disabled'} onclick="rfFechar('rede-acoes');redeGerarAtividade('${REDE.fila}')">Gerar tarefa com estes ${cdNum(ls.length)} casos<small>${REDE.fila?'Vai para o departamento da fila escolhida':'Escolha uma fila primeiro'}</small></button>`:''}
+      <button type="button" onclick="rfFechar('rede-acoes');redeExportar()">Baixar lista (planilha)<small>Todos os ${cdNum(ls.length)} casos filtrados</small></button></div>`,'rf-dir');
+  const sinal=d=>{ const rx=Number(d.rx); if(d.rx==null||d.rx===''||!(rx<0&&rx>-40)) return '<span class="rede-t-mute">sem leitura</span>';
+    const cor = rx<-27?'#E5484D':rx<-25?'#F5A524':'#30A46C'; return `<b style="color:${cor}">${String(d.rx).replace('.',',')}</b>`; };
+  const linha=c=>{ const R=redeRegra(c.caso), d=c.dados||{}, pr=REDE_PRIO[c.prioridade]||['',''], pon=c.caso==='coletivo_pon', ab=REDE.abertos[c.chave];
+    const quem = pon ? `<b>${cdEsc(radarPonNome(d.pon))}</b> <small>${cdNum(d.afetados)} de ${cdNum(d.total_pon)} clientes</small>` : `<b>${cdEsc(c.nome||'')}</b> <small>${cdEsc(c.id_cliente)}${c.telefone?' · '+cdEsc(c.telefone):''}</small>`;
+    const alerta = [d.cancel_em?`<span class="cdg-chip risk">pediu cancelamento</span>`:'', d.tec30?`<span class="cdg-chip warn">reclamou 30d</span>`:'', ea.has(c.chave)?`<span class="cdg-chip info">em tarefa</span>`:''].join(' ');
+    const det = ab && !pon ? `<tr class="rede-t-det"><td colspan="9"><div><b>O que é:</b> ${cdEsc(R.explicacao||'')}</div><div><b>O que fazer:</b> ${cdEsc(R.acao||'')}</div><div class="rede-t-mute">${redeSinalTxt(d)} · ${redeOpaTxt(d)}${d.pon?' · '+cdEsc(radarPonNome(d.pon)):''}</div></td></tr>` : '';
+    return `<tr><td><span class="cdg-chip ${pr[1]}">${pr[0]}</span></td><td>${cdEsc(R.nome||c.caso)}</td><td>${quem}</td><td>${cdEsc(c.filial||'')}</td><td>${pon?'-':sinal(d)}</td><td>${pon?'-':(d.online==='N'?'<b class="ruim">offline</b>':'online')}</td><td>${alerta||'<span class="rede-t-mute">-</span>'}</td><td style="text-align:right">${c.valor?cdMoeda(c.valor):'-'}</td>
+      <td><button type="button" class="rede-t-btn" onclick="${pon?`vgRedePon('${cdEsc(d.pon)}')`:`redeVer('${cdEsc(c.chave)}')`}">${pon?'Diagnóstico':(ab?'Fechar':'Detalhe')}</button></td></tr>${det}`; };
+  box.innerHTML = `<div class="cdg-box">
+      <div class="rf-bar">
+        ${sel('fila','Fila',REDE.fila,filaOpts,'fila')}
+        ${sel('caso','Tipo',REDE.caso,casoOpts,'caso')}
+        ${sel('prio','Prioridade',REDE.prio,prioOpts,'prio')}
+        ${rfFilialHTML('rede-filial-dd', filiais, REDE.filiais, 'redeFilialSel')}
+        <label class="rf-campo">Buscar <input type="search" value="${cdEsc(REDE.busca)}" placeholder="cliente, telefone ou PON" onchange="REDE.busca=this.value;REDE.limite=100;renderRedeCasos()"></label>
+        <label class="rf-campo"><input type="checkbox" ${REDE.so_livres?'checked':''} onchange="REDE.so_livres=this.checked;renderRedeCasos()"> Só sem tarefa</label>
+        <span class="rf-sp"></span>${acoes}
       </div>
-      <p class="cdg-nota">${cdNum(ls.length)} casos${ls.length>mostra.length?`, mostrando os ${mostra.length} mais prioritários (baixe a lista para ver todos)`:''}. Ordem: prioridade e valor da mensalidade.</p>
-      <div class="rede-lista">${mostra.map(redeCasoLinha).join('') || '<div class="cdg-nota">Nenhum caso com esses filtros.</div>'}</div>
+      ${rfChipsHTML(chips,'redeTirarFiltro','redeLimpar')}
+      <div class="rf-res"><span><strong>${cdNum(ls.length)}</strong> casos · ordem: prioridade e mensalidade</span><span class="cdg-nota" style="margin:0">Leitura da rede ${redeDh(D.base_em)} · casos de ${redeDh(D.calculado_em)}</span></div>
+      <div class="cdg-tabwrap"><table class="cdg-tab rede-tab"><thead><tr><th>Prioridade</th><th>Tipo</th><th>Cliente ou porta</th><th>Filial</th><th>Sinal (dBm)</th><th>Conexão</th><th>Alertas</th><th style="text-align:right">Mensalidade</th><th></th></tr></thead>
+        <tbody>${mostra.map(linha).join('') || '<tr><td colspan="9" class="rede-t-mute">Nenhum caso com esses filtros.</td></tr>'}</tbody></table></div>
+      ${ls.length>mostra.length?`<div style="margin-top:8px"><button type="button" class="btn sm" onclick="REDE.limite+=200;renderRedeCasos()">Mostrar mais ${cdNum(Math.min(200, ls.length-mostra.length))}</button> <span class="cdg-nota">mostrando ${cdNum(mostra.length)} de ${cdNum(ls.length)}</span></div>`:''}
     </div>`;
+  rfPosRender(box);
 }
+Object.assign(window,{redeFilialSel,redeTirarFiltro,redeLimpar,redeVer});
+(function(){ const st=document.createElement('style'); st.textContent=`.rede-tab th,.rede-tab td{text-align:left!important}.rede-tab td{vertical-align:middle;padding:5px 8px;font-size:12.5px}.rede-tab th:nth-child(8),.rede-tab td:nth-child(8){text-align:right!important}
+.rf-campo input[type=checkbox]{width:auto!important;height:auto!important;margin:0}.rede-tab td small{color:var(--texto-3,#8FA3B8);margin-left:4px}
+.rede-t-mute{color:var(--texto-3,#8FA3B8)}.rede-t-btn{background:transparent;border:1px solid rgba(90,150,220,.45);border-radius:6px;padding:3px 8px;font-size:11.5px;cursor:pointer;color:inherit}
+.rede-t-det td{background:rgba(77,163,224,.07);font-size:12.5px;line-height:1.5}`; document.head.appendChild(st); })();
 async function redeGerarAtividade(fila){
   if(typeof cdPodeGerenciar==='function' && !cdPodeGerenciar()){ toast('Só a gestão e a liderança geram tarefas.','warn'); return; }
   const F=REDE_FILAS[fila]; const ls = redeFiltrados(fila);
