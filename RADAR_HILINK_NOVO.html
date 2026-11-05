@@ -28233,7 +28233,8 @@ function renderRedeCasos(){
   rfPosRender(box);
 }
 Object.assign(window,{redeFilialSel,redeTirarFiltro,redeLimpar,redeVer});
-(function(){ const st=document.createElement('style'); st.textContent=`.rede-tab td{vertical-align:middle;padding:5px 8px;font-size:12.5px}.rede-tab td small{color:var(--texto-3,#8FA3B8);margin-left:4px}
+(function(){ const st=document.createElement('style'); st.textContent=`.rede-tab th,.rede-tab td{text-align:left!important}.rede-tab td{vertical-align:middle;padding:5px 8px;font-size:12.5px}.rede-tab th:nth-child(8),.rede-tab td:nth-child(8){text-align:right!important}
+.rf-campo input[type=checkbox]{width:auto!important;height:auto!important;margin:0}.rede-tab td small{color:var(--texto-3,#8FA3B8);margin-left:4px}
 .rede-t-mute{color:var(--texto-3,#8FA3B8)}.rede-t-btn{background:transparent;border:1px solid rgba(90,150,220,.45);border-radius:6px;padding:3px 8px;font-size:11.5px;cursor:pointer;color:inherit}
 .rede-t-det td{background:rgba(77,163,224,.07);font-size:12.5px;line-height:1.5}`; document.head.appendChild(st); })();
 async function redeGerarAtividade(fila){
