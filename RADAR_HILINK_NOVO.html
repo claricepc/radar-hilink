@@ -2583,6 +2583,25 @@ body.radar-modo-atendente .nav-sub{display:none!important}
 .vg-sit-acao{font-size:13.5px;line-height:1.4;color:var(--texto,#334)}
 .vg-sit-nota{grid-column:1/-1;font-size:13.5px;color:var(--muted,#556)}
 @media(max-width:900px){.vg-sit{grid-template-columns:1fr}}
+.cdm{margin:0 0 16px}
+.cdm-prio{font-size:16px;line-height:1.45;background:var(--card,#fff);border:1px solid var(--line,#dde3ea);border-left:4px solid #D13438;border-radius:10px;padding:12px 16px;margin:0 0 12px}
+.cdm-prio .cdg-link{font-size:16px}
+.cdm-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media(max-width:1200px){.cdm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){.cdm-grid{grid-template-columns:1fr}}
+.cdm-tile{background:var(--card,#fff);border:1px solid var(--line,#dde3ea);border-top:4px solid #0071BC;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.cdm-tile.risk{border-top-color:#D13438}.cdm-tile.ok{border-top-color:#30A46C}.cdm-tile.grafite{border-top-color:#5B6470}
+.cdm-tile.clicavel{cursor:pointer}.cdm-tile.clicavel:hover{box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.cdm-l{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted,#556);display:flex;align-items:center;gap:8px}
+.cdm-ver{font-size:10.5px;font-weight:700;text-transform:none;letter-spacing:0;border:1px solid currentColor;border-radius:10px;padding:1px 7px;color:#0071BC}
+.cdm-v{font-size:28px;font-weight:800;line-height:1.1}
+.cdm-tile.risk .cdm-v{color:#D13438}.cdm-tile.info .cdm-v{color:#0071BC}.cdm-tile.ok .cdm-v{color:#30A46C}
+.cdm-s{font-size:13.5px;color:var(--muted,#556)}
+.cdm-d{font-size:13px;line-height:1.4;color:var(--texto,#334)}
+.cdm-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cdm-chip{font-size:12.5px;font-weight:700;border-radius:12px;padding:3px 9px}
+.cdm-chip.bom{background:rgba(48,164,108,.14);color:#1F7A4D}.cdm-chip.ruim{background:rgba(209,52,56,.12);color:#B42318}.cdm-chip.neutro{background:rgba(0,113,188,.08);color:#0071BC;font-weight:600}
+.cdm-barra{height:8px;border-radius:5px;background:rgba(0,113,188,.12);overflow:hidden}.cdm-barra i{display:block;height:100%;background:#D13438;border-radius:5px}
+.cdm-barra.ok i{background:#30A46C}.cdm-barra.grafite i{background:#5B6470}
 </style>
 <style>
 .cd-atalho{display:flex;align-items:center;gap:18px;justify-content:space-between;margin:0 0 14px;padding:18px 20px;border-radius:12px;cursor:pointer;
@@ -24419,18 +24438,31 @@ function cdGuiaHTML(){
   const pSem = Number(r.pagamentos_semana_passada_qt)||0, pSemV = Number(r.pagamentos_semana_passada_valor)||0;
   const dPag = pSem>0 ? `<div class="d">${(()=>{ const v=g.pag.valor-pSemV; return Math.abs(v)<1?'Igual ao mesmo dia da semana passada':v>0?`<b class="bom">${cdMoeda(v)} a mais</b> que no mesmo dia da semana passada`:`<b class="ruim">${cdMoeda(-v)} a menos</b> que no mesmo dia da semana passada`; })()} (${cdMoeda(pSemV)}).</div>`
     : `<div class="d">A comparação com o mesmo dia da semana passada aparece quando o histórico de pagamentos completar 7 dias.</div>`;
-  const resumo = `<div class="cdg-resumo">
-    <div class="cdg-box"><div class="cdg-eyebrow">O dia em poucas linhas</div>
-      <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p><p>${p3}</p>${p4?`<p>${p4}</p>`:''}</div>
-      <div class="cdg-nota">Os trechos sublinhados abrem a lista de clientes.</div></div>
-    <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
-      <div class="cdg-numeros">
-        <div class="cdg-num risk clicavel" role="button" tabindex="0" onclick="cdIrLista('cobrar','pre')" onkeydown="if(event.key==='Enter')cdIrLista('cobrar','pre')" title="Abrir a lista"><div class="l">Antes do bloqueio <span class="ver">Ver lista</span></div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, ainda sem bloqueio</div>${dPre}</div>
-        <div class="cdg-num info clicavel" role="button" tabindex="0" onclick="cdIrLista('cobrar','todos')" onkeydown="if(event.key==='Enter')cdIrLista('cobrar','todos')" title="Abrir a lista"><div class="l">Vencido total <span class="ver">Ver lista</span></div><div class="v">${cdMoeda(g.todos.valor)}</div><div class="s">${cdNum(g.todos.clientes)} clientes, sem Filial 10</div>${dVenc}</div>
-        <div class="cdg-num ok"><div class="l">Recebido em ${cdData(g.pag.dia)}</div><div class="v">${cdMoeda(g.pag.valor)}</div><div class="s">${cdNum(g.pag.qt)} pagamentos</div>${dPag}</div>
-      </div>
-      <div class="cdg-nota">Vencido total soma todos os clientes com boleto vencido, inclusive quem está fora da cobrança. Antes do bloqueio conta só quem pode ser cobrado hoje.</div>
+  // Movimento do dia: a capa mostra o estado; aqui mostra o que mudou e o que fazer primeiro.
+  const chip = (v, quando, menosBom=true) => v==null ? '' : Math.abs(v)<1 ? `<span class="cdm-chip neutro">igual a ${quando}</span>`
+    : `<span class="cdm-chip ${(v<0)===menosBom?'bom':'ruim'}">${v<0?'':'+'}${cdMoeda(v).replace('-','- ')} vs ${quando}</span>`;
+  const pctSaiu = preOnt>0 ? Math.min(100, Math.round(preSaiu/preOnt*100)) : null;
+  const vPag = pSem>0 ? g.pag.valor - pSemV : null;
+  const tile = (o) => `<div class="cdm-tile ${o.tom}${o.js?' clicavel':''}" ${o.js?`role="button" tabindex="0" onclick="${o.js}" onkeydown="if(event.key==='Enter'){${o.js}}" title="Abrir a lista"`:''}>
+      <div class="cdm-l">${o.l}${o.js?'<span class="cdm-ver">Ver lista</span>':''}</div>
+      <div class="cdm-v">${o.v}</div><div class="cdm-s">${o.s}</div>${o.extra||''}</div>`;
+  const prioridade = g.pre.clientes
+    ? `<b>Prioridade do dia:</b> cobrar <button type="button" class="cdg-link r" onclick="cdIrLista('cobrar','pre')">${cdNum(g.pre.clientes)} ${g.pre.clientes===1?'cliente':'clientes'} antes do bloqueio</button> (${cdMoeda(g.pre.valor)}). Cada bloqueio vira ligação, desgaste e risco de cancelamento.`
+    : `<b>Prioridade do dia:</b> ninguém cobrável está para bloquear hoje. Foque na recuperação dos bloqueados.`;
+  const resumo = `<div class="cdm">
+    <div class="cdm-prio">${prioridade}</div>
+    <div class="cdm-grid">
+      ${tile({tom:'risk', l:'Antes do bloqueio', v:cdMoeda(g.pre.valor), s:`${cdNum(g.pre.clientes)} clientes ainda sem bloqueio`, js:"cdIrLista('cobrar','pre')",
+        extra: pctSaiu!=null ? `<div class="cdm-barra"><i style="width:${pctSaiu}%"></i></div><div class="cdm-d">${pctSaiu}% da lista de ${dAnt} já saiu (${cdMoeda(preSaiu)} de ${cdMoeda(preOnt)}), paga ou corrigida</div>` : ''})}
+      ${tile({tom:'info', l:'Vencido total', v:cdMoeda(g.todos.valor), s:`${cdNum(g.todos.clientes)} clientes, sem Filial 10`, js:"cdIrLista('cobrar','todos')",
+        extra:`<div class="cdm-chips">${chip(g.delta, dAnt)}${chip(g.semana,'7 dias atrás')}</div>`})}
+      ${tile({tom:'ok', l:`Recebido em ${cdData(g.pag.dia)}`, v:cdMoeda(g.pag.valor), s:`${cdNum(g.pag.qt)} pagamentos`,
+        extra:`<div class="cdm-chips">${vPag!=null?chip(vPag,'mesmo dia da semana passada',false):'<span class="cdm-chip neutro">comparação semanal disponível com 7 dias de histórico</span>'}</div>
+          <div class="cdm-barra ok"><i style="width:${Math.max(0,100-(g.pag.pctAtraso||0))}%"></i></div><div class="cdm-d">${100-(g.pag.pctAtraso||0)}% pagos em dia, ${g.pag.pctAtraso||0}% depois do vencimento</div>`})}
+      ${tile({tom:'grafite', l:'Parado há mais de 90 dias', v:cdMoeda(g.d90.valor), s:`${g.pct90}% do valor cobrável`, js:"cdIrLista('cobrar','d90')",
+        extra:`<div class="cdm-barra grafite"><i style="width:${Math.min(100,g.pct90)}%"></i></div><div class="cdm-d">Precisa de régua própria de recuperação, separada da cobrança do dia</div>`})}
     </div>
+    <div class="cdg-nota">Vencido total soma todos os clientes com boleto vencido, inclusive quem está fora da cobrança. Antes do bloqueio conta só quem pode ser cobrado hoje. O IXC bloqueia 5 dias depois do vencimento (fim de semana ou feriado, no próximo dia útil).</div>
   </div>`;
 
   // 3. Quatro colunas: agir, corrigir, planejar, ficar atenta
