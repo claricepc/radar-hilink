@@ -24283,6 +24283,8 @@ function cdAbasHTML(){
   const atrasadas = (CD.atv.lista||[]).filter(a=>a.status==='aberta' && typeof cdPrazoEstourou==='function' && cdPrazoEstourou(a)).length;
   const eq = k => k==='atividades'||k==='desempenho'||k==='decisoes';
   const nDec = (CD.dec.lista||[]).filter(d=>d.status==='aguardando').length;
+  // A navegação entre as subpastas fica só no menu lateral; aqui fica só a marca de posição (a capa entra antes dela).
+  if(true) return '<div class="op-abas cd-abas-menu" style="display:none"></div>';
   return `<div class="op-abas">${CD_SUBS.filter(([k])=>(eq(k)===eq(CD.sub)) && ((!eq(k)&&k!=='carteiras')||cdPodeGerenciar())).map(([k,t])=>`<button type="button" class="${(CD.sub||'resumo')===k?'on':''}" onclick="cdSub('${k}')">${t}${k==='atividades'&&atrasadas?`<span class="q">${atrasadas}</span>`:''}${k==='decisoes'&&nDec?`<span class="q">${nDec}</span>`:''}</button>`).join('')}</div>`;
 }
 window.cdSub = cdSub;
@@ -26770,7 +26772,7 @@ function cdCapaHTML(){
 @media (max-width:1100px){#cd-capa .vg-cards{grid-template-columns:1fr!important}}`; document.head.appendChild(st); })();
 if(!window._cdCapaWrap){ window._cdCapaWrap=true; const _r=renderCobrancaDia; renderCobrancaDia=function(){ const r=_r.apply(this,arguments);
   try{ const box=document.getElementById('mod-cobrancaDia'); const sub=CD.sub||'resumo';
-    if(box && CD.perfil!=='atendente' && !(CD.atv&&CD.atv.aberta) && CD.dados.resumo && ['resumo','onde','listas'].includes(sub)){
+    if(box && CD.perfil!=='atendente' && !(CD.atv&&CD.atv.aberta) && CD.dados.resumo && sub==='resumo'){
       const d=document.createElement('div'); d.id='cd-capa'; d.className='vg'; d.innerHTML=cdCapaHTML();
       const abas=box.querySelector('.op-abas'); if(abas) abas.insertAdjacentElement('beforebegin', d); else box.prepend(d);
     } }catch(e){ console.error('[Cobrança] capa', e); }
