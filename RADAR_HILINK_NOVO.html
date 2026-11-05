@@ -2565,6 +2565,11 @@ body.radar-modo-atendente .nav-sub{display:none!important}
 .ini-card .ln button{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left;text-decoration:underline dotted}
 .ini-card .ir{margin-top:8px;font-size:11px;color:#2da3ff;font-weight:700}
 
+.dd-context:has(.vg-sit){display:block!important}
+.vg-lista-ctx:has(.vg-sit){width:100%}
+.vg-sit-c0{background:#D13438!important}.vg-sit-c1{background:#E0A100!important}.vg-sit-c2{background:#8A8F98!important}.vg-sit-c3{background:#3B3F46!important}.vg-sit-c4{background:#0071BC!important}.vg-sit-c5{background:#7A4BC2!important}
+.vg-sit-isento{grid-column:1/-1;text-align:left;font:inherit;font-size:14px;line-height:1.45;background:rgba(224,161,0,.12);border:1px solid #E0A100;border-radius:10px;padding:10px 14px;cursor:pointer;color:inherit}
+.vg-sit-isento.on,.vg-sit-isento:hover{box-shadow:0 0 0 2px rgba(224,161,0,.35)}
 .vg-sit{flex:1 1 100%;display:grid;grid-template-columns:220px 1fr;gap:14px 20px;align-items:start;margin:4px 0 6px}
 .vg-sit-graf{display:flex;flex-direction:column;align-items:center;gap:6px}
 .vg-sit-graf .vg-donut{width:190px!important;height:190px!important}
@@ -7590,6 +7595,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
       min-width:26px!important;
       height:24px!important;
     }
+    .dd-modal .btn-mini[onclick^="toggleDrillCols"]{width:auto!important;padding:0 12px!important;height:30px!important;font-size:12.5px!important;white-space:nowrap!important}
     .dd-empty{
       background:#071522!important;
       color:var(--text-caption)!important;
@@ -26641,12 +26647,12 @@ async function vgLista(tipo, titulo, explicacao){
   toast('Buscando a lista...','success');
   const r=await sb.rpc('radar_vg_lista',{p_marca:m, p_lista:tipo});
   if(r.error){ toast('Não consegui abrir a lista: '+r.error.message,'error'); return; }
-  const rows=(r.data||[]).map(x=>({...x, vencimento:cdData(x.vencimento), bloqueio:cdData(x.bloqueio), data_cancelamento:cdData(x.data_cancelamento)}));
+  const rows=(r.data||[]).map(x=>({...x, vencimento:cdData(x.vencimento), bloqueio:cdData(x.bloqueio), data_cancelamento:cdData(x.data_cancelamento), isento_txt:x.isento==null?'':(x.isento?'Sim':'Não')}));
   VG_LISTA_ATUAL={tipo, titulo, rows};
   const cancel=tipo.startsWith('cancel:');
   const cols = cancel
     ? [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'contrato',label:'Contrato'},{k:'data_cancelamento',label:'Cancelado em'},{k:'motivo',label:'Motivo'},{k:'obs',label:'Observação do IXC'}]
-    : [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'titulos',label:'Boletos'},{k:'valor',label:'Valor'},{k:'vencimento',label:'Vencimento mais antigo'},{k:'dias_atraso',label:'Dias de atraso'}].concat(tipo.startsWith('inad_')?[{k:'bloqueio',label:'Bloqueio'},{k:'situacao',label:'Situação do contrato'}]:[]);
+    : [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'titulos',label:'Boletos'},{k:'valor',label:'Valor'},{k:'vencimento',label:'Vencimento mais antigo'},{k:'dias_atraso',label:'Dias de atraso'}].concat(tipo.startsWith('inad_')?[{k:'bloqueio',label:'Bloqueio'},{k:'situacao',label:'Situação do contrato'},{k:'isento_txt',label:'Isento no IXC'}]:[]);
   VG_LISTA_ATUAL.cols=cols; VG_LISTA_ATUAL.explicacao=explicacao; VG_LISTA_ATUAL.m=m;
   vgListaAbrir(rows, '');
 }
@@ -26658,7 +26664,7 @@ const VG_SIT_ACAO={
   'Sem contrato encontrado':'O boleto não está ligado a um contrato que o Radar conhece. Verificar no IXC antes de cobrar.',
   'Pré-contrato':'Boleto de contrato que nunca foi ativado. Verificar no IXC se a cobrança procede ou se deve ser cancelada.',
   'Desistiu':'Cliente desistiu antes da ativação. Verificar no IXC se a cobrança procede ou se deve ser cancelada.'};
-const VG_SIT_COR={'Ativo e bloqueado':'#E5484D','Ativo e liberado (navegando)':'#F5A524','Sem contrato encontrado':'#94A3B8','Cancelado':'#475569','Pré-contrato':'#4DA3E0','Desistiu':'#8E4EC6'};
+const VG_SIT_COR={'Ativo e bloqueado':'#D13438','Ativo e liberado (navegando)':'#E0A100','Sem contrato encontrado':'#8A8F98','Cancelado':'#3B3F46','Pré-contrato':'#0071BC','Desistiu':'#7A4BC2'};
 function vgListaAbrir(rows, grupo){
   const L=VG_LISTA_ATUAL; if(!L) return;
   const cancel=L.tipo.startsWith('cancel:'), m=L.m;
@@ -26674,9 +26680,11 @@ function vgListaAbrir(rows, grupo){
     resumo=`<div class="vg-sit">
       <div class="vg-sit-graf">${vgDonut(partes, totV||1, cdNum(totN))}<div class="vg-sit-tot"><b>${brl0(totV)}</b><span>${cdNum(totN)} clientes com mais de 90 dias</span></div></div>
       <div class="vg-sit-cards">${ord.map(k=>`<button type="button" class="vg-sit-card${grupo===k?' on':''}" onclick="${js(k)}" title="Clique para ver só este grupo">
-        <div class="vg-sit-top"><i style="background:${VG_SIT_COR[k]||'#94A3B8'}"></i><b>${k}</b></div>
+        <div class="vg-sit-top"><i class="vg-sit-c${Object.keys(VG_SIT_COR).indexOf(k)}"></i><b>${k}</b></div>
         <div class="vg-sit-num"><strong>${cdNum(g[k].n)}</strong> clientes <span>${brl0(g[k].v)} · ${pct(g[k].v)}</span></div>
         <div class="vg-sit-acao">${VG_SIT_ACAO[k]||''}</div></button>`).join('')}</div>
+      ${(()=>{ const is=L.rows.filter(x=>x.isento); if(!is.length) return ''; const vi=is.reduce((a,x)=>a+(Number(x.valor)||0),0);
+        return `<button type="button" class="vg-sit-isento${grupo==='Contrato isento no IXC'?' on':''}" onclick="vgListaGrupo('Contrato isento no IXC')"><b>${cdNum(is.length)} destes clientes estão com o contrato marcado como isento no IXC</b> (${brl0(vi)}). Isento não gera fatura nova; a dívida que aparece é de boletos anteriores. Antes de cobrar, confirme se é cortesia de verdade (não cobrar) ou se a isenção foi usada para parar a cobrança de quem acumulou boletos. Clique para ver só esses.</button>`; })()}
       <div class="vg-sit-nota">O IXC não cancela o contrato sozinho aos 90 dias: ele para de gerar novos boletos depois que 2 ficam em aberto. Por isso a decisão sobre cada grupo é da gestão. Clique num grupo para ver só esses clientes.</div>
       ${grupo?`<button type="button" class="btn sm" onclick="vgListaGrupo('')">Ver todos os grupos</button>`:''}</div>`;
   }
@@ -26692,7 +26700,7 @@ function vgExportarOpa(){
   nomes.forEach((n,i)=>setTimeout(()=>cdBaixar(`${cdSlug(n)}_${slug}_${data}.csv`, ['name,whatsapp', ...[...grupos[n]].map(([f,x])=>`${cdCsvCampo(x.nome)},${f}`)].join('\r\n')), i*400));
   toast(`${nomes.length} arquivo(s): ${nomes.join(', ')}.${semFone?' '+semFone+' sem celular válido ficaram de fora.':''}`,'success');
 }
-function vgListaGrupo(k){ const L=VG_LISTA_ATUAL; if(!L) return; try{closeDrill()}catch(e){} vgListaAbrir(k?L.rows.filter(x=>(x.situacao||'Sem contrato encontrado')===k):L.rows, k); }
+function vgListaGrupo(k){ const L=VG_LISTA_ATUAL; if(!L) return; try{closeDrill()}catch(e){} vgListaAbrir(k==='Contrato isento no IXC'?L.rows.filter(x=>x.isento):k?L.rows.filter(x=>(x.situacao||'Sem contrato encontrado')===k):L.rows, k); }
 Object.assign(window,{vgLista,vgExportarOpa,vgListaGrupo});
 function vgIaPendentes(){
   const rows=(INI.iaPend||[]).map(x=>({...x, enviado:cdData(String(x.enviado_em||'').slice(0,10)), caminho_txt:x.caminho==='fechado pela IA em 0 s'?'IA encerrou na hora':'IA fez a triagem e encerrou'}));
