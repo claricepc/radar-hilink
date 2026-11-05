@@ -12908,7 +12908,7 @@ function redeCapaRender(){
   const totT=tipos.reduce((a,p)=>a+p.n,0);
   // 3) filas
   const fl=d.filas||{};
-  const filas=[['cliente','ATENDIMENTO','#4DA3E0'],['campo','TÉCNICO DE CAMPO','#F5A524'],['noc','NOC','#E5484D']].map(([k,rot,cor])=>({rot:`${rot} <small>(${cdNum(n((fl[k]||{}).alta))} alta)</small>`, n:n((fl[k]||{}).casos), cor, js:`redeCapaFiltrar('${k}','')`, exp:'Clique para ver a fila'}));
+  const filas=[['cliente','Atendimento','#4DA3E0'],['campo','Técnico de campo','#F5A524'],['noc','NOC','#E5484D']].map(([k,rot,cor])=>({rot:`${rot} <small>(${cdNum(n((fl[k]||{}).alta))} alta)</small>`, n:n((fl[k]||{}).casos), cor, js:`redeCapaFiltrar('${k}','')`, exp:'Clique para ver a fila'}));
   const totF=filas.reduce((a,p)=>a+p.n,0);
   // linha 2: barras
   const col=d.coletivos||[], colCli=col.reduce((a,c)=>a+n(c.afetados),0);
@@ -26665,6 +26665,63 @@ async function vgIaGerarAtividade(){
   cdAtvModal();
 }
 Object.assign(window,{vgIaPendentes,vgIaGerarAtividade});
+// ===== Capa da Cobrança do Dia: a manchete do módulo. Mesmos números da Visão geral (mesma fonte pronta no banco). =====
+function cdCapaHTML(){
+  const n=v=>Number(v)||0, pct=(v,t)=>t?(v/t*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%':'';
+  const brl0=x=>(Number(x)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  if(!INI.vg || !INI.gr){ if(!CD._capaBusca){ CD._capaBusca=true; vgCarregar().then(()=>{ if(STATE.activeMod==='cobrancaDia') renderCobrancaDia(); }).finally(()=>{ CD._capaBusca=false; }); } return '<div class="cdg-nota" style="margin:4px 0 12px">Carregando a capa da cobrança...</div>'; }
+  const leg=(partes,tot)=>`<div class="vg-base-leg">${partes.map(p=>`<button type="button" onclick="event.stopPropagation();${p.js}" title="${p.exp||''}"><i style="background:${p.cor}"></i><span>${p.rot}${p.cli!=null?` <small>(${cdNum(p.cli)} cli.)</small>`:''}</span><b>${p.fmt||cdNum(p.n)}</b><em>${pct(p.n,tot)}</em></button>`).join('')}</div>`;
+  const pizza=(rot, valor, unid, partes, nota, centro)=>{ const tot=partes.reduce((a,p)=>a+p.n,0)||1;
+    return `<div class="vg-card"><div class="vg-l">${rot}</div><div class="vg-base-corpo">${vgDonut(partes.filter(p=>p.n>0), tot, centro)}<div class="vg-base-dir"><div class="vg-v">${valor} <small>${unid}</small></div>${leg(partes,tot)}</div></div>${nota?`<div class="vg-base-nota">${nota}</div>`:''}</div>`; };
+  const v=INI.vg||{}, G=INI.gr||{}, rc=G.receita||{}, inad=G.inad||{}, b=INI.base, bqs=INI.bq||[];
+  // 1) receita do mês (igual à Visão geral)
+  const rec=[
+    {k:'recebido', rot:'Recebido', n:n(rc.recebido), cli:rc.cli_recebido, cor:'#30A46C', exp:'Boletos deste mês já pagos'},
+    {k:'hoje', rot:'Vence hoje', n:n(rc.hoje), cli:rc.cli_hoje, cor:'#F5A524', exp:'Vencem hoje; amanhã quem não pagou entra em atraso'},
+    {k:'a_vencer', rot:'A vencer', n:n(rc.a_vencer), cli:rc.cli_a_vencer, cor:'#4DA3E0', exp:'Vencem de amanhã até o fim do mês'},
+    {k:'atraso', rot:'Em atraso no mês', n:n(rc.atraso), cli:rc.cli_atraso, cor:'#E5484D', exp:'Venceram neste mês e não pagaram'}];
+  rec.forEach(p=>{ p.fmt=brl0(p.n); p.js=`vgLista('${p.k}','Receita do mês: ${p.rot}','${p.exp}.')`; });
+  const totR=rec.reduce((a,p)=>a+p.n,0);
+  // 2) inadimplência por faixa (igual às barras da Visão geral)
+  const fx=[['pre','Ainda não bloqueou','#F5A524','vencidos que ainda não chegaram à data de bloqueio'],['d30','Bloqueado, até 30 dias','#E5484D','já passaram do bloqueio, até 30 dias de atraso'],['d90','31 a 90 dias','#B42318','atraso de 31 a 90 dias'],['mais90','Mais de 90 dias','#475569','acima de 90 dias, perto ou depois do cancelamento automático']]
+    .map(([k,rot,cor,exp])=>({rot, n:n((inad[k]||{}).valor), cli:(inad[k]||{}).clientes, cor, fmt:brl0((inad[k]||{}).valor), exp, js:`vgLista('inad_${k}','Inadimplência: ${rot}','Clientes com boleto vencido em aberto: ${exp}.')`}));
+  const totI=fx.reduce((a,p)=>a+p.n,0);
+  // 3) base por situação (igual à Visão geral)
+  const base = b ? [['navegando','Liberado','#30A46C'],['bloq_auto','Bloqueio automático','#F5A524'],['bloq_manual','Bloqueio manual','#E5484D']].map(([k,rot,cor])=>({rot, n:n((b.grupos||{})[k]), cor, js:`vgBaseLista('${k}')`, exp:'Clique para ver a lista'})) : [];
+  // linha 2
+  const dsem=d=>{ const x=new Date(d+'T12:00:00'); return x.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','')+', '+x.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); };
+  const bqMain=bqs.find(x=>x.clientes>=10)||bqs[0];
+  const barBq = bqs.length ? vgBarras(bqs.slice(0,5).map(x=>({rot:dsem(x.data), n:x.clientes, cor:x===bqMain?'#E5484D':'#F5A524', txt:`${cdNum(x.clientes)} cli. <small>${brl0(x.valor)}</small>`, js:`radarBloqueioLista('${x.data}')`}))) : '<div class="vg-x">nenhum bloqueio nos próximos 10 dias</div>';
+  const listas = Object.entries(CD_ABAS).map(([k,a])=>({k, rot:a.titulo, n:(CD.dados[a.fonte]||[]).length}));
+  const barLis = vgBarras(listas.filter(x=>x.n>0).sort((a,b)=>b.n-a.n).map(x=>({rot:cdEsc(x.rot), n:x.n, cor:'#4DA3E0', txt:cdNum(x.n), js:`cdIrLista('${x.k}')`})));
+  const g=(()=>{ try{ return cdGuiaDados(); }catch(e){ return null; } })(), pg=g&&g.pag||{qt:0,valor:0,atraso:0};
+  const delta=n(v.vencido_valor)-n(v.vencido_valor_ant);
+  const cardB=(rot,valor,sub,html,cls)=>`<div class="vg-card ${cls||''}"><div class="vg-l">${rot}</div><div class="vg-v">${valor}</div>${sub?`<div class="vg-s">${sub}</div>`:''}${html}</div>`;
+  const pagHtml = vgBarras([
+    {rot:'Pagos em dia', n:Math.max(0,n(pg.qt)-n(pg.atraso)), cor:'#30A46C', txt:cdNum(Math.max(0,n(pg.qt)-n(pg.atraso))), js:"cdSub('onde')"},
+    {rot:'Pagos em atraso', n:n(pg.atraso), cor:'#F5A524', txt:cdNum(pg.atraso), js:"cdSub('onde')"}]);
+  return `<div class="vg-cards cd-capa-l">
+      ${pizza(`Receita do mês · vencimento em ${new Date().toLocaleDateString('pt-BR',{month:'long'})}`, brl0(totR), 'a receber no mês', rec, 'Só boletos que vencem neste mês. O atraso dos meses anteriores está na Inadimplência.', pct(rec[0].n,totR))}
+      ${pizza('Inadimplência · todos os meses', brl0(totI), `${cdNum(fx.reduce((a,p)=>a+n(p.cli),0))} clientes`, fx, `${delta<=0?'Caiu':'Subiu'} ${brl0(Math.abs(delta))} em 7 dias. Faixa pelo boleto mais antigo de cada cliente.`)}
+      ${b?pizza('Base ativa · contada por contrato', cdNum(b.contratos), 'contratos', base, `Bloqueado continua ativo até ser cancelado. ${cdNum(b.clientes)} clientes.`, pct(base[0].n, base.reduce((a,p)=>a+p.n,0)||1)):''}
+    </div>
+    <div class="vg-cards cd-capa-l">
+      ${cardB('Próximos bloqueios', bqMain?`${cdNum(bqMain.clientes)} <small>clientes em ${dsem(bqMain.data)}</small>`:'Nenhum', bqMain?`${brl0(bqMain.valor)} em aberto hoje`:'', barBq, bqMain&&bqMain.clientes>=10?'atencao':'')}
+      ${cardB('Listas para cobrar hoje', cdNum(listas.reduce((a,x)=>a+x.n,0)), 'itens nas listas de trabalho', barLis)}
+      ${cardB('Pagamentos do último dia', brl0(pg.valor), `${cdNum(pg.qt)} boletos pagos${pg.dia?' em '+cdData(pg.dia):''}`, pagHtml)}
+    </div>
+    <div class="cdg-nota" style="margin:0 0 12px">Mesmos números da Visão geral · tudo é clicável · lista abre com exportação para o OPA</div>`;
+}
+(function(){ const st=document.createElement('style'); st.textContent=`#cd-capa .vg-cards{display:grid;gap:12px;margin:0 0 12px;grid-template-columns:repeat(3,minmax(0,1fr))!important}#cd-capa .vg-card{grid-column:auto!important}
+@media (max-width:1100px){#cd-capa .vg-cards{grid-template-columns:1fr!important}}`; document.head.appendChild(st); })();
+if(!window._cdCapaWrap){ window._cdCapaWrap=true; const _r=renderCobrancaDia; renderCobrancaDia=function(){ const r=_r.apply(this,arguments);
+  try{ const box=document.getElementById('mod-cobrancaDia'); const sub=CD.sub||'resumo';
+    if(box && CD.perfil!=='atendente' && !(CD.atv&&CD.atv.aberta) && CD.dados.resumo && ['resumo','onde','listas'].includes(sub)){
+      const d=document.createElement('div'); d.id='cd-capa'; d.className='vg'; d.innerHTML=cdCapaHTML();
+      const abas=box.querySelector('.op-abas'); if(abas) abas.insertAdjacentElement('beforebegin', d); else box.prepend(d);
+    } }catch(e){ console.error('[Cobrança] capa', e); }
+  return r; }; window.renderCobrancaDia=renderCobrancaDia; }
+
 // Nome da OLT conforme o cadastro de transmissores do IXC
 function radarOlt(id){ const o=(window.RADAR_OLT||{})[String(id)]; return o ? o : null; }
 function radarPonNome(pon){ const tr=String(pon||'').split('-')[0], o=radarOlt(tr); return o ? `${o.descricao} · porta ${String(pon).slice(tr.length+1)}` : 'PON '+pon; }
@@ -26674,9 +26731,9 @@ function vgRedeDiagnostico(d){
   let tit, oque, quem;
   if(pct>=50){ tit='Problema na porta da OLT ou no cabo principal'; quem='NOC';
     oque=`${pct}% dos clientes desta porta estão com sinal fraco (média ${d.rx_medio_fracos} dBm). Quando quase todos caem juntos, o defeito está antes de chegar às caixas: potência da porta na OLT (módulo SFP), conector no DIO ou o cabo que sai do POP.`; }
-  else if(pct>=20 && raio && raio<=800){ tit='Problema num ramal: os fracos estão juntos na mesma área'; quem='TÉCNICO DE CAMPO';
+  else if(pct>=20 && raio && raio<=800){ tit='Problema num ramal: os fracos estão juntos na mesma área'; quem='Técnico de campo';
     oque=`${pct}% da porta está fraca e os clientes com problema ficam num raio de ${cdNum(raio)} m. Os demais da porta estão bons (média ${d.rx_medio_bons} dBm). O defeito tende a estar na caixa (CTO), no divisor ou numa emenda que atende essa área.`; }
-  else { tit='Casos individuais espalhados, não é falha coletiva'; quem='TÉCNICO DE CAMPO (visitas individuais)';
+  else { tit='Casos individuais espalhados, não é falha coletiva'; quem='Técnico de campo (visitas individuais)';
     oque=`Só ${pct}% da porta está fraca${raio?` e os clientes estão espalhados (até ${cdNum(raio)} m de distância entre si)`:''}. O sinal médio dos outros clientes da porta é ${d.rx_medio_bons??'-'} dBm, ou seja, a porta está boa. O problema tende a ser de cada cliente: cabo drop, conector ou ONU.`; }
   const causas=Object.entries(d.causas||{}).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${k==='dying-gasp'?'falta de energia na casa do cliente (dying-gasp)':/^LO/i.test(k)?'perda de sinal óptico ('+k+')':k}: ${n}`).join('; ');
   const mapa=d.centro_fracos?`<a href="https://www.google.com/maps?q=${d.centro_fracos.lat},${d.centro_fracos.lon}" target="_blank" rel="noopener">ver no mapa o centro da área afetada</a>`:'';
@@ -28193,11 +28250,11 @@ function renderRedeCasos(){
   REDE.limite = REDE.limite || 100;
   const mostra = ls.slice(0, REDE.limite);
   const sel=(id,rot,val,opts,campo)=>`<label class="rf-campo">${rot} <select onchange="REDE['${campo}']=this.value;REDE.limite=100;renderRedeCasos()">${opts.map(([k,t])=>`<option value="${k}" ${String(val||'')===String(k)?'selected':''}>${t}</option>`).join('')}</select></label>`;
-  const filaOpts=[['','Todas'],...Object.entries(REDE_FILAS).map(([f,F])=>[f,F.quem.toUpperCase()])];
+  const filaOpts=[['','Todas'],...Object.entries(REDE_FILAS).map(([f,F])=>[f,F.quem])];
   const casoOpts=[['','Todos'],...Object.entries(regras).sort((a,b)=>a[1].ordem-b[1].ordem).filter(([k,v])=>v.ativo).map(([k,v])=>[k,cdEsc(v.nome)])];
   const prioOpts=[['','Todas'],...[1,2,3].map(p=>[String(p),REDE_PRIO[p][0]])];
   const chips=[];
-  if(REDE.fila) chips.push(['fila','Fila: '+REDE_FILAS[REDE.fila].quem.toUpperCase()]);
+  if(REDE.fila) chips.push(['fila','Fila: '+REDE_FILAS[REDE.fila].quem]);
   if(REDE.caso) chips.push(['caso','Tipo: '+(regras[REDE.caso]?.nome||REDE.caso)]);
   if(REDE.prio) chips.push(['prio','Prioridade: '+REDE_PRIO[REDE.prio][0]]);
   if(REDE.filiais) chips.push(['filiais','Filial: '+rfFiliaisRotulo(REDE.filiais, filiais)]);
