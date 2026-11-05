@@ -2603,6 +2603,42 @@ body.radar-modo-atendente .nav-sub{display:none!important}
 .cd-sep{font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.7;margin:4px 0 10px}
 .cd-passos{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 2px;font-size:12px;opacity:.85}
 .cd-passos span{border:1px solid rgba(90,150,220,.45);border-radius:999px;padding:4px 10px}
+/* ===== Filtros padrão do Radar: uma barra, seleção de filiais por marca, chips e ações ===== */
+.rf-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px;margin:0 0 6px}
+.rf-bar>.rf-sp{flex:1}
+.rf-campo{display:flex;align-items:center;gap:6px;background:#0E2236;border:1px solid rgba(90,150,220,.40);border-radius:8px;padding:0 8px;height:32px;color:#B4C2D0}
+.rf-campo select,.rf-campo input{background:transparent;border:0;color:#F2F5F8;font-size:12px;height:30px;outline:none}
+.rf-campo select option{background:#0E2236;color:#F2F5F8}
+.rf-campo input{width:170px}
+.rf-dd{position:relative}
+.rf-dd>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:1px solid rgba(90,150,220,.40);border-radius:8px;background:#0E2236;color:#F2F5F8;white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.rf-dd>summary::-webkit-details-marker{display:none}
+.rf-dd>summary::after{content:'';border:4px solid transparent;border-top-color:#8FA3B8;margin-top:4px;margin-left:2px}
+.rf-dd[open]>summary{border-color:#4DA3E0}
+.rf-dd>summary b{color:#4DA3E0;font-weight:700}
+.rf-pop{position:absolute;z-index:60;top:36px;left:0;min-width:260px;background:#0E2236;border:1px solid rgba(90,150,220,.55);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.45);padding:10px;display:flex;flex-direction:column;gap:6px;color:#F2F5F8}
+.rf-dd.rf-dir .rf-pop{left:auto;right:0}
+.rf-pop label{display:flex;align-items:center;gap:7px;cursor:pointer;padding:3px 2px;border-radius:5px}
+.rf-pop label:hover{background:rgba(77,163,224,.10)}
+.rf-grupo{font-weight:700;margin-top:4px}
+.rf-grupo span,.rf-nota{font-weight:400;font-size:11px;color:#8FA3B8}
+.rf-filho{padding-left:22px!important}
+.rf-linha{display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid rgba(143,163,184,.20);padding-top:8px;margin-top:4px}
+.rf-linha button,.rf-menu button{background:#11283F;color:#F2F5F8;border:1px solid rgba(90,150,220,.40);border-radius:6px;padding:5px 9px;font-size:11.5px;cursor:pointer}
+.rf-linha button:hover,.rf-menu button:hover:not(:disabled){border-color:#4DA3E0}
+.rf-menu{display:flex;flex-direction:column;gap:6px;min-width:290px}
+.rf-menu button{text-align:left;padding:8px 10px;font-size:12px}
+.rf-menu button small{display:block;color:#8FA3B8;font-size:11px;margin-top:2px}
+.rf-menu button:disabled{opacity:.45;cursor:not-allowed}
+.rf-faixa{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:6px}
+.rf-faixa input{width:70px;background:#0B1B2B;color:#fff;border:1px solid rgba(90,150,220,.55);border-radius:6px;padding:4px 6px}
+.rf-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px;font-size:12px;min-height:4px}
+.rf-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(77,163,224,.14);border:1px solid rgba(77,163,224,.45);color:#D6E8F7;border-radius:999px;padding:3px 4px 3px 10px}
+.rf-chip button{background:transparent;border:0;color:#8FA3B8;cursor:pointer;font-size:14px;line-height:1;padding:0 4px;border-radius:50%}
+.rf-chip button:hover{color:#fff;background:rgba(255,255,255,.12)}
+.rf-limpar{background:transparent;border:0;color:#4DA3E0;cursor:pointer;font-size:12px;text-decoration:underline}
+.rf-res{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13px;margin:2px 0 8px}
+.rf-res button{background:transparent;border:0;color:#4DA3E0;cursor:pointer;font-size:12px;text-decoration:underline;padding:0}
 @media (max-width:760px){.cd-atalho{flex-direction:column;align-items:flex-start}}
 /* ===== Cobrança do Dia: guia de gestão (só apresentação; números vêm das mesmas listas do módulo) ===== */
 #mod-cobrancaDia,#mod-premiacoes,#mod-oportunidades,#mod-inicio{--g-bg:#0B1B2B;--g-card:#0E2236;--g-card2:#11283F;--g-line:rgba(143,163,184,.20);--g-text:#F2F5F8;--g-sub:#B4C2D0;--g-muted:#8FA3B8;--g-blue:#4DA3E0;--g-risk:#FF6B70;--g-risk-bg:rgba(229,72,77,.10);--g-warn:#FFB84D;--g-warn-bg:rgba(245,165,36,.09);--g-ok:#4CC38A;--g-ok-bg:rgba(48,164,108,.10);--g-info-bg:rgba(77,163,224,.09)}
@@ -23740,15 +23776,15 @@ function renderClientSheet(index){
 </script>
 <script>
 // ====================== MÓDULO: COBRANÇA DO DIA (dados do banco, leitura diária do IXC) ======================
-const CD = { dados:{}, aba:'cobrar', filial:'Todas', carregadoEm:null, titulosEm:null, atualizando:false, carregando:false, erro:null, selecaoExcluidos:new Set(), exportacoesOpa:new Map(), exportandoOpa:false,
-  f:{ diasMin:1, diasMax:5, boletosMin:'', boletosMax:'', valorMin:'', valorMax:'', busca:'', incluirExcluidos:false, soComTelefone:false, preset:'pre' } };
+const CD = { dados:{}, aba:'cobrar', filiais:null, carregadoEm:null, titulosEm:null, atualizando:false, carregando:false, erro:null, selecaoExcluidos:new Set(), exportacoesOpa:new Map(), exportandoOpa:false,
+  f:{ diasMin:1, diasMax:'', boletosMin:'', boletosMax:'', valorMin:'', valorMax:'', busca:'', incluirExcluidos:false, soComTelefone:false, antesBloqueio:true, preset:'pre' } };
 const CD_PRESETS = {
-  pre:    { nome:'Antes do bloqueio (1 a 5 dias)', f:{diasMin:1, diasMax:5, boletosMin:'', boletosMax:'', incluirExcluidos:false} },
-  um:     { nome:'Só 1 boleto em aberto',          f:{diasMin:'', diasMax:'', boletosMin:1, boletosMax:1, incluirExcluidos:false} },
-  d6_30:  { nome:'6 a 30 dias',                    f:{diasMin:6, diasMax:30, boletosMin:'', boletosMax:'', incluirExcluidos:false} },
-  d31_90: { nome:'31 a 90 dias',                   f:{diasMin:31, diasMax:90, boletosMin:'', boletosMax:'', incluirExcluidos:false} },
-  d90:    { nome:'Mais de 90 dias',                f:{diasMin:91, diasMax:'', boletosMin:'', boletosMax:'', incluirExcluidos:false} },
-  todos:  { nome:'Todos os vencidos',              f:{diasMin:'', diasMax:'', boletosMin:'', boletosMax:'', incluirExcluidos:true} }
+  pre:    { nome:'Antes do bloqueio (ainda não bloqueou)', f:{diasMin:1, diasMax:'', boletosMin:'', boletosMax:'', incluirExcluidos:false, antesBloqueio:true} },
+  um:     { nome:'Só 1 boleto em aberto',          f:{diasMin:'', diasMax:'', boletosMin:1, boletosMax:1, incluirExcluidos:false, antesBloqueio:false} },
+  d6_30:  { nome:'6 a 30 dias',                    f:{diasMin:6, diasMax:30, boletosMin:'', boletosMax:'', incluirExcluidos:false, antesBloqueio:false} },
+  d31_90: { nome:'31 a 90 dias',                   f:{diasMin:31, diasMax:90, boletosMin:'', boletosMax:'', incluirExcluidos:false, antesBloqueio:false} },
+  d90:    { nome:'Mais de 90 dias',                f:{diasMin:91, diasMax:'', boletosMin:'', boletosMax:'', incluirExcluidos:false, antesBloqueio:false} },
+  todos:  { nome:'Todos os vencidos',              f:{diasMin:'', diasMax:'', boletosMin:'', boletosMax:'', incluirExcluidos:true, antesBloqueio:false} }
 };
 const CD_ABAS = {
   cobrar:           { titulo:'Cobrar',               fonte:'clientes_vencidos', desc:'Clientes com boleto vencido, um por linha. "Dias de atraso" conta pelo boleto mais antigo, que é o que define o bloqueio. Já exclui Filial 10 e títulos suspeitos.' },
@@ -23844,17 +23880,185 @@ async function cdAtualizarPagamentos(){
   toast('Lista atualizada: quem pagou depois das 4h já saiu.','success');
 }
 
+// ===== Filtros padrão do Radar =====
+// Uma barra por tela: Situação, Filial (caixas de seleção agrupadas por marca), Buscar, Filtros, Ações. Filtros ativos viram chips removíveis.
+// Hilink usa a mesma linha de disparo no OPA em todas as filiais; Nandonet e Pablom têm linha própria cada.
+const RADAR_FERIADOS = new Set(['2026-01-01','2026-03-06','2026-04-03','2026-04-21','2026-05-01','2026-09-07','2026-10-12','2026-11-02','2026-11-15','2026-11-20','2026-12-25','2027-01-01','2027-03-06','2027-03-26','2027-04-21','2027-05-01','2027-09-07','2027-10-12','2027-11-02','2027-11-15','2027-11-20','2027-12-25']); // mesma lista de ixc.radar_feriados (nacionais + Revolução Pernambucana)
+function radarIsoData(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+const RADAR_BLOQ_CACHE = new Map();
+// Regra validada no IXC: bloqueio = vencimento + 5 dias corridos; se cair em sábado, domingo ou feriado, vai para o próximo dia útil.
+function radarDataBloqueio(venc){
+  const k=String(venc||'').slice(0,10); if(!k) return '';
+  if(RADAR_BLOQ_CACHE.has(k)) return RADAR_BLOQ_CACHE.get(k);
+  const d=new Date(k+'T12:00:00'); if(isNaN(d)) return '';
+  d.setDate(d.getDate()+5);
+  while(d.getDay()===0||d.getDay()===6||RADAR_FERIADOS.has(radarIsoData(d))) d.setDate(d.getDate()+1);
+  const r=radarIsoData(d); RADAR_BLOQ_CACHE.set(k,r); return r;
+}
+const RF = { aberto:{} };
+function rfMarca(filial){ const s=String(filial||''); if(/^hilink/i.test(s)) return 'Hilink'; if(/nando/i.test(s)) return 'Nandonet'; if(/pablom/i.test(s)) return 'Pablom'; return s||'Sem filial'; }
+function rfGrupos(filiais){
+  const g=new Map(); filiais.forEach(f=>{ const m=rfMarca(f); if(!g.has(m)) g.set(m,[]); g.get(m).push(f); });
+  return [...g.entries()].sort((a,b)=>a[0]==='Hilink'?-1:b[0]==='Hilink'?1:a[0].localeCompare(b[0]));
+}
+function rfFiliaisRotulo(sel, todas){
+  if(!sel || (todas.length && todas.every(f=>sel.includes(f)))) return 'Todas';
+  if(!sel.length) return 'Nenhuma';
+  const partes=[]; let resto=[...sel];
+  const curto=(f,m)=>String(f).replace(new RegExp('^'+m+'\\s*','i'),'')||f;
+  rfGrupos(todas).forEach(([m,fs])=>{
+    const dentro=fs.filter(f=>sel.includes(f)); if(!dentro.length) return;
+    resto=resto.filter(f=>!fs.includes(f));
+    if(fs.length===1) partes.push(m);
+    else if(dentro.length===fs.length) partes.push('Toda a '+m);
+    else if(dentro.length>=fs.length-2 && dentro.length>1) partes.push(m+' menos '+fs.filter(f=>!dentro.includes(f)).map(f=>curto(f,m)).join(' e '));
+    else partes.push(...dentro);
+  });
+  return [...partes, ...resto].join(', ');
+}
+function rfToggle(el){
+  if(!el.isConnected) return; // aviso atrasado de um menu que já foi redesenhado
+  RF.aberto[el.id]=el.open;
+  if(el.open) document.querySelectorAll('details.rf-dd[open]').forEach(o=>{ if(o.id!==el.id){ o.open=false; RF.aberto[o.id]=false; } });
+}
+function rfFechar(id){ RF.aberto[id]=false; const el=document.getElementById(id); if(el) el.open=false; }
+document.addEventListener('click', e=>{
+  if(!e.target || !e.target.isConnected) return;
+  document.querySelectorAll('details.rf-dd[open]').forEach(o=>{ if(!o.contains(e.target)){ o.open=false; RF.aberto[o.id]=false; } });
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('details.rf-dd[open]').forEach(o=>{ o.open=false; RF.aberto[o.id]=false; }); });
+function rfDd(id, rotulo, conteudo, cls=''){
+  return `<details class="rf-dd ${cls}" id="${id}" ${RF.aberto[id]?'open':''} ontoggle="rfToggle(this)"><summary>${rotulo}</summary><div class="rf-pop">${conteudo}</div></details>`;
+}
+// Seletor de filiais com caixas de seleção, agrupado por marca. fn(acao, valor, marcado) recebe: 'todas' | 'so' (marca) | 'marca' | 'filial'.
+function rfFilialHTML(id, todas, sel, fn){
+  const marcado=f=>!sel||sel.includes(f);
+  const grupos=rfGrupos(todas);
+  const corpo=grupos.map(([m,fs])=>{
+    const n=fs.filter(marcado).length;
+    if(fs.length===1) return `<label class="rf-grupo"><input type="checkbox" ${n?'checked':''} data-v="${cdEsc(fs[0])}" onchange="${fn}('filial',this.dataset.v,this.checked)"> ${cdEsc(m)} <span>linha própria no OPA</span></label>`;
+    return `<label class="rf-grupo"><input type="checkbox" ${n===fs.length?'checked':''} ${n&&n<fs.length?'data-rf-ind="1"':''} data-v="${cdEsc(m)}" onchange="${fn}('marca',this.dataset.v,this.checked)"> ${cdEsc(m)} <span>${fs.length} filiais · mesma linha no OPA</span></label>`+
+      fs.map(f=>`<label class="rf-filho"><input type="checkbox" ${marcado(f)?'checked':''} data-v="${cdEsc(f)}" onchange="${fn}('filial',this.dataset.v,this.checked)"> ${cdEsc(f)}</label>`).join('');
+  }).join('');
+  const atalhos=`<div class="rf-linha"><button type="button" onclick="${fn}('todas')">Todas</button>${grupos.map(([m])=>`<button type="button" data-v="${cdEsc(m)}" onclick="${fn}('so',this.dataset.v)">Só ${cdEsc(m)}</button>`).join('')}</div>`;
+  const rot=rfFiliaisRotulo(sel,todas);
+  return rfDd(id, `Filial: <b>${cdEsc(rot)}</b>`, corpo+atalhos);
+}
+function rfAplicarSelecao(sel, todas, acao, v, marcado){
+  let s = sel ? [...sel] : [...todas];
+  if(acao==='todas') s=[...todas];
+  else if(acao==='so') s=todas.filter(f=>rfMarca(f)===v);
+  else if(acao==='marca'){ const fs=todas.filter(f=>rfMarca(f)===v); s = marcado ? [...new Set([...s,...fs])] : s.filter(f=>!fs.includes(f)); }
+  else if(acao==='filial'){ s = marcado ? [...new Set([...s,v])] : s.filter(f=>f!==v); }
+  return todas.every(f=>s.includes(f)) ? null : s;
+}
+function rfPosRender(raiz=document){ raiz.querySelectorAll('input[data-rf-ind]').forEach(el=>{ el.indeterminate=true; }); }
+function rfChipsHTML(chips, fnTirar, fnLimpar){
+  if(!chips.length) return '<div class="rf-chips"></div>';
+  return `<div class="rf-chips">${chips.map(([k,t])=>`<span class="rf-chip">${cdEsc(t)}<button type="button" aria-label="Tirar o filtro ${cdEsc(t)}" title="Tirar este filtro" onclick="${fnTirar}('${k}')">×</button></span>`).join('')}<button type="button" class="rf-limpar" onclick="${fnLimpar}()">Limpar tudo</button></div>`;
+}
+// Visão pessoal: fica salva neste navegador.
+function rfVisaoLer(tela){ try{ const v=localStorage.getItem('radar.visao.'+tela); return v?JSON.parse(v):null; }catch(e){ return null; } }
+function rfVisaoSalvar(tela, v){ try{ localStorage.setItem('radar.visao.'+tela, JSON.stringify(v)); return true; }catch(e){ return false; } }
+function rfVisaoApagar(tela){ try{ localStorage.removeItem('radar.visao.'+tela); }catch(e){} }
+Object.assign(window,{rfToggle,rfFechar,radarDataBloqueio,rfMarca});
+
+// --- Cobrança do Dia usando o padrão ---
+function cdFiliaisDisponiveis(){
+  const s=new Set(); (CD.dados.clientes_vencidos||[]).forEach(x=>x.filial&&s.add(x.filial)); cdLinhasBase().forEach(x=>x.filial&&s.add(x.filial));
+  return [...s].sort();
+}
+function cdFilialSel(acao, v, marcado){
+  CD.filiais = rfAplicarSelecao(CD.filiais, cdFiliaisDisponiveis(), acao, v, marcado);
+  renderCobrancaDia();
+}
+function cdFiliaisRotulo(){ return rfFiliaisRotulo(CD.filiais, cdFiliaisDisponiveis()); }
+function cdChips(){
+  const f=CD.f, c=[], faixa=(a,b,suf='')=>a!==''&&b!==''?`${a} a ${b}${suf}`:a!==''?`a partir de ${a}${suf}`:`até ${b}${suf}`;
+  if(CD.filiais) c.push(['filiais','Filial: '+cdFiliaisRotulo()]);
+  if(f.busca) c.push(['busca','Cliente: '+f.busca]);
+  if(CD.aba==='cobrar'){
+    if(f.preset && CD_PRESETS[f.preset]){ if(f.preset!=='todos') c.push(['preset',CD_PRESETS[f.preset].nome]); }
+    else{
+      if(f.antesBloqueio) c.push(['antesBloqueio','Ainda não bloqueou']);
+      if(f.diasMin!==''||f.diasMax!=='') c.push(['dias','Atraso '+faixa(f.diasMin,f.diasMax,' dias')]);
+      if(f.boletosMin!==''||f.boletosMax!=='') c.push(['boletos','Boletos '+faixa(f.boletosMin,f.boletosMax)]);
+      if(f.incluirExcluidos) c.push(['incluirExcluidos','Inclui quem não deve ser cobrado']);
+    }
+    if(f.valorMin!==''||f.valorMax!=='') c.push(['valor','Valor '+faixa(f.valorMin?'R$ '+f.valorMin:'',f.valorMax?'R$ '+f.valorMax:'')]);
+    if(f.soComTelefone) c.push(['soComTelefone','Só com celular válido']);
+  }
+  return c;
+}
+function cdTirarFiltro(k){
+  const f=CD.f;
+  if(k==='filiais') CD.filiais=null;
+  else if(k==='busca') f.busca='';
+  else if(k==='preset'){ cdAplicarPreset('todos'); return; }
+  else{
+    if(k==='dias'){ f.diasMin=''; f.diasMax=''; }
+    else if(k==='boletos'){ f.boletosMin=''; f.boletosMax=''; }
+    else if(k==='valor'){ f.valorMin=''; f.valorMax=''; }
+    else f[k]=false;
+    if(!['valor','soComTelefone'].includes(k)) f.preset='';
+  }
+  renderCobrancaDia();
+}
+function cdVisaoSalvar(){
+  rfFechar('cd-filtros-dd');
+  if(rfVisaoSalvar('cobrancaDia',{f:{...CD.f}, filiais:CD.filiais})) toast('Pronto: estes filtros abrem sempre que você entrar na lista (neste navegador).','success');
+  else toast('O navegador não deixou salvar.','warn');
+  renderCobrancaDia();
+}
+function cdVisaoAbrir(){ const v=rfVisaoLer('cobrancaDia'); if(!v) return; CD.f={...CD.f,...v.f}; CD.filiais=v.filiais||null; rfFechar('cd-filtros-dd'); renderCobrancaDia(); }
+function cdVisaoApagar(){ rfVisaoApagar('cobrancaDia'); rfFechar('cd-filtros-dd'); toast('Visão salva apagada.','success'); renderCobrancaDia(); }
+function cdFiltroBarHTML(){
+  const f=CD.f, cobrar=CD.aba==='cobrar';
+  const inp=(campo,ph)=>`<input type="number" min="0" value="${cdEsc(f[campo])}" placeholder="${ph}" onchange="cdSetFiltro('${campo}', this.value)">`;
+  const nAv = cobrar ? cdChips().filter(([k])=>!['filiais','busca','preset'].includes(k)).length : 0;
+  const temVisao=!!rfVisaoLer('cobrancaDia');
+  const situacao = cobrar ? `<label class="rf-campo">Situação <select onchange="this.value?cdAplicarPreset(this.value):0">${Object.entries(CD_PRESETS).map(([k,p])=>`<option value="${k}" ${f.preset===k?'selected':''}>${p.nome}</option>`).join('')}${f.preset?'':'<option value="" selected>Filtro personalizado</option>'}</select></label>` : '';
+  const painel = cobrar ? rfDd('cd-filtros-dd', `Filtros${nAv?` <b>(${nAv})</b>`:''}`, `
+      <div class="rf-faixa"><span>Dias de atraso</span><span>${inp('diasMin','de')} a ${inp('diasMax','até')}</span></div>
+      <div class="rf-faixa"><span>Boletos em aberto</span><span>${inp('boletosMin','de')} a ${inp('boletosMax','até')}</span></div>
+      <div class="rf-faixa"><span>Valor em aberto R$</span><span>${inp('valorMin','de')} a ${inp('valorMax','até')}</span></div>
+      <label><input type="checkbox" ${f.antesBloqueio?'checked':''} onchange="cdSetFiltro('antesBloqueio', this.checked)"> Só quem ainda não bloqueou <span class="rf-nota">(vencimento + 5 dias, pula fim de semana e feriado)</span></label>
+      <label><input type="checkbox" ${f.soComTelefone?'checked':''} onchange="cdSetFiltro('soComTelefone', this.checked)"> Só com celular válido</label>
+      <label title="Inclui quem tem liberação em confiança, OS de recolhimento/cancelamento ou está marcado no IXC para não participar da cobrança"><input type="checkbox" ${f.incluirExcluidos?'checked':''} onchange="cdSetFiltro('incluirExcluidos', this.checked)"> Mostrar também os que não devem ser cobrados</label>
+      <div class="rf-linha"><button type="button" onclick="cdVisaoSalvar()">Salvar como minha visão</button>${temVisao?'<button type="button" onclick="cdVisaoAbrir()">Abrir minha visão</button><button type="button" onclick="cdVisaoApagar()">Apagar minha visão</button>':''}</div>
+      <div class="rf-nota">Minha visão: filial e filtros que abrem sozinhos quando você entra na lista.</div>`) : '';
+  const podeOpa = !['suspeitos','quebra','gerados_vencidos','avencer'].includes(CD.aba);
+  const sel='data-cd-exige-selecao';
+  const acoes = rfDd('cd-acoes', 'Ações', `<div class="rf-menu">
+      ${podeOpa?`<button type="button" ${sel} data-cd-exportar-opa onclick="rfFechar('cd-acoes');cdExportarOpa('linha')">${CD.exportandoOpa?'Registrando exportação...':'Exportar para o OPA, um arquivo por linha'}<small>Hilink em um arquivo só; Nandonet e Pablom separados</small></button>
+      <button type="button" ${sel} data-cd-exportar-opa onclick="rfFechar('cd-acoes');cdExportarOpa('filial')">Exportar para o OPA, um arquivo por filial<small>Um arquivo para cada filial selecionada</small></button>`:''}
+      ${CD.aba==='avencer'?`<button type="button" ${sel} onclick="rfFechar('cd-acoes');cdExportarEmails()">Exportar e-mails<small>Só clientes selecionados com e-mail útil</small></button>`:''}
+      <button type="button" ${sel} onclick="rfFechar('cd-acoes');cdExportarPlanilha()">Exportar planilha<small>Todos os selecionados, com as colunas da tela</small></button>
+      ${cdPodeGerenciar()&&CD_ATV_TIPOS[CD.aba]&&CD.aba!=='avencer'?`<button type="button" ${sel} onclick="rfFechar('cd-acoes');cdAtvNova(CD.aba, CD.f.preset, true)">Gerar atividade com esta lista<small>Direciona os selecionados para as atendentes</small></button>`:''}
+    </div>`, 'rf-dir');
+  return `<div class="rf-bar">
+      ${situacao}
+      ${rfFilialHTML('cd-filial-dd', cdFiliaisDisponiveis(), CD.filiais, 'cdFilialSel')}
+      <label class="rf-campo">Buscar <input type="search" value="${cdEsc(f.busca)}" placeholder="nome ou código do cliente" onchange="cdSetFiltro('busca', this.value)"></label>
+      ${painel}
+      <span class="rf-sp"></span>
+      ${acoes}
+      <button class="btn sm" onclick="cdAtualizarPagamentos()" ${CD.atualizando?'disabled':''} title="Busca agora no IXC os títulos em aberto e tira da lista quem já pagou">${CD.atualizando?'Buscando no IXC...':'Atualizar pagamentos'}</button>
+    </div>${rfChipsHTML(cdChips(),'cdTirarFiltro','cdLimparFiltros')}`;
+}
+Object.assign(window,{cdFilialSel,cdTirarFiltro,cdVisaoSalvar,cdVisaoAbrir,cdVisaoApagar});
+
 function cdAplicarPreset(k){
   CD.f = { ...CD.f, ...CD_PRESETS[k].f, preset:k };
   renderCobrancaDia();
 }
 function cdSetFiltro(campo, valor){
-  CD.f[campo] = valor; CD.f.preset = '';
+  CD.f[campo] = valor; if(!['busca','valorMin','valorMax','soComTelefone'].includes(campo)) CD.f.preset = '';
   renderCobrancaDia();
 }
 function cdLimparFiltros(){
-  CD.f = { diasMin:'', diasMax:'', boletosMin:'', boletosMax:'', valorMin:'', valorMax:'', busca:'', incluirExcluidos:false, soComTelefone:false, preset:'todos' };
-  CD.filial = 'Todas'; renderCobrancaDia();
+  CD.f = { diasMin:'', diasMax:'', boletosMin:'', boletosMax:'', valorMin:'', valorMax:'', busca:'', incluirExcluidos:true, soComTelefone:false, antesBloqueio:false, preset:'todos' };
+  CD.filiais = null; renderCobrancaDia();
 }
 
 function cdLinhasBase(){
@@ -23863,7 +24067,7 @@ function cdLinhasBase(){
 }
 function cdLinhasFiltradas(){
   let l = cdLinhasBase();
-  if(CD.filial!=='Todas') l = l.filter(r => r.filial===CD.filial);
+  if(CD.filiais) l = l.filter(r => CD.filiais.includes(r.filial));
   const busca = String(CD.f.busca||'').trim().toUpperCase();
   if(busca) l = l.filter(r => String(r.nome||'').toUpperCase().includes(busca) || String(r.id_cliente)===busca);
   if(CD.aba!=='cobrar') return l;
@@ -23943,8 +24147,9 @@ function cdResumoPreset(k){
   return { clientes:l.length, valor:l.reduce((a,x)=>a+(Number(x.valor)||0),0) };
 }
 function cdFiltrarCobrar(l, f){
-  const dmin=cdVal(f.diasMin), dmax=cdVal(f.diasMax), bmin=cdVal(f.boletosMin), bmax=cdVal(f.boletosMax), vmin=cdVal(f.valorMin), vmax=cdVal(f.valorMax);
+  const dmin=cdVal(f.diasMin), dmax=cdVal(f.diasMax), bmin=cdVal(f.boletosMin), bmax=cdVal(f.boletosMax), vmin=cdVal(f.valorMin), vmax=cdVal(f.valorMax), hoje=cdHojeISO();
   return l.filter(r =>
+    (!f.antesBloqueio || radarDataBloqueio(r.vencimento_mais_antigo) >= hoje) &&
     (f.incluirExcluidos || (!r.exclusao && r.habilitado_cobranca)) &&
     (dmin===null || r.dias_atraso>=dmin) && (dmax===null || r.dias_atraso<=dmax) &&
     (bmin===null || r.boletos>=bmin) && (bmax===null || r.boletos<=bmax) &&
@@ -23983,11 +24188,11 @@ function cdAbasHTML(){
 window.cdSub = cdSub;
 function cdIrLista(aba, preset){
   CD.aba = aba; CD.sub = 'listas'; setTimeout(()=>{ try{ radarTrilha('cobrancaDia'); }catch(e){} }, 0);
-  if(aba==='cobrar' && preset){ CD.filial='Todas'; cdAplicarPreset(preset); }
+  if(aba==='cobrar' && preset){ CD.filiais=null; cdAplicarPreset(preset); }
   renderCobrancaDia();
   const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
-function cdIrPreFilial(f){ CD.sub='listas'; CD.aba='cobrar'; CD.f = { ...CD.f, ...CD_PRESETS.pre.f, preset:'pre' }; CD.filial=f; renderCobrancaDia();
+function cdIrPreFilial(f){ CD.sub='listas'; CD.aba='cobrar'; CD.f = { ...CD.f, ...CD_PRESETS.pre.f, preset:'pre' }; CD.filiais=[f]; renderCobrancaDia();
   const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
 function cdIrAba(k){ CD.sub='listas'; CD.aba=k; renderCobrancaDia(); const el=document.getElementById('cd-lista'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
 // ---- Guia de gestão da Cobrança do Dia ----
@@ -24097,8 +24302,8 @@ function cdGuiaHTML(){
     : ` Desde a leitura anterior, o vencido <span class="cdg-delta ${g.delta<0?'down':'up'}">${g.delta<0?'caiu':'subiu'} ${cdMoeda(Math.abs(g.delta))}</span>.`);
   const p1 = `Hoje há <b>${cdMoeda(g.todos.valor)}</b> vencidos, de <button type="button" class="cdg-link " onclick="cdIrLista('cobrar','todos')" title="Abrir a lista"><b>${cdNum(g.todos.clientes)} clientes</b></button>.${delta}`;
   const p2 = g.pre.clientes
-    ? `A prioridade do dia é cobrar <button type="button" class="cdg-link r" onclick="cdIrLista('cobrar','pre')" title="Abrir a lista">${cdNum(g.pre.clientes)} clientes com 1 a 5 dias de atraso</button> (${cdMoeda(g.pre.valor)}). Depois de cerca de 5 dias úteis o IXC bloqueia a internet deles, e cada bloqueio vira ligação, desgaste e risco de cancelamento.`
-    : `Não há clientes cobráveis com 1 a 5 dias de atraso hoje.`;
+    ? `A prioridade do dia é cobrar <button type="button" class="cdg-link r" onclick="cdIrLista('cobrar','pre')" title="Abrir a lista">${cdNum(g.pre.clientes)} clientes que ainda não foram bloqueados</button> (${cdMoeda(g.pre.valor)}). O IXC bloqueia 5 dias depois do vencimento (se cair em fim de semana ou feriado, no próximo dia útil), e cada bloqueio vira ligação, desgaste e risco de cancelamento.`
+    : `Não há clientes cobráveis que ainda não foram bloqueados hoje.`;
   const p3 = g.pag.qt
     ? `No último dia carregado (${cdData(g.pag.dia)}) entraram <b>${cdMoeda(g.pag.valor)}</b> em ${cdNum(g.pag.qt)} pagamentos, e ${g.pag.pctAtraso}% deles foram pagos depois do vencimento.`
     : `Não há pagamentos carregados do último dia.`;
@@ -24117,7 +24322,7 @@ function cdGuiaHTML(){
       <div class="cdg-nota">Os trechos sublinhados abrem a lista de clientes.</div></div>
     <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
       <div class="cdg-numeros">
-        <div class="cdg-num risk clicavel" role="button" tabindex="0" onclick="cdIrLista('cobrar','pre')" onkeydown="if(event.key==='Enter')cdIrLista('cobrar','pre')" title="Abrir a lista"><div class="l">Antes do bloqueio <span class="ver">Ver lista</span></div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, 1 a 5 dias</div>${dPre}</div>
+        <div class="cdg-num risk clicavel" role="button" tabindex="0" onclick="cdIrLista('cobrar','pre')" onkeydown="if(event.key==='Enter')cdIrLista('cobrar','pre')" title="Abrir a lista"><div class="l">Antes do bloqueio <span class="ver">Ver lista</span></div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, ainda sem bloqueio</div>${dPre}</div>
         <div class="cdg-num info clicavel" role="button" tabindex="0" onclick="cdIrLista('cobrar','todos')" onkeydown="if(event.key==='Enter')cdIrLista('cobrar','todos')" title="Abrir a lista"><div class="l">Vencido total <span class="ver">Ver lista</span></div><div class="v">${cdMoeda(g.todos.valor)}</div><div class="s">${cdNum(g.todos.clientes)} clientes, sem Filial 10</div>${dVenc}</div>
         <div class="cdg-num ok"><div class="l">Recebido em ${cdData(g.pag.dia)}</div><div class="v">${cdMoeda(g.pag.valor)}</div><div class="s">${cdNum(g.pag.qt)} pagamentos</div>${dPag}</div>
       </div>
@@ -24200,7 +24405,7 @@ function cdGuiaHTML(){
 
   // 4. Visão 360
   const faixas = [
-    ['pre','1 a 5 dias','antes do bloqueio','#E5484D'],
+    ['pre','Ainda não bloqueou','antes do bloqueio','#E5484D'],
     ['d6_30','6 a 30 dias','bloqueados recentes','#F5A524'],
     ['d31_90','31 a 90 dias','negociação','#4DA3E0'],
     ['d90','Mais de 90 dias','recuperação','#6B7F95']
@@ -24222,7 +24427,7 @@ function cdGuiaHTML(){
       ${cdPodeGerenciar()?`<div class="cdg-botoes" style="margin:8px 0 2px">${faixas.filter(([k])=>g[k].clientes).map(([k,n])=>`<button type="button" class="cdg-ir cdg-gerar" onclick="cdAtvNova('cobrar','${k}')">Gerar atividade: ${n}</button>`).join('')}</div>`:''}
       <div class="cdg-nota">Clientes que podem ser cobrados (${cdNum(g.cobraveis.length)}), pelo boleto mais antigo. Clique numa faixa para abrir a lista. ${g.fora?`Os ${cdNum(g.fora)} fora da cobrança não entram aqui.`:''}</div></div>
     <div class="cdg-box"><div class="cdg-eyebrow">Onde está o vencido</div>
-      ${g.pre.clientes?`<div class="cdg-prefaixa"><div><b>Dá para agir antes do bloqueio:</b> ${cdMoeda(g.pre.valor)} em ${cdNum(g.pre.clientes)} ${g.pre.clientes===1?'cliente':'clientes'}, ${cdNum(g.filiais.filter(f=>f.pre>0).length)} ${g.filiais.filter(f=>f.pre>0).length===1?'filial':'filiais'}. Depois do 5º dia de atraso o cliente é bloqueado e a cobrança fica mais difícil.</div>
+      ${g.pre.clientes?`<div class="cdg-prefaixa"><div><b>Dá para agir antes do bloqueio:</b> ${cdMoeda(g.pre.valor)} em ${cdNum(g.pre.clientes)} ${g.pre.clientes===1?'cliente':'clientes'}, ${cdNum(g.filiais.filter(f=>f.pre>0).length)} ${g.filiais.filter(f=>f.pre>0).length===1?'filial':'filiais'}. Depois do bloqueio (vencimento + 5 dias, no próximo dia útil) a cobrança fica mais difícil.</div>
         <div class="cdg-botoes" style="margin:0"><button type="button" class="cdg-ir" onclick="cdIrLista('cobrar','pre')">Ver lista</button>${cdPodeGerenciar()?`<button type="button" class="cdg-ir cdg-gerar" onclick="cdAtvNova('cobrar','pre')">Gerar atividade</button>`:''}</div></div>`:''}
       <div class="cdg-tabwrap"><table class="cdg-tab"><thead><tr><th>Filial</th><th>Vencido</th><th>Clientes</th><th>Antes do bloqueio</th><th></th></tr></thead><tbody>${linhasFil}</tbody></table></div>
       <div class="cdg-nota">Barra azul: vencido da filial. Parte vermelha: o que ainda dá para cobrar antes do bloqueio. Linhas marcadas em vermelho têm clientes para cobrar hoje: clique no valor para abrir a lista da filial.</div></div>
@@ -24245,7 +24450,7 @@ function cdGuiaHTML(){
 
   // 6. Glossário
   const glos = `<div class="cdg-box cdg-glos"><details><summary>Como ler esta página</summary><dl>
-    <dt>Antes do bloqueio</dt><dd>Clientes cujo boleto mais antigo venceu há 1 a 5 dias. Depois de cerca de 5 dias úteis o IXC bloqueia a conexão.</dd>
+    <dt>Antes do bloqueio</dt><dd>Clientes com boleto vencido que ainda não chegaram à data de bloqueio. O IXC bloqueia 5 dias depois do vencimento; se cair em sábado, domingo ou feriado, bloqueia no próximo dia útil.</dd>
     <dt>Fora da cobrança</dt><dd>Clientes com liberação em confiança, OS de recolhimento ou cancelamento aberta, quebra financeira de cliente recente, ou marcados no IXC para não participar da cobrança.</dd>
     <dt>Quebra financeira</dt><dd>Boleto antigo em aberto com o contrato já pago até uma data posterior. Cliente com menos de 12 meses: trocar a fatura no IXC. Contrato antigo: cobrar normalmente.</dd>
     <dt>Erro de cadastro</dt><dd>Título zerado, sem valor, acima de R$ 1.500 ou acumulando mais de 3 mensalidades. Fica fora dos totais até ser corrigido.</dd>
@@ -24498,7 +24703,7 @@ function cdAtvNova(tipo, preset, daLista){
   const linhas = daLista ? cdLinhasSelecionadas() : cdAtvLinhasPara(tipo, preset);
   const tituloBase = daLista ? (CD.aba==='cobrar' && CD_PRESETS[CD.f.preset] ? CD_PRESETS[CD.f.preset].nome : CD_ABAS[CD.aba].titulo)
     : (tipo==='cobrar' ? CD_PRESETS[preset||'pre'].nome : preset==='vence_sem_email' ? 'Cadastrar e-mail de quem vence em 6 dias' : CD_ATV_TIPOS[tipo].nome);
-  const filtro = daLista ? (CD.filial!=='Todas'?CD.filial+' · ':'')+(CD.f.preset||'filtro personalizado') : (preset||'');
+  const filtro = daLista ? (CD.filiais?cdFiliaisRotulo()+' · ':'')+(CD.f.preset||'filtro personalizado') : (preset||'');
   CD.atv.nova = { tipo, preset, linhas, titulo: tituloBase+' '+cdData(cdHoje()).slice(0,5), filtro, porFilial:false, prazo:cdSlaPadrao(tipo, daLista?CD.f.preset:preset), responsavel:'' };
   if(!linhas.length){ toast('A lista está vazia: nada para gerar.','warn'); CD.atv.nova=null; return; }
   cdAtvModal();
@@ -26083,7 +26288,7 @@ async function renderInicio(){
       <div class="cdg-nota">Em ordem de urgência. Os trechos sublinhados abrem a lista.</div></div>
     <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
       <div class="cdg-numeros">
-        ${g?num('risk','Antes do bloqueio','Cobrar',cdMoeda(g.pre.valor),cdNum(g.pre.clientes)+' clientes com 1 a 5 dias de atraso',"go('cobrancaDia');cdIrLista('cobrar','pre')"):''}
+        ${g?num('risk','Antes do bloqueio','Cobrar',cdMoeda(g.pre.valor),cdNum(g.pre.clientes)+' clientes ainda sem bloqueio',"go('cobrancaDia');cdIrLista('cobrar','pre')"):''}
         ${rc?num(pons.length?'risk':'ok','Rede','Ver casos',cdNum(ponCli),pons.length?`clientes em ${cdNum(pons.length)} ${pons.length===1?'região':'regiões'} com falha coletiva`:'nenhuma falha coletiva agora',irRede('noc')):''}
         ${pode?num(est.length?'risk':'ok','Equipe','Ver tarefas',cdNum(est.length),est.length?'tarefas com prazo estourado':'nenhuma tarefa atrasada','radarIrAtividades()'):''}
         ${num(perd?'risk':'ok','Campanhas','Ver envios',env?cdPct(resp,env)+'%':'-',env?`responderam · ${cdNum(conv)} converteram`:'nenhum envio ainda',"go('oportunidades');opSub('envios')")}
@@ -26997,15 +27202,16 @@ function renderCobrancaDia(){
   const fx = k => faixas[k] || {valor:0,clientes:0};
   const cargaErros = (r.ultima_carga||[]).filter(c => c.erro && c.tipo!=='filiais' && c.tipo!=='planilha_premiacao');
   const base = cdLinhasBase();
-  const filiais = ['Todas', ...[...new Set(base.map(x => x.filial).filter(Boolean))].sort()];
-  if(!filiais.includes(CD.filial)) CD.filial = 'Todas';
+  if(!CD._visaoLida){ CD._visaoLida=true; const v=rfVisaoLer('cobrancaDia'); if(v){ CD.f={...CD.f,...v.f}; CD.filiais=v.filiais||null; } }
   const linhas = cdLinhasFiltradas();
   const totalValor = linhas.reduce((s,x)=>s+(Number(x.valor ?? x.valor_aberto ?? x.valor_vencido)||0),0);
 
   let cab='', corpo='';
   if(CD.aba==='cobrar'){
-    cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Boletos</th><th>Valor</th><th>Dias de atraso</th><th>Mais antigo</th><th>Obs.</th>';
-    corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.dias_atraso}</td><td>${cdData(x.vencimento_mais_antigo)}</td><td>${cdExportacaoOpaObs(x)}</td></tr>`).join('');
+    const hj=cdHojeISO();
+    const blq = x => { const b=radarDataBloqueio(x.vencimento_mais_antigo); if(!b) return ''; return b<hj?`<span style="opacity:.65">${cdData(b)}</span>`:b===hj?`<b style="color:#FF6B70">hoje</b>`:`<b>${cdData(b)}</b>`; };
+    cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Boletos</th><th>Valor</th><th>Dias de atraso</th><th>Mais antigo</th><th title="Vencimento + 5 dias, pulando fim de semana e feriado">Bloqueio</th><th>Obs.</th>';
+    corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.dias_atraso}</td><td>${cdData(x.vencimento_mais_antigo)}</td><td>${blq(x)}</td><td>${cdExportacaoOpaObs(x)}</td></tr>`).join('');
   }else if(CD.aba==='recolhimento_atd'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>OS</th><th>Tarefa</th><th>Aberta em</th><th>Dias</th><th>Vencido</th>';
     corpo = linhas.map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.os)}</td><td>${cdEsc(x.tarefa)}</td><td>${cdData(x.abertura)}</td><td>${x.dias_aberta}</td><td>${Number(x.valor_vencido)>0?cdMoeda(x.valor_vencido):''}</td></tr>`).join('');
@@ -27045,24 +27251,14 @@ function renderCobrancaDia(){
     <div class="section compact-section" id="cd-lista" style="${(CD.sub||'resumo')==='listas'?'':'display:none'}">
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
         ${Object.entries(CD_ABAS).map(([k,a])=>`<button class="btn sm ${k===CD.aba?'primary':''}" onclick="CD.aba='${k}';renderCobrancaDia()">${a.titulo} (${contagem(k)})</button>`).join('')}
-        <span style="flex:1"></span>
-        <label style="font-size:12px">Filial
-          <select onchange="CD.filial=this.value;renderCobrancaDia()" style="margin-left:6px">${filiais.map(x=>`<option ${x===CD.filial?'selected':''}>${cdEsc(x)}</option>`).join('')}</select>
-        </label>
-        ${podeOpa?`<button class="btn sm primary" data-cd-exige-selecao data-cd-exportar-opa onclick="cdExportarOpa()">${CD.exportandoOpa?'Registrando exportação...':'Exportar para o OPA'}</button>`:''}
-        ${CD.aba==='avencer'?`<button class="btn sm primary" data-cd-exige-selecao onclick="cdExportarEmails()" title="Só clientes selecionados com e-mail útil, para o lembrete de vencimento">Exportar e-mails</button>`:''}
-        <button class="btn sm" data-cd-exige-selecao onclick="cdExportarPlanilha()">Exportar planilha</button>
-        ${cdPodeGerenciar()&&CD_ATV_TIPOS[CD.aba]&&CD.aba!=='avencer'?`<button class="btn sm" data-cd-exige-selecao onclick="cdAtvNova(CD.aba, CD.f.preset, true)" title="Direciona para as atendentes somente os clientes selecionados nesta lista">Gerar atividade com esta lista</button>`:''}
-        <button class="btn sm primary" onclick="cdAtualizarPagamentos()" ${CD.atualizando?'disabled':''} title="Busca agora no IXC os títulos em aberto e tira da lista quem já pagou">${CD.atualizando?'Buscando no IXC...':'Atualizar pagamentos agora'}</button>
       </div>
-      ${CD.aba==='cobrar'?cdPainelFiltros():`<div class="cd-filtros"><label>Cliente <input type="text" value="${cdEsc(CD.f.busca)}" placeholder="nome ou código" style="width:150px" onchange="cdSetFiltro('busca', this.value)"></label></div>`}
-      <div class="cd-passos"><span>1. Escolha a lista e os filtros</span><span>2. Confira o resultado</span><span>3. Exporte para o OPA e suba o arquivo de cada filial</span></div>
+      ${cdFiltroBarHTML()}
       <p style="font-size:12px;margin:8px 0">${CD_ABAS[CD.aba].desc}</p>
-      <div class="cd-resultado"><strong>${cdNum(linhas.length)}</strong> ${CD.aba==='suspeitos'||CD.aba==='quebra'||CD.aba==='gerados_vencidos'?'títulos':'clientes'} na lista, ${CD.aba==='sem_email'?'para cadastrar o e-mail':`<strong>${cdMoeda(totalValor)}</strong> ${CD.aba==='avencer'?'a vencer':'em aberto'}`}${podeOpa&&semFone?`. ${semFone} sem celular válido ficam fora do arquivo do OPA`:''}.${linhas.length>1500&&['cobrar','avencer','sem_email'].includes(CD.aba)?' Mostrando os primeiros 1.500 na tela; a exportação leva todos.':''}</div>
-      <div class="cd-filtros" style="margin-bottom:10px"><strong id="cd-selecao-resumo" role="status" aria-live="polite"></strong><button type="button" class="btn sm" onclick="cdSelecionarTodos(true)">Selecionar todos</button><button type="button" class="btn sm" onclick="cdSelecionarTodos(false)">Desmarcar todos</button><span>Exportação e atividade: somente selecionados.</span></div>
+      <div class="rf-res"><span><strong>${cdNum(linhas.length)}</strong> ${CD.aba==='suspeitos'||CD.aba==='quebra'||CD.aba==='gerados_vencidos'?'títulos':'clientes'} na lista, ${CD.aba==='sem_email'?'para cadastrar o e-mail':`<strong>${cdMoeda(totalValor)}</strong> ${CD.aba==='avencer'?'a vencer':'em aberto'}`}${podeOpa&&semFone?`. ${semFone} sem celular válido ficam fora do arquivo do OPA`:''}.${linhas.length>1500&&['cobrar','avencer','sem_email'].includes(CD.aba)?' Mostrando os primeiros 1.500 na tela; a exportação leva todos.':''}</span>
+        <span><span id="cd-selecao-resumo" role="status" aria-live="polite"></span> · <button type="button" onclick="cdSelecionarTodos(true)">marcar todos</button> · <button type="button" onclick="cdSelecionarTodos(false)">desmarcar todos</button> · ações valem só para os marcados</span></div>
       <div class="tbl-wrap" style="max-height:520px"><table class="decision-table"><thead><tr>${cab}</tr></thead><tbody>${corpo||'<tr><td colspan="11">Nenhum cliente com esses filtros.</td></tr>'}</tbody></table></div>
     </div>`;
-  cdSelecaoAtualizar();
+  cdSelecaoAtualizar(); rfPosRender(box);
 }
 
 function cdBaixar(nome, texto){
@@ -27076,7 +27272,7 @@ const cdSlug = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replac
 const cdNomeLista = () => CD.aba==='cobrar' ? (CD_PRESETS[CD.f.preset]?cdSlug(CD_PRESETS[CD.f.preset].nome):'cobranca_filtrada') : CD.aba;
 
 // OPA: um arquivo por filial (NandoNet e Pablom saem por linhas próprias e nunca se misturam com a Hilink)
-async function cdExportarOpa(){
+async function cdExportarOpa(modo='linha'){
   if(CD.exportandoOpa) return;
   const linhas = cdLinhasSelecionadas();
   if(!linhas.length){ toast('Selecione pelo menos um cliente para exportar.','warn'); return; }
@@ -27084,7 +27280,7 @@ async function cdExportarOpa(){
   linhas.forEach(x=>{
     const fone = cdFoneOpa(x.telefone);
     if(!fone || !x.nome) return;
-    (grupos[x.filial] ||= new Map()).set(fone, x);
+    (grupos[modo==='filial' ? x.filial : rfMarca(x.filial)] ||= new Map()).set(fone, x);
   });
   const nomes = Object.keys(grupos);
   if(!nomes.length){ toast('Nenhum contato com celular válido','warn'); return; }
@@ -27103,7 +27299,7 @@ async function cdExportarOpa(){
       }
       if(gerados<nomes.length) await new Promise(resolve=>setTimeout(resolve,400));
     }
-    toast(`${gerados} arquivo(s) gerado(s), um por filial`,'success');
+    toast(`${gerados} arquivo(s) gerado(s), um por ${modo==='filial'?'filial':'linha do OPA'}: ${nomes.join(', ')}`,'success');
     if(falhasHistorico) toast('Arquivo gerado, mas o histórico de exportação não foi salvo em '+falhasHistorico+' filial(is). Não há confirmação de envio no OPA.','warn');
   }catch(e){ console.error('[Radar] Exportação OPA',e); toast('Não consegui gerar todos os arquivos. Confira os downloads antes de tentar novamente.','error'); }
   finally{ CD.exportandoOpa=false; cdSelecaoAtualizar(); }
@@ -27114,7 +27310,7 @@ function cdExportarEmails(){
   const linhas = selecionadas.filter(x=>x.email_util && x.email);
   if(!linhas.length){ toast('Ninguém com e-mail útil nesta lista','warn'); return; }
   const corpo = ['nome;email;vencimento;valor;filial', ...linhas.map(x=>[x.nome, x.email, cdData(x.vencimento), String(x.valor).replace('.',','), x.filial].map(cdCsvCampo).join(';'))].join('\r\n');
-  cdBaixar(`lembrete_email_${cdSlug(CD.filial)}_${String(CD.dados.resumo?.data||'').slice(0,10)}.csv`, corpo);
+  cdBaixar(`lembrete_email_${cdSlug(cdFiliaisRotulo())}_${String(CD.dados.resumo?.data||'').slice(0,10)}.csv`, corpo);
   toast(`${linhas.length} e-mails exportados. ${selecionadas.length - linhas.length} clientes selecionados sem e-mail útil ficaram de fora.`,'success');
 }
 function cdExportarPlanilha(){
@@ -27122,7 +27318,7 @@ function cdExportarPlanilha(){
   if(!linhas.length){ toast('Nada para exportar','warn'); return; }
   const cols = Object.keys(linhas[0]);
   const corpo = [cols.join(';'), ...linhas.map(x=>cols.map(c=>cdCsvCampo(x[c])).join(';'))].join('\r\n');
-  cdBaixar(`${cdNomeLista()}_${cdSlug(CD.filial)}_${String(CD.dados.resumo?.data||'').slice(0,10)}.csv`, corpo);
+  cdBaixar(`${cdNomeLista()}_${cdSlug(cdFiliaisRotulo())}_${String(CD.dados.resumo?.data||'').slice(0,10)}.csv`, corpo);
 }
 Object.assign(window, { cdAtvRemover, cdAtendenteModal, cdAtendenteCriar, cdAtvDivisao, radarTrocarSenha, radarAplicarPerfil, cdAtvNova, cdAtvCriar, cdAtvModal, cdAtvAbrir, cdAtvFechar, cdAtvAtender, cdAtvProximo, cdAtvRegistrar, cdAtvEncerrar, cdAtvCopiar, cdAtvCarregar, cdAtvItensCarregar, cdPromessaDecidir, cdExportarEmails, cdCarregar, renderCobrancaDia, cdExportarOpa, cdExportarPlanilha, cdAtualizarPagamentos, cdAplicarPreset, cdSetFiltro, cdLimparFiltros, cdIrAba, cdIrLista, CD });
 Object.assign(window, { cdModal, cdAtvRemoverModal, cdAtvEncerrarModal, cdAtvTrocarModal, cdAtvTrocar, cdAtvRemover, cdAtvEncerrar });
