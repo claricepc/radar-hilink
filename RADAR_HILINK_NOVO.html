@@ -26189,7 +26189,7 @@ function vgIndicadoresHTML(rd){
       bqs.length>1?bqs.filter(b=>b!==bqMain).slice(0,3).map(b=>`${dsem(b.data)}: ${cdNum(b.clientes)}`).join(' · '):'O número cai conforme os clientes pagam.',
       bqMain?`radarBloqueioLista('${bqMain.data}')`:"go('cobrancaDia')", ''),
     card(rd.pons.length?'risco':'', 'Sem internet agora', rd.pons.length?`${cdNum(rd.ponCli)} <small>clientes</small>`:'0',
-      rd.pons.length?`em ${cdNum(rd.pons.length)} ${rd.pons.length===1?'região':'regiões'} com falha coletiva`:'nenhuma falha coletiva agora',
+      (rd.pons.length?`em ${cdNum(rd.pons.length)} ${rd.pons.length===1?'região':'regiões'} com falha coletiva`:'nenhuma falha coletiva agora')+(INI.marca&&INI.marca!=='Todas'?' (todas as marcas)':''),
       rd.campoAlta?`${cdNum(rd.campoAlta)} visitas técnicas com prioridade alta`:'',
       "go('tecnica');tecSub('casos')", ''),
     card(v.cancel_mes>v.cancel_mes_ant?'atencao':'', 'Cancelamentos do mês', cdNum(v.cancel_mes),
