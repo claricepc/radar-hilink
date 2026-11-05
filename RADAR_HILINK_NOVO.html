@@ -24612,7 +24612,13 @@ async function cdAtvRpc(fn, args){
   if(error) throw new Error(error.message);
   return data;
 }
+let CD_ATV_PROM=null;
 async function cdAtvCarregar(semRender){
+  if(CD_ATV_PROM){ await CD_ATV_PROM; if(!semRender) renderCobrancaDia(); return; }
+  CD_ATV_PROM = cdAtvCarregarBuscar(true).finally(()=>{ CD_ATV_PROM=null; });
+  await CD_ATV_PROM; if(!semRender) renderCobrancaDia();
+}
+async function cdAtvCarregarBuscar(semRender){
   try{
     const [lista, usuarios, promessas] = await Promise.all([cdAtvRpc('radar_atv_listar',{p_dias:30}), cdAtvRpc('radar_atv_usuarios'), cdAtvRpc('radar_promessas',{})]);
     CD.atv.lista = lista||[]; CD.atv.usuarios = usuarios||[]; CD.atv.promessas = promessas||[]; CD.atv.erro = null;
@@ -26115,7 +26121,14 @@ const IXC_CARGA_TIPOS = [
 function ixcFmtDataHora(v){ if(!v) return '—'; const d=new Date(v); return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function ixcEsc(s){ return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
+let IXC_STATUS_PROM=null, IXC_STATUS_EM=0;
 async function ixcCargaStatus(){
+  if(IXC_STATUS_PROM) return IXC_STATUS_PROM;
+  if(IXC_CARGA.status && Date.now()-IXC_STATUS_EM < 20000) return IXC_CARGA.status;
+  IXC_STATUS_PROM = ixcCargaStatusBuscar().finally(()=>{ IXC_STATUS_PROM=null; IXC_STATUS_EM=Date.now(); });
+  return IXC_STATUS_PROM;
+}
+async function ixcCargaStatusBuscar(){
   const sb=getSB(); if(!sb) return null;
   const { data:{ session } } = await sb.auth.getSession(); if(!session) return null;
   const r = await sb.rpc('radar_carga_status'); if(r.error) throw new Error(r.error.message);
@@ -26433,7 +26446,8 @@ async function renderInicio(){
 
   // 2. o que precisa de voce agora (em ordem de urgencia)
   const pri = [];
-  if(pons.length) pri.push(`<b class="ruim">Rede:</b> ${lk(cdNum(pons.length)+(pons.length===1?' região com falha coletiva':' regiões com falha coletiva')+', '+cdNum(ponCli)+' clientes sem internet', irRede('noc'), true)}. O NOC precisa agir antes do cliente ligar.`);
+  const ponOff = pons.reduce((t,x)=>t+((x.dados&&x.dados.clientes)||[]).filter(c=>c.online!=='S').length,0);
+  if(pons.length) pri.push(`<b class="ruim">Rede:</b> ${lk(cdNum(ponCli)+' clientes com sinal fraco concentrado em '+cdNum(pons.length)+(pons.length===1?' porta (PON)':' portas (PON)'), irRede('noc'), true)}. ${cdNum(ponCli-ponOff)} ainda navegam e ${cdNum(ponOff)} estão sem conexão. Não é rompimento: é sinal piorando na mesma porta (fibra, emenda ou divisor). O NOC precisa verificar antes que caiam.`);
   if(perd) pri.push(`<b class="ruim">Oferta de upgrade sem retorno:</b> ${lk(cdNum(perd)+(perd===1?' cliente respondeu':' clientes responderam')+' à oferta, a IA encerrou a conversa e ninguém da equipe falou com '+(perd===1?'ele':'eles'), "vgIaPendentes()", true)}. Gere uma atividade para uma atendente chamar de volta. O alerta sai sozinho quando o cliente entra numa atividade, fala com alguém da equipe no OPA, faz o upgrade ou recusa.`);
   const bqP = (INI.bq||[]).find(b=>b.clientes>=10) || (INI.bq||[])[0];
   if(bqP) pri.push(`${lk(cdNum(bqP.clientes)+(bqP.clientes===1?' cliente será bloqueado':' clientes serão bloqueados')+' em '+new Date(bqP.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'}), `radarBloqueioLista('${bqP.data}')`, true)} se não pagarem, somando <b>${cdMoeda(bqP.valor)}</b> em aberto hoje. Dispare a cobrança na véspera.`);
@@ -26453,7 +26467,7 @@ async function renderInicio(){
     <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
       <div class="cdg-numeros">
         ${g?num('risk','Antes do bloqueio','Cobrar',cdMoeda(g.pre.valor),cdNum(g.pre.clientes)+' clientes ainda sem bloqueio',"go('cobrancaDia');cdIrLista('cobrar','pre')"):''}
-        ${rc?num(pons.length?'risk':'ok','Rede','Ver casos',cdNum(ponCli),pons.length?`clientes em ${cdNum(pons.length)} ${pons.length===1?'região':'regiões'} com falha coletiva`:'nenhuma falha coletiva agora',irRede('noc')):''}
+        ${rc?num(pons.length?'risk':'ok','Rede','Ver casos',cdNum(ponCli),pons.length?`clientes com sinal fraco em ${cdNum(pons.length)} ${pons.length===1?'porta (PON)':'portas (PON)'}, ${cdNum(ponOff)} sem conexão`:'nenhuma porta com sinal fraco em grupo',irRede('noc')):''}
         ${pode?num(est.length?'risk':'ok','Equipe','Ver tarefas',cdNum(est.length),est.length?'tarefas com prazo estourado':'nenhuma tarefa atrasada','radarIrAtividades()'):''}
         ${num(perd?'risk':'ok','Campanhas','Ver envios',env?cdPct(resp,env)+'%':'-',env?`responderam · ${cdNum(conv)} converteram`:'nenhum envio ainda',"go('oportunidades');opSub('envios')")}
       </div>
@@ -26504,8 +26518,10 @@ window.renderInicio = renderInicio;
 // ===== Visão geral gerencial: indicadores lidos prontos do banco (abre em segundos, sem carregar a base) =====
 async function vgCarregar(){
   try{ const sb=getSB(); const m = INI.marca && INI.marca!=='Todas' ? INI.marca : null;
-    const [a,b,c,g,ia] = await Promise.all([sb.rpc('radar_visao_geral',{p_marca:m}), sb.rpc('radar_bloqueios_proximos',{p_marca:m}), sb.rpc('radar_base_resumo',{p_marca:m}), sb.rpc('radar_vg_graficos',{p_marca:m}), sb.rpc('radar_op_ia_pendentes')]);
-    if(a.error) throw a.error; INI.vg = a.data||{}; INI.bq = b.error ? [] : (b.data||[]); INI.base = c.error ? null : c.data; INI.gr = g.error ? null : g.data; INI.iaPend = ia.error ? null : (ia.data||[]); INI.vgErro=null;
+    // uma chamada só: o banco guarda a Visão geral pronta (recalcula a cada 10 minutos ou quando chega leitura nova do IXC)
+    const t = await sb.rpc('radar_vg_tudo',{p_marca:m});
+    if(t.error) throw t.error; const d=t.data||{};
+    INI.vg = d.vg||{}; INI.bq = d.bq||[]; INI.base = d.base||null; INI.gr = d.gr||null; INI.iaPend = Array.isArray(d.ia) ? d.ia : null; INI.vgCalc = d.calculado_em; INI.vgErro=null;
   }catch(e){ INI.vgErro = e.message||String(e); INI.vg = INI.vg||null; }
 }
 // Base ativa: contratos com status Ativo no IXC, abertos pela situação da internet.
@@ -26660,9 +26676,10 @@ function vgIndicadoresHTML(rd){
   const fxInad=[['pre','Ainda não bloqueou','#F5A524','vence o prazo de bloqueio hoje ou depois'],['d30','Bloqueado, até 30 dias','#E5484D','já passou do bloqueio e tem até 30 dias de atraso'],['d90','31 a 90 dias','#B42318','atraso de 31 a 90 dias'],['mais90','Mais de 90 dias','#475569','atraso acima de 90 dias, perto ou depois do cancelamento automático']];
   const inadBarras=vgBarras(fxInad.map(([k,rot,cor,exp])=>{ const o=inad[k]||{}; return {rot, n:Number(o.valor)||0, cor, txt:`${brl0(o.valor)} <small>${cdNum(o.clientes||0)} cli.</small>`, js:`vgLista('inad_${k}','Inadimplência: ${rot}','Clientes com boleto vencido em aberto, contando pelo boleto mais antigo: ${exp}.')`}; }));
   const bqBarras = bqs.length ? vgBarras(bqs.slice(0,5).map(b=>({rot:dsem(b.data), n:b.clientes, cor:b===bqMain?'#E5484D':'#F5A524', txt:`${cdNum(b.clientes)} cli. <small>${brl0(b.valor)}</small>`, js:`radarBloqueioLista('${b.data}')`}))) : '';
-  const nomeReg=x=>String((x.dados&&(x.dados.caso_nome||x.dados.regiao||x.dados.caixa))||x.titulo||x.nome||x.chave||'Região');
+  const nomeReg=x=>x.dados&&x.dados.pon ? 'PON '+x.dados.pon : String((x.dados&&(x.dados.caso_nome||x.dados.regiao||x.dados.caixa))||x.titulo||x.nome||x.chave||'Região');
+  const redeOff = rd.pons.reduce((t,x)=>t+((x.dados&&x.dados.clientes)||[]).filter(c=>c.online!=='S').length,0);
   const regs=[...rd.pons].sort((a,b)=>(Number(b.dados&&b.dados.afetados)||0)-(Number(a.dados&&a.dados.afetados)||0));
-  const redeBarras = regs.length ? vgBarras(regs.slice(0,4).map(x=>({rot:cdEsc(nomeReg(x)).slice(0,28), n:Number(x.dados&&x.dados.afetados)||0, cor:'#E5484D', txt:cdNum(Number(x.dados&&x.dados.afetados)||0), js:"go('tecnica');tecSub('casos')"}))) + (regs.length>4?`<div class="vg-x">e mais ${regs.length-4} ${regs.length-4===1?'região':'regiões'}</div>`:'') : '';
+  const redeBarras = regs.length ? vgBarras(regs.slice(0,4).map(x=>{ const cl=(x.dados&&x.dados.clientes)||[], off=cl.filter(c=>c.online!=='S').length; return {rot:cdEsc(nomeReg(x)).slice(0,28), n:Number(x.dados&&x.dados.afetados)||0, cor:'#F5A524', txt:`${cdNum(Number(x.dados&&x.dados.afetados)||0)} <small>${off?off+' off':'todos on'}</small>`, js:"go('tecnica');tecSub('casos')"}; })) + (regs.length>4?`<div class="vg-x">e mais ${regs.length-4} ${regs.length-4===1?'porta':'portas'}</div>`:'') : '';
   const rotCanc={financeiro:'Financeiro',outro_provedor:'Outro provedor',insatisfacao:'Insatisfação',mudanca_sem_cobertura:'Mudança sem cobertura',outros:'Outros'};
   const cancItens=Object.entries(canc).filter(([k])=>k!=='limpeza').sort((a,b)=>b[1]-a[1]);
   const cancBarras = cancItens.length ? vgBarras(cancItens.map(([k,n])=>({rot:cdEsc(rotCanc[k]||String(k).replace(/_/g,' ')), n, cor:'#5B6B7C', txt:cdNum(n), js:`vgLista('cancel:${cdEsc(k)}','Cancelamentos do mês: ${cdEsc(rotCanc[k]||k)}','Contratos cancelados neste mês com este motivo (pela observação e pelo motivo do IXC).')`}))) : '';
@@ -26676,9 +26693,9 @@ function vgIndicadoresHTML(rd){
     card(bqMain&&bqMain.clientes>=10?'atencao':'', 'Próximos bloqueios', bqMain?`${cdNum(bqMain.clientes)} <small>clientes em ${dsem(bqMain.data)}</small>`:'Nenhum',
       bqMain?`${brl0(bqMain.valor)} em aberto hoje. O número cai conforme os clientes pagam.`:'nos próximos 10 dias', '',
       bqMain?`radarBloqueioLista('${bqMain.data}')`:"go('cobrancaDia')", bqBarras),
-    card(rd.pons.length?'risco':'', 'Sem internet agora', rd.pons.length?`${cdNum(rd.ponCli)} <small>clientes</small>`:'0',
-      (rd.pons.length?`em ${cdNum(rd.pons.length)} ${rd.pons.length===1?'região':'regiões'} com falha coletiva`:'nenhuma falha coletiva agora')+(INI.marca&&INI.marca!=='Todas'?' (todas as marcas)':''),
-      rd.campoAlta?`${cdNum(rd.campoAlta)} visitas técnicas com prioridade alta`:'',
+    card(rd.pons.length?'atencao':'', 'Rede · sinal fraco em grupo', rd.pons.length?`${cdNum(rd.ponCli)} <small>clientes em ${cdNum(rd.pons.length)} portas (PON)</small>`:'0',
+      rd.pons.length?`<b>${cdNum(rd.ponCli-redeOff)} navegando</b> · <b class="ruim">${cdNum(redeOff)} sem conexão agora</b>${INI.marca&&INI.marca!=='Todas'?' (todas as marcas)':''}`:'nenhuma porta com sinal fraco em grupo',
+      `<div class="vg-base-nota" style="margin-top:6px"><b>O que é:</b> clientes da mesma porta da OLT com sinal óptico fraco (pior que -27 dBm). Não é rompimento: a maioria ainda navega. Indica fibra, emenda ou divisor piorando; se nada for feito, tendem a cair e ligar.</div>${rd.campoAlta?`${cdNum(rd.campoAlta)} visitas técnicas com prioridade alta`:''}`,
       "go('tecnica');tecSub('casos')", redeBarras),
     card(v.cancel_mes>v.cancel_mes_ant?'atencao':'', 'Cancelamentos do mês', cdNum(v.cancel_mes),
       vgDelta(v.cancel_mes, v.cancel_mes_ant, false, cdNum, 'que no mesmo dia do mês passado') + (v.cancel_limpeza_mes?` <span class="vg-delta">+${cdNum(v.cancel_limpeza_mes)} limpeza de base (fora da conta)</span>`:''), '',
