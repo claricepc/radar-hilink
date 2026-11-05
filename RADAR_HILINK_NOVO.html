@@ -26623,15 +26623,18 @@ function vgIndicadoresHTML(rd){
     const pct=x=>tot?(x/tot*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%':'';
     const partes=[
       {k:'recebido', rot:'Recebido', n:Number(rc.recebido)||0, cor:'#30A46C', cli:rc.cli_recebido, exp:'Boletos com vencimento neste mês que já foram pagos'},
-      {k:'no_prazo', rot:'A receber, dentro do vencimento', n:Number(rc.no_prazo)||0, cor:'#4DA3E0', cli:rc.cli_no_prazo, exp:'Boletos deste mês que ainda não venceram (inclui os que vencem hoje)'},
-      {k:'atraso', rot:'A receber, em atraso', n:Number(rc.atraso)||0, cor:'#E5484D', cli:rc.cli_atraso, exp:'Boletos deste mês que já venceram e não foram pagos'}];
+      ...(rc.hoje!=null ? [
+        {k:'hoje', rot:'Vence hoje', n:Number(rc.hoje)||0, cor:'#F5A524', cli:rc.cli_hoje, exp:'Boletos que vencem hoje e ainda não foram pagos. Se não pagarem, amanhã entram em atraso'},
+        {k:'a_vencer', rot:'A vencer (de amanhã até o fim do mês)', n:Number(rc.a_vencer)||0, cor:'#4DA3E0', cli:rc.cli_a_vencer, exp:'Boletos deste mês que vencem de amanhã em diante'}]
+      : [{k:'no_prazo', rot:'A receber, dentro do vencimento', n:Number(rc.no_prazo)||0, cor:'#4DA3E0', cli:rc.cli_no_prazo, exp:'Boletos deste mês que ainda não venceram (inclui os que vencem hoje)'}]),
+      {k:'atraso', rot:'Em atraso (venceu neste mês e não pagou)', n:Number(rc.atraso)||0, cor:'#E5484D', cli:rc.cli_atraso, exp:'Boletos deste mês que já venceram e não foram pagos'}];
     partes.forEach(p=>{ p.fmt=brl0(p.n); p.js=`vgLista('${p.k}','Receita do mês: ${p.rot}','${p.exp}.')`; });
     receitaCard=`<div class="vg-card vg-base vg-rec" onclick="vgLista('atraso','Receita do mês: A receber, em atraso','Boletos deste mês que já venceram e não foram pagos.')" role="button" tabindex="0">
       <div class="vg-l">Receita do mês · boletos com vencimento em ${new Date().toLocaleDateString('pt-BR',{month:'long'})}</div>
       <div class="vg-base-corpo">${vgDonut(partes, tot||1, pct(partes[0].n))}
         <div class="vg-base-dir"><div class="vg-v">${brl0(tot)} <small>a receber no mês</small></div>
           <div class="vg-base-leg">${partes.map(p=>`<button type="button" onclick="event.stopPropagation();${p.js}" title="${p.exp}. Clique para ver a lista."><i style="background:${p.cor}"></i><span>${p.rot} <small>(${cdNum(p.cli||0)} clientes)</small></span><b>${brl0(p.n)}</b><em>${pct(p.n)}</em></button>`).join('')}</div></div></div>
-      <div class="vg-base-nota"><b>Como ler:</b> só os boletos que vencem neste mês. O atraso de meses anteriores está no cartão Inadimplência. Mês passado fechou com ${pctAnt}% recebido.</div></div>`;
+      <div class="vg-base-nota"><b>Como ler:</b> só os boletos com vencimento neste mês. Quem vence hoje ainda não está atrasado; amanhã, quem não pagou passa para "em atraso". O atraso dos meses anteriores (outubro para trás) está no cartão Inadimplência. Mês passado fechou com ${pctAnt}% recebido.</div></div>`;
   } else {
     receitaCard=card('', 'Recebido no mês', brl0(v.recebido_mes), `${pctRec}% dos ${brl0(v.previsto_mes)} previstos para o mês`, '', "go('cobrancaDia');cdSub('onde')", '', 'vg-base');
   }
