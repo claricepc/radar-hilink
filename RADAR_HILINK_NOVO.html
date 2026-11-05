@@ -12186,7 +12186,9 @@ function processAcsRows(raw){
       'Situacao de auditoria':situacao,
       'Acao sugerida':acsSuggestedAction(situacao, online, cls.inRange, cls.valid, missingCad),
       _validIp:cls.valid,_inRange:cls.inRange,_online:online,_missingCad:missingCad,_ignoreIpAudit:isMesh,
-      _fonteLogin:String(r.Fonte||'')==='Login IXC'
+      _fonteLogin:String(r.Fonte||'')==='Login IXC',
+      // Leitura automática (API do ACS ou login): o IP é o de navegação; a checagem de PRESET dependia do IP de gerência do relatório manual.
+      _semPreset:['Login IXC','ACS'].includes(String(r.Fonte||''))
     };
   });
 }
@@ -12232,7 +12234,7 @@ function enrichAcsRowsWithFibra(acsRows,fibraRaw){
     r['MAC/Serial Fibra']=mac;
     r['Modelo Fibra']=modeloFibra;
     r['Tecnologia por MAC']=isOnt?'ONT':(mac?'ONU provável':'Não identificado');
-    r['Auditoria Preset']=isOnt&&r['Classificacao do IP']!=='PRESET HILINK'&&!r._ignoreIpAudit&&!r._fonteLogin?'ONT sem PRESET':'';
+    r['Auditoria Preset']=isOnt&&r['Classificacao do IP']!=='PRESET HILINK'&&!r._ignoreIpAudit&&!r._semPreset?'ONT sem PRESET':'';
     r._isOntFibra=isOnt;
     r._ontSemPreset=!!r['Auditoria Preset'];
     if(r._ontSemPreset&&r['Acao sugerida']==='Sem acao critica'){
