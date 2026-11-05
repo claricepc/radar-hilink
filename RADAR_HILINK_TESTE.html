@@ -10658,12 +10658,12 @@ function go(mod){
   if(mod==='setup') mod='inicio';
   // Premiação: sem base carregada, busca direto do IXC (banco) em vez de pedir upload
   // Módulos que usam a base do IXC: sem base carregada, busca direto do banco em vez de pedir upload
-  const SEM_BASE=['setup','historico','propostas','relatorios','carneCorreios','cobrancaDia','oportunidades','inicio','usuarios'];
+  const SEM_BASE=['setup','historico','propostas','relatorios','carneCorreios','cobrancaDia','oportunidades','inicio','usuarios','tecnica'];
   if(!SEM_BASE.includes(mod) && !STATE.processed && typeof ixcCargaUsar==='function' && getRadarUser?.()){
     if(!(IXC_CARGA && IXC_CARGA.carregando)){ toast('Buscando os dados direto do IXC...','success'); ixcCargaUsar(mod); }
     return;
   }
-  if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='oportunidades'&&mod!=='inicio'&&mod!=='usuarios'&&!STATE.processed){toast('Processe a base primeiro','error');return}
+  if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='oportunidades'&&mod!=='inicio'&&mod!=='usuarios'&&mod!=='tecnica'&&!STATE.processed){toast('Processe a base primeiro','error');return}
   if((mod==='segmentacao'||mod==='disparo')&&!STATE.campaign){toast('Mapeie uma campanha primeiro','error');mod='mapear'}
   if(!document.getElementById('mod-'+mod)){toast('Módulo não encontrado: '+mod,'error');return}
   document.querySelector(`.nav-item[data-mod="${mod}"]`)?.classList.remove('disabled');
@@ -12857,8 +12857,20 @@ function tecAplicarSub(){
   if(box) box.innerHTML=`<div class="op-abas" style="margin-top:4px">${TEC_SUBS.map(([s,t])=>`<button type="button" class="${k===s?'on':''}" onclick="tecSub('${s}')">${t}</button>`).join('')}</div>`;
   if(k==='casos'||k==='impacto'||k==='regras'){ try{ redeRender(); }catch(e){ console.error('[Rede]',e); } }
   try{ const cap=document.getElementById('rede-capa'); if(cap){ cap.style.display = (k==='regras'||k==='tecnico') ? 'none' : ''; } redeCapaCarregar(); }catch(e){}
+  try{ tecAvisoBase(k); }catch(e){}
   setTimeout(()=>{ ['tec-ch-saude','tec-ch-filial','tec-ch-prevencao-status','tec-ch-prevencao-camadas'].forEach(id=>{ try{ if(CHARTS&&CHARTS[id]) CHARTS[id].resize(); }catch(e){} }); },60);
   try{ radarTrilha('tecnica'); }catch(e){}
+}
+// As abas técnicas antigas (Onde está o problema, Diagnóstico técnico, Painel técnico completo) precisam da base inteira no navegador.
+// A capa, os casos, o impacto e as regras vêm prontos do banco e abrem na hora.
+function tecAvisoBase(k){
+  const precisa = ['onde','diagnostico','tecnico'].includes(k) && !STATE.processed;
+  let av=document.getElementById('tec-aviso-base');
+  if(!precisa){ if(av) av.remove(); return; }
+  if(!av){ av=document.createElement('div'); av.id='tec-aviso-base'; const abas=document.getElementById('tec-abas'); abas && abas.insertAdjacentElement('afterend', av); }
+  const lendo = IXC_CARGA && IXC_CARGA.carregando;
+  av.innerHTML = `<div class="cdg-box" style="margin:8px 0 12px"><div class="cdg-nota" style="margin:0 0 8px">Esta análise usa a base completa do IXC no navegador (todas as ONUs, conexões e recebimentos). Ela leva cerca de 1 minuto para carregar e fica pronta para o resto do dia.</div>
+    <button type="button" class="btn sm primary" ${lendo?'disabled':''} onclick="this.disabled=true;ixcCargaUsar('tecnica')">${lendo?'Carregando... '+cdEsc(IXC_CARGA.progresso||''):'Carregar a análise técnica'}</button></div>`;
 }
 function tecSub(k){ TEC_UI.sub = TEC_SUBS.some(x=>x[0]===k) ? k : 'casos'; tecAplicarSub(); window.scrollTo({top:0,behavior:'smooth'}); }
 // ===== Capa da Saúde da Rede: a manchete do módulo. Mesmos números da Visão geral (mesma fonte: casos de rede do banco). =====
@@ -12929,7 +12941,7 @@ window.tecSub = tecSub;
 if(typeof renderTecnica==='function' && !window._tecSubWrap){
   window._tecSubWrap = true;
   const _rt = renderTecnica;
-  renderTecnica = function(){ const r = _rt.apply(this, arguments); try{ tecAplicarSub(); }catch(e){ console.error('[Tec] sub',e); } return r; };
+  renderTecnica = function(){ let r; if(STATE.processed){ r = _rt.apply(this, arguments); } try{ tecAplicarSub(); }catch(e){ console.error('[Tec] sub',e); } return r; };
   window.renderTecnica = renderTecnica;
 }
 
@@ -26873,7 +26885,7 @@ Object.assign(window,{vgMarca});
 .vg .vg-fazer li{display:flex;gap:10px;align-items:flex-start;background:var(--superficie);border:1px solid var(--linha);border-radius:10px;padding:9px 12px;font-size:13.5px;color:var(--texto)}
 .vg .vg-fazer li p,.vg .vg-fazer li div{margin:0}
 .vg .vg-n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--azul-suave);color:var(--azul-forte);font:700 12px/22px var(--font-titulo);text-align:center}
-body[data-radar-mod="inicio"] #gf-data-de-wrap,body[data-radar-mod="inicio"] #gf-data-ate-wrap,body[data-radar-mod="inicio"] #gf-filial-wrap,body[data-radar-mod="inicio"] #global-filters > button,body[data-radar-mod="inicio"] #page-meta .tag,body[data-radar-mod="inicio"] #context-badge{display:none!important}
+body[data-radar-mod="tecnica"] #gf-data-de-wrap,body[data-radar-mod="tecnica"] #gf-data-ate-wrap,body[data-radar-mod="tecnica"] #context-badge,body[data-radar-mod="tecnica"] #page-meta .tag,body[data-radar-mod="inicio"] #gf-data-de-wrap,body[data-radar-mod="inicio"] #gf-data-ate-wrap,body[data-radar-mod="inicio"] #gf-filial-wrap,body[data-radar-mod="inicio"] #global-filters > button,body[data-radar-mod="inicio"] #page-meta .tag,body[data-radar-mod="inicio"] #context-badge{display:none!important}
 `; document.head.appendChild(st); })();
 
 /* ===================== AVISO DE VERSAO NOVA DO RADAR ===================== */
