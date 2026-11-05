@@ -24411,6 +24411,14 @@ function cdItem(o){
 }
 function cdAlerta(tom, html){ return `<div class="cdg-alerta ${tom}"><i></i><div>${html}</div></div>`; }
 
+const CD_CONF_LIMITE_MIN = 60;
+function cdTempoDesde(m){ if(m==null) return 'sem registro'; if(m<60) return m+' min'; const h=Math.floor(m/60), r=m%60; return h+'h'+(r?' '+String(r).padStart(2,'0')+'min':''); }
+if(!window._cdConfTimer){ window._cdConfTimer = setInterval(()=>{ try{
+  if(STATE.activeMod!=='cobrancaDia' || (CD.sub||'resumo')!=='resumo' || !CD.dados || !CD.dados.resumo) return;
+  const c = CD.titulosEm || CD.carregadoEm; if(!c) return;
+  const velha = (Date.now()-c.getTime())/60000 >= CD_CONF_LIMITE_MIN;
+  if(velha !== CD._confVelhaRender) renderCobrancaDia();
+}catch(e){} }, 60000); }
 function cdGuiaHTML(){
   const g = cdGuiaDados(), r = g.r;
   const hora = g.conferido ? g.conferido.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '-';
@@ -24422,7 +24430,7 @@ function cdGuiaHTML(){
   else if(g.cargaErros.length) pill = `<span class="cdg-pill warn">Leitura de hoje com erro em ${g.cargaErros.map(c=>cdEsc(c.tipo)).join(', ')}</span>`;
   else pill = `<span class="cdg-pill ok">Leitura de hoje completa</span>`;
   const status = `<div class="cdg-status">${pill}
-    <span>Leitura do IXC de <b>${dataLeitura}</b>. Pagamentos conferidos às <b>${hora}</b>.</span>
+    <span>Leitura do IXC de <b>${dataLeitura}</b>. Pagamentos conferidos às <b>${hora}</b>${g.conferido?` (há ${cdTempoDesde(Math.floor((Date.now()-g.conferido.getTime())/60000))})`:''}.</span>
     <span class="cdg-sp"></span>
     <span>Quem pagou depois disso ainda aparece nas listas.</span>
   </div>`;
@@ -24482,18 +24490,23 @@ function cdGuiaHTML(){
   </div>`;
 
   // 3. Quatro colunas: agir, corrigir, planejar, ficar atenta
+  // Conferência de pagamentos só vira tarefa quando passa do limite (CD_CONF_LIMITE_MIN). A leitura automática das 4h continua.
+  const minConf = g.conferido ? Math.floor((Date.now()-g.conferido.getTime())/60000) : null;
+  const confVelha = minConf==null || minConf >= CD_CONF_LIMITE_MIN;
+  CD._confVelhaRender = confVelha;
+  let np = 0; const ps = () => ++np;
   const agir = [
-    cdItem({tom:'agir', passo:1, titulo:'Conferir quem pagou depois das 4h', numero:hora, unid:'última conferência',
-      porque:'Evita cobrar quem já pagou hoje cedo.', como:'Pode ser feito a cada 15 minutos. Leva cerca de 30 segundos.',
-      acao:[CD.atualizando?'Buscando no IXC...':'Atualizar pagamentos agora','cdAtualizarPagamentos()',CD.atualizando]}),
-    cdItem({tom:'agir', passo:2, titulo:'Cobrar antes do bloqueio', numero:cdMoeda(g.pre.valor), unid:cdNum(g.pre.clientes)+' clientes', vazio:!g.pre.clientes,
+    confVelha ? cdItem({tom:'agir', passo:ps(), titulo:'Atualizar os pagamentos antes de cobrar', numero:cdTempoDesde(minConf), unid:'desde a última conferência',
+      porque:`Os pagamentos foram conferidos pela última vez às ${hora}. Quem pagou depois disso ainda aparece nas listas.`, como:'Leva cerca de 30 segundos.',
+      acao:[CD.atualizando?'Buscando no IXC...':'Atualizar pagamentos agora','cdAtualizarPagamentos()',CD.atualizando]}) : '',
+    cdItem({tom:'agir', passo:ps(), titulo:'Cobrar antes do bloqueio', numero:cdMoeda(g.pre.valor), unid:cdNum(g.pre.clientes)+' clientes', vazio:!g.pre.clientes,
       porque:'É o dinheiro mais fácil de recuperar: o cliente ainda está com a internet ligada.',
       como:`Exportar para o OPA gera um arquivo por filial.${g.preSemFone?` <b>${cdNum(g.preSemFone)} sem celular válido</b> ficam fora do arquivo: ligar ou corrigir o cadastro.`:''}`,
       acao:['Abrir lista',"cdIrLista('cobrar','pre')"], atv:g.pre.clientes?['cobrar','pre']:null}),
-    cdItem({tom:'agir', passo:3, titulo:'Agendar recolhimento de equipamento', numero:cdNum(g.rec.clientes), unid:'clientes, '+cdNum(g.rec.os)+' OS', vazio:!g.rec.clientes,
+    cdItem({tom:'agir', passo:ps(), titulo:'Agendar recolhimento de equipamento', numero:cdNum(g.rec.clientes), unid:'clientes, '+cdNum(g.rec.os)+' OS', vazio:!g.rec.clientes,
       porque:'Equipamento fora de casa é patrimônio parado. Quanto mais tempo, menor a chance de recuperar.',
       como:'Atendentes ligam para agendar ou reagendar a retirada (tarefas ATD).', acao:['Abrir lista',"cdIrLista('recolhimento_atd')"], atv:g.rec.clientes?['recolhimento_atd']:null}),
-    cdItem({tom:'agir', passo:4, titulo:'Cobrar bloqueados recentes (6 a 30 dias)', numero:cdMoeda(g.d6_30.valor), unid:cdNum(g.d6_30.clientes)+' clientes', vazio:!g.d6_30.clientes,
+    cdItem({tom:'agir', passo:ps(), titulo:'Cobrar bloqueados recentes (6 a 30 dias)', numero:cdMoeda(g.d6_30.valor), unid:cdNum(g.d6_30.clientes)+' clientes', vazio:!g.d6_30.clientes,
       porque:'Já estão sem internet. O contato agora evita que o atraso vire cancelamento.',
       como:'Ligar ou mandar mensagem oferecendo o desbloqueio com o pagamento.', acao:['Abrir lista',"cdIrLista('cobrar','d6_30')"], atv:g.d6_30.clientes?['cobrar','d6_30']:null})
   ].join('');
