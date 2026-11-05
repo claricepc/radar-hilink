@@ -2564,6 +2564,52 @@ body.radar-modo-atendente .nav-sub{display:none!important}
 .ini-card .ln.ok b{color:#4CC38A}
 .ini-card .ln button{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left;text-decoration:underline dotted}
 .ini-card .ir{margin-top:8px;font-size:11px;color:#2da3ff;font-weight:700}
+
+.dd-context:has(.vg-sit){display:block!important}
+.vg-lista-ctx:has(.vg-sit){width:100%}
+.vg-sit-c0{background:#D13438!important}.vg-sit-c1{background:#E0A100!important}.vg-sit-c2{background:#8A8F98!important}.vg-sit-c3{background:#3B3F46!important}.vg-sit-c4{background:#0071BC!important}.vg-sit-c5{background:#7A4BC2!important}
+.vg-sit-isento{grid-column:1/-1;text-align:left;font:inherit;font-size:14px;line-height:1.45;background:rgba(224,161,0,.12);border:1px solid #E0A100;border-radius:10px;padding:10px 14px;cursor:pointer;color:inherit}
+.vg-sit-revisar{background:rgba(0,113,188,.08);border-color:#0071BC}
+.vg-sit-isento.on,.vg-sit-isento:hover{box-shadow:0 0 0 2px rgba(224,161,0,.35)}
+.vg-sit{flex:1 1 100%;display:grid;grid-template-columns:220px 1fr;gap:14px 20px;align-items:start;margin:4px 0 6px}
+.vg-sit-graf{display:flex;flex-direction:column;align-items:center;gap:6px}
+.vg-sit-graf .vg-donut{width:190px!important;height:190px!important}
+.vg-sit-tot{text-align:center}.vg-sit-tot b{display:block;font-size:22px}.vg-sit-tot span{font-size:13px;color:var(--muted,#667)}
+.vg-sit-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.vg-sit-card{text-align:left;background:var(--card,#fff);border:1px solid var(--line,#dde3ea);border-radius:10px;padding:10px 12px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:5px}
+.vg-sit-card:hover,.vg-sit-card.on{border-color:#4DA3E0;box-shadow:0 0 0 2px rgba(77,163,224,.25)}
+.vg-sit-top{display:flex;align-items:center;gap:8px}.vg-sit-top i{width:12px;height:12px;border-radius:3px;flex:none}.vg-sit-top b{font-size:15px}
+.vg-sit-num{font-size:14px}.vg-sit-num strong{font-size:22px;margin-right:2px}.vg-sit-num span{display:block;font-size:14px;font-weight:600;color:var(--muted,#556)}
+.vg-sit-acao{font-size:13.5px;line-height:1.4;color:var(--texto,#334)}
+.vg-sit-nota{grid-column:1/-1;font-size:13.5px;color:var(--muted,#556)}
+@media(max-width:900px){.vg-sit{grid-template-columns:1fr}}
+.cdm{margin:0 0 16px}
+.cdm-prio{font-size:16px;line-height:1.45;background:var(--card,#fff);border:1px solid var(--line,#dde3ea);border-left:4px solid #D13438;border-radius:10px;padding:12px 16px;margin:0 0 12px}
+.cdm-prio .cdg-link{font-size:16px}
+.cdm-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media(max-width:1200px){.cdm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){.cdm-grid{grid-template-columns:1fr}}
+.cdm-tile{background:var(--card,#fff);border:1px solid var(--line,#dde3ea);border-top:4px solid #0071BC;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.cdm-tile.risk{border-top-color:#D13438}.cdm-tile.ok{border-top-color:#30A46C}.cdm-tile.grafite{border-top-color:#5B6470}
+.cdm-tile.clicavel{cursor:pointer}.cdm-tile.clicavel:hover{box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.cdm-l{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted,#556);display:flex;align-items:center;gap:8px}
+.cdm-ver{font-size:10.5px;font-weight:700;text-transform:none;letter-spacing:0;border:1px solid currentColor;border-radius:10px;padding:1px 7px;color:#0071BC}
+.cdm-v{font-size:28px;font-weight:800;line-height:1.1}
+.cdm-tile.risk .cdm-v{color:#D13438}.cdm-tile.info .cdm-v{color:#0071BC}.cdm-tile.ok .cdm-v{color:#30A46C}
+.cdm-s{font-size:13.5px;color:var(--muted,#556)}
+.cdm-d{font-size:13px;line-height:1.4;color:var(--texto,#334)}
+.cdm-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cdm-chip{font-size:12.5px;font-weight:700;border-radius:12px;padding:3px 9px}
+.cdm-chip.bom{background:rgba(48,164,108,.14);color:#1F7A4D}.cdm-chip.ruim{background:rgba(209,52,56,.12);color:#B42318}.cdm-chip.neutro{background:rgba(0,113,188,.08);color:#0071BC;font-weight:600}
+.cdm-barra{height:8px;border-radius:5px;background:rgba(0,113,188,.12);overflow:hidden}.cdm-barra i{display:block;height:100%;background:#D13438;border-radius:5px}
+.cdm-barra.ok i{background:#30A46C}.cdm-barra.grafite i{background:#5B6470}
+.cdm-analise{background:var(--card,#fff);border:1px solid var(--line,#dde3ea);border-radius:12px;padding:14px 16px}
+.cdm-an-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:8px 0 6px}
+@media(max-width:900px){.cdm-an-grid{grid-template-columns:1fr}}
+.cdm-an{border-left:4px solid #0071BC;background:rgba(0,113,188,.05);border-radius:8px;padding:10px 14px}
+.cdm-an.risk{border-left-color:#D13438;background:rgba(209,52,56,.06)}.cdm-an.ok{border-left-color:#30A46C;background:rgba(48,164,108,.07)}.cdm-an.grafite{border-left-color:#5B6470;background:rgba(91,100,112,.07)}
+.cdm-an-t{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+.cdm-an.risk .cdm-an-t{color:#B42318}.cdm-an.info .cdm-an-t{color:#0071BC}.cdm-an.ok .cdm-an-t{color:#1F7A4D}.cdm-an.grafite .cdm-an-t{color:#3B3F46}
+.cdm-an p{margin:0;font-size:15px;line-height:1.5}.cdm-an .cdg-link{font-size:15px}
 </style>
 <style>
 .cd-atalho{display:flex;align-items:center;gap:18px;justify-content:space-between;margin:0 0 14px;padding:18px 20px;border-radius:12px;cursor:pointer;
@@ -7577,6 +7623,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
       min-width:26px!important;
       height:24px!important;
     }
+    .dd-modal .btn-mini[onclick^="toggleDrillCols"]{width:auto!important;padding:0 12px!important;height:30px!important;font-size:12.5px!important;white-space:nowrap!important}
     .dd-empty{
       background:#071522!important;
       color:var(--text-caption)!important;
@@ -24264,6 +24311,8 @@ function cdAbasHTML(){
   const atrasadas = (CD.atv.lista||[]).filter(a=>a.status==='aberta' && typeof cdPrazoEstourou==='function' && cdPrazoEstourou(a)).length;
   const eq = k => k==='atividades'||k==='desempenho'||k==='decisoes';
   const nDec = (CD.dec.lista||[]).filter(d=>d.status==='aguardando').length;
+  // A navegação entre as subpastas fica só no menu lateral; aqui fica só a marca de posição (a capa entra antes dela).
+  if(true) return '<div class="op-abas cd-abas-menu" style="display:none"></div>';
   return `<div class="op-abas">${CD_SUBS.filter(([k])=>(eq(k)===eq(CD.sub)) && ((!eq(k)&&k!=='carteiras')||cdPodeGerenciar())).map(([k,t])=>`<button type="button" class="${(CD.sub||'resumo')===k?'on':''}" onclick="cdSub('${k}')">${t}${k==='atividades'&&atrasadas?`<span class="q">${atrasadas}</span>`:''}${k==='decisoes'&&nDec?`<span class="q">${nDec}</span>`:''}</button>`).join('')}</div>`;
 }
 window.cdSub = cdSub;
@@ -24397,18 +24446,39 @@ function cdGuiaHTML(){
   const pSem = Number(r.pagamentos_semana_passada_qt)||0, pSemV = Number(r.pagamentos_semana_passada_valor)||0;
   const dPag = pSem>0 ? `<div class="d">${(()=>{ const v=g.pag.valor-pSemV; return Math.abs(v)<1?'Igual ao mesmo dia da semana passada':v>0?`<b class="bom">${cdMoeda(v)} a mais</b> que no mesmo dia da semana passada`:`<b class="ruim">${cdMoeda(-v)} a menos</b> que no mesmo dia da semana passada`; })()} (${cdMoeda(pSemV)}).</div>`
     : `<div class="d">A comparação com o mesmo dia da semana passada aparece quando o histórico de pagamentos completar 7 dias.</div>`;
-  const resumo = `<div class="cdg-resumo">
-    <div class="cdg-box"><div class="cdg-eyebrow">O dia em poucas linhas</div>
-      <div class="cdg-narrativa"><p>${p1}</p><p>${p2}</p><p>${p3}</p>${p4?`<p>${p4}</p>`:''}</div>
-      <div class="cdg-nota">Os trechos sublinhados abrem a lista de clientes.</div></div>
-    <div class="cdg-box"><div class="cdg-eyebrow">Números que guiam o dia</div>
-      <div class="cdg-numeros">
-        <div class="cdg-num risk clicavel" role="button" tabindex="0" onclick="cdIrLista('cobrar','pre')" onkeydown="if(event.key==='Enter')cdIrLista('cobrar','pre')" title="Abrir a lista"><div class="l">Antes do bloqueio <span class="ver">Ver lista</span></div><div class="v">${cdMoeda(g.pre.valor)}</div><div class="s">${cdNum(g.pre.clientes)} clientes, ainda sem bloqueio</div>${dPre}</div>
-        <div class="cdg-num info clicavel" role="button" tabindex="0" onclick="cdIrLista('cobrar','todos')" onkeydown="if(event.key==='Enter')cdIrLista('cobrar','todos')" title="Abrir a lista"><div class="l">Vencido total <span class="ver">Ver lista</span></div><div class="v">${cdMoeda(g.todos.valor)}</div><div class="s">${cdNum(g.todos.clientes)} clientes, sem Filial 10</div>${dVenc}</div>
-        <div class="cdg-num ok"><div class="l">Recebido em ${cdData(g.pag.dia)}</div><div class="v">${cdMoeda(g.pag.valor)}</div><div class="s">${cdNum(g.pag.qt)} pagamentos</div>${dPag}</div>
+  // Movimento do dia: a capa mostra o estado; aqui mostra o que mudou e o que fazer primeiro.
+  const chip = (v, quando, menosBom=true) => v==null ? '' : Math.abs(v)<1 ? `<span class="cdm-chip neutro">igual a ${quando}</span>`
+    : `<span class="cdm-chip ${(v<0)===menosBom?'bom':'ruim'}">${v<0?'':'+'}${cdMoeda(v).replace('-','- ')} vs ${quando}</span>`;
+  const pctSaiu = preOnt>0 ? Math.min(100, Math.round(preSaiu/preOnt*100)) : null;
+  const vPag = pSem>0 ? g.pag.valor - pSemV : null;
+  const tile = (o) => `<div class="cdm-tile ${o.tom}${o.js?' clicavel':''}" ${o.js?`role="button" tabindex="0" onclick="${o.js}" onkeydown="if(event.key==='Enter'){${o.js}}" title="Abrir a lista"`:''}>
+      <div class="cdm-l">${o.l}${o.js?'<span class="cdm-ver">Ver lista</span>':''}</div>
+      <div class="cdm-v">${o.v}</div><div class="cdm-s">${o.s}</div>${o.extra||''}</div>`;
+  const prioridade = g.pre.clientes
+    ? `<b>Prioridade do dia:</b> cobrar <button type="button" class="cdg-link r" onclick="cdIrLista('cobrar','pre')">${cdNum(g.pre.clientes)} ${g.pre.clientes===1?'cliente':'clientes'} antes do bloqueio</button> (${cdMoeda(g.pre.valor)}). Cada bloqueio vira ligação, desgaste e risco de cancelamento.`
+    : `<b>Prioridade do dia:</b> ninguém cobrável está para bloquear hoje. Foque na recuperação dos bloqueados.`;
+  const resumo = `<div class="cdm">
+    <div class="cdm-analise"><div class="cdg-eyebrow">O dia em poucas linhas</div>
+      <div class="cdm-an-grid">
+        <div class="cdm-an risk"><div class="cdm-an-t">Prioridade do dia</div><p>${p2}</p></div>
+        <div class="cdm-an info"><div class="cdm-an-t">Vencido</div><p>${p1}</p></div>
+        <div class="cdm-an ok"><div class="cdm-an-t">Pagamentos</div><p>${p3}</p></div>
+        ${p4?`<div class="cdm-an grafite"><div class="cdm-an-t">Mais de 90 dias</div><p>${p4}</p></div>`:''}
       </div>
-      <div class="cdg-nota">Vencido total soma todos os clientes com boleto vencido, inclusive quem está fora da cobrança. Antes do bloqueio conta só quem pode ser cobrado hoje.</div>
+      <div class="cdg-nota">Os trechos sublinhados abrem a lista de clientes.</div></div>
+    <div class="cdg-eyebrow" style="margin:14px 0 8px">Números que guiam o dia</div>
+    <div class="cdm-grid">
+      ${tile({tom:'risk', l:'Antes do bloqueio', v:cdMoeda(g.pre.valor), s:`${cdNum(g.pre.clientes)} clientes ainda sem bloqueio`, js:"cdIrLista('cobrar','pre')",
+        extra: pctSaiu!=null ? `<div class="cdm-barra"><i style="width:${pctSaiu}%"></i></div><div class="cdm-d">${pctSaiu}% da lista de ${dAnt} já saiu (${cdMoeda(preSaiu)} de ${cdMoeda(preOnt)}), paga ou corrigida</div>` : ''})}
+      ${tile({tom:'info', l:'Vencido total', v:cdMoeda(g.todos.valor), s:`${cdNum(g.todos.clientes)} clientes, sem Filial 10`, js:"cdIrLista('cobrar','todos')",
+        extra:`<div class="cdm-chips">${chip(g.delta, dAnt)}${chip(g.semana,'7 dias atrás')}</div>`})}
+      ${tile({tom:'ok', l:`Recebido em ${cdData(g.pag.dia)}`, v:cdMoeda(g.pag.valor), s:`${cdNum(g.pag.qt)} pagamentos`,
+        extra:`<div class="cdm-chips">${vPag!=null?chip(vPag,'mesmo dia da semana passada',false):'<span class="cdm-chip neutro">comparação semanal disponível com 7 dias de histórico</span>'}</div>
+          <div class="cdm-barra ok"><i style="width:${Math.max(0,100-(g.pag.pctAtraso||0))}%"></i></div><div class="cdm-d">${100-(g.pag.pctAtraso||0)}% pagos em dia, ${g.pag.pctAtraso||0}% depois do vencimento</div>`})}
+      ${tile({tom:'grafite', l:'Parado há mais de 90 dias', v:cdMoeda(g.d90.valor), s:`${cdNum(g.d90.clientes)} clientes cobráveis · ${g.pct90}% do valor cobrável`, js:"cdIrLista('cobrar','d90')",
+        extra:`<div class="cdm-barra grafite"><i style="width:${Math.min(100,g.pct90)}%"></i></div><div class="cdm-d">Precisa de régua própria de recuperação, separada da cobrança do dia</div>`})}
     </div>
+    <div class="cdg-nota">Vencido total soma todos os clientes com boleto vencido, inclusive quem está fora da cobrança. Antes do bloqueio conta só quem pode ser cobrado hoje. O IXC bloqueia 5 dias depois do vencimento (fim de semana ou feriado, no próximo dia útil).</div>
   </div>`;
 
   // 3. Quatro colunas: agir, corrigir, planejar, ficar atenta
@@ -26628,15 +26698,53 @@ async function vgLista(tipo, titulo, explicacao){
   toast('Buscando a lista...','success');
   const r=await sb.rpc('radar_vg_lista',{p_marca:m, p_lista:tipo});
   if(r.error){ toast('Não consegui abrir a lista: '+r.error.message,'error'); return; }
-  const rows=(r.data||[]).map(x=>({...x, vencimento:cdData(x.vencimento), bloqueio:cdData(x.bloqueio), data_cancelamento:cdData(x.data_cancelamento)}));
+  const rows=(r.data||[]).map(x=>({...x, vencimento:cdData(x.vencimento), bloqueio:cdData(x.bloqueio), data_cancelamento:cdData(x.data_cancelamento), isento_txt:x.isento_txt||(x.isento==null?'':(x.isento?'Sim':'Não'))}));
   VG_LISTA_ATUAL={tipo, titulo, rows};
   const cancel=tipo.startsWith('cancel:');
   const cols = cancel
     ? [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'contrato',label:'Contrato'},{k:'data_cancelamento',label:'Cancelado em'},{k:'motivo',label:'Motivo'},{k:'obs',label:'Observação do IXC'}]
-    : [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'titulos',label:'Boletos'},{k:'valor',label:'Valor'},{k:'vencimento',label:'Vencimento mais antigo'},{k:'dias_atraso',label:'Dias de atraso'}].concat(tipo.startsWith('inad_')?[{k:'bloqueio',label:'Bloqueio'}]:[]);
+    : [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'titulos',label:'Boletos'},{k:'valor',label:'Valor'},{k:'vencimento',label:'Vencimento mais antigo'},{k:'dias_atraso',label:'Dias de atraso'}].concat(tipo.startsWith('inad_')?[{k:'bloqueio',label:'Bloqueio'},{k:'situacao',label:'Situação do contrato'},{k:'isento_txt',label:'Isento no IXC'}]:[]);
+  VG_LISTA_ATUAL.cols=cols; VG_LISTA_ATUAL.explicacao=explicacao; VG_LISTA_ATUAL.m=m;
+  vgListaAbrir(rows, '');
+}
+// Ação recomendada por situação do contrato (inadimplência acima de 90 dias). O IXC não cancela sozinho: só para de gerar boletos depois de 2 em aberto.
+const VG_SIT_ACAO={
+  'Ativo e bloqueado':'Ocupa a base sem pagar e o IXC já parou de gerar boletos. Decidir: negociar a dívida ou cancelar o contrato e recolher o equipamento.',
+  'Ativo e liberado (navegando)':'Está navegando com mais de 90 dias de dívida. Na maioria, o contrato foi isentado para limpar o Pago até e ficou liberado. Bloquear ou negociar hoje.',
+  'Cancelado':'Contrato já encerrado com dívida residual. Cobrança de dívida e, se não houver acordo, negativação. Conferir se o equipamento foi recolhido.',
+  'Sem contrato encontrado':'O boleto não está ligado a um contrato que o Radar conhece. Verificar no IXC antes de cobrar.',
+  'Pré-contrato':'Boleto de contrato que nunca foi ativado. Verificar no IXC se a cobrança procede ou se deve ser cancelada.',
+  'Desistiu':'Cliente desistiu antes da ativação. Verificar no IXC se a cobrança procede ou se deve ser cancelada.'};
+const VG_SIT_COR={'Ativo e bloqueado':'#D13438','Ativo e liberado (navegando)':'#E0A100','Sem contrato encontrado':'#5B6470','Cancelado':'#7A1F1F','Pré-contrato':'#0071BC','Desistiu':'#1F2937'};
+function vgListaAbrir(rows, grupo){
+  const L=VG_LISTA_ATUAL; if(!L) return;
+  const cancel=L.tipo.startsWith('cancel:'), m=L.m;
   const total=rows.reduce((a,x)=>a+(Number(x.valor)||0),0);
-  openDrill(titulo+(m?' ('+m+')':''), rows, cols, {sub:`${cdNum(rows.length)} ${cancel?'contratos':'clientes'}${cancel?'':' · '+cdMoeda(total)}`, contextOnly:true,
-    contextHtml:`<div class="vg-lista-ctx"><div>${explicacao||''}</div><button type="button" class="btn sm primary" onclick="vgExportarOpa()">Exportar para o OPA (um arquivo por linha)</button><span class="cdg-nota" style="margin:0">Leva o que estiver filtrado na busca. Hilink sai em um arquivo só; Nandonet e Pablom separados. Nada é enviado: o arquivo vai para você subir no OPA.</span></div>`});
+  let resumo='';
+  if(L.tipo==='inad_mais90'){
+    const g={}; L.rows.forEach(x=>{ const k=x.situacao||'Sem contrato encontrado'; (g[k] ||= {n:0,v:0}); g[k].n++; g[k].v+=Number(x.valor)||0; });
+    const ord=Object.keys(g).sort((a,b)=>g[b].v-g[a].v), totN=L.rows.length, totV=L.rows.reduce((a,x)=>a+(Number(x.valor)||0),0);
+    const brl0=x=>(Number(x)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+    const pct=v=>totV?(v/totV*100).toLocaleString('pt-BR',{maximumFractionDigits:0})+'%':'';
+    const js=k=>`vgListaGrupo('${k.replace(/'/g,"\\'")}')`;
+    const partes=ord.map(k=>({k, rot:k, n:g[k].v, fmt:brl0(g[k].v), cor:VG_SIT_COR[k]||'#94A3B8', js:js(k)}));
+    resumo=`<div class="vg-sit">
+      <div class="vg-sit-graf">${vgDonut(partes, totV||1, cdNum(totN))}<div class="vg-sit-tot"><b>${brl0(totV)}</b><span>${cdNum(totN)} clientes com mais de 90 dias</span></div></div>
+      <div class="vg-sit-cards">${ord.map(k=>`<button type="button" class="vg-sit-card${grupo===k?' on':''}" onclick="${js(k)}" title="Clique para ver só este grupo">
+        <div class="vg-sit-top"><svg width="13" height="13" viewBox="0 0 13 13" style="flex:none"><rect width="13" height="13" rx="3" fill="${VG_SIT_COR[k]||'#5B6470'}"/></svg><b>${k}</b></div>
+        <div class="vg-sit-num"><strong>${cdNum(g[k].n)}</strong> clientes <span>${brl0(g[k].v)} · ${pct(g[k].v)}</span></div>
+        <div class="vg-sit-acao">${VG_SIT_ACAO[k]||''}</div></button>`).join('')}</div>
+      ${(()=>{ const lp=L.rows.filter(x=>/limpeza/.test(x.isento_txt||'')), sj=L.rows.filter(x=>x.isento && !/limpeza/.test(x.isento_txt||''));
+        const sv=a=>brl0(a.reduce((t,x)=>t+(Number(x.valor)||0),0)), nav=lp.filter(x=>x.situacao==='Ativo e liberado (navegando)').length;
+        let h='';
+        if(lp.length) h+=`<button type="button" class="vg-sit-isento${grupo==='Isento para limpeza do Pago até'?' on':''}" onclick="vgListaGrupo('Isento para limpeza do Pago até')"><b>${cdNum(lp.length)} clientes isentos só para limpar o painel do Pago até</b> (${sv(lp)}). O alerta do contrato confirma. A dívida é real e segue na cobrança.${nav?` <b>${cdNum(nav)} deles estão com a internet liberada</b>: isento não gera fatura, então podem usar sem pagar. Prioridade: bloquear ou negociar.`:''} Clique para ver só esses.</button>`;
+        if(sj.length) h+=`<button type="button" class="vg-sit-isento vg-sit-revisar${grupo==='Isento sem justificativa'?' on':''}" onclick="vgListaGrupo('Isento sem justificativa')"><b>${cdNum(sj.length)} clientes isentos sem alerta de limpeza</b> (${sv(sj)}). Revisar no IXC: o tipo de cliente justifica a isenção (cortesia, parceiro, funcionário)? Se não justifica, a isenção está indevida. Clique para ver só esses.</button>`;
+        return h; })()}
+      <div class="vg-sit-nota">O IXC não cancela o contrato sozinho aos 90 dias: ele para de gerar novos boletos depois que 2 ficam em aberto. Por isso a decisão sobre cada grupo é da gestão. Clique num grupo para ver só esses clientes.</div>
+      ${grupo?`<button type="button" class="btn sm" onclick="vgListaGrupo('')">Ver todos os grupos</button>`:''}</div>`;
+  }
+  openDrill(L.titulo+(grupo?' · '+grupo:'')+(m?' ('+m+')':''), rows, L.cols, {sub:`${cdNum(rows.length)} ${cancel?'contratos':'clientes'}${cancel?'':' · '+cdMoeda(total)}`, contextOnly:true,
+    contextHtml:`<div class="vg-lista-ctx"><div>${L.explicacao||''}</div>${resumo}<button type="button" class="btn sm primary" onclick="vgExportarOpa()">Exportar para o OPA (um arquivo por linha)</button><span class="cdg-nota" style="margin:0">Leva o que estiver filtrado na busca. Hilink sai em um arquivo só; Nandonet e Pablom separados. Nada é enviado: o arquivo vai para você subir no OPA.</span></div>`});
 }
 function vgExportarOpa(){
   const rows=(typeof DRILL_STATE!=='undefined' && DRILL_STATE.filtered) || (VG_LISTA_ATUAL&&VG_LISTA_ATUAL.rows) || [];
@@ -26647,7 +26755,8 @@ function vgExportarOpa(){
   nomes.forEach((n,i)=>setTimeout(()=>cdBaixar(`${cdSlug(n)}_${slug}_${data}.csv`, ['name,whatsapp', ...[...grupos[n]].map(([f,x])=>`${cdCsvCampo(x.nome)},${f}`)].join('\r\n')), i*400));
   toast(`${nomes.length} arquivo(s): ${nomes.join(', ')}.${semFone?' '+semFone+' sem celular válido ficaram de fora.':''}`,'success');
 }
-Object.assign(window,{vgLista,vgExportarOpa});
+function vgListaGrupo(k){ const L=VG_LISTA_ATUAL; if(!L) return; try{closeDrill()}catch(e){} vgListaAbrir(k==='Isento para limpeza do Pago até'?L.rows.filter(x=>/limpeza/.test(x.isento_txt||'')):k==='Isento sem justificativa'?L.rows.filter(x=>x.isento && !/limpeza/.test(x.isento_txt||'')):k?L.rows.filter(x=>(x.situacao||'Sem contrato encontrado')===k):L.rows, k); }
+Object.assign(window,{vgLista,vgExportarOpa,vgListaGrupo});
 function vgIaPendentes(){
   const rows=(INI.iaPend||[]).map(x=>({...x, enviado:cdData(String(x.enviado_em||'').slice(0,10)), caminho_txt:x.caminho==='fechado pela IA em 0 s'?'IA encerrou na hora':'IA fez a triagem e encerrou'}));
   VG_LISTA_ATUAL={tipo:'ia', titulo:'Chamar de volta - encerrados pela IA', rows};
@@ -26683,7 +26792,7 @@ function cdCapaHTML(){
   rec.forEach(p=>{ p.fmt=brl0(p.n); p.js=`vgLista('${p.k}','Receita do mês: ${p.rot}','${p.exp}.')`; });
   const totR=rec.reduce((a,p)=>a+p.n,0);
   // 2) inadimplência por faixa (igual às barras da Visão geral)
-  const fx=[['pre','Ainda não bloqueou','#F5A524','vencidos que ainda não chegaram à data de bloqueio'],['d30','Bloqueado, até 30 dias','#E5484D','já passaram do bloqueio, até 30 dias de atraso'],['d90','31 a 90 dias','#B42318','atraso de 31 a 90 dias'],['mais90','Mais de 90 dias','#475569','acima de 90 dias, perto ou depois do cancelamento automático']]
+  const fx=[['pre','Ainda não bloqueou','#F5A524','vencidos que ainda não chegaram à data de bloqueio'],['d30','Bloqueado, até 30 dias','#E5484D','já passaram do bloqueio, até 30 dias de atraso'],['d90','31 a 90 dias','#B42318','atraso de 31 a 90 dias'],['mais90','Mais de 90 dias','#475569','acima de 90 dias; o IXC não cancela sozinho, mas para de gerar boletos depois de 2 em aberto']]
     .map(([k,rot,cor,exp])=>({rot, n:n((inad[k]||{}).valor), cli:(inad[k]||{}).clientes, cor, fmt:brl0((inad[k]||{}).valor), exp, js:`vgLista('inad_${k}','Inadimplência: ${rot}','Clientes com boleto vencido em aberto: ${exp}.')`}));
   const totI=fx.reduce((a,p)=>a+p.n,0);
   // 3) base por situação (igual à Visão geral)
@@ -26716,7 +26825,7 @@ function cdCapaHTML(){
 @media (max-width:1100px){#cd-capa .vg-cards{grid-template-columns:1fr!important}}`; document.head.appendChild(st); })();
 if(!window._cdCapaWrap){ window._cdCapaWrap=true; const _r=renderCobrancaDia; renderCobrancaDia=function(){ const r=_r.apply(this,arguments);
   try{ const box=document.getElementById('mod-cobrancaDia'); const sub=CD.sub||'resumo';
-    if(box && CD.perfil!=='atendente' && !(CD.atv&&CD.atv.aberta) && CD.dados.resumo && ['resumo','onde','listas'].includes(sub)){
+    if(box && CD.perfil!=='atendente' && !(CD.atv&&CD.atv.aberta) && CD.dados.resumo && sub==='resumo'){
       const d=document.createElement('div'); d.id='cd-capa'; d.className='vg'; d.innerHTML=cdCapaHTML();
       const abas=box.querySelector('.op-abas'); if(abas) abas.insertAdjacentElement('beforebegin', d); else box.prepend(d);
     } }catch(e){ console.error('[Cobrança] capa', e); }
@@ -26858,7 +26967,7 @@ function vgIndicadoresHTML(rd){
     receitaCard=card('', 'Recebido no mês', brl0(v.recebido_mes), `${pctRec}% dos ${brl0(v.previsto_mes)} previstos para o mês`, '', "go('cobrancaDia');cdSub('onde')", '', 'vg-base');
   }
   const totInad=['pre','d30','d90','mais90'].reduce((a,k)=>a+(Number((inad[k]||{}).valor)||0),0);
-  const fxInad=[['pre','Ainda não bloqueou','#F5A524','vence o prazo de bloqueio hoje ou depois'],['d30','Bloqueado, até 30 dias','#E5484D','já passou do bloqueio e tem até 30 dias de atraso'],['d90','31 a 90 dias','#B42318','atraso de 31 a 90 dias'],['mais90','Mais de 90 dias','#475569','atraso acima de 90 dias, perto ou depois do cancelamento automático']];
+  const fxInad=[['pre','Ainda não bloqueou','#F5A524','vence o prazo de bloqueio hoje ou depois'],['d30','Bloqueado, até 30 dias','#E5484D','já passou do bloqueio e tem até 30 dias de atraso'],['d90','31 a 90 dias','#B42318','atraso de 31 a 90 dias'],['mais90','Mais de 90 dias','#475569','atraso acima de 90 dias; o IXC não cancela sozinho, mas para de gerar boletos depois de 2 em aberto']];
   const inadBarras=vgBarras(fxInad.map(([k,rot,cor,exp])=>{ const o=inad[k]||{}; return {rot, n:Number(o.valor)||0, cor, txt:`${brl0(o.valor)} <small>${cdNum(o.clientes||0)} cli.</small>`, js:`vgLista('inad_${k}','Inadimplência: ${rot}','Clientes com boleto vencido em aberto, contando pelo boleto mais antigo: ${exp}.')`}; }));
   const bqBarras = bqs.length ? vgBarras(bqs.slice(0,5).map(b=>({rot:dsem(b.data), n:b.clientes, cor:b===bqMain?'#E5484D':'#F5A524', txt:`${cdNum(b.clientes)} cli. <small>${brl0(b.valor)}</small>`, js:`radarBloqueioLista('${b.data}')`}))) : '';
   const nomeReg=x=>x.dados&&x.dados.pon ? radarPonNome(x.dados.pon) : String((x.dados&&(x.dados.caso_nome||x.dados.regiao||x.dados.caixa))||x.titulo||x.nome||x.chave||'Região');
