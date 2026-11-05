@@ -12908,7 +12908,7 @@ function redeCapaRender(){
   const totT=tipos.reduce((a,p)=>a+p.n,0);
   // 3) filas
   const fl=d.filas||{};
-  const filas=[['cliente','ATENDIMENTO','#4DA3E0'],['campo','TÉCNICO DE CAMPO','#F5A524'],['noc','NOC','#E5484D']].map(([k,rot,cor])=>({rot:`${rot} <small>(${cdNum(n((fl[k]||{}).alta))} alta)</small>`, n:n((fl[k]||{}).casos), cor, js:`redeCapaFiltrar('${k}','')`, exp:'Clique para ver a fila'}));
+  const filas=[['cliente','Atendimento','#4DA3E0'],['campo','Técnico de campo','#F5A524'],['noc','NOC','#E5484D']].map(([k,rot,cor])=>({rot:`${rot} <small>(${cdNum(n((fl[k]||{}).alta))} alta)</small>`, n:n((fl[k]||{}).casos), cor, js:`redeCapaFiltrar('${k}','')`, exp:'Clique para ver a fila'}));
   const totF=filas.reduce((a,p)=>a+p.n,0);
   // linha 2: barras
   const col=d.coletivos||[], colCli=col.reduce((a,c)=>a+n(c.afetados),0);
@@ -26731,9 +26731,9 @@ function vgRedeDiagnostico(d){
   let tit, oque, quem;
   if(pct>=50){ tit='Problema na porta da OLT ou no cabo principal'; quem='NOC';
     oque=`${pct}% dos clientes desta porta estão com sinal fraco (média ${d.rx_medio_fracos} dBm). Quando quase todos caem juntos, o defeito está antes de chegar às caixas: potência da porta na OLT (módulo SFP), conector no DIO ou o cabo que sai do POP.`; }
-  else if(pct>=20 && raio && raio<=800){ tit='Problema num ramal: os fracos estão juntos na mesma área'; quem='TÉCNICO DE CAMPO';
+  else if(pct>=20 && raio && raio<=800){ tit='Problema num ramal: os fracos estão juntos na mesma área'; quem='Técnico de campo';
     oque=`${pct}% da porta está fraca e os clientes com problema ficam num raio de ${cdNum(raio)} m. Os demais da porta estão bons (média ${d.rx_medio_bons} dBm). O defeito tende a estar na caixa (CTO), no divisor ou numa emenda que atende essa área.`; }
-  else { tit='Casos individuais espalhados, não é falha coletiva'; quem='TÉCNICO DE CAMPO (visitas individuais)';
+  else { tit='Casos individuais espalhados, não é falha coletiva'; quem='Técnico de campo (visitas individuais)';
     oque=`Só ${pct}% da porta está fraca${raio?` e os clientes estão espalhados (até ${cdNum(raio)} m de distância entre si)`:''}. O sinal médio dos outros clientes da porta é ${d.rx_medio_bons??'-'} dBm, ou seja, a porta está boa. O problema tende a ser de cada cliente: cabo drop, conector ou ONU.`; }
   const causas=Object.entries(d.causas||{}).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${k==='dying-gasp'?'falta de energia na casa do cliente (dying-gasp)':/^LO/i.test(k)?'perda de sinal óptico ('+k+')':k}: ${n}`).join('; ');
   const mapa=d.centro_fracos?`<a href="https://www.google.com/maps?q=${d.centro_fracos.lat},${d.centro_fracos.lon}" target="_blank" rel="noopener">ver no mapa o centro da área afetada</a>`:'';
@@ -28250,11 +28250,11 @@ function renderRedeCasos(){
   REDE.limite = REDE.limite || 100;
   const mostra = ls.slice(0, REDE.limite);
   const sel=(id,rot,val,opts,campo)=>`<label class="rf-campo">${rot} <select onchange="REDE['${campo}']=this.value;REDE.limite=100;renderRedeCasos()">${opts.map(([k,t])=>`<option value="${k}" ${String(val||'')===String(k)?'selected':''}>${t}</option>`).join('')}</select></label>`;
-  const filaOpts=[['','Todas'],...Object.entries(REDE_FILAS).map(([f,F])=>[f,F.quem.toUpperCase()])];
+  const filaOpts=[['','Todas'],...Object.entries(REDE_FILAS).map(([f,F])=>[f,F.quem])];
   const casoOpts=[['','Todos'],...Object.entries(regras).sort((a,b)=>a[1].ordem-b[1].ordem).filter(([k,v])=>v.ativo).map(([k,v])=>[k,cdEsc(v.nome)])];
   const prioOpts=[['','Todas'],...[1,2,3].map(p=>[String(p),REDE_PRIO[p][0]])];
   const chips=[];
-  if(REDE.fila) chips.push(['fila','Fila: '+REDE_FILAS[REDE.fila].quem.toUpperCase()]);
+  if(REDE.fila) chips.push(['fila','Fila: '+REDE_FILAS[REDE.fila].quem]);
   if(REDE.caso) chips.push(['caso','Tipo: '+(regras[REDE.caso]?.nome||REDE.caso)]);
   if(REDE.prio) chips.push(['prio','Prioridade: '+REDE_PRIO[REDE.prio][0]]);
   if(REDE.filiais) chips.push(['filiais','Filial: '+rfFiliaisRotulo(REDE.filiais, filiais)]);
