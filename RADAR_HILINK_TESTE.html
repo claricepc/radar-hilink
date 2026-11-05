@@ -26519,6 +26519,7 @@ window.renderInicio = renderInicio;
 async function vgCarregar(){
   try{ const sb=getSB(); const m = INI.marca && INI.marca!=='Todas' ? INI.marca : null;
     // uma chamada só: o banco guarda a Visão geral pronta (recalcula a cada 10 minutos ou quando chega leitura nova do IXC)
+    if(!window.RADAR_OLT){ try{ const o=await sb.rpc('radar_rede_transmissores'); if(!o.error) window.RADAR_OLT=o.data||{}; }catch(e){} }
     const t = await sb.rpc('radar_vg_tudo',{p_marca:m});
     if(t.error) throw t.error; const d=t.data||{};
     INI.vg = d.vg||{}; INI.bq = d.bq||[]; INI.base = d.base||null; INI.gr = d.gr||null; INI.iaPend = Array.isArray(d.ia) ? d.ia : null; INI.vgCalc = d.calculado_em; INI.vgErro=null;
@@ -26586,6 +26587,9 @@ async function vgIaGerarAtividade(){
   cdAtvModal();
 }
 Object.assign(window,{vgIaPendentes,vgIaGerarAtividade});
+// Nome da OLT conforme o cadastro de transmissores do IXC
+function radarOlt(id){ const o=(window.RADAR_OLT||{})[String(id)]; return o ? o : null; }
+function radarPonNome(pon){ const tr=String(pon||'').split('-')[0], o=radarOlt(tr); return o ? `${o.descricao} · porta ${String(pon).slice(tr.length+1)}` : 'PON '+pon; }
 // Detalhe de uma porta (PON): diagnóstico de onde está o problema + todos os clientes da porta
 function vgRedeDiagnostico(d){
   const lidos=Math.max(0,(d.total||0)-(d.sem_sinal||0)), pct=lidos?Math.round(100*(d.fracos||0)/lidos):0, raio=Number(d.raio_fracos_m)||0;
@@ -26599,7 +26603,8 @@ function vgRedeDiagnostico(d){
   const causas=Object.entries(d.causas||{}).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${k==='dying-gasp'?'falta de energia na casa do cliente (dying-gasp)':/^LO/i.test(k)?'perda de sinal óptico ('+k+')':k}: ${n}`).join('; ');
   const mapa=d.centro_fracos?`<a href="https://www.google.com/maps?q=${d.centro_fracos.lat},${d.centro_fracos.lon}" target="_blank" rel="noopener">ver no mapa o centro da área afetada</a>`:'';
   return {tit, quem, html:`<div class="vg-diag"><div class="vg-diag-tit">${tit}</div><div>${oque}</div>
-    <div class="vg-diag-grade"><span><b>Transmissor (OLT)</b> ${cdEsc(d.transmissor)}</span><span><b>Slot/porta</b> ${cdEsc(d.slot_porta)}</span><span><b>Concentrador</b> ${cdEsc(String(d.concentradores||'').replace(/^,\s*/,'')||'-')}</span>
+    <div class="vg-diag-grade"><span><b>Transmissor (OLT)</b> ${(()=>{ const o=radarOlt(d.transmissor); return o?`${cdEsc(o.descricao)} <small>(ID ${cdEsc(d.transmissor)}${o.ip?' · IP '+cdEsc(o.ip):''})</small>`:'ID '+cdEsc(d.transmissor)+' <small>(nome não cadastrado no Radar)</small>'; })()}</span>
+      <span><b>POP</b> ${cdEsc((radarOlt(d.transmissor)||{}).pop||'-')}</span><span><b>Modelo</b> ${cdEsc((radarOlt(d.transmissor)||{}).modelo||'-')}</span><span><b>Slot/porta</b> ${cdEsc(d.slot_porta)}</span><span><b>Concentrador</b> ${cdEsc(String(d.concentradores||'').replace(/^,\s*/,'')||'-')}</span>
       <span><b>Clientes na porta</b> ${cdNum(d.total)} (${cdNum(d.online)} online)</span><span><b>Com sinal fraco</b> ${cdNum(d.fracos)} de ${cdNum(lidos)} lidos (${pct}%)</span><span><b>Sem leitura de sinal</b> ${cdNum(d.sem_sinal)}</span>
       <span><b>Sinal médio dos fracos</b> ${d.rx_medio_fracos??'-'} dBm</span><span><b>Sinal médio dos bons</b> ${d.rx_medio_bons??'-'} dBm</span><span><b>Leitura</b> ${cdEsc(d.leitura_em||'')}</span></div>
     <div><b>Última queda dos fracos:</b> ${causas||'sem registro'}</div>
@@ -26615,8 +26620,10 @@ async function vgRedePon(pon){
   const rows=(d.clientes||[]).map(c=>({...c, situacao_sinal:c.rx==null||Number(c.rx)===0?'sem leitura':c.fraco?'FRACO':'bom', online_txt:c.online==='S'?'sim':'não',
     mapa:c.lat&&Number(c.lat)!==0?'abrir':''}));
   VG_LISTA_ATUAL={tipo:'pon', titulo:'PON '+pon, rows:rows.map(x=>({...x, telefone:''}))};
-  openDrill(`PON ${pon}: ${dg.tit}`, rows, [{k:'situacao_sinal',label:'Sinal'},{k:'rx',label:'RX (dBm)'},{k:'tx',label:'TX'},{k:'nome',label:'Cliente'},{k:'id_cliente',label:'Cód.'},{k:'filial',label:'Filial'},{k:'bairro',label:'Bairro'},{k:'endereco',label:'Endereço'},{k:'online_txt',label:'Online'},{k:'causa',label:'Última queda'},{k:'desconexoes',label:'Desconexões'},{k:'onu',label:'ONU nº'},{k:'temperatura',label:'Temp. ONU'},{k:'voltagem',label:'Tensão'},{k:'concentrador',label:'Concentrador'}],
-    {sub:`Transmissor ${d.transmissor} · slot/porta ${d.slot_porta} · ${cdNum(d.fracos)} fracos de ${cdNum(d.total)} clientes`, contextOnly:true, contextHtml:dg.html});
+  if(!window.RADAR_OLT){ try{ const o=await sb.rpc('radar_rede_transmissores'); if(!o.error) window.RADAR_OLT=o.data||{}; }catch(e){} }
+  const olt=radarOlt(d.transmissor);
+  openDrill(`${olt?olt.descricao+' · ':''}PON ${pon}: ${dg.tit}`, rows, [{k:'situacao_sinal',label:'Sinal'},{k:'rx',label:'RX (dBm)'},{k:'tx',label:'TX'},{k:'nome',label:'Cliente'},{k:'id_cliente',label:'Cód.'},{k:'filial',label:'Filial'},{k:'bairro',label:'Bairro'},{k:'endereco',label:'Endereço'},{k:'online_txt',label:'Online'},{k:'causa',label:'Última queda'},{k:'desconexoes',label:'Desconexões'},{k:'onu',label:'ONU nº'},{k:'temperatura',label:'Temp. ONU'},{k:'voltagem',label:'Tensão'},{k:'concentrador',label:'Concentrador'}],
+    {sub:`${olt?olt.descricao+' ('+olt.pop+')':'Transmissor '+d.transmissor} · slot/porta ${d.slot_porta} · ${cdNum(d.fracos)} fracos de ${cdNum(d.total)} clientes`, contextOnly:true, contextHtml:dg.html});
 }
 Object.assign(window,{vgRedePon});
 (function(){ const st=document.createElement('style'); st.textContent=`.vg-diag{display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.45}.vg-diag-tit{font-weight:800;font-size:15px}
@@ -26712,10 +26719,10 @@ function vgIndicadoresHTML(rd){
   const fxInad=[['pre','Ainda não bloqueou','#F5A524','vence o prazo de bloqueio hoje ou depois'],['d30','Bloqueado, até 30 dias','#E5484D','já passou do bloqueio e tem até 30 dias de atraso'],['d90','31 a 90 dias','#B42318','atraso de 31 a 90 dias'],['mais90','Mais de 90 dias','#475569','atraso acima de 90 dias, perto ou depois do cancelamento automático']];
   const inadBarras=vgBarras(fxInad.map(([k,rot,cor,exp])=>{ const o=inad[k]||{}; return {rot, n:Number(o.valor)||0, cor, txt:`${brl0(o.valor)} <small>${cdNum(o.clientes||0)} cli.</small>`, js:`vgLista('inad_${k}','Inadimplência: ${rot}','Clientes com boleto vencido em aberto, contando pelo boleto mais antigo: ${exp}.')`}; }));
   const bqBarras = bqs.length ? vgBarras(bqs.slice(0,5).map(b=>({rot:dsem(b.data), n:b.clientes, cor:b===bqMain?'#E5484D':'#F5A524', txt:`${cdNum(b.clientes)} cli. <small>${brl0(b.valor)}</small>`, js:`radarBloqueioLista('${b.data}')`}))) : '';
-  const nomeReg=x=>x.dados&&x.dados.pon ? 'PON '+x.dados.pon : String((x.dados&&(x.dados.caso_nome||x.dados.regiao||x.dados.caixa))||x.titulo||x.nome||x.chave||'Região');
+  const nomeReg=x=>x.dados&&x.dados.pon ? radarPonNome(x.dados.pon) : String((x.dados&&(x.dados.caso_nome||x.dados.regiao||x.dados.caixa))||x.titulo||x.nome||x.chave||'Região');
   const redeOff = rd.pons.reduce((t,x)=>t+((x.dados&&x.dados.clientes)||[]).filter(c=>c.online!=='S').length,0);
   const regs=[...rd.pons].sort((a,b)=>(Number(b.dados&&b.dados.afetados)||0)-(Number(a.dados&&a.dados.afetados)||0));
-  const redeBarras = regs.length ? vgBarras(regs.slice(0,4).map(x=>{ const cl=(x.dados&&x.dados.clientes)||[], off=cl.filter(c=>c.online!=='S').length; return {rot:cdEsc(nomeReg(x)).slice(0,28), n:Number(x.dados&&x.dados.afetados)||0, cor:'#F5A524', txt:`${cdNum(Number(x.dados&&x.dados.afetados)||0)} <small>${off?off+' off':'todos on'}</small>`, js:x.dados&&x.dados.pon?`vgRedePon('${cdEsc(x.dados.pon)}')`:"go('tecnica');tecSub('casos')"}; })) + (regs.length>4?`<div class="vg-x">e mais ${regs.length-4} ${regs.length-4===1?'porta':'portas'}</div>`:'') : '';
+  const redeBarras = regs.length ? vgBarras(regs.slice(0,4).map(x=>{ const cl=(x.dados&&x.dados.clientes)||[], off=cl.filter(c=>c.online!=='S').length; return {rot:cdEsc(nomeReg(x)).slice(0,40), n:Number(x.dados&&x.dados.afetados)||0, cor:'#F5A524', txt:`${cdNum(Number(x.dados&&x.dados.afetados)||0)} <small>${off?off+' off':'todos on'}</small>`, js:x.dados&&x.dados.pon?`vgRedePon('${cdEsc(x.dados.pon)}')`:"go('tecnica');tecSub('casos')"}; })) + (regs.length>4?`<div class="vg-x">e mais ${regs.length-4} ${regs.length-4===1?'porta':'portas'}</div>`:'') : '';
   const rotCanc={financeiro:'Financeiro',outro_provedor:'Outro provedor',insatisfacao:'Insatisfação',mudanca_sem_cobertura:'Mudança sem cobertura',outros:'Outros'};
   const cancItens=Object.entries(canc).filter(([k])=>k!=='limpeza').sort((a,b)=>b[1]-a[1]);
   const cancBarras = cancItens.length ? vgBarras(cancItens.map(([k,n])=>({rot:cdEsc(rotCanc[k]||String(k).replace(/_/g,' ')), n, cor:'#5B6B7C', txt:cdNum(n), js:`vgLista('cancel:${cdEsc(k)}','Cancelamentos do mês: ${cdEsc(rotCanc[k]||k)}','Contratos cancelados neste mês com este motivo (pela observação e pelo motivo do IXC).')`}))) : '';
