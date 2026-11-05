@@ -27973,7 +27973,7 @@ setTimeout(function tenta(){ try{ const sb=getSB(); if(sb){ sb.auth.getSession()
 var REDE = { dados:null, carregando:false, erro:'', fila:'', caso:'', filial:'', prio:'', busca:'', so_livres:true, edit:null, hist:null, abertos:{} };
 const REDE_FILAS = {
   cliente:{ nome:'Contato com o cliente', gestor:'Talitha', tipo:'rede_cliente', quem:'Atendimento', tom:'agir' },
-  campo:  { nome:'Demanda externa (campo)', gestor:'Akassio (gerente operacional)', tipo:'rede_campo', quem:'Equipe técnica', tom:'corrigir' },
+  campo:  { nome:'Demanda externa (campo)', gestor:'Akassio (gerente operacional)', tipo:'rede_campo', quem:'Técnico de campo', tom:'corrigir' },
   noc:    { nome:'Rede (NOC)', gestor:'Gabriel (gestor de redes), com o Akassio acima', tipo:'rede_noc', quem:'NOC', tom:'planejar' }
 };
 const REDE_PRIO = { 1:['Alta','risk'], 2:['Média','warn'], 3:['Baixa','info'] };
@@ -28042,7 +28042,7 @@ function renderRedeCasos(){
     return `<div class="cdg-item ${F.tom}">
       <div class="t"><span>${F.nome}</span></div>
       <div class="n">${cdNum(livres.length)}<small>casos sem tarefa</small></div>
-      <div class="p">${alta?`<b>${alta} de prioridade alta.</b> `:''}${ls.length-livres.length?`${ls.length-livres.length} já estão em tarefa. `:''}Quem executa: ${F.quem}. Gestor: ${F.gestor}.</div>
+      <div class="p">${alta?`<b>${alta} de prioridade alta.</b> `:''}${ls.length-livres.length?`${ls.length-livres.length} já estão em tarefa. `:''}Departamento: ${F.quem.toUpperCase()}.</div>
       <div class="cdg-botoes"><button type="button" class="cdg-ir" onclick="REDE.fila='${f}';renderRedeCasos()">Ver lista</button>${gerente&&livres.length?`<button type="button" class="cdg-ir cdg-gerar" onclick="redeGerarAtividade('${f}')">Gerar tarefa</button>`:''}</div>
     </div>`; }).join('');
   const casosOpts = Object.entries(D.regras?.casos||{}).sort((a,b)=>a[1].ordem-b[1].ordem).map(([k,v])=>`<option value="${k}" ${REDE.caso===k?'selected':''}>${cdEsc(v.nome)}${v.ativo?'':' (desligado)'}</option>`).join('');
