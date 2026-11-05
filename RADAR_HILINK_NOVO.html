@@ -3115,6 +3115,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
       </div></div>
     <div class="nav-group nav-hub nav-area collapsed" data-area="equipe"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Equipe</div><div class="nav-group-items">
         <div class="nav-sub nav-sub-fixo" data-cd="atividades" onclick="radarIrAtividades()">Atividades da equipe</div>
+        <div class="nav-sub nav-sub-fixo" data-cd="decisoes" onclick="go('cobrancaDia');cdSub('decisoes')">Decisão da gerência</div>
         <div class="nav-sub nav-sub-fixo" data-cd="desempenho" onclick="go('cobrancaDia');cdSub('desempenho')">Desempenho da equipe</div>
       </div></div>
     <div class="nav-group nav-hub nav-area collapsed" data-area="config"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Configura&ccedil;&otilde;es</div><div class="nav-group-items">
@@ -24179,11 +24180,13 @@ function cdCard(o){
     <div class="cd-k-label">${o.label}</div><div class="cd-k-valor">${o.valor}</div><div class="cd-k-sub">${o.sub||''}</div>
     ${o.ir?'<div class="cd-k-ver">Ver lista</div>':''}</div>`;
 }
-const CD_SUBS = [['resumo','Resumo do dia'],['onde','Onde está o dinheiro'],['listas','Listas para cobrar'],['carteiras','Filial x carteira'],['atividades','Atividades da equipe'],['desempenho','Desempenho da equipe']];
+const CD_SUBS = [['resumo','Resumo do dia'],['onde','Onde está o dinheiro'],['listas','Listas para cobrar'],['carteiras','Filial x carteira'],['atividades','Atividades da equipe'],['decisoes','Decisão da gerência'],['desempenho','Desempenho da equipe']];
 function cdSub(k, aba){ CD.sub = k; if(aba) CD.aba = aba; renderCobrancaDia(); try{ radarTrilha('cobrancaDia'); }catch(e){} window.scrollTo({top:0,behavior:'smooth'}); }
 function cdAbasHTML(){
   const atrasadas = (CD.atv.lista||[]).filter(a=>a.status==='aberta' && typeof cdPrazoEstourou==='function' && cdPrazoEstourou(a)).length;
-  return `<div class="op-abas">${CD_SUBS.filter(([k])=>((k==='atividades'||k==='desempenho')===(CD.sub==='atividades'||CD.sub==='desempenho')) && ((k!=='atividades'&&k!=='desempenho'&&k!=='carteiras')||cdPodeGerenciar())).map(([k,t])=>`<button type="button" class="${(CD.sub||'resumo')===k?'on':''}" onclick="cdSub('${k}')">${t}${k==='atividades'&&atrasadas?`<span class="q">${atrasadas}</span>`:''}</button>`).join('')}</div>`;
+  const eq = k => k==='atividades'||k==='desempenho'||k==='decisoes';
+  const nDec = (CD.dec.lista||[]).filter(d=>d.status==='aguardando').length;
+  return `<div class="op-abas">${CD_SUBS.filter(([k])=>(eq(k)===eq(CD.sub)) && ((!eq(k)&&k!=='carteiras')||cdPodeGerenciar())).map(([k,t])=>`<button type="button" class="${(CD.sub||'resumo')===k?'on':''}" onclick="cdSub('${k}')">${t}${k==='atividades'&&atrasadas?`<span class="q">${atrasadas}</span>`:''}${k==='decisoes'&&nDec?`<span class="q">${nDec}</span>`:''}</button>`).join('')}</div>`;
 }
 window.cdSub = cdSub;
 function cdIrLista(aba, preset){
@@ -24463,6 +24466,7 @@ function cdGuiaHTML(){
   if(sub==='onde') return `<div class="cdg">${status}${v360}${estr}</div>`;
   if(sub==='atividades') return `<div class="cdg">${status}${cdAtvPainelHTML()}</div>`;
   if(sub==='desempenho') return `<div class="cdg">${status}${cdDesempenhoHTML()}</div>`;
+  if(sub==='decisoes') return `<div class="cdg">${cdDecisoesHTML()}</div>`;
   if(sub==='carteiras') return `<div class="cdg">${cdCartHTML()}</div>`;
   if(sub==='listas') return `<div class="cdg">${status}</div>`;
   return `<div class="cdg">${status}${resumo}${colunas}${glos}</div>`;
@@ -24482,10 +24486,11 @@ const CD_ATV_TIPOS = {
   retorno_oportunidade: { nome:'Chamar de volta (oferta de upgrade)', fonte:'__oportunidades', chave:x=>String(x.id_cliente) },
   rede_cliente:     { nome:'Rede: contato com o cliente', fonte:'__rede', chave:x=>String(x.chave) },
   rede_campo:       { nome:'Rede: demanda externa (campo)', fonte:'__rede', chave:x=>String(x.chave) },
-  rede_noc:         { nome:'Rede: NOC', fonte:'__rede', chave:x=>String(x.chave) }
+  rede_noc:         { nome:'Rede: NOC', fonte:'__rede', chave:x=>String(x.chave) },
+  visita_rota:      { nome:'Visita sem agendamento (rota)', fonte:'__decisao', chave:x=>String(x.id_cliente) }
 };
 // prazo padrão (SLA) de cada tipo de atividade, em dias úteis a partir de hoje
-const CD_SLA_DIAS = { rede_cliente:0, rede_campo:1, rede_noc:0, retorno_oportunidade:0, cobrar:0, quebra:1, suspeitos:1, gerados_vencidos:1, recolhimento_atd:2, avencer:0, sem_email:5 };
+const CD_SLA_DIAS = { rede_cliente:0, rede_campo:1, rede_noc:0, retorno_oportunidade:0, cobrar:0, quebra:1, suspeitos:1, gerados_vencidos:1, recolhimento_atd:2, avencer:0, sem_email:5, visita_rota:1 };
 const CD_SLA_PRESET = { pre:0, um:0, d6_30:1, d31_90:5, d90:5, todos:2, vence_sem_email:2 };
 function cdDiaUtil(n){ const d=new Date(); let k=0; while(k<n){ d.setDate(d.getDate()+1); if(d.getDay()!==0&&d.getDay()!==6) k++; }
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -24525,7 +24530,7 @@ function cdSlaBarra(a, grande){
 }
 const CD_SITUACOES = {
   pendente:{t:'Para tratar',c:''}, contatado:{t:'Contatado',c:'info'}, sem_resposta:{t:'Sem resposta',c:'warn'}, numero_errado:{t:'Número errado',c:'warn'},
-  prometeu:{t:'Prometeu pagar',c:'info'}, negociando:{t:'Negociando',c:'info'}, corrigido:{t:'Corrigido no IXC',c:'ok'}, nao_cobrar:{t:'Não cobrar',c:''}, aguardando:{t:'Em andamento',c:'warn'}
+  prometeu:{t:'Prometeu pagar',c:'info'}, negociando:{t:'Negociando',c:'info'}, corrigido:{t:'Corrigido no IXC',c:'ok'}, nao_cobrar:{t:'Não cobrar',c:''}, aguardando:{t:'Em andamento',c:'warn'}, escalado:{t:'Com a gerência para decisão',c:'warn'}
 };
 function cdAtvAcoes(tipo){
   if(tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos') return ['corrigido','aguardando','nao_cobrar'];
@@ -24535,10 +24540,11 @@ function cdAtvAcoes(tipo){
   if(tipo==='retorno_oportunidade') return ['corrigido','negociando','aguardando','nao_cobrar','sem_resposta','numero_errado'];
   if(tipo==='rede_cliente') return ['corrigido','contatado','aguardando','sem_resposta','numero_errado','nao_cobrar'];
   if(tipo==='rede_campo'||tipo==='rede_noc') return ['corrigido','aguardando','nao_cobrar'];
+  if(tipo==='visita_rota') return ['corrigido','aguardando','nao_cobrar'];
   return ['contatado','sem_resposta','numero_errado','prometeu','negociando','nao_cobrar'];
 }
 const CD_ROTULO_REDE = {corrigido:'Resolvido',contatado:'Cliente orientado',nao_cobrar:'Não é problema da rede'};
-const cdAtvRotuloAcao = (tipo,s) => String(tipo).startsWith('rede_') && CD_ROTULO_REDE[s] ? CD_ROTULO_REDE[s] : tipo==='retorno_oportunidade' && ({corrigido:'Fez o upgrade',negociando:'Interessado, vai pensar',nao_cobrar:'Não quer upgrade'})[s] ? ({corrigido:'Fez o upgrade',negociando:'Interessado, vai pensar',nao_cobrar:'Não quer upgrade'})[s] : s==='aguardando' ? 'Em andamento' : s==='corrigido' ? (tipo==='sem_email'?'E-mail cadastrado':'Corrigido no IXC') : s==='nao_cobrar' ? (tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos'?'Não precisa corrigir':'Não cobrar') : CD_SITUACOES[s].t;
+const cdAtvRotuloAcao = (tipo,s) => tipo==='visita_rota' && ({corrigido:'OS aberta e encaixada na rota',nao_cobrar:'Não dá para visitar'})[s] ? ({corrigido:'OS aberta e encaixada na rota',nao_cobrar:'Não dá para visitar'})[s] : String(tipo).startsWith('rede_') && CD_ROTULO_REDE[s] ? CD_ROTULO_REDE[s] : tipo==='retorno_oportunidade' && ({corrigido:'Fez o upgrade',negociando:'Interessado, vai pensar',nao_cobrar:'Não quer upgrade'})[s] ? ({corrigido:'Fez o upgrade',negociando:'Interessado, vai pensar',nao_cobrar:'Não quer upgrade'})[s] : s==='aguardando' ? 'Em andamento' : s==='corrigido' ? (tipo==='sem_email'?'E-mail cadastrado':'Corrigido no IXC') : s==='nao_cobrar' ? (tipo==='quebra'||tipo==='suspeitos'||tipo==='gerados_vencidos'?'Não precisa corrigir':'Não cobrar') : CD_SITUACOES[s].t;
 
 // ---------- início da tarefa e movimento ----------
 function cdHorasDesde(d){ return d ? (Date.now()-new Date(d).getTime())/3600000 : null; }
@@ -24610,9 +24616,154 @@ async function cdAtvCarregar(semRender){
   try{
     const [lista, usuarios, promessas] = await Promise.all([cdAtvRpc('radar_atv_listar',{p_dias:30}), cdAtvRpc('radar_atv_usuarios'), cdAtvRpc('radar_promessas',{})]);
     CD.atv.lista = lista||[]; CD.atv.usuarios = usuarios||[]; CD.atv.promessas = promessas||[]; CD.atv.erro = null;
+    if(cdPodeGerenciar()) cdDecCarregar(true);
   }catch(e){ CD.atv.erro = e.message; console.warn('[Radar] atividades', e); }
   if(!semRender) renderCobrancaDia();
 }
+
+
+// ===== Decisão da gerência =====
+// Cobrança ou recolhimento sem contato: a atendente passa o cliente para a gerência depois de 3 tentativas, em 2 dias diferentes,
+// por ligação e WhatsApp (ou número errado). A gerência escolhe: visita sem agendamento (vai para alguém da rota),
+// notificação extrajudicial (fica com a gerência) ou nova rodada de contato (outra atendente).
+CD.dec = { lista:null, aberto:null, erro:null, verConcluidas:false };
+async function cdDecCarregar(semRender){
+  try{ CD.dec.lista = await cdAtvRpc('radar_decisoes_listar',{p_dias:30}) || []; CD.dec.erro=null; }
+  catch(e){ CD.dec.erro = e.message; }
+  if(!semRender) renderCobrancaDia();
+}
+function cdEscalarHTML(a, i){
+  if(!a || !['cobrar','recolhimento_atd'].includes(a.tipo) || i.resolvido_ixc || i.situacao==='escalado') return '';
+  const A=CD.atv, ab=A.escAberto===i.id, t=Number(i.tentativas)||0;
+  const btn = `<button type="button" class="cdg-mini" style="margin-top:6px" onclick="CD.atv.escAberto=(CD.atv.escAberto===${i.id}?null:${i.id});renderCobrancaDia()" title="Libera com 3 tentativas em 2 dias diferentes, por ligação e WhatsApp, ou com número errado">Esgotei as tentativas: passar para a gerência</button>`;
+  if(!ab) return btn;
+  return btn + `<div class="cdg-motivos" style="flex-direction:column;align-items:flex-start;gap:6px">
+    <span class="cdg-nota" style="margin:0">A gerência decide o próximo passo: visita sem agendamento, notificação extrajudicial ou nova rodada com outra atendente. Este cliente tem ${t} tentativa(s) registrada(s). É preciso ter 3 tentativas em 2 dias diferentes, com ligação e WhatsApp.</span>
+    <span>Nesta última tentativa eu: <label><input type="checkbox" class="cd-esc-acao" value="Liguei e não atendeu"> Liguei e não atendeu</label> <label><input type="checkbox" class="cd-esc-acao" value="Chamei no WhatsApp"> Chamei no WhatsApp</label></span>
+    <input id="cd-esc-obs-${i.id}" class="cdf-input" type="text" maxlength="300" placeholder="O que você tentou e o que aconteceu (obrigatório)">
+    <button type="button" class="cdg-acao aguardando" onclick="cdAtvEscalar(${i.id})">Passar para a gerência</button></div>`;
+}
+async function cdAtvEscalar(itemId){
+  const obs=(document.getElementById('cd-esc-obs-'+itemId)?.value||'').trim();
+  if(!obs){ toast('Escreva o que você tentou e o que aconteceu.','warn'); return; }
+  const acoes=[...document.querySelectorAll('.cd-esc-acao:checked')].map(x=>x.value);
+  try{
+    const r=await cdAtvRpc('radar_atv_escalar',{p_item:itemId,p_obs:obs,p_acoes:acoes});
+    if(!r||!r.ok){ toast(r?.motivo||'Não foi possível.','warn'); return; }
+    toast(r.mensagem,'success'); CD.atv.escAberto=null;
+    await cdAtvItensCarregar();
+    if(typeof cdFocoProximoId==='function' && CD.atv.sel===itemId){ const p=cdFocoProximoId(itemId); if(p) cdFocoSelecionar(p,true); }
+    renderCobrancaDia();
+  }catch(e){ toast(e.message,'error'); }
+}
+function cdDecPessoas(tipo){
+  return (CD.atv.usuarios||[]).filter(u=>tipo==='visita' ? true : String(u.perfil||'')==='atendente');
+}
+function cdDecPainelHTML(d){
+  const ab=CD.dec.aberto;
+  if(!ab || ab.id!==d.id) return '';
+  const pessoas=cdDecPessoas(ab.tipo);
+  const quem = ab.tipo==='notificacao' ? '' : `<label>${ab.tipo==='visita'?'Quem da rota vai encaixar a visita':'Atendente da nova rodada'}
+      <select id="cd-dec-resp-${d.id}"><option value="">Escolha</option>${pessoas.filter(u=>!(ab.tipo==='nova_rodada' && u.nome===d.escalado_por_nome)).map(u=>`<option value="${u.id}">${cdEsc(u.nome)}${u.cargo?' ('+cdEsc(u.cargo)+')':''}</option>`).join('')}</select></label>
+      <label>Prazo <input id="cd-dec-prazo-${d.id}" type="date" min="${cdHoje()}" value="${cdDiaUtil(ab.tipo==='visita'?1:2)}"></label>`;
+  const txt = {visita:'Vira uma atividade para a pessoa da rota abrir (ou usar) a OS e encaixar a visita. Ela sai daqui.',
+    notificacao:'Fica aqui com a gerência, em execução. Gere a notificação, envie e marque como enviada.',
+    nova_rodada:'Vira uma atividade para outra atendente tentar de novo. Quem já tentou não aparece na lista.'}[ab.tipo];
+  return `<div class="cdec-painel"><div class="cdg-nota" style="margin:0">${txt}</div>
+    <div class="cdec-campos">${quem}<label style="flex:1">Observação <input id="cd-dec-obs-${d.id}" type="text" maxlength="300" placeholder="opcional"></label></div>
+    <div><button type="button" class="btn sm primary" onclick="cdDecConfirmar(${d.id})">Confirmar</button> <button type="button" class="btn sm" onclick="CD.dec.aberto=null;renderCobrancaDia()">Cancelar</button></div></div>`;
+}
+async function cdDecConfirmar(id){
+  const ab=CD.dec.aberto; if(!ab) return;
+  const resp=document.getElementById('cd-dec-resp-'+id)?.value||null;
+  if(ab.tipo!=='notificacao' && !resp){ toast(ab.tipo==='visita'?'Escolha quem da rota vai encaixar a visita.':'Escolha a atendente da nova rodada.','warn'); return; }
+  try{
+    const r=await cdAtvRpc('radar_decisao_registrar',{p_id:id,p_decisao:ab.tipo,p_obs:document.getElementById('cd-dec-obs-'+id)?.value||null,p_responsavel:resp,p_prazo:document.getElementById('cd-dec-prazo-'+id)?.value||null});
+    if(!r||!r.ok){ toast(r?.motivo||'Não foi possível.','warn'); return; }
+    toast(ab.tipo==='notificacao'?'Decidido: notificação extrajudicial. Gere a notificação no cartão.':`Atividade criada para ${r.responsavel}.`,'success');
+    CD.dec.aberto=null; await cdDecCarregar(true); await cdAtvCarregar();
+  }catch(e){ toast(e.message,'error'); }
+}
+async function cdDecConcluir(id){
+  const obs=(document.getElementById('cd-dec-fim-'+id)?.value||'').trim();
+  if(!obs){ toast('Escreva como foi enviada (ex.: Correios AR nº, entregue em mãos, WhatsApp).','warn'); return; }
+  try{ const r=await cdAtvRpc('radar_decisao_concluir',{p_id:id,p_obs:obs}); if(!r||!r.ok){ toast(r?.motivo||'Não foi possível.','warn'); return; } toast('Notificação marcada como enviada.','success'); await cdDecCarregar(); }
+  catch(e){ toast(e.message,'error'); }
+}
+function cdDecNotificacao(id){
+  const d=(CD.dec.lista||[]).find(x=>x.id===id); if(!d) return;
+  const emp=(typeof FILIAIS_DADOS_FATURAMENTO!=='undefined' && (FILIAIS_DADOS_FATURAMENTO[String(d.filial_id)]||FILIAIS_DADOS_FATURAMENTO.default)) || {razao:'',cnpj:''};
+  const hoje=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const rec=d.tipo==='recolhimento_atd', det=d.detalhe||{};
+  const objeto = rec
+    ? `a devolução dos equipamentos cedidos em comodato para a prestação do serviço de internet (roteador, ONU e acessórios)${det.os?`, objeto da ordem de serviço nº ${cdEsc(det.os)}`:''}, em razão do encerramento do contrato`
+    : `o pagamento do débito em aberto no valor de ${cdMoeda(d.valor)}${det.vencimento_mais_antigo?`, com vencimento mais antigo em ${cdData(det.vencimento_mais_antigo)}`:''}, referente ao contrato de prestação de serviço de internet`;
+  const prazo = rec ? 'Para a devolução, entre em contato pelos nossos canais para agendar a retirada sem custo, ou entregue os equipamentos em nossa loja.' : 'Para regularizar, entre em contato pelos nossos canais para receber a segunda via ou negociar.';
+  const conseq = rec
+    ? 'A não devolução no prazo autoriza a cobrança do valor dos equipamentos, conforme previsto no contrato de comodato, e a adoção das medidas judiciais cabíveis.'
+    : 'O não pagamento no prazo poderá resultar na inclusão do débito nos órgãos de proteção ao crédito e na adoção das medidas judiciais cabíveis.';
+  const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Notificação extrajudicial - ${cdEsc(d.nome||'')}</title>
+<style>body{font-family:Georgia,serif;max-width:720px;margin:40px auto;line-height:1.6;color:#111;padding:0 24px}h1{font-size:20px;text-align:center;letter-spacing:.08em}p{text-align:justify}
+.aviso{font-family:Arial,sans-serif;font-size:12px;background:#FFF7E6;border:1px solid #F5A524;padding:8px 10px;border-radius:6px}@media print{.aviso{display:none}}</style></head><body>
+<div class="aviso">Modelo gerado pelo Radar. Revise os dados e o texto antes de enviar (de preferência com o jurídico). Este aviso não sai na impressão.</div>
+<h1>NOTIFICAÇÃO EXTRAJUDICIAL</h1>
+<p><b>Notificante:</b> ${cdEsc(emp.razao)}, CNPJ ${cdEsc(emp.cnpj)}.</p>
+<p><b>Notificado(a):</b> ${cdEsc(d.nome||'')}${d.cpf?`, CPF/CNPJ ${cdEsc(d.cpf)}`:''}${d.endereco?`, residente em ${cdEsc(d.endereco)}`:''}. Código de cliente ${cdEsc(d.id_cliente)}.</p>
+<p>Prezado(a) cliente,</p>
+<p>Tentamos falar com você ${d.tentativas||3} vezes, em ${d.dias_tentativa||2} dias diferentes, por telefone e WhatsApp, sem retorno. Por isso, vimos por meio desta NOTIFICAR Vossa Senhoria para que providencie, no prazo de <b>10 (dez) dias</b> a contar do recebimento, ${objeto}.</p>
+<p>${prazo}</p>
+<p>${conseq}</p>
+<p>Caso já tenha resolvido, por favor desconsidere esta notificação.</p>
+<p style="margin-top:40px">Recife, ${hoje}.</p>
+<p style="margin-top:60px;text-align:center">______________________________________<br>${cdEsc(emp.razao)}</p>
+<script>setTimeout(()=>window.print(),400)<\/script></body></html>`;
+  const w=window.open('','_blank'); if(!w){ toast('O navegador bloqueou a janela. Libere pop-ups para o Radar.','warn'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
+function cdDecisoesHTML(){
+  if(!cdPodeGerenciar()) return '';
+  const D=CD.dec;
+  if(D.lista===null){ if(!D._busy){ D._busy=true; cdDecCarregar().finally(()=>{D._busy=false;}); } return '<div class="cdg-box"><div class="cdg-nota">Carregando...</div></div>'; }
+  if(D.erro) return `<div class="cdg-box"><div class="cdg-nota">Não consegui carregar: ${cdEsc(D.erro)} <button class="cdg-ir" onclick="cdDecCarregar()">Tentar de novo</button></div></div>`;
+  const agu=D.lista.filter(d=>d.status==='aguardando'), exe=D.lista.filter(d=>d.status==='em_execucao'), fim=D.lista.filter(d=>d.status==='concluida');
+  const origem=d=>d.tipo==='recolhimento_atd'?'Recolhimento':'Cobrança';
+  const quando=t=>t?new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+  const cab=d=>`<div class="cdec-cab"><b>${cdEsc(d.nome||'Cliente '+d.id_cliente)}</b><span class="cdf-tag">${origem(d)}</span><span class="cdf-tag">${cdEsc(d.filial||'')}</span>${d.valor!=null?`<span class="cdf-tag r">${cdMoeda(d.valor)}</span>`:''}${d.resolvido_ixc?'<span class="cdg-chip ok">O IXC já mostra resolvido</span>':''}</div>
+    <div class="cdg-nota" style="margin:2px 0 6px">Cód. ${d.id_cliente}${d.telefone?' · '+cdEsc(d.telefone):''} · ${cdAtvDetalhe(d.tipo,{detalhe:d.detalhe||{}})}</div>
+    <div class="cdec-hist">${d.tentativas} tentativas em ${d.dias_tentativa} dia(s). Passado para a gerência por <b>${cdEsc(d.escalado_por_nome||'')}</b> em ${quando(d.escalado_em)}: "${cdEsc(d.escalado_obs||'')}"</div>`;
+  const cardAgu=d=>`<div class="cdec-card">${cab(d)}
+    <div class="cdec-botoes">${[['visita','Visita sem agendamento'],['notificacao','Notificação extrajudicial'],['nova_rodada','Nova rodada de contato']].map(([k,t])=>`<button type="button" class="btn sm ${D.aberto&&D.aberto.id===d.id&&D.aberto.tipo===k?'primary':''}" onclick="CD.dec.aberto={id:${d.id},tipo:'${k}'};renderCobrancaDia()">${t}</button>`).join('')}</div>
+    ${cdDecPainelHTML(d)}</div>`;
+  const cardExe=d=>`<div class="cdec-card">${cab(d)}
+    <div class="cdec-hist">Decidido: <b>notificação extrajudicial</b> por ${cdEsc(d.decidido_por_nome||'')} em ${quando(d.decidido_em)}${d.decisao_obs?' · "'+cdEsc(d.decisao_obs)+'"':''}</div>
+    <div class="cdec-campos"><button type="button" class="btn sm primary" onclick="cdDecNotificacao(${d.id})">Gerar notificação para imprimir</button>
+      <input id="cd-dec-fim-${d.id}" type="text" maxlength="300" placeholder="Como foi enviada (Correios AR nº, em mãos, WhatsApp)" style="flex:1"><button type="button" class="btn sm" onclick="cdDecConcluir(${d.id})">Marcar como enviada</button></div></div>`;
+  const rotDec={visita:'Visita sem agendamento',notificacao:'Notificação extrajudicial',nova_rodada:'Nova rodada de contato'};
+  const linhaFim=d=>`<tr><td>${cdEsc(d.nome||'')}</td><td>${origem(d)}</td><td>${rotDec[d.decisao]||''}</td><td>${cdEsc(d.conclusao_obs||'')}</td><td>${cdEsc(d.decidido_por_nome||'')}</td><td>${quando(d.concluido_em)}</td>
+    <td>${d.decisao==='visita'?((d.os||[]).length?'OS '+d.os.map(o=>cdEsc(o.id)+(o.agenda?' agendada '+cdData(o.agenda):'')).join(', '):'<span style="color:#B45309">nenhuma OS nova no IXC ainda</span>'):''}${d.resolvido_ixc?' · resolvido no IXC':''}</td></tr>`;
+  return `<div class="cdg-box">
+    <div class="cdg-eyebrow">Decisão da gerência</div>
+    <div class="cdg-nota" style="margin:2px 0 12px">Clientes que as atendentes não conseguiram contatar (3 tentativas em 2 dias, por ligação e WhatsApp). Eles saíram da fila delas e esperam a sua decisão.</div>
+    <h3 class="cdec-h">Aguardando decisão (${agu.length})</h3>
+    ${agu.length?agu.map(cardAgu).join(''):'<div class="cdg-nota">Nenhum cliente esperando decisão.</div>'}
+    <h3 class="cdec-h">Notificações em execução (${exe.length})</h3>
+    ${exe.length?exe.map(cardExe).join(''):'<div class="cdg-nota">Nenhuma notificação pendente de envio.</div>'}
+    <h3 class="cdec-h"><button type="button" class="cdg-link" onclick="CD.dec.verConcluidas=!CD.dec.verConcluidas;renderCobrancaDia()">Decididos nos últimos 30 dias (${fim.length}) ${D.verConcluidas?'ocultar':'ver'}</button></h3>
+    ${D.verConcluidas&&fim.length?`<div class="tbl-wrap"><table class="decision-table"><thead><tr><th>Cliente</th><th>Origem</th><th>Decisão</th><th>Resultado</th><th>Quem decidiu</th><th>Quando</th><th>Conferência no IXC</th></tr></thead><tbody>${fim.map(linhaFim).join('')}</tbody></table></div>`:''}
+  </div>`;
+}
+(function(){ if(document.getElementById('cdec-css')) return; const st=document.createElement('style'); st.id='cdec-css'; st.textContent=`
+.cdec-h{font-size:13px;margin:16px 0 8px;color:var(--g-text,#F2F5F8)}
+.cdec-card{border:1px solid var(--g-line,rgba(143,163,184,.2));border-left:4px solid #F5A524;border-radius:10px;padding:10px 12px;margin-bottom:10px;background:var(--g-card,#0E2236)}
+.cdec-cab{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cdec-hist{font-size:12px;color:var(--g-sub,#B4C2D0);margin:4px 0}
+.cdec-botoes{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.cdec-painel{margin-top:8px;padding:10px;border-radius:8px;background:rgba(77,163,224,.09);display:flex;flex-direction:column;gap:8px}
+.cdec-campos{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;margin-top:6px}
+.cdec-campos label{display:flex;flex-direction:column;gap:3px}
+.cdec-campos select,.cdec-campos input{background:#0B1B2B;color:#fff;border:1px solid rgba(90,150,220,.55);border-radius:6px;padding:5px 7px;font-size:12px}`;
+document.head.appendChild(st); })();
+Object.assign(window,{cdAtvEscalar,cdDecConfirmar,cdDecConcluir,cdDecNotificacao,cdDecCarregar});
 
 // ---------- painel de atividades (no topo do guia) ----------
 function cdAtvPainelHTML(){
@@ -25147,6 +25298,8 @@ async function cdAtvRegistrar(itemId, situacao){
   }catch(e){ toast(e.message,'error'); }
 }
 const CD_ATV_COMO = {
+  visita_rota: ['A gerência decidiu fazer uma <b>visita sem agendamento</b>: as atendentes tentaram e não conseguiram contato.',
+    'Abra a OS no IXC (ou use a OS de recolhimento que já existe) e encaixe na rota do técnico. Depois clique em <b>OS aberta e encaixada na rota</b> e escreva o número da OS na observação.'],
   cobrar: ['Clique em <b>Atender</b> e ligue ou mande mensagem para o cliente.',
     'Antes de cobrar, confira no IXC se ele não pagou hoje cedo.',
     'Registre o resultado: <b>Contatado</b>, <b>Sem resposta</b>, <b>Número errado</b>, <b>Prometeu pagar</b> (escolha a data) ou <b>Negociando</b>.',
@@ -25166,7 +25319,8 @@ const CD_ATV_MOTIVOS = {
   suspeitos: ['Valor está correto', 'Já foi corrigido', 'Título será cancelado pelo financeiro'],
   gerados_vencidos: ['Vencimento está correto', 'Já foi corrigido', 'Cliente já pagou'],
   cobrar: ['Já pagou', 'Pediu cancelamento', 'Prazo combinado com a liderança', 'Cliente em contestação'],
-  recolhimento_atd: ['Equipamento já devolvido', 'Cliente vai reativar', 'Cliente se recusa a devolver']
+  recolhimento_atd: ['Equipamento já devolvido', 'Cliente vai reativar', 'Cliente se recusa a devolver'],
+  visita_rota: ['Endereço não encontrado', 'Área de risco', 'Equipamento já devolvido', 'Cliente já pagou']
 };
 async function cdAtvMotivo(itemId, motivo){
   const campo = document.getElementById('cd-it-obs-'+itemId);
@@ -25254,7 +25408,7 @@ function cdAreaFocoHTML(){
           ? `<button type="button" class="cdg-acao ${s} ${A.motivoAberto===i.id?'ativo':''}" onclick="CD.atv.motivoAberto=(CD.atv.motivoAberto===${i.id}?null:${i.id});renderCobrancaDia()">${cdAtvRotuloAcao(a.tipo,s)}</button>`
           : `<button type="button" class="cdg-acao ${s}" onclick="cdAtvRegistrar(${i.id},'${s}')">${cdAtvRotuloAcao(a.tipo,s)}</button>`).join('')}
           ${i.situacao!=='pendente' ? `<button type="button" class="cdg-acao desfazer" onclick="cdAtvDesfazer(${i.id})" title="Volta este cliente para Para tratar">Desfazer <kbd>U</kbd></button>` : ''}</div>
-        ${A.motivoAberto===i.id?`<div class="cdg-motivos"><span class="cdg-nota" style="margin:0">Qual o motivo?</span>${(CD_ATV_MOTIVOS[a.tipo]||CD_ATV_MOTIVOS.cobrar).map(m=>`<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'${cdEsc(m)}')">${cdEsc(m)}</button>`).join('')}<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'')">Outro (escrever na observação)</button></div>`:''}${cdAndamentoPainel(i.id)}`:''}
+        ${A.motivoAberto===i.id?`<div class="cdg-motivos"><span class="cdg-nota" style="margin:0">Qual o motivo?</span>${(CD_ATV_MOTIVOS[a.tipo]||CD_ATV_MOTIVOS.cobrar).map(m=>`<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'${cdEsc(m)}')">${cdEsc(m)}</button>`).join('')}<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'')">Outro (escrever na observação)</button></div>`:''}${cdAndamentoPainel(i.id)}${cdEscalarHTML(a,i)}`:''}
       <div class="cdf-rodape">
         ${i.situacao!=='pendente'?`<span class="cdf-feito">Feito${i.tratado_por_nome?' por '+cdEsc(String(i.tratado_por_nome).split(' ')[0]):''}${i.tratado_em?' em '+new Date(i.tratado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}</span>`:''}
         <span style="flex:1"></span>
@@ -25363,6 +25517,7 @@ function cdAtvDetalhe(tipo, i){
   if(tipo==='sem_email') return `${cdEsc(d.situacao||'')}${d.email_atual?': '+cdEsc(d.email_atual):''}`;
   if(String(tipo).startsWith('rede_')) return `<b>${cdEsc(d.caso_nome||'')}</b>${d.termo?' ('+cdEsc(d.termo)+')':''}. ${cdEsc(d.acao||'')}${d.rx!=null&&d.rx!==''&&Number(d.rx)<0&&Number(d.rx)>-40?' · sinal '+String(d.rx).replace('.',',')+' dBm':''}${d.online==='N'?' · offline':''}${d.afetados?' · '+d.afetados+' clientes afetados':''}${d.cancel_em?' · pediu cancelamento em '+cdData(d.cancel_em):''}`;
   if(tipo==='retorno_oportunidade') return `${cdEsc(d.motivo||'')}${d.oferta?' · '+cdEsc(d.oferta):''}${d.enviado_em?' · oferta enviada em '+cdData(d.enviado_em):''}`;
+  if(tipo==='visita_rota') return `${d.origem_tipo==='recolhimento_atd'?'Recolher equipamento':'Cobrança presencial'}${d.os?' · OS '+cdEsc(d.os):''}${d.bairro?' · '+cdEsc(d.bairro):''}${d.tentativas_antes?' · '+d.tentativas_antes+' tentativas sem contato':''}${d.escalado_obs?' · "'+cdEsc(d.escalado_obs)+'"':''}`;
   if(tipo==='gerados_vencidos') return `Boleto ${d.id_titulo} emitido em ${cdData(d.emissao)} com vencimento ${cdData(d.vencimento)}${d.o_que_conferir?' · '+cdEsc(d.o_que_conferir):''}`;
   return '';
 }
@@ -25425,7 +25580,7 @@ function cdAreaListaHTML(){
           ? `<button type="button" class="cdg-acao ${s} ${CD.atv.motivoAberto===i.id?'ativo':''}" onclick="CD.atv.motivoAberto=(CD.atv.motivoAberto===${i.id}?null:${i.id});renderCobrancaDia()">${cdAtvRotuloAcao(a.tipo,s)}</button>`
           : `<button type="button" class="cdg-acao ${s}" onclick="cdAtvRegistrar(${i.id},'${s}')">${cdAtvRotuloAcao(a.tipo,s)}</button>`).join('')}
           <button type="button" class="cdg-mini" onclick="cdAtvSoltar(${i.id})" title="Desiste deste cliente agora: ele volta para a fila, sem registro">Devolver para a fila</button></div>
-        ${CD.atv.motivoAberto===i.id?`<div class="cdg-motivos"><span class="cdg-nota" style="margin:0">Qual o motivo?</span>${(CD_ATV_MOTIVOS[a.tipo]||CD_ATV_MOTIVOS.cobrar).map(m=>`<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'${cdEsc(m)}')">${cdEsc(m)}</button>`).join('')}<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'')">Outro (escrever na observação)</button></div>`:''}${cdAndamentoPainel(i.id)}
+        ${CD.atv.motivoAberto===i.id?`<div class="cdg-motivos"><span class="cdg-nota" style="margin:0">Qual o motivo?</span>${(CD_ATV_MOTIVOS[a.tipo]||CD_ATV_MOTIVOS.cobrar).map(m=>`<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'${cdEsc(m)}')">${cdEsc(m)}</button>`).join('')}<button type="button" class="cdg-motivo" onclick="cdAtvMotivo(${i.id},'')">Outro (escrever na observação)</button></div>`:''}${cdAndamentoPainel(i.id)}${cdEscalarHTML(a,i)}
         ${acoes.includes('prometeu')?`<div class="cdg-nota" style="margin:0">Prometeu pagar: o cliente sai da cobrança até a data (máximo 10 dias). Se a data passar do bloqueio, lance a liberação em confiança no IXC.</div>`:''}
       </div>`:''}
     </div>`;
@@ -26212,7 +26367,7 @@ function radarTrilha(mod){
   mod = mod || STATE.activeMod; const area = RADAR_AREA_DE[mod];
   if(!area){ el.innerHTML=''; return; }
   const partes = [`<button type="button" onclick="go('inicio')">Início</button>`];
-  if(mod==='cobrancaDia' && (CD.sub==='atividades'||CD.sub==='desempenho')){ partes.push(`<span>Equipe</span>`, `<span>${cdEsc((CD_SUBS.find(x=>x[0]===CD.sub)||[])[1]||'')}</span>`); el.innerHTML = partes.join('<span class="sep">/</span>'); document.querySelectorAll('.nav-sub').forEach(n=>n.classList.toggle('active', n.dataset.cd===CD.sub)); return; }
+  if(mod==='cobrancaDia' && (CD.sub==='atividades'||CD.sub==='desempenho'||CD.sub==='decisoes')){ partes.push(`<span>Equipe</span>`, `<span>${cdEsc((CD_SUBS.find(x=>x[0]===CD.sub)||[])[1]||'')}</span>`); el.innerHTML = partes.join('<span class="sep">/</span>'); document.querySelectorAll('.nav-sub').forEach(n=>n.classList.toggle('active', n.dataset.cd===CD.sub)); return; }
   if(mod!=='inicio'){ partes.push(`<span>${cdEsc(area)}</span>`); partes.push(mod==='oportunidades' && OP.sub!=='resumo' ? `<button type="button" onclick="opSub('resumo')">${cdEsc(RADAR_NOME_DE[mod])}</button>` : `<span>${cdEsc(RADAR_NOME_DE[mod])}</span>`); }
   if(mod==='oportunidades' && OP.sub!=='resumo') partes.push(`<span>${cdEsc((OP_SUBS.find(x=>x[0]===OP.sub)||[])[1]||'')}</span>`);
   if(mod==='tecnica' && typeof TEC_UI!=='undefined' && TEC_UI.sub!=='casos') partes.push(`<span>${cdEsc((TEC_SUBS.find(x=>x[0]===TEC_UI.sub)||[])[1]||'')}</span>`);
