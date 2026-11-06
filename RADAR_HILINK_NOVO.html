@@ -3127,6 +3127,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
         <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('cobrar','pre')">Cobrar antes do bloqueio</div>
         <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('recolhimento_atd')">Agendar recolhimento</div>
         <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('suspeitos')">Corrigir no IXC</div>
+        <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('cancelados')">Cancelados com dívida</div>
         <div class="nav-sub" data-cd="listas" onclick="go('cobrancaDia');cdIrLista('avencer')">Lembrar vencimento e e-mail</div>
         <div class="nav-sub" data-cd="carteiras" onclick="go('cobrancaDia');cdSub('carteiras')">Conferir filial x carteira</div>
         <div class="nav-item" data-mod="carneCorreios" onclick="go('carneCorreios')"><span>Envio Correios<small>carn&ecirc; de boletos via e-Carta</small></span></div>
@@ -23915,6 +23916,7 @@ const CD_PRESETS = {
 const CD_ABAS = {
   cobrar:           { titulo:'Cobrar',               fonte:'clientes_vencidos', desc:'Clientes com boleto vencido, um por linha. "Dias de atraso" conta pelo boleto mais antigo, que é o que define o bloqueio. Já exclui Filial 10 e títulos suspeitos.' },
   recolhimento_atd: { titulo:'Agendar recolhimento', fonte:'recolhimento_atd',  desc:'OS abertas de recolhimento de equipamento com tarefa ATD (agendamento ou reagendamento): contato das atendentes.' },
+  cancelados:       { titulo:'Cancelados com dívida', fonte:'clientes_vencidos', desc:'Clientes com contrato cancelado ou desistência e boleto ainda em aberto. Ficam fora da cobrança do dia: tratar como cobrança de dívida (acordo ou negativação) e conferir se o equipamento foi recolhido.' },
   quebra:           { titulo:'Quebra financeira',    fonte:'quebra',            desc:'Boleto antigo em aberto, mas o contrato já está pago até uma data posterior: o cliente pagou a fatura mais nova. Cliente recente: trocar a fatura no IXC (já sai da lista de cobrança). Contrato antigo: segue para a cobrança normal.' },
   avencer:          { titulo:'Lembrar vencimento',   fonte:'avencer',           desc:'Clientes com boleto vencendo nos próximos 6 dias (sem Filial 10). O lembrete antes do vencimento é só por e-mail: não fazemos pré-cobrança por WhatsApp por causa do custo da Meta. "Exportar e-mails" leva só quem tem e-mail útil.' },
   sem_email:        { titulo:'Cadastrar e-mail',     fonte:'sem_email',         desc:'Clientes ativos sem e-mail ou com e-mail falso/genérico. Lista para a campanha de cadastro de e-mail, que permite mandar o boleto sem custo.' },
@@ -24187,10 +24189,15 @@ function cdLimparFiltros(){
   CD.filiais = null; renderCobrancaDia();
 }
 
-function cdLinhasBase(){
-  const fonte = CD_ABAS[CD.aba].fonte;
-  return Array.isArray(CD.dados[fonte]) ? CD.dados[fonte] : [];
+// Contrato cancelado ou desistência: sai da cobrança do dia e vai para a lista "Cancelados com dívida"
+const CD_SIT_FORA = new Set(['Cancelado','Desistiu']);
+function cdLinhasDaAba(k){
+  const fonte = CD_ABAS[k].fonte; let l = Array.isArray(CD.dados[fonte]) ? CD.dados[fonte] : [];
+  if(k==='cobrar') l = l.filter(x=>!CD_SIT_FORA.has(x.situacao_contrato));
+  else if(k==='cancelados') l = l.filter(x=>CD_SIT_FORA.has(x.situacao_contrato));
+  return l;
 }
+function cdLinhasBase(){ return cdLinhasDaAba(CD.aba); }
 function cdLinhasFiltradas(){
   let l = cdLinhasBase();
   if(CD.filiais) l = l.filter(r => CD.filiais.includes(r.filial));
@@ -24269,7 +24276,7 @@ async function cdExportacaoOpaRegistrar(linhas, arquivo, filtro, lote){
 }
 // mesmo filtro da lista, usado também pelos cartões (o número do cartão é sempre o da lista que ele abre)
 function cdResumoPreset(k){
-  const l = cdFiltrarCobrar(CD.dados.clientes_vencidos||[], { ...CD.f, ...CD_PRESETS[k].f, valorMin:'', valorMax:'', busca:'', soComTelefone:false });
+  const l = cdFiltrarCobrar(cdLinhasDaAba('cobrar'), { ...CD.f, ...CD_PRESETS[k].f, valorMin:'', valorMax:'', busca:'', soComTelefone:false });
   return { clientes:l.length, valor:l.reduce((a,x)=>a+(Number(x.valor)||0),0) };
 }
 function cdFiltrarCobrar(l, f){
@@ -24332,7 +24339,7 @@ function cdPct(a, b){ return b>0 ? Math.round(100*a/b) : 0; }
 function cdHojeISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function cdGuiaDados(){
   const r = CD.dados.resumo || {};
-  const cv = Array.isArray(CD.dados.clientes_vencidos) ? CD.dados.clientes_vencidos : [];
+  const cv = (Array.isArray(CD.dados.clientes_vencidos) ? CD.dados.clientes_vencidos : []).filter(x=>!CD_SIT_FORA.has(x.situacao_contrato));
   const filtroPreset = k => cdFiltrarCobrar(cv, { ...CD.f, ...CD_PRESETS[k].f, valorMin:'', valorMax:'', busca:'', soComTelefone:false });
   const soma = l => l.reduce((a,x)=>a+(Number(x.valor)||0),0);
   const g = { r, cv };
@@ -26814,7 +26821,7 @@ function cdCapaHTML(){
   const dsem=d=>{ const x=new Date(d+'T12:00:00'); return x.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','')+', '+x.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); };
   const bqMain=bqs.find(x=>x.clientes>=10)||bqs[0];
   const barBq = bqs.length ? vgBarras(bqs.slice(0,5).map(x=>({rot:dsem(x.data), n:x.clientes, cor:x===bqMain?'#E5484D':'#F5A524', txt:`${cdNum(x.clientes)} cli. <small>${brl0(x.valor)}</small>`, js:`radarBloqueioLista('${x.data}')`}))) : '<div class="vg-x">nenhum bloqueio nos próximos 10 dias</div>';
-  const listas = Object.entries(CD_ABAS).map(([k,a])=>({k, rot:a.titulo, n:(CD.dados[a.fonte]||[]).length}));
+  const listas = Object.entries(CD_ABAS).map(([k,a])=>({k, rot:a.titulo, n:cdLinhasDaAba(k).length}));
   const barLis = vgBarras(listas.filter(x=>x.n>0).sort((a,b)=>b.n-a.n).map(x=>({rot:cdEsc(x.rot), n:x.n, cor:'#4DA3E0', txt:cdNum(x.n), js:`cdIrLista('${x.k}')`})));
   const g=(()=>{ try{ return cdGuiaDados(); }catch(e){ return null; } })(), pg=g&&g.pag||{qt:0,valor:0,atraso:0};
   const delta=n(v.vencido_valor)-n(v.vencido_valor_ant);
@@ -27853,22 +27860,25 @@ function renderCobrancaDia(){
     const hj=cdHojeISO();
     const blq = x => { const b=radarDataBloqueio(x.vencimento_mais_antigo); if(!b) return ''; return b<hj?`<span style="opacity:.65">${cdData(b)}</span>`:b===hj?`<b style="color:#FF6B70">hoje</b>`:`<b>${cdData(b)}</b>`; };
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Boletos</th><th>Valor</th><th>Dias de atraso</th><th>Mais antigo</th><th title="Vencimento + 5 dias, pulando fim de semana e feriado">Bloqueio</th><th>Obs.</th>';
-    corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.dias_atraso}</td><td>${cdData(x.vencimento_mais_antigo)}</td><td>${blq(x)}</td><td>${cdExportacaoOpaObs(x)}</td></tr>`).join('');
+    corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Sem nome no IXC')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.dias_atraso}</td><td>${cdData(x.vencimento_mais_antigo)}</td><td>${blq(x)}</td><td>${cdExportacaoOpaObs(x)}</td></tr>`).join('');
+  }else if(CD.aba==='cancelados'){
+    cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Situação do contrato</th><th>Boletos</th><th>Valor</th><th>Dias de atraso</th><th>Mais antigo</th>';
+    corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.situacao_contrato)}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.dias_atraso}</td><td>${cdData(x.vencimento_mais_antigo)}</td></tr>`).join('');
   }else if(CD.aba==='recolhimento_atd'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>OS</th><th>Tarefa</th><th>Aberta em</th><th>Dias</th><th>Vencido</th>';
-    corpo = linhas.map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.os)}</td><td>${cdEsc(x.tarefa)}</td><td>${cdData(x.abertura)}</td><td>${x.dias_aberta}</td><td>${Number(x.valor_vencido)>0?cdMoeda(x.valor_vencido):''}</td></tr>`).join('');
+    corpo = linhas.map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Sem nome no IXC')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.os)}</td><td>${cdEsc(x.tarefa)}</td><td>${cdData(x.abertura)}</td><td>${x.dias_aberta}</td><td>${Number(x.valor_vencido)>0?cdMoeda(x.valor_vencido):''}</td></tr>`).join('');
   }else if(CD.aba==='quebra'){
     cab = '<th>Tratamento</th><th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Contrato</th><th>Boleto aberto</th><th>Valor</th><th>Pago até</th><th>Ativação</th>';
     corpo = linhas.map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.tratamento)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdEsc(x.telefone||'')}</td><td>${x.id_contrato}</td><td>${cdData(x.vencimento_aberto)}</td><td>${cdMoeda(x.valor_aberto)}</td><td>${cdData(x.pago_ate)}</td><td>${cdData(x.ativacao)}</td></tr>`).join('');
   }else if(CD.aba==='avencer'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Vencimento</th><th>Faltam</th><th>Boletos</th><th>Valor</th><th>E-mail</th>';
-    corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdData(x.vencimento)}</td><td>${x.dias_para_vencer===0?'vence hoje':x.dias_para_vencer+' dia(s)'}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.email_util?cdEsc(x.email||''):'<span style="color:#B45309;font-weight:700">sem e-mail útil</span>'}</td></tr>`).join('');
+    corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Sem nome no IXC')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdData(x.vencimento)}</td><td>${x.dias_para_vencer===0?'vence hoje':x.dias_para_vencer+' dia(s)'}</td><td>${x.boletos}</td><td>${cdMoeda(x.valor)}</td><td>${x.email_util?cdEsc(x.email||''):'<span style="color:#B45309;font-weight:700">sem e-mail útil</span>'}</td></tr>`).join('');
   }else if(CD.aba==='sem_email'){
     cab = '<th>Filial</th><th>Cód.</th><th>Cliente</th><th>Telefone</th><th>Situação</th><th>E-mail atual</th>';
     corpo = linhas.slice(0,1500).map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.filial)}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdEsc(x.telefone||'')}</td><td>${cdEsc(x.situacao)}</td><td>${cdEsc(x.email_atual||'')}</td></tr>`).join('');
   }else if(CD.aba==='gerados_vencidos'){
     cab = '<th>Tipo</th><th>Filial</th><th>Título</th><th>Cód.</th><th>Cliente</th><th>Emitido em</th><th>Vencimento</th><th>Dias depois</th><th>Valor</th><th>O que conferir</th>';
-    corpo = linhas.map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.tipo)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_titulo}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Fora do cadastro ativo')}</td><td>${cdData(x.emissao)}</td><td>${cdData(x.vencimento)}</td><td>${x.dias_gerado_apos_vencimento}</td><td>${cdMoeda(x.valor)}</td><td>${cdEsc(x.o_que_conferir)}</td></tr>`).join('');
+    corpo = linhas.map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.tipo)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_titulo}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'Sem nome no IXC')}</td><td>${cdData(x.emissao)}</td><td>${cdData(x.vencimento)}</td><td>${x.dias_gerado_apos_vencimento}</td><td>${cdMoeda(x.valor)}</td><td>${cdEsc(x.o_que_conferir)}</td></tr>`).join('');
   }else{
     cab = '<th>Problema</th><th>Filial</th><th>Título</th><th>Cód.</th><th>Cliente</th><th>Vencimento</th><th>Valor</th>';
     corpo = linhas.map(x=>`<tr>${cdSelecaoCheckbox(x)}<td>${cdEsc(x.problema)}</td><td>${cdEsc(x.filial)}</td><td>${x.id_titulo}</td><td>${x.id_cliente}</td><td>${cdEsc(x.nome||'')}</td><td>${cdData(x.vencimento)}</td><td>${cdMoeda(x.valor)}</td></tr>`).join('');
@@ -27877,7 +27887,7 @@ function renderCobrancaDia(){
   const podeOpa = CD.aba!=='suspeitos' && CD.aba!=='quebra' && CD.aba!=='gerados_vencidos' && CD.aba!=='avencer';
   const semFone = podeOpa ? linhas.filter(x=>!cdFoneOpa(x.telefone)).length : 0;
   const conferido = CD.titulosEm || CD.carregadoEm;
-  const contagem = k => { const fonte=CD_ABAS[k].fonte; return (CD.dados[fonte]||[]).length; };
+  const contagem = k => cdLinhasDaAba(k).length;
 
   const rTodos = cdResumoPreset('todos'), r90 = cdResumoPreset('d90'), rPre = cdResumoPreset('pre');
   const qbL = CD.dados.quebra||[], spL = CD.dados.suspeitos||[];
