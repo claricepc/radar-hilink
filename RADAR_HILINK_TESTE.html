@@ -2522,7 +2522,7 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .inf-plano.destaque .inf-plano-nome{color:#fff}
 .inf .inf-plano-preco{font:800 38px/1.1 var(--font-titulo);color:var(--texto);font-variant-numeric:tabular-nums;margin:4px 0 10px}
 .inf .inf-plano-preco small{font-size:14px;font-weight:700;margin:0 3px;opacity:.75}
-.inf .inf-plano.destaque .inf-plano-preco{color:#fff}
+.inf .inf-plano.destaque .inf-plano-rot,.inf .inf-plano.destaque .inf-plano-nome,.inf .inf-plano.destaque .inf-plano-preco,.inf .inf-plano.destaque .inf-plano-preco small{color:#fff!important}
 .inf .inf-inclusos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:10px}
 .inf .inf-incluso{padding:10px 12px;border-radius:10px;background:rgba(0,113,188,.07);border-left:4px solid #0071BC}
 .inf .inf-incluso b{display:block;font-size:13px;color:var(--texto)}
@@ -2539,7 +2539,7 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .inf-app-tag{display:inline-block;margin-top:4px;padding:1px 8px;border-radius:999px;background:rgba(168,85,247,.14);color:#7C3AED;font-size:10.5px;font-weight:700}
 .inf .inf-app.incluso .inf-app-tag{background:#7C3AED;color:#fff}
 .inf .inf-app-bts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
-.inf .inf-app-bts .inf-btn{background:#7C3AED}
+.inf .inf-app-bts .inf-btn{background:#7C3AED!important;color:#fff!important}
 .inf .inf-app-bts .inf-btn:hover{background:#6D28D9}
 .inf .inf-app-sem{margin-top:10px;font-size:11.5px;color:var(--texto-3)}
 /* valores */
@@ -2558,7 +2558,7 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .inf-lk{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:12px;border-radius:12px;border:1px solid var(--linha);border-top:4px solid var(--inf-cor);background:var(--superficie);font-size:12px}
 .inf .inf-lk-n{font:800 14px var(--font-titulo);color:var(--texto)}
 .inf .inf-lk-d{font-size:11.5px;color:var(--texto-3)}
-.inf .inf-lk .inf-btn{background:var(--inf-cor);margin-top:auto}
+.inf .inf-lk .inf-btn{background:var(--inf-cor)!important;color:#fff!important;margin-top:auto}
 .inf .inf-cred{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
 .inf .inf-cred-l{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;font-size:13px;color:var(--texto)}
 .inf .inf-cred>.inf-cred-l{padding:12px;border-radius:10px;background:rgba(0,113,188,.07)}
@@ -26902,7 +26902,7 @@ function renderInformacoes(){
     </div>`;
 
   // ---------- LINKS DO CLIENTE ----------
-  const corLink = t => /iphone|ios/i.test(t)?'#111827':/android/i.test(t)?'#16A34A':/instagram/i.test(t)?'#DB2777':/central|portal/i.test(t)?'#0071BC':'#2E3192';
+  const corLink = t => /iphone|ios/i.test(t)?'#334155':/android/i.test(t)?'#16A34A':/instagram/i.test(t)?'#DB2777':/central|portal/i.test(t)?'#0071BC':'#2E3192';
   const links = infLista(d.links).map((l,i)=>`<div class="inf-lk" style="--inf-cor:${corLink(l.titulo)}" data-inf-busca="${infChave('link app site',l.titulo,l.detalhe,l.url)}">
       <div class="inf-lk-n">${infEsc(l.titulo)}</div>${l.detalhe?`<div class="inf-lk-d">${infEsc(l.detalhe)}</div>`:''}
       <a href="${/^https?:\/\//i.test(l.url||'')?infEsc(l.url):'#'}" target="_blank" rel="noopener noreferrer">${infEsc(l.url)}</a>
