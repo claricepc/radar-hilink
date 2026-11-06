@@ -2459,6 +2459,8 @@ h2.section-title .info-btn{margin-left:6px}
 body:not(.radar-recebimentos-ok) .fat-section{display:none!important}
 /* RECEITAS: so Clarice e Urbano */
 body:not(.radar-recebimentos-ok) .nav-item[data-mod="receitas"]{display:none!important}
+body[data-active-mod="receitas"] #global-filters,body[data-active-mod="receitas"] #context-badge,body[data-active-mod="receitas"] #page-meta .tag,
+body[data-active-mod="informacoes"] #global-filters,body[data-active-mod="informacoes"] #context-badge,body[data-active-mod="informacoes"] #page-meta .tag{display:none!important}
 .rct .cdg-box{margin-top:14px}
 .rct-kpis{grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))!important}
 .rct-card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:8px}
@@ -2481,26 +2483,31 @@ body:not(.radar-recebimentos-ok) .nav-item[data-mod="receitas"]{display:none!imp
 /* INFORMACOES GERAIS: todos veem */
 body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display:block!important}
 .inf .cdg-box{margin-top:14px}
-.inf-busca{flex:1 1 220px;max-width:340px;padding:7px 10px;border:1px solid #d1d5db;border-radius:8px;font:inherit;font-size:13px}
-.inf-planos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;margin-top:10px}
-.inf-plano{position:relative;border:1px solid #d6e2ef;border-radius:12px;padding:18px 14px 14px;text-align:center;background:#fff;display:flex;flex-direction:column;gap:10px;align-items:center}
-.inf-plano.destaque{border:2px solid #0071BC;background:linear-gradient(180deg,#0071BC,#005399);color:#fff}
-.inf-plano.destaque .btn{background:#fff;color:#005399;border-color:#fff}
-.inf-selo{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#f5b700;color:#1f2937;font-size:11px;font-weight:800;padding:2px 10px;border-radius:999px;white-space:nowrap}
-.inf-plano-n{font-size:22px;font-weight:800;letter-spacing:-.5px}
-.inf-plano-p{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
-.inf-plano-p small{font-size:13px;font-weight:600;opacity:.85}
-.inf-2col{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
-.inf-2col .cdg-box{margin-top:14px}
-.inf-lista{margin:8px 0 0 18px;display:grid;gap:6px;font-size:13px}
-.inf-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.inf-avulsos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin-top:10px}
-.inf-avulso{border:1px solid #d6e2ef;border-radius:10px;padding:12px;background:#fff}
-.inf-avulso-n{font-weight:700;font-size:14px}
-.inf-avulso-v{font-size:18px;font-weight:800;color:#0071BC;font-variant-numeric:tabular-nums;margin:4px 0}
-.inf-avulso-v small{font-size:12px;font-weight:500;color:#59595B}
-.inf-tbl{overflow-x:auto;margin-top:8px}
-.inf-tbl td.inf-num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.inf.vg{display:block}
+.inf .inf-topo{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 16px}
+.inf .inf-busca{flex:1 1 260px;max-width:420px;padding:8px 12px;border:1px solid var(--linha);border-radius:999px;background:var(--superficie);color:var(--texto);font:inherit;font-size:13px}
+.inf .inf-topo .vg-leitura{flex:1 1 auto}
+.inf .inf-aviso{margin:0 0 16px;font-size:13px}
+.inf .vg-card.inf-card{cursor:default;min-height:0}
+.inf .vg-card.inf-card:hover{box-shadow:none}
+.inf .vg-card.inf-destaque{border-top-color:var(--azul);background:var(--azul-suave)}
+.inf .vg-card.inf-destaque .vg-v{color:var(--azul-forte)}
+.inf .inf-selo{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--azul);color:var(--sobre-azul);font-size:10px;letter-spacing:.04em;vertical-align:1px}
+.inf .inf-baixo .vg-s{margin-top:4px}
+.inf .inf-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.inf .inf-chip{padding:4px 10px;border-radius:999px;border:1px solid var(--linha);background:var(--azul-suave);color:var(--azul-forte);font-size:12px;font-weight:600}
+.inf .inf-2col{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:0 16px}
+.inf .inf-lista-card{padding:4px 14px}
+.inf .inf-linha{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--linha);font-size:13px;color:var(--texto)}
+.inf .inf-linha:last-child{border-bottom:0}
+.inf .inf-linha span{display:block;font-size:12px;color:var(--texto-3)}
+.inf .inf-valor{font:800 15px var(--font-titulo);color:var(--texto);white-space:nowrap;font-variant-numeric:tabular-nums}
+.inf .inf-campos{display:grid;gap:6px;margin-top:8px}
+.inf .inf-campo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--texto)}
+.inf .inf-campo>span{flex:0 0 74px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--texto-3)}
+.inf .inf-campo a{color:var(--azul-forte);overflow-wrap:anywhere}
+.inf .inf-senha{font-family:ui-monospace,Consolas,monospace;font-size:14px;letter-spacing:.4px}
+.inf .vg-fazer li b{color:var(--texto)}
 .inf-ed{display:grid;gap:8px;margin:10px 0}
 .inf-ed-l{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .inf-in{flex:1 1 180px;padding:6px 9px;border:1px solid #d1d5db;border-radius:7px;font:inherit;font-size:13px}
@@ -2508,13 +2515,7 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf-ta{width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font:inherit;font-size:13px;margin-top:6px}
 .inf-chk{font-size:12px;display:flex;gap:4px;align-items:center}
 .inf-acoes{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
-.inf-plano.destaque .inf-plano-n,.inf-plano.destaque .inf-plano-p,.inf-plano.destaque .inf-plano-p small{color:#fff!important}
-.inf-procs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px;margin-top:10px}
-.inf-proc{border-left:4px solid #0071BC;background:#f6faff;border-radius:8px;padding:10px 12px;font-size:13px}
-.inf-proc b{display:block;margin-bottom:4px;font-size:14px}
-.inf-senha{font-family:ui-monospace,Consolas,monospace;letter-spacing:.5px}
-.inf-acesso-bts{display:flex;gap:6px;flex-wrap:wrap}
-.inf-tbl td{vertical-align:top}
+
 .fat-grid{grid-template-columns:minmax(380px,.82fr) minmax(560px,1.18fr)}
 .fat-hint{border:1px solid rgba(80,130,180,.28);background:rgba(10,31,52,.55);border-radius:8px;padding:10px 12px;color:#9db4ce;font-size:11px;line-height:1.45}
 .fat-manual-box{display:none;border:1px solid rgba(0,105,180,.22);background:rgba(0,105,180,.06);border-radius:10px;padding:10px 12px;margin-top:10px;color:#28415d;font-size:11px}
@@ -10806,6 +10807,8 @@ function go(mod){
                 propostas:['Propostas Corporativas','Geração assistida de proposta comercial a partir do CRM e viabilidade'],
                 acao:['Estratégia de Atuação','Prioridades automáticas, campanhas e plano de ação operacional'],
                 usuarios:['Usuários e acessos','Cadastro de usuários do Radar, redefinição de senha e permissões'],
+                receitas:['RECEITAS','Recebido por filial e mês, direto do IXC. Atualiza pelo botão.'],
+                informacoes:['INFORMAÇÕES GERAIS','Planos, valores, taxas, links e acessos. Fonte oficial para todo o time.'],
                 inicio:['INÍCIO','Os números de todas as áreas. Clique em qualquer cartão para abrir a tela.'],
                 oportunidades:['OPORTUNIDADES','Upgrade e reativação a partir da carteira de clientes, prontos para disparo em massa no OPA'],
                 cobrancaDia:['Cobrança do Dia','Inadimplência, pré-bloqueio, recolhimento e títulos suspeitos direto do banco (leitura do IXC às 4h)'],
@@ -26735,87 +26738,101 @@ function infCopiarPlano(i){
   const txt = `Plano ${p.nome}: ${infValor(p.preco)} por mês.\n`+infLista(d.inclusos).map(x=>'- '+x).join('\n')+(infLista(d.beneficios).length?`\n- Benefício digital incluso, à escolha: ${infLista(d.beneficios).join(', ')}.`:'');
   navigator.clipboard.writeText(txt).then(()=>toast('Texto do plano copiado. É só colar na conversa com o cliente.','success'),()=>toast('Não consegui copiar. Selecione o texto e copie manualmente.','warn'));
 }
-function infMostrar(i){
-  const a = infLista((INF.dados||{}).acessos)[i], el = document.getElementById('inf-senha-'+i); if(!a||!el) return;
-  const aberto = el.dataset.aberto==='1';
-  el.textContent = aberto ? '••••••' : a.senha; el.dataset.aberto = aberto ? '' : '1';
-  if(!aberto) setTimeout(()=>{ if(el.dataset.aberto==='1'){ el.textContent='••••••'; el.dataset.aberto=''; } }, 30000);
+function infCopiar(txt, msg){
+  navigator.clipboard.writeText(String(txt||'')).then(()=>toast(msg||'Copiado.','success'),()=>toast('Não consegui copiar. Selecione e copie manualmente.','warn'));
 }
-function infCopiarSenha(i){
-  const a = infLista((INF.dados||{}).acessos)[i]; if(!a) return;
-  navigator.clipboard.writeText(a.senha).then(()=>toast('Senha copiada.','success'),()=>toast('Não consegui copiar.','warn'));
-}
+function infCopiarSenha(i){ const a = infLista((INF.dados||{}).acessos)[i]; if(a) infCopiar(a.senha, 'Senha copiada.'); }
 function infBuscar(v){
   INF.busca = String(v||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
   document.querySelectorAll('#mod-informacoes [data-inf-busca]').forEach(el=>{
     const t = el.getAttribute('data-inf-busca');
     el.style.display = !INF.busca || t.includes(INF.busca) ? '' : 'none';
   });
+  document.querySelectorAll('#mod-informacoes .vg-sec[data-inf-sec]').forEach(sec=>{
+    const itens = [...sec.querySelectorAll('[data-inf-busca]')];
+    sec.style.display = !INF.busca || !itens.length || itens.some(el=>el.style.display!=='none') ? '' : 'none';
+  });
 }
 function infChave(...partes){ return infEsc(partes.join(' ').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')); }
+function infSec(titulo, sub, corpo, id){ return corpo ? `<div class="vg-sec" data-inf-sec="${id||''}"><div class="vg-sec-h"><h3>${titulo}</h3><span>${sub}</span></div>${corpo}</div>` : ''; }
 
 function renderInformacoes(){
   const box = document.getElementById('mod-informacoes'); if(!box) return;
-  if(!INF.dados && !INF.erro){ box.innerHTML = `<div class="section compact-section"><h2 class="section-title">INFORMAÇÕES GERAIS</h2><p class="cdg-nota">Carregando...</p></div>`; infCarregar(); return; }
-  if(INF.erro && !INF.dados){ box.innerHTML = `<div class="section compact-section"><h2 class="section-title">INFORMAÇÕES GERAIS</h2><div class="cdg-alerta warn"><i></i><div><b>Não consegui ler as informações.</b> ${infEsc(INF.erro)}</div></div></div>`; return; }
+  if(!INF.dados && !INF.erro){ box.innerHTML = `<div class="vg inf"><p class="vg-leitura">Carregando as informações...</p></div>`; infCarregar(); return; }
+  if(INF.erro && !INF.dados){ box.innerHTML = `<div class="vg inf"><div class="vg-card risco"><div class="vg-l">Não consegui ler as informações</div><div class="vg-s">${infEsc(INF.erro)}</div></div></div>`; return; }
   if(INF.editando){ renderInformacoesEdicao(box); return; }
   const d = INF.dados, m = INF.meta || {};
   const atual = m.atualizado_em ? new Date(m.atualizado_em).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : '-';
-  const status = `<div class="cdg-status">
-      <span class="cdg-pill ok">Fonte oficial</span>
-      <span>Valores padronizados para todo o time. Atualizado em <b>${atual}</b>${m.atualizado_por?' por '+infEsc(m.atualizado_por):''}.</span>
-      <span class="cdg-sp"></span>
-      <input type="search" class="inf-busca" placeholder="Buscar: plano, mesh, cabo, mudança..." value="${infEsc(INF.busca)}" oninput="infBuscar(this.value)">
+  const preco = v => String(v||'').trim() ? `R$ ${infEsc(v)}` : 'a definir';
+
+  const topo = `<div class="inf-topo">
+      <input type="search" class="inf-busca" placeholder="Buscar: plano, mesh, cabo, mudança, senha..." value="${infEsc(INF.busca)}" oninput="infBuscar(this.value)">
+      <span class="vg-leitura">Fonte oficial do time · atualizado em ${atual}${m.atualizado_por?' por '+infEsc(m.atualizado_por):''}</span>
       ${m.pode_editar?'<button type="button" class="btn sm" onclick="infEditar()">Editar informações</button>':''}
-    </div>`;
+    </div>
+    ${String(d.observacoes||'').trim()?`<div class="vg-base-nota inf-aviso">${infEsc(d.observacoes).replace(/\n/g,'<br>')}</div>`:''}`;
 
-  const planos = infLista(d.planos).map((p,i)=>`<div class="inf-plano ${p.destaque?'destaque':''}" data-inf-busca="${infChave('plano',p.nome,p.preco,p.selo)}">
-      ${p.selo?`<div class="inf-selo">${infEsc(p.selo)}</div>`:''}
-      <div class="inf-plano-n">${infEsc(p.nome)}</div>
-      <div class="inf-plano-p">${String(p.preco||'').trim()?`<small>R$</small> ${infEsc(p.preco)}<small>/mês</small>`:'Valor a definir'}</div>
-      <button type="button" class="btn sm" onclick="infCopiarPlano(${i})">Copiar texto para o cliente</button>
+  const planos = infLista(d.planos).map((p,i)=>`<div class="vg-card inf-card ${p.destaque?'inf-destaque':''}" data-inf-busca="${infChave('plano',p.nome,p.preco,p.selo)}">
+      <div class="vg-l">Plano ${infEsc(p.nome)}${p.selo?` <span class="inf-selo">${infEsc(p.selo)}</span>`:''}</div>
+      <div class="vg-v">${preco(p.preco)}<small> /mês</small></div>
+      <div class="vg-x"><button type="button" class="vg-link" onclick="infCopiarPlano(${i})">Copiar texto para o cliente</button></div>
     </div>`).join('');
-  const inclusos = infLista(d.inclusos).map(x=>`<li data-inf-busca="${infChave(x)}">${infEsc(x)}</li>`).join('');
-  const benef = infLista(d.beneficios).map(x=>`<span class="cdg-chip info" data-inf-busca="${infChave('beneficio',x)}">${infEsc(x)}</span>`).join(' ');
-  const avulsos = infLista(d.avulsos).map(a=>`<div class="inf-avulso" data-inf-busca="${infChave(a.nome,a.detalhe,a.valor)}">
-      <div class="inf-avulso-n">${infEsc(a.nome)}</div>
-      <div class="inf-avulso-v">${infEsc(infValor(a.valor))}<small> ${infEsc(a.unidade||'')}</small></div>
-      ${a.detalhe?`<div class="cdg-nota">${infEsc(a.detalhe)}</div>`:''}
-    </div>`).join('');
-  const tabelas = INF_TABELAS.map(t=>{
-    const linhas = infLista(d[t.k]);
-    if(!linhas.length) return '';
-    return `<div class="cdg-box"><div class="cdg-eyebrow">${t.titulo}</div><div class="cdg-nota">${t.sub}</div>
-      <div class="inf-tbl"><table class="decision-table"><thead><tr>${t.cols.map(c=>`<th>${c[1]}</th>`).join('')}</tr></thead><tbody>
-      ${linhas.map(l=>`<tr data-inf-busca="${infChave(l.nome,l.detalhe,l.valor)}"><td>${infEsc(l.nome)}</td><td class="inf-num">${String(l.valor||'').trim()?infEsc(l.valor):'a definir'}</td><td>${infEsc(l.detalhe||'')}</td></tr>`).join('')}
-      </tbody></table></div></div>`;
+
+  const inclusos = infLista(d.inclusos).map(x=>{
+    const k = String(x).indexOf(':'), t = k>0 ? x.slice(0,k) : x, s = k>0 ? x.slice(k+1).trim() : '';
+    return `<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave(x)}"><div class="vg-l">${infEsc(t)}</div>${s?`<div class="vg-s">${infEsc(s)}</div>`:''}</div>`;
   }).join('');
-  const procs = infLista(d.procedimentos);
-  const procHtml = procs.length ? `<div class="cdg-box"><div class="cdg-eyebrow">Procedimentos e padrões</div><div class="cdg-nota">como fazer, do jeito Hilink</div>
-      <div class="inf-procs">${procs.map(x=>`<div class="inf-proc" data-inf-busca="${infChave(x.titulo,x.texto)}"><b>${infEsc(x.titulo)}</b>${infEsc(x.texto).replace(/\n/g,'<br>')}</div>`).join('')}</div></div>` : '';
-  const acs = infLista(d.acessos);
-  const acessosHtml = acs.length ? `<div class="cdg-box"><div class="cdg-eyebrow">Acessos técnicos</div><div class="cdg-nota">${d.acessos_visivel==='lideranca'?'Visível só para a liderança.':'Visível para todo o time.'} A senha fica oculta até clicar em mostrar.</div>
-      <div class="inf-tbl"><table class="decision-table"><thead><tr><th>Acesso</th><th>Endereço</th><th>Usuário</th><th>Porta</th><th>Senha</th><th>Observações</th></tr></thead><tbody>
-      ${acs.map((a,i)=>`<tr data-inf-busca="${infChave('acesso senha porta',a.titulo,a.endereco,a.usuario,a.porta,a.obs)}">
-        <td><b>${infEsc(a.titulo)}</b></td>
-        <td>${a.endereco?`<a href="${/^https?:\/\//i.test(a.endereco)?infEsc(a.endereco):'#'}" target="_blank" rel="noopener noreferrer">${infEsc(a.endereco)}</a>`:'-'}</td>
-        <td>${infEsc(a.usuario||'-')}</td><td>${infEsc(a.porta||'-')}</td>
-        <td><div class="inf-acesso-bts"><span class="inf-senha" id="inf-senha-${i}">••••••</span>${a.senha?`<button type="button" class="cdg-mini" onclick="infMostrar(${i})">mostrar</button><button type="button" class="cdg-mini" onclick="infCopiarSenha(${i})">copiar</button>`:''}</div></td>
-        <td>${infEsc(a.obs||'')}</td></tr>`).join('')}
-      </tbody></table></div></div>` : '';
-  const obs = String(d.observacoes||'').trim() ? `<div class="cdg-alerta"><i></i><div>${infEsc(d.observacoes).replace(/\n/g,'<br>')}</div></div>` : '';
 
-  box.innerHTML = `<div class="section compact-section inf">
-      <h2 class="section-title">INFORMAÇÕES GERAIS</h2>
-      <p class="cdg-nota">Consulta rápida de planos, valores e taxas. Use sempre estes valores ao falar com o cliente.</p>
-      ${status}${obs}
-      <div class="cdg-box"><div class="cdg-eyebrow">Planos</div><div class="cdg-nota">Valor mensal de cada plano.</div><div class="inf-planos">${planos}</div></div>
-      <div class="inf-2col">
-        <div class="cdg-box"><div class="cdg-eyebrow">Todos os planos incluem</div><ul class="inf-lista">${inclusos}</ul></div>
-        <div class="cdg-box"><div class="cdg-eyebrow">Benefício digital incluso</div><div class="cdg-nota">${infEsc(d.beneficios_texto||'')}</div><div class="inf-chips">${benef}</div></div>
+  const benef = infLista(d.beneficios).length ? `<div class="vg-card inf-card inf-baixo">
+      ${d.beneficios_texto?`<div class="vg-s">${infEsc(d.beneficios_texto)}</div>`:''}
+      <div class="inf-chips">${infLista(d.beneficios).map(x=>`<span class="inf-chip" data-inf-busca="${infChave('beneficio',x)}">${infEsc(x)}</span>`).join('')}</div></div>` : '';
+
+  const avulsos = infLista(d.avulsos).map(a=>`<div class="vg-card inf-card" data-inf-busca="${infChave(a.nome,a.detalhe,a.valor)}">
+      <div class="vg-l">${infEsc(a.nome)}</div>
+      <div class="vg-v">${preco(a.valor)}<small> ${infEsc(a.unidade||'')}</small></div>
+      ${a.detalhe?`<div class="vg-x">${infEsc(a.detalhe)}</div>`:''}
+    </div>`).join('');
+
+  const lista = (linhas) => linhas.length ? `<div class="vg-card inf-card inf-baixo inf-lista-card">${linhas.map(l=>`<div class="inf-linha" data-inf-busca="${infChave(l.nome,l.detalhe,l.valor)}">
+      <div><b>${infEsc(l.nome)}</b>${l.detalhe?`<span>${infEsc(l.detalhe)}</span>`:''}</div><div class="inf-valor">${preco(l.valor)}</div></div>`).join('')}</div>` : '';
+
+  const procs = infLista(d.procedimentos).length ? `<ol class="vg-fazer">${infLista(d.procedimentos).map((x,i)=>`<li data-inf-busca="${infChave(x.titulo,x.texto)}"><span class="vg-n">${i+1}</span><div><b>${infEsc(x.titulo)}</b><br>${infEsc(x.texto).replace(/\n/g,'<br>')}</div></li>`).join('')}</ol>` : '';
+
+  const campo = (rot, val, copiar) => val ? `<div class="inf-campo"><span>${rot}</span><b class="${copiar==='senha'?'inf-senha':''}">${infEsc(val)}</b>${copiar?`<button type="button" class="cdg-mini" onclick="${copiar}">copiar</button>`:''}</div>` : '';
+  const acessos = infLista(d.acessos).map((a,i)=>`<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave('acesso senha porta roteador',a.titulo,a.endereco,a.usuario,a.porta,a.obs)}">
+      <div class="vg-l">${infEsc(a.titulo)}</div>
+      <div class="inf-campos">
+        ${a.endereco?`<div class="inf-campo"><span>Endereço</span><a href="${/^https?:\/\//i.test(a.endereco)?infEsc(a.endereco):'#'}" target="_blank" rel="noopener noreferrer">${infEsc(a.endereco)}</a></div>`:''}
+        ${campo('Usuário', a.usuario, a.usuario?`infCopiar(INF.dados.acessos[${i}].usuario,'Usuário copiado.')`:'')}
+        ${campo('Porta', a.porta, '')}
+        ${a.senha?`<div class="inf-campo"><span>Senha</span><b class="inf-senha">${infEsc(a.senha)}</b><button type="button" class="cdg-mini" onclick="infCopiarSenha(${i})">copiar</button></div>`:''}
       </div>
-      <div class="cdg-box"><div class="cdg-eyebrow">Serviços avulsos</div><div class="cdg-nota">contratados à parte, somados à mensalidade</div><div class="inf-avulsos">${avulsos}</div></div>
-      ${tabelas}${procHtml}${acessosHtml}
+      ${a.obs?`<div class="vg-base-nota">${infEsc(a.obs)}</div>`:''}
+    </div>`).join('');
+
+  const ac = d.acesso_cliente || {};
+  const linksCards = infLista(d.links).map((l,i)=>`<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave('app aplicativo link central',l.titulo,l.detalhe,l.url)}">
+      <div class="vg-l">${infEsc(l.titulo)}</div>
+      ${l.detalhe?`<div class="vg-x">${infEsc(l.detalhe)}</div>`:''}
+      <div class="inf-campos"><div class="inf-campo"><span>Link</span><a href="${/^https?:\/\//i.test(l.url||'')?infEsc(l.url):'#'}" target="_blank" rel="noopener noreferrer">${infEsc(l.url)}</a><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.links[${i}].url,'Link copiado. É só colar para o cliente.')">copiar</button></div></div>
+    </div>`).join('');
+  const acCard = (ac.login||ac.senha) ? `<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave('login senha cliente app central primeiro acesso',ac.login)}">
+      <div class="vg-l">Primeiro acesso do cliente</div>
+      <div class="inf-campos">${ac.login?`<div class="inf-campo"><span>Login</span><b>${infEsc(ac.login)}</b></div>`:''}${ac.senha?`<div class="inf-campo"><span>Senha padrão</span><b class="inf-senha">${infEsc(ac.senha)}</b><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.acesso_cliente.senha,'Senha copiada.')">copiar</button></div>`:''}</div>
+    </div>` : '';
+  const tab = k => lista(infLista(d[k]));
+  box.innerHTML = `<div class="vg inf">${topo}
+      ${infSec('Planos','valor mensal · use estes valores com o cliente', planos?`<div class="vg-cards">${planos}</div>`:'', 'planos')}
+      ${infSec('Todo plano inclui','vale para os três planos', inclusos?`<div class="vg-cards">${inclusos}</div>`:'', 'inclusos')}
+      ${infSec('Benefício digital incluso','o cliente escolhe', benef, 'beneficios')}
+      ${infSec('Serviços avulsos','contratados à parte, somados à mensalidade', avulsos?`<div class="vg-cards">${avulsos}</div>`:'', 'avulsos')}
+      ${infSec('Aplicativo, site e redes','links para enviar ao cliente', (linksCards||acCard)?`<div class="vg-cards">${linksCards}${acCard}</div>`:'', 'app')}
+      <div class="inf-2col">
+        ${infSec('Taxas e serviços','valores cobrados do cliente', tab('taxas'), 'taxas')}
+        ${infSec('Materiais avulsos','venda de produtos', tab('materiais'), 'materiais')}
+      </div>
+      ${infSec('Procedimentos e padrões','como fazer, do jeito Hilink', procs, 'procs')}
+      ${infSec('Acessos técnicos', d.acessos_visivel==='lideranca'?'visível só para a liderança':'roteadores e plataformas', acessos?`<div class="vg-cards">${acessos}</div>`:'', 'acessos')}
     </div>`;
   if(INF.busca) infBuscar(INF.busca);
 }
@@ -26864,13 +26881,17 @@ function renderInformacoesEdicao(box){
           <option value="lideranca" ${r.acessos_visivel==='lideranca'?'selected':''}>Só a liderança (gestão e líderes)</option>
         </select></div>
       ${tabela('acessos', [['titulo','Acesso'],['endereco','Endereço (https://...)'],['usuario','Usuário','curto'],['porta','Porta','curto'],['senha','Senha','curto'],['obs','Observações']], {titulo:'',endereco:'',usuario:'',porta:'',senha:'',obs:''}, 'Acessos técnicos')}
+      ${tabela('links', [['titulo','Nome'],['url','Link (https://...)'],['detalhe','Detalhe','curto']], {titulo:'',url:'',detalhe:''}, 'Aplicativo, site e redes')}
+      <div class="cdg-box"><div class="cdg-eyebrow">Primeiro acesso do cliente</div>
+        <div class="inf-ed-l"><input type="text" class="inf-in" value="${infEsc((r.acesso_cliente||{}).login||'')}" placeholder="Login" oninput="(INF.rascunho.acesso_cliente=INF.rascunho.acesso_cliente||{}).login=this.value">
+        <input type="text" class="inf-in curto" value="${infEsc((r.acesso_cliente||{}).senha||'')}" placeholder="Senha padrão" oninput="(INF.rascunho.acesso_cliente=INF.rascunho.acesso_cliente||{}).senha=this.value"></div></div>
       <div class="cdg-box"><div class="cdg-eyebrow">Aviso no topo (opcional)</div>
         <textarea class="inf-ta" rows="3" oninput="infTexto('observacoes',this,false)">${infEsc(r.observacoes||'')}</textarea></div>
       <div class="inf-acoes"><button type="button" class="btn sm" onclick="infCancelar()">Cancelar</button>
         <button type="button" id="inf-salvar" class="btn sm primary" onclick="infSalvar()">Salvar para todo o time</button></div>
     </div>`;
 }
-Object.assign(window, { infMostrar, infCopiarSenha, renderInformacoes, infEditar, infCancelar, infCampo, infTexto, infAdd, infDel, infSalvar, infCopiarPlano, infBuscar });
+Object.assign(window, { infCopiar, infCopiarSenha, renderInformacoes, infEditar, infCancelar, infCampo, infTexto, infAdd, infDel, infSalvar, infCopiarPlano, infBuscar });
 
 /* Botão fixo: Atualizar todos os dados (IXC, OPA e planilha) com registro da última leitura */
 function radarFixoUltimaLeitura(st){
