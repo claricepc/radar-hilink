@@ -2484,37 +2484,96 @@ body[data-active-mod="informacoes"] #global-filters,body[data-active-mod="inform
 body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display:block!important}
 .inf .cdg-box{margin-top:14px}
 .inf.vg{display:block}
-.inf .inf-topo{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 16px}
-.inf .inf-busca{flex:1 1 260px;max-width:420px;padding:8px 12px;border:1px solid var(--linha);border-radius:999px;background:var(--superficie);color:var(--texto);font:inherit;font-size:13px}
+.inf .inf-topo{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 14px}
+.inf .inf-busca{flex:1 1 280px;max-width:460px;padding:9px 14px;border:1px solid var(--linha);border-radius:999px;background:var(--superficie);color:var(--texto);font:inherit;font-size:13px}
+.inf .inf-busca:focus{outline:2px solid #0071BC;outline-offset:1px}
 .inf .inf-topo .vg-leitura{flex:1 1 auto}
-.inf .inf-aviso{margin:0 0 16px;font-size:13px}
-.inf .vg-card.inf-card{cursor:default;min-height:0}
-.inf .vg-card.inf-card:hover{box-shadow:none}
-.inf .vg-card.inf-destaque{border-top-color:var(--azul);background:var(--azul-suave)}
-.inf .vg-card.inf-destaque .vg-v{color:var(--azul-forte)}
-.inf .inf-selo{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--azul);color:var(--sobre-azul);font-size:10px;letter-spacing:.04em;vertical-align:1px}
-.inf .inf-baixo .vg-s{margin-top:4px}
-.inf .inf-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.inf .inf-chip{padding:4px 10px;border-radius:999px;border:1px solid var(--linha);background:var(--azul-suave);color:var(--azul-forte);font-size:12px;font-weight:600}
-.inf .inf-chip-video{display:inline-flex;align-items:center;gap:6px;border-color:var(--azul);padding-right:4px}
-.inf .inf-chip-video a{color:var(--azul-forte);text-decoration:underline dotted;text-underline-offset:3px}
-.inf .inf-chip-video button{border:0;border-radius:999px;background:var(--azul);color:var(--sobre-azul);font-size:10.5px;font-weight:700;padding:2px 8px;cursor:pointer}
-.inf .inf-2col{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:0 16px}
-.inf .inf-lista-card{padding:4px 14px}
-.inf .inf-linha{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--linha);font-size:13px;color:var(--texto)}
+.inf .inf-aviso{margin:0 0 14px;padding:10px 14px;border-radius:10px;background:rgba(245,158,11,.12);border-left:4px solid #D97706;font-size:13px;color:var(--texto)}
+.inf .inf-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:8px;background:#0071BC;color:#fff;font:700 12.5px var(--font-texto);padding:8px 14px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.inf .inf-btn:hover{background:#005399}
+.inf .inf-btn.mini{padding:5px 10px;font-size:11.5px}
+.inf .inf-btn.claro{background:#fff;color:#005399}
+.inf .inf-btn.claro:hover{background:#e8f2fb}
+.inf .inf-link{background:transparent;border:0;padding:0;color:#0071BC;font:600 11.5px var(--font-texto);cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+/* abas */
+.inf .inf-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px;padding:6px;border:1px solid var(--linha);border-radius:14px;background:var(--superficie)}
+.inf .inf-tab{flex:1 1 auto;border:0;border-radius:10px;padding:9px 14px;background:transparent;color:var(--texto-2);font:700 13px var(--font-titulo);cursor:pointer;border-bottom:3px solid transparent}
+.inf .inf-tab:hover{background:color-mix(in srgb,var(--inf-cor) 10%,transparent);color:var(--texto)}
+.inf .inf-tab.on{background:var(--inf-cor);color:#fff}
+.inf .inf-painel{display:none}
+.inf .inf-painel.on{display:block}
+.inf .inf-painel-t{display:none}
+.inf .inf-paineis.buscando .inf-painel{display:block}
+.inf .inf-paineis.buscando .inf-painel.sem-resultado{display:none}
+.inf .inf-paineis.buscando .inf-painel-t{display:block;margin:6px 0 8px;padding:6px 12px;border-radius:8px;background:var(--inf-cor);color:#fff;font:700 12px var(--font-titulo);letter-spacing:.05em;text-transform:uppercase}
+/* blocos */
+.inf .inf-bloco{margin:0 0 16px;padding:14px 16px;border:1px solid var(--linha);border-top:4px solid var(--inf-cor);border-radius:14px;background:var(--superficie)}
+.inf .inf-bloco-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 0 12px}
+.inf .inf-bloco-h h3{margin:0;font:800 15px var(--font-titulo);color:var(--inf-cor)}
+.inf .inf-bloco-h span{font-size:12px;color:var(--texto-3)}
+/* planos */
+.inf .inf-planos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:14px;margin:8px 0 18px}
+.inf .inf-plano{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:26px 16px 18px;border:1px solid var(--linha);border-top:5px solid #0071BC;border-radius:16px;background:var(--superficie);text-align:center}
+.inf .inf-plano.destaque{border:0;background:linear-gradient(160deg,#0071BC 0%,#2E3192 100%);color:#fff;box-shadow:0 10px 26px rgba(0,83,153,.28);transform:translateY(-4px)}
+.inf .inf-plano-selo{position:absolute;top:-12px;left:50%;transform:translateX(-50%);padding:3px 12px;border-radius:999px;background:#F5B700;color:#1f2937;font:800 11px var(--font-titulo);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.inf .inf-plano-rot{font:700 11px var(--font-titulo);letter-spacing:.12em;text-transform:uppercase;color:var(--texto-3)}
+.inf .inf-plano.destaque .inf-plano-rot{color:rgba(255,255,255,.8)}
+.inf .inf-plano-nome{font:800 26px/1.1 var(--font-titulo);color:#005399}
+.inf .inf-plano.destaque .inf-plano-nome{color:#fff}
+.inf .inf-plano-preco{font:800 38px/1.1 var(--font-titulo);color:var(--texto);font-variant-numeric:tabular-nums;margin:4px 0 10px}
+.inf .inf-plano-preco small{font-size:14px;font-weight:700;margin:0 3px;opacity:.75}
+.inf .inf-plano.destaque .inf-plano-preco{color:#fff}
+.inf .inf-inclusos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:10px}
+.inf .inf-incluso{padding:10px 12px;border-radius:10px;background:rgba(0,113,188,.07);border-left:4px solid #0071BC}
+.inf .inf-incluso b{display:block;font-size:13px;color:var(--texto)}
+.inf .inf-incluso span{display:block;margin-top:2px;font-size:12px;color:var(--texto-2)}
+/* playhub */
+.inf .inf-passos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.inf .inf-passo{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;background:rgba(124,58,237,.08);font-size:13px;color:var(--texto)}
+.inf .inf-passo>span{flex:0 0 28px;height:28px;border-radius:50%;background:#7C3AED;color:#fff;font:800 14px/28px var(--font-titulo);text-align:center}
+.inf .inf-passo a,.inf .inf-proc a,.inf .inf-lk a,.inf .inf-cred-l a{color:#0071BC;overflow-wrap:anywhere}
+.inf .inf-apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.inf .inf-app{padding:12px;border-radius:12px;border:1px solid var(--linha);border-left:4px solid #A855F7;background:var(--superficie)}
+.inf .inf-app.incluso{border-left-color:#7C3AED;background:rgba(124,58,237,.06)}
+.inf .inf-app-n{font:800 14px var(--font-titulo);color:var(--texto)}
+.inf .inf-app-tag{display:inline-block;margin-top:4px;padding:1px 8px;border-radius:999px;background:rgba(168,85,247,.14);color:#7C3AED;font-size:10.5px;font-weight:700}
+.inf .inf-app.incluso .inf-app-tag{background:#7C3AED;color:#fff}
+.inf .inf-app-bts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+.inf .inf-app-bts .inf-btn{background:#7C3AED}
+.inf .inf-app-bts .inf-btn:hover{background:#6D28D9}
+.inf .inf-app-sem{margin-top:10px;font-size:11.5px;color:var(--texto-3)}
+/* valores */
+.inf .inf-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.inf .inf-col{border:1px solid var(--linha);border-radius:14px;overflow:hidden;background:var(--superficie)}
+.inf .inf-col-h{padding:12px 16px;background:var(--inf-cor);color:#fff}
+.inf .inf-col-h h3{margin:0;font:800 15px var(--font-titulo);color:#fff}
+.inf .inf-col-h span{font-size:12px;opacity:.85}
+.inf .inf-col-b{padding:4px 16px}
+.inf .inf-linha{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--linha);font-size:13px;color:var(--texto)}
 .inf .inf-linha:last-child{border-bottom:0}
-.inf .inf-linha span{display:block;font-size:12px;color:var(--texto-3)}
-.inf .inf-valor{font:800 15px var(--font-titulo);color:var(--texto);white-space:nowrap;font-variant-numeric:tabular-nums}
-.inf .inf-campos{display:grid;gap:6px;margin-top:8px}
-.inf .inf-campo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--texto)}
-.inf .inf-campo>span{flex:0 0 74px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--texto-3)}
-.inf .inf-campo a{color:var(--azul-forte);overflow-wrap:anywhere}
-.inf .inf-senha{font-family:ui-monospace,Consolas,monospace;font-size:14px;letter-spacing:.4px}
-.inf .vg-fazer li b{color:var(--texto)}
-.inf .vg-fazer li a{color:var(--azul-forte);overflow-wrap:anywhere}
-.inf .inf-videos{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
-.inf .inf-video-bts{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
-.inf .inf-video-bts .btn{text-decoration:none}
+.inf .inf-linha span{display:block;font-size:11.5px;color:var(--texto-3)}
+.inf .inf-valor{padding:4px 10px;border-radius:8px;background:color-mix(in srgb,var(--inf-cor) 12%,transparent);color:var(--inf-cor);font:800 14px var(--font-titulo);white-space:nowrap;font-variant-numeric:tabular-nums}
+/* links e credenciais */
+.inf .inf-lks{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.inf .inf-lk{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:12px;border-radius:12px;border:1px solid var(--linha);border-top:4px solid var(--inf-cor);background:var(--superficie);font-size:12px}
+.inf .inf-lk-n{font:800 14px var(--font-titulo);color:var(--texto)}
+.inf .inf-lk-d{font-size:11.5px;color:var(--texto-3)}
+.inf .inf-lk .inf-btn{background:var(--inf-cor);margin-top:auto}
+.inf .inf-cred{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
+.inf .inf-cred-l{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;font-size:13px;color:var(--texto)}
+.inf .inf-cred>.inf-cred-l{padding:12px;border-radius:10px;background:rgba(0,113,188,.07)}
+.inf .inf-cred-l>span{flex:0 0 92px;font:700 10.5px var(--font-titulo);text-transform:uppercase;letter-spacing:.06em;color:var(--texto-3)}
+.inf .inf-senha{font-family:ui-monospace,Consolas,monospace;font-size:14px;letter-spacing:.4px;padding:2px 8px;border-radius:6px;background:rgba(71,85,105,.12)}
+/* procedimentos */
+.inf .inf-procs{display:grid;gap:10px}
+.inf .inf-proc{display:flex;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(46,49,146,.06);border-left:4px solid #2E3192;font-size:13px;color:var(--texto)}
+.inf .inf-proc-n{flex:0 0 28px;height:28px;border-radius:50%;background:#2E3192;color:#fff;font:800 14px/28px var(--font-titulo);text-align:center}
+.inf .inf-proc p{margin:4px 0 0;color:var(--texto-2)}
+/* acessos */
+.inf .inf-acessos{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
+.inf .inf-acesso{padding:12px 14px;border-radius:12px;border:1px solid var(--linha);border-left:4px solid #475569;background:var(--superficie)}
+.inf .inf-acesso-n{font:800 14px var(--font-titulo);color:var(--texto);margin-bottom:4px}
+.inf .inf-acesso-obs{margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(245,158,11,.12);font-size:12px;color:var(--texto-2)}
 .inf-ed{display:grid;gap:8px;margin:10px 0}
 .inf-ed-l{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .inf-in{flex:1 1 180px;padding:6px 9px;border:1px solid #d1d5db;border-radius:7px;font:inherit;font-size:13px}
@@ -26752,106 +26811,141 @@ function infCopiar(txt, msg){
   navigator.clipboard.writeText(String(txt||'')).then(()=>toast(msg||'Copiado.','success'),()=>toast('Não consegui copiar. Selecione e copie manualmente.','warn'));
 }
 function infCopiarSenha(i){ const a = infLista((INF.dados||{}).acessos)[i]; if(a) infCopiar(a.senha, 'Senha copiada.'); }
+const INF_ABAS = [
+  ['planos','Planos','#0071BC'],
+  ['apps','Benefícios e PlayHub','#7C3AED'],
+  ['valores','Taxas e avulsos','#D97706'],
+  ['links','Links do cliente','#0E9F6E'],
+  ['procs','Procedimentos','#2E3192'],
+  ['acessos','Acessos técnicos','#475569']
+];
+function infNorm(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/^o\s+/,'').replace(/\s+premium$/,'').replace(/[^a-z0-9+]/g,''); }
+function infAba(k){ INF.aba = k; INF.busca = ''; renderInformacoes(); }
 function infBuscar(v){
   INF.busca = String(v||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const raiz = document.querySelector('#mod-informacoes .inf-paineis'); if(!raiz) return;
+  raiz.classList.toggle('buscando', !!INF.busca);
   document.querySelectorAll('#mod-informacoes [data-inf-busca]').forEach(el=>{
-    const t = el.getAttribute('data-inf-busca');
-    el.style.display = !INF.busca || t.includes(INF.busca) ? '' : 'none';
+    el.style.display = !INF.busca || el.getAttribute('data-inf-busca').includes(INF.busca) ? '' : 'none';
   });
-  document.querySelectorAll('#mod-informacoes .vg-sec[data-inf-sec]').forEach(sec=>{
-    const itens = [...sec.querySelectorAll('[data-inf-busca]')];
-    sec.style.display = !INF.busca || !itens.length || itens.some(el=>el.style.display!=='none') ? '' : 'none';
+  let achou = 0;
+  raiz.querySelectorAll('.inf-painel').forEach(p=>{
+    const itens = [...p.querySelectorAll('[data-inf-busca]')];
+    const vis = itens.some(el=>el.style.display!=='none');
+    p.classList.toggle('sem-resultado', !!INF.busca && !vis);
+    if(vis) achou++;
   });
+  raiz.querySelectorAll('.inf-bloco').forEach(b=>{
+    const itens = [...b.querySelectorAll('[data-inf-busca]')];
+    b.style.display = !INF.busca || !itens.length || itens.some(el=>el.style.display!=='none') ? '' : 'none';
+  });
+  const nada = document.getElementById('inf-nada'); if(nada) nada.style.display = INF.busca && !achou ? '' : 'none';
+  document.querySelectorAll('#mod-informacoes .inf-tab').forEach(t=>t.classList.toggle('on', !INF.busca && t.dataset.aba===(INF.aba||'planos')));
 }
 function infChave(...partes){ return infEsc(partes.join(' ').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')); }
-function infSec(titulo, sub, corpo, id){ return corpo ? `<div class="vg-sec" data-inf-sec="${id||''}"><div class="vg-sec-h"><h3>${titulo}</h3><span>${sub}</span></div>${corpo}</div>` : ''; }
+function infBloco(titulo, sub, cor, corpo){ return corpo ? `<div class="inf-bloco" style="--inf-cor:${cor}"><div class="inf-bloco-h"><h3>${titulo}</h3>${sub?`<span>${sub}</span>`:''}</div>${corpo}</div>` : ''; }
 
 function renderInformacoes(){
   const box = document.getElementById('mod-informacoes'); if(!box) return;
   if(!INF.dados && !INF.erro){ box.innerHTML = `<div class="vg inf"><p class="vg-leitura">Carregando as informações...</p></div>`; infCarregar(); return; }
   if(INF.erro && !INF.dados){ box.innerHTML = `<div class="vg inf"><div class="vg-card risco"><div class="vg-l">Não consegui ler as informações</div><div class="vg-s">${infEsc(INF.erro)}</div></div></div>`; return; }
   if(INF.editando){ renderInformacoesEdicao(box); return; }
-  const d = INF.dados, m = INF.meta || {};
+  const d = INF.dados, m = INF.meta || {}, aba = INF.aba || 'planos';
   const atual = m.atualizado_em ? new Date(m.atualizado_em).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : '-';
-  const preco = v => String(v||'').trim() ? `R$ ${infEsc(v)}` : 'a definir';
+  const preco = v => String(v||'').trim() ? `<small>R$</small>${infEsc(v)}` : '<small>a definir</small>';
 
-  const topo = `<div class="inf-topo">
-      <input type="search" class="inf-busca" placeholder="Buscar: plano, mesh, cabo, mudança, senha..." value="${infEsc(INF.busca)}" oninput="infBuscar(this.value)">
-      <span class="vg-leitura">Fonte oficial do time · atualizado em ${atual}${m.atualizado_por?' por '+infEsc(m.atualizado_por):''}</span>
-      ${m.pode_editar?'<button type="button" class="btn sm" onclick="infEditar()">Editar informações</button>':''}
-    </div>
-    ${String(d.observacoes||'').trim()?`<div class="vg-base-nota inf-aviso">${infEsc(d.observacoes).replace(/\n/g,'<br>')}</div>`:''}`;
-
-  const planos = infLista(d.planos).map((p,i)=>`<div class="vg-card inf-card ${p.destaque?'inf-destaque':''}" data-inf-busca="${infChave('plano',p.nome,p.preco,p.selo)}">
-      <div class="vg-l">Plano ${infEsc(p.nome)}${p.selo?` <span class="inf-selo">${infEsc(p.selo)}</span>`:''}</div>
-      <div class="vg-v">${preco(p.preco)}<small> /mês</small></div>
-      <div class="vg-x"><button type="button" class="vg-link" onclick="infCopiarPlano(${i})">Copiar texto para o cliente</button></div>
+  // ---------- PLANOS ----------
+  const planos = infLista(d.planos).map((p,i)=>`<div class="inf-plano ${p.destaque?'destaque':''}" data-inf-busca="${infChave('plano',p.nome,p.preco,p.selo)}">
+      ${p.selo?`<div class="inf-plano-selo">${infEsc(p.selo)}</div>`:''}
+      <div class="inf-plano-rot">Plano</div>
+      <div class="inf-plano-nome">${infEsc(p.nome)}</div>
+      <div class="inf-plano-preco">${preco(p.preco)}<small>/mês</small></div>
+      <button type="button" class="inf-btn ${p.destaque?'claro':''}" onclick="infCopiarPlano(${i})">Copiar texto para o cliente</button>
     </div>`).join('');
-
   const inclusos = infLista(d.inclusos).map(x=>{
     const k = String(x).indexOf(':'), t = k>0 ? x.slice(0,k) : x, s = k>0 ? x.slice(k+1).trim() : '';
-    return `<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave(x)}"><div class="vg-l">${infEsc(t)}</div>${s?`<div class="vg-s">${infEsc(s)}</div>`:''}</div>`;
+    return `<div class="inf-incluso" data-inf-busca="${infChave(x)}"><b>${infEsc(t)}</b>${s?`<span>${infEsc(s)}</span>`:''}</div>`;
   }).join('');
+  const painelPlanos = `${planos?`<div class="inf-planos">${planos}</div>`:''}
+    ${infBloco('Todo plano inclui','vale para os três planos','#0071BC', inclusos?`<div class="inf-inclusos">${inclusos}</div>`:'')}`;
 
-  const benef = infLista(d.beneficios).length ? `<div class="vg-card inf-card inf-baixo">
-      ${d.beneficios_texto?`<div class="vg-s">${infEsc(d.beneficios_texto)}</div>`:''}
-      ${/^https?:\/\//i.test(String(d.beneficios_video_geral||'').trim())?`<div class="inf-campos"><div class="inf-campo"><span>Vídeo</span><a href="${infEsc(String(d.beneficios_video_geral).trim())}" target="_blank" rel="noopener noreferrer">Como instalar o app PlayHub</a><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.beneficios_video_geral,'Link do vídeo copiado. É só colar para o cliente.')">copiar</button></div></div>`:''}
-      <div class="inf-chips">${infLista(d.beneficios).map((x,i)=>{ const n=infBenNome(x), v=infBenVideo(x);
-        return v ? `<span class="inf-chip inf-chip-video" data-inf-busca="${infChave('beneficio video instalacao',n)}"><a href="${infEsc(v)}" target="_blank" rel="noopener noreferrer" title="Abrir vídeo de instalação">${infEsc(n)} · vídeo</a><button type="button" onclick="infCopiar(infBenVideo(INF.dados.beneficios[${i}]),'Link do vídeo de ${infEsc(n).replace(/'/g,'')} copiado.')" title="Copiar link do vídeo">copiar</button></span>`
-                 : `<span class="inf-chip" data-inf-busca="${infChave('beneficio',n)}">${infEsc(n)}</span>`; }).join('')}</div>
-      ${infLista(d.beneficios).some(infBenVideo)?'<div class="vg-x">Os apps com "vídeo" abrem o passo a passo de instalação. Use "copiar" para mandar o link ao cliente.</div>':''}</div>` : '';
+  // ---------- BENEFÍCIOS E PLAYHUB ----------
+  const vids = infLista(d.videos).filter(v=>/^https?:\/\//i.test(String(v.url||'')));
+  const usados = new Set();
+  const cardApp = (nome, url, incluso) => `<div class="inf-app ${incluso?'incluso':''}" data-inf-busca="${infChave('app beneficio video instalacao playhub',nome,incluso?'incluso':'')}">
+      <div class="inf-app-n">${infEsc(nome)}</div>
+      <div class="inf-app-tag">${incluso?'Incluso no plano':'App PlayHub'}</div>
+      ${url?`<div class="inf-app-bts"><a class="inf-btn mini" href="${infEsc(url)}" target="_blank" rel="noopener noreferrer">Assistir vídeo</a><button type="button" class="inf-link" onclick="infCopiar('${infEsc(url)}','Link do vídeo de ${infEsc(nome).replace(/'/g,'')} copiado. É só colar para o cliente.')">copiar link</button></div>`:'<div class="inf-app-sem">sem vídeo de instalação</div>'}
+    </div>`;
+  const appsInclusos = infLista(d.beneficios).map(x=>{
+    const n = infBenNome(x); let u = infBenVideo(x);
+    const v = vids.find(v=>infNorm(v.nome)===infNorm(n)); if(v){ usados.add(v); if(!u) u = v.url; }
+    return cardApp(n, u, true);
+  }).join('');
+  const appsOutros = vids.filter(v=>!usados.has(v)).map(v=>cardApp(v.nome, v.url, false)).join('');
+  const passos = infLista(d.procedimentos).find(p=>/playhub/i.test(p.titulo||''));
+  const passosHtml = passos ? `<div class="inf-passos">${String(passos.texto||'').split('\n').filter(Boolean).map((l,i)=>`<div class="inf-passo" data-inf-busca="${infChave('playhub ativar passo',l)}"><span>${i+1}</span><div>${infLinkar(infEsc(l.replace(/^\d+\.\s*/,'')))}</div></div>`).join('')}</div>` : '';
+  const videoGeral = /^https?:\/\//i.test(String(d.beneficios_video_geral||'').trim()) ? `<a class="inf-btn mini" href="${infEsc(d.beneficios_video_geral)}" target="_blank" rel="noopener noreferrer">Vídeo geral do app PlayHub</a>` : '';
+  const painelApps = `${infBloco('Como ativar o benefício','do cadastro à instalação','#7C3AED', passosHtml)}
+    ${infBloco('Apps incluídos no plano', infEsc(d.beneficios_texto||'o cliente escolhe um app'), '#7C3AED', appsInclusos?`${videoGeral?`<div style="margin-bottom:10px">${videoGeral}</div>`:''}<div class="inf-apps">${appsInclusos}</div>`:'')}
+    ${infBloco('Outros apps da PlayHub','vídeos de instalação disponíveis','#A855F7', appsOutros?`<div class="inf-apps">${appsOutros}</div>`:'')}`;
 
-  const avulsos = infLista(d.avulsos).map(a=>`<div class="vg-card inf-card" data-inf-busca="${infChave(a.nome,a.detalhe,a.valor)}">
-      <div class="vg-l">${infEsc(a.nome)}</div>
-      <div class="vg-v">${preco(a.valor)}<small> ${infEsc(a.unidade||'')}</small></div>
-      ${a.detalhe?`<div class="vg-x">${infEsc(a.detalhe)}</div>`:''}
+  // ---------- TAXAS E AVULSOS ----------
+  const linhas = (arr, unidade) => infLista(arr).map(l=>`<div class="inf-linha" data-inf-busca="${infChave(l.nome,l.detalhe,l.valor,l.unidade)}">
+      <div><b>${infEsc(l.nome)}</b>${(l.detalhe||(unidade&&l.unidade))?`<span>${infEsc([unidade?l.unidade:'',l.detalhe].filter(Boolean).join(' · '))}</span>`:''}</div>
+      <div class="inf-valor">${String(l.valor||'').trim()?'R$ '+infEsc(l.valor):'a definir'}</div></div>`).join('');
+  const colunaValores = (titulo, sub, cor, html) => html ? `<div class="inf-col" style="--inf-cor:${cor}"><div class="inf-col-h"><h3>${titulo}</h3><span>${sub}</span></div><div class="inf-col-b">${html}</div></div>` : '';
+  const painelValores = `<div class="inf-cols">
+      ${colunaValores('Serviços avulsos','somados à mensalidade','#7C3AED', linhas(d.avulsos, true))}
+      ${colunaValores('Taxas e serviços','cobrados do cliente','#D97706', linhas(d.taxas))}
+      ${colunaValores('Materiais avulsos','venda de produtos','#0E9F6E', linhas(d.materiais))}
+    </div>`;
+
+  // ---------- LINKS DO CLIENTE ----------
+  const corLink = t => /iphone|ios/i.test(t)?'#111827':/android/i.test(t)?'#16A34A':/instagram/i.test(t)?'#DB2777':/central|portal/i.test(t)?'#0071BC':'#2E3192';
+  const links = infLista(d.links).map((l,i)=>`<div class="inf-lk" style="--inf-cor:${corLink(l.titulo)}" data-inf-busca="${infChave('link app site',l.titulo,l.detalhe,l.url)}">
+      <div class="inf-lk-n">${infEsc(l.titulo)}</div>${l.detalhe?`<div class="inf-lk-d">${infEsc(l.detalhe)}</div>`:''}
+      <a href="${/^https?:\/\//i.test(l.url||'')?infEsc(l.url):'#'}" target="_blank" rel="noopener noreferrer">${infEsc(l.url)}</a>
+      <button type="button" class="inf-btn mini" onclick="infCopiar(INF.dados.links[${i}].url,'Link copiado. É só colar para o cliente.')">Copiar link</button>
     </div>`).join('');
-
-  const lista = (linhas) => linhas.length ? `<div class="vg-card inf-card inf-baixo inf-lista-card">${linhas.map(l=>`<div class="inf-linha" data-inf-busca="${infChave(l.nome,l.detalhe,l.valor)}">
-      <div><b>${infEsc(l.nome)}</b>${l.detalhe?`<span>${infEsc(l.detalhe)}</span>`:''}</div><div class="inf-valor">${preco(l.valor)}</div></div>`).join('')}</div>` : '';
-
-  const procs = infLista(d.procedimentos).length ? `<ol class="vg-fazer">${infLista(d.procedimentos).map((x,i)=>`<li data-inf-busca="${infChave(x.titulo,x.texto)}"><span class="vg-n">${i+1}</span><div><b>${infEsc(x.titulo)}</b><br>${infLinkar(infEsc(x.texto)).replace(/\n/g,'<br>')}</div></li>`).join('')}</ol>` : '';
-
-  const campo = (rot, val, copiar) => val ? `<div class="inf-campo"><span>${rot}</span><b class="${copiar==='senha'?'inf-senha':''}">${infEsc(val)}</b>${copiar?`<button type="button" class="cdg-mini" onclick="${copiar}">copiar</button>`:''}</div>` : '';
-  const acessos = infLista(d.acessos).map((a,i)=>`<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave('acesso senha porta roteador',a.titulo,a.endereco,a.usuario,a.porta,a.obs)}">
-      <div class="vg-l">${infEsc(a.titulo)}</div>
-      <div class="inf-campos">
-        ${a.endereco?`<div class="inf-campo"><span>Endereço</span><a href="${/^https?:\/\//i.test(a.endereco)?infEsc(a.endereco):'#'}" target="_blank" rel="noopener noreferrer">${infEsc(a.endereco)}</a></div>`:''}
-        ${campo('Usuário', a.usuario, a.usuario?`infCopiar(INF.dados.acessos[${i}].usuario,'Usuário copiado.')`:'')}
-        ${campo('Porta', a.porta, '')}
-        ${a.senha?`<div class="inf-campo"><span>Senha</span><b class="inf-senha">${infEsc(a.senha)}</b><button type="button" class="cdg-mini" onclick="infCopiarSenha(${i})">copiar</button></div>`:''}
-      </div>
-      ${a.obs?`<div class="vg-base-nota">${infEsc(a.obs)}</div>`:''}
-    </div>`).join('');
-
   const ac = d.acesso_cliente || {};
-  const linksCards = infLista(d.links).map((l,i)=>`<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave('app aplicativo link central',l.titulo,l.detalhe,l.url)}">
-      <div class="vg-l">${infEsc(l.titulo)}</div>
-      ${l.detalhe?`<div class="vg-x">${infEsc(l.detalhe)}</div>`:''}
-      <div class="inf-campos"><div class="inf-campo"><span>Link</span><a href="${/^https?:\/\//i.test(l.url||'')?infEsc(l.url):'#'}" target="_blank" rel="noopener noreferrer">${infEsc(l.url)}</a><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.links[${i}].url,'Link copiado. É só colar para o cliente.')">copiar</button></div></div>
-    </div>`).join('');
-  const acCard = (ac.login||ac.senha) ? `<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave('login senha cliente app central primeiro acesso',ac.login)}">
-      <div class="vg-l">Primeiro acesso do cliente</div>
-      <div class="inf-campos">${ac.login?`<div class="inf-campo"><span>Login</span><b>${infEsc(ac.login)}</b></div>`:''}${ac.senha?`<div class="inf-campo"><span>Senha padrão</span><b class="inf-senha">${infEsc(ac.senha)}</b><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.acesso_cliente.senha,'Senha copiada.')">copiar</button></div>`:''}</div>
+  const acHtml = (ac.login||ac.senha) ? `<div class="inf-cred" data-inf-busca="${infChave('login senha cliente primeiro acesso app central',ac.login)}">
+      <div class="inf-cred-l"><span>Login</span><b>${infEsc(ac.login||'-')}</b></div>
+      <div class="inf-cred-l"><span>Senha padrão</span><b class="inf-senha">${infEsc(ac.senha||'-')}</b>${ac.senha?`<button type="button" class="inf-link" onclick="infCopiar(INF.dados.acesso_cliente.senha,'Senha copiada.')">copiar</button>`:''}</div>
     </div>` : '';
-  const videos = infLista(d.videos).filter(v=>/^https?:\/\//i.test(String(v.url||''))).map((v,i)=>`<div class="vg-card inf-card inf-baixo inf-video" data-inf-busca="${infChave('video instalacao app playhub',v.nome)}">
-      <div class="vg-l">${infEsc(v.nome)}</div>
-      <div class="inf-video-bts"><a class="btn sm" href="${infEsc(v.url)}" target="_blank" rel="noopener noreferrer">Assistir</a><button type="button" class="cdg-mini" onclick="infCopiar('${infEsc(v.url)}','Link do vídeo de ${infEsc(v.nome).replace(/'/g,'')} copiado. É só colar para o cliente.')">copiar link</button></div>
+  const painelLinks = `${infBloco('Primeiro acesso do cliente','app e central do assinante','#0071BC', acHtml)}
+    ${infBloco('Links para enviar','app, central, site e redes','#0E9F6E', links?`<div class="inf-lks">${links}</div>`:'')}`;
+
+  // ---------- PROCEDIMENTOS ----------
+  const procs = infLista(d.procedimentos).map((x,i)=>`<div class="inf-proc" data-inf-busca="${infChave(x.titulo,x.texto)}"><div class="inf-proc-n">${i+1}</div><div><b>${infEsc(x.titulo)}</b><p>${infLinkar(infEsc(x.texto)).replace(/\n/g,'<br>')}</p></div></div>`).join('');
+  const painelProcs = infBloco('Procedimentos e padrões','como fazer, do jeito Hilink','#2E3192', procs?`<div class="inf-procs">${procs}</div>`:'');
+
+  // ---------- ACESSOS ----------
+  const acessos = infLista(d.acessos).map((a,i)=>`<div class="inf-acesso" data-inf-busca="${infChave('acesso senha porta roteador painel',a.titulo,a.endereco,a.usuario,a.porta,a.obs)}">
+      <div class="inf-acesso-n">${infEsc(a.titulo)}</div>
+      ${a.endereco?`<div class="inf-cred-l"><span>Endereço</span><a href="${/^https?:\/\//i.test(a.endereco)?infEsc(a.endereco):'#'}" target="_blank" rel="noopener noreferrer">${infEsc(a.endereco)}</a></div>`:''}
+      ${a.usuario?`<div class="inf-cred-l"><span>Usuário</span><b>${infEsc(a.usuario)}</b><button type="button" class="inf-link" onclick="infCopiar(INF.dados.acessos[${i}].usuario,'Usuário copiado.')">copiar</button></div>`:''}
+      ${a.porta?`<div class="inf-cred-l"><span>Porta</span><b>${infEsc(a.porta)}</b></div>`:''}
+      ${a.senha?`<div class="inf-cred-l"><span>Senha</span><b class="inf-senha">${infEsc(a.senha)}</b><button type="button" class="inf-link" onclick="infCopiarSenha(${i})">copiar</button></div>`:''}
+      ${a.obs?`<div class="inf-acesso-obs">${infEsc(a.obs)}</div>`:''}
     </div>`).join('');
-  const tab = k => lista(infLista(d[k]));
-  box.innerHTML = `<div class="vg inf">${topo}
-      ${infSec('Planos','valor mensal · use estes valores com o cliente', planos?`<div class="vg-cards">${planos}</div>`:'', 'planos')}
-      ${infSec('Todo plano inclui','vale para os três planos', inclusos?`<div class="vg-cards">${inclusos}</div>`:'', 'inclusos')}
-      ${infSec('Benefício digital incluso','o cliente escolhe', benef, 'beneficios')}
-      ${infSec('Vídeos de instalação','passo a passo de cada app da PlayHub · copie o link e envie ao cliente', videos?`<div class="vg-cards inf-videos">${videos}</div>`:'', 'videos')}
-      ${infSec('Serviços avulsos','contratados à parte, somados à mensalidade', avulsos?`<div class="vg-cards">${avulsos}</div>`:'', 'avulsos')}
-      ${infSec('Aplicativo, site e redes','links para enviar ao cliente', (linksCards||acCard)?`<div class="vg-cards">${linksCards}${acCard}</div>`:'', 'app')}
-      <div class="inf-2col">
-        ${infSec('Taxas e serviços','valores cobrados do cliente', tab('taxas'), 'taxas')}
-        ${infSec('Materiais avulsos','venda de produtos', tab('materiais'), 'materiais')}
+  const painelAcessos = infBloco('Acessos técnicos', d.acessos_visivel==='lideranca'?'visível só para a liderança':'roteadores e painéis','#475569', acessos?`<div class="inf-acessos">${acessos}</div>`:'');
+
+  const paineis = { planos:painelPlanos, apps:painelApps, valores:painelValores, links:painelLinks, procs:painelProcs, acessos:painelAcessos };
+  const abas = INF_ABAS.filter(([k])=>String(paineis[k]||'').replace(/<[^>]*>/g,'').trim());
+  const ativa = abas.some(([k])=>k===aba) ? aba : (abas[0]||['planos'])[0];
+  box.innerHTML = `<div class="vg inf">
+      <div class="inf-topo">
+        <input type="search" class="inf-busca" placeholder="Buscar em tudo: plano, mesh, cabo, mudança, Deezer, senha..." value="${infEsc(INF.busca)}" oninput="infBuscar(this.value)">
+        <span class="vg-leitura">Fonte oficial do time · atualizado em ${atual}${m.atualizado_por?' por '+infEsc(m.atualizado_por):''}</span>
+        ${m.pode_editar?'<button type="button" class="inf-btn" onclick="infEditar()">Editar informações</button>':''}
       </div>
-      ${infSec('Procedimentos e padrões','como fazer, do jeito Hilink', procs, 'procs')}
-      ${infSec('Acessos técnicos', d.acessos_visivel==='lideranca'?'visível só para a liderança':'roteadores e plataformas', acessos?`<div class="vg-cards">${acessos}</div>`:'', 'acessos')}
+      ${String(d.observacoes||'').trim()?`<div class="inf-aviso">${infEsc(d.observacoes).replace(/\n/g,'<br>')}</div>`:''}
+      <div class="inf-tabs">${abas.map(([k,t,c])=>`<button type="button" class="inf-tab ${k===ativa?'on':''}" data-aba="${k}" style="--inf-cor:${c}" onclick="infAba('${k}')">${t}</button>`).join('')}</div>
+      <div class="inf-paineis">
+        ${abas.map(([k,t,c])=>`<section class="inf-painel ${k===ativa?'on':''}" data-aba="${k}" style="--inf-cor:${c}"><div class="inf-painel-t">${t}</div>${paineis[k]}</section>`).join('')}
+        <div id="inf-nada" class="inf-aviso" style="display:none">Nada encontrado. Tente outra palavra.</div>
+      </div>
     </div>`;
   if(INF.busca) infBuscar(INF.busca);
 }
@@ -26911,7 +27005,7 @@ function renderInformacoesEdicao(box){
         <button type="button" id="inf-salvar" class="btn sm primary" onclick="infSalvar()">Salvar para todo o time</button></div>
     </div>`;
 }
-Object.assign(window, { infCopiar, infCopiarSenha, renderInformacoes, infEditar, infCancelar, infCampo, infTexto, infAdd, infDel, infSalvar, infCopiarPlano, infBuscar });
+Object.assign(window, { infAba, infCopiar, infCopiarSenha, renderInformacoes, infEditar, infCancelar, infCampo, infTexto, infAdd, infDel, infSalvar, infCopiarPlano, infBuscar });
 
 /* Botão fixo: Atualizar todos os dados (IXC, OPA e planilha) com registro da última leitura */
 function radarFixoUltimaLeitura(st){
