@@ -2496,6 +2496,9 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .inf-baixo .vg-s{margin-top:4px}
 .inf .inf-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .inf .inf-chip{padding:4px 10px;border-radius:999px;border:1px solid var(--linha);background:var(--azul-suave);color:var(--azul-forte);font-size:12px;font-weight:600}
+.inf .inf-chip-video{display:inline-flex;align-items:center;gap:6px;border-color:var(--azul);padding-right:4px}
+.inf .inf-chip-video a{color:var(--azul-forte);text-decoration:underline dotted;text-underline-offset:3px}
+.inf .inf-chip-video button{border:0;border-radius:999px;background:var(--azul);color:var(--sobre-azul);font-size:10.5px;font-weight:700;padding:2px 8px;cursor:pointer}
 .inf .inf-2col{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:0 16px}
 .inf .inf-lista-card{padding:4px 14px}
 .inf .inf-linha{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--linha);font-size:13px;color:var(--texto)}
@@ -26733,9 +26736,11 @@ async function infCarregar(){
   INF.carregando = false;
   if(STATE.activeMod==='informacoes') renderInformacoes();
 }
+function infBenNome(x){ return typeof x==='string' ? x : ((x&&x.nome)||''); }
+function infBenVideo(x){ const v = typeof x==='object' && x ? String(x.video||'').trim() : ''; return /^https?:\/\//i.test(v) ? v : ''; }
 function infCopiarPlano(i){
   const d = INF.dados||{}, p = infLista(d.planos)[i]; if(!p) return;
-  const txt = `Plano ${p.nome}: ${infValor(p.preco)} por mês.\n`+infLista(d.inclusos).map(x=>'- '+x).join('\n')+(infLista(d.beneficios).length?`\n- Benefício digital incluso, à escolha: ${infLista(d.beneficios).join(', ')}.`:'');
+  const txt = `Plano ${p.nome}: ${infValor(p.preco)} por mês.\n`+infLista(d.inclusos).map(x=>'- '+x).join('\n')+(infLista(d.beneficios).length?`\n- Benefício digital incluso, à escolha: ${infLista(d.beneficios).map(infBenNome).join(', ')}.`:'');
   navigator.clipboard.writeText(txt).then(()=>toast('Texto do plano copiado. É só colar na conversa com o cliente.','success'),()=>toast('Não consegui copiar. Selecione o texto e copie manualmente.','warn'));
 }
 function infCopiar(txt, msg){
@@ -26785,7 +26790,11 @@ function renderInformacoes(){
 
   const benef = infLista(d.beneficios).length ? `<div class="vg-card inf-card inf-baixo">
       ${d.beneficios_texto?`<div class="vg-s">${infEsc(d.beneficios_texto)}</div>`:''}
-      <div class="inf-chips">${infLista(d.beneficios).map(x=>`<span class="inf-chip" data-inf-busca="${infChave('beneficio',x)}">${infEsc(x)}</span>`).join('')}</div></div>` : '';
+      ${/^https?:\/\//i.test(String(d.beneficios_video_geral||'').trim())?`<div class="inf-campos"><div class="inf-campo"><span>Vídeo</span><a href="${infEsc(String(d.beneficios_video_geral).trim())}" target="_blank" rel="noopener noreferrer">Como instalar o app PlayHub</a><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.beneficios_video_geral,'Link do vídeo copiado. É só colar para o cliente.')">copiar</button></div></div>`:''}
+      <div class="inf-chips">${infLista(d.beneficios).map((x,i)=>{ const n=infBenNome(x), v=infBenVideo(x);
+        return v ? `<span class="inf-chip inf-chip-video" data-inf-busca="${infChave('beneficio video instalacao',n)}"><a href="${infEsc(v)}" target="_blank" rel="noopener noreferrer" title="Abrir vídeo de instalação">${infEsc(n)} · vídeo</a><button type="button" onclick="infCopiar(infBenVideo(INF.dados.beneficios[${i}]),'Link do vídeo de ${infEsc(n).replace(/'/g,'')} copiado.')" title="Copiar link do vídeo">copiar</button></span>`
+                 : `<span class="inf-chip" data-inf-busca="${infChave('beneficio',n)}">${infEsc(n)}</span>`; }).join('')}</div>
+      ${infLista(d.beneficios).some(infBenVideo)?'<div class="vg-x">Os apps com "vídeo" abrem o passo a passo de instalação. Use "copiar" para mandar o link ao cliente.</div>':''}</div>` : '';
 
   const avulsos = infLista(d.avulsos).map(a=>`<div class="vg-card inf-card" data-inf-busca="${infChave(a.nome,a.detalhe,a.valor)}">
       <div class="vg-l">${infEsc(a.nome)}</div>
@@ -26870,8 +26879,8 @@ function renderInformacoesEdicao(box){
         <textarea class="inf-ta" rows="5" oninput="infTexto('inclusos',this,true)">${infEsc(infLista(r.inclusos).join('\n'))}</textarea></div>
       <div class="cdg-box"><div class="cdg-eyebrow">Benefício digital incluso</div>
         <input type="text" class="inf-in" value="${infEsc(r.beneficios_texto||'')}" placeholder="Texto de apoio" oninput="infTexto('beneficios_texto',this,false)">
-        <div class="cdg-nota">Benefícios, um por linha.</div>
-        <textarea class="inf-ta" rows="6" oninput="infTexto('beneficios',this,true)">${infEsc(infLista(r.beneficios).join('\n'))}</textarea></div>
+        <input type="text" class="inf-in" value="${infEsc(r.beneficios_video_geral||'')}" placeholder="Vídeo geral de instalação do app PlayHub (https://...)" oninput="infTexto('beneficios_video_geral',this,false)" style="margin-top:6px"></div>
+      ${tabela('beneficios', [['nome','App'],['video','Link do vídeo de instalação (https://...)']], {nome:'',video:''}, 'Apps do benefício digital')}
       ${tabela('avulsos', [['nome','Serviço'],['valor','Valor','curto'],['unidade','Unidade (ex.: por mês)'],['detalhe','Descrição']], {nome:'',valor:'',unidade:'por mês',detalhe:''}, 'Serviços avulsos')}
       ${INF_TABELAS.map(t=>tabela(t.k, [['nome',t.cols[0][1]],['valor','Valor','curto'],['detalhe','Observações']], {nome:'',valor:'',detalhe:''}, t.titulo)).join('')}
       ${tabela('procedimentos', [['titulo','Título'],['texto','Como fazer']], {titulo:'',texto:''}, 'Procedimentos e padrões')}
