@@ -25068,7 +25068,7 @@ function cdAtvModal(){
     <p class="cdg-nota" style="margin:0 0 12px">${cdEsc(CD_ATV_TIPOS[N.tipo].nome)}: <b>${cdNum(N.linhas.length)} ${unid}</b>${valor?`, ${cdMoeda(valor)}`:''}, em ${filiais.length} ${filiais.length===1?'filial':'filiais'}. A lista é salva como está agora.</p>
     <label class="cdg-campo">Nome da atividade<input id="cd-atv-nome" type="text" value="${cdEsc(N.titulo)}" maxlength="80"></label>
     <div class="cdg-campo">Quem vai tratar
-      ${pessoas.length?`<div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-atv-pessoa" value="${u.id}" data-nome="${cdEsc(u.nome)}" onchange="cdAtvDivisao()"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança, distribui para a equipe dela)':''}${(u.cargo||u.equipe)?' <small>· '+cdEsc(u.cargo||u.equipe)+'</small>':''}${u.minha?' <small>· sua equipe</small>':''}${u.ultimo_login?'':' <small>· ainda não entrou</small>'}</label>`).join('')}</div>`
+      ${pessoas.length?`<div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-atv-pessoa" value="${u.id}" data-nome="${cdEsc(u.nome)}" onchange="cdAtvDivisao()"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}${u.ultimo_login?'':' <small>· ainda não entrou</small>'}</label>`).join('')}</div>`
         :`<div class="cdg-nota">Nenhuma atendente cadastrada. Use "Cadastrar atendente" no painel de atividades.</div>`}
       <div class="cdg-nota" id="cd-atv-divisao" style="margin-top:6px">Marque uma ou mais atendentes. Com mais de uma, a lista é dividida igualmente e cada uma recebe a sua atividade.</div>
     </div>
@@ -25412,7 +25412,7 @@ function cdAtvDistribuirModal(id){
   cdModal(`<h3>Distribuir na equipe</h3>
     <p class="cdg-nota" style="margin:0 0 10px"><b>${cdEsc(a.titulo)}</b>${a.criado_por_nome?` · veio de ${cdEsc(a.criado_por_nome)}`:''}. ${cdNum(a.pendentes)} itens pendentes serão divididos por igual. O que já foi tratado fica onde está.</p>
     <div class="cdg-campo">Dividir entre
-      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-dist-p" value="${u.id}" data-nome="${cdEsc(u.nome)}" ${u.minha&&String(u.email).toLowerCase()!==eu&&u.perfil==='atendente'?'checked':''} onchange="cdAtvDistribuirPrevia(${a.pendentes})"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}${u.perfil==='lider'?' (liderança)':''}${(u.cargo||u.equipe)?' <small>· '+cdEsc(u.cargo||u.equipe)+'</small>':''}${u.minha?' <small>· sua equipe</small>':''}</label>`).join('')}</div></div>
+      <div class="cdg-pessoas">${pessoas.map(u=>`<label class="cd-chk"><input type="checkbox" class="cd-dist-p" value="${u.id}" data-nome="${cdEsc(u.nome)}" ${u.minha&&String(u.email).toLowerCase()!==eu&&u.perfil==='atendente'?'checked':''} onchange="cdAtvDistribuirPrevia(${a.pendentes})"> ${radarAvatar({id:u.id,email:u.email,nome:u.nome},22)} ${cdEsc(u.nome)}</label>`).join('')}</div></div>
     <div class="cdg-nota" id="cd-dist-previa" style="margin:4px 0 14px"></div>
     <p class="cdg-nota" style="margin:0 0 14px">Cada pessoa recebe a sua tarefa com o mesmo prazo. A primeira marcada fica com esta tarefa; as outras recebem tarefas novas. Tudo fica no histórico.</p>
     <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="cdModal(null)">Cancelar</button>
