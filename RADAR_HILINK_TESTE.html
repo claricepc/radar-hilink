@@ -2508,6 +2508,13 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf-ta{width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font:inherit;font-size:13px;margin-top:6px}
 .inf-chk{font-size:12px;display:flex;gap:4px;align-items:center}
 .inf-acoes{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.inf-plano.destaque .inf-plano-n,.inf-plano.destaque .inf-plano-p,.inf-plano.destaque .inf-plano-p small{color:#fff!important}
+.inf-procs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px;margin-top:10px}
+.inf-proc{border-left:4px solid #0071BC;background:#f6faff;border-radius:8px;padding:10px 12px;font-size:13px}
+.inf-proc b{display:block;margin-bottom:4px;font-size:14px}
+.inf-senha{font-family:ui-monospace,Consolas,monospace;letter-spacing:.5px}
+.inf-acesso-bts{display:flex;gap:6px;flex-wrap:wrap}
+.inf-tbl td{vertical-align:top}
 .fat-grid{grid-template-columns:minmax(380px,.82fr) minmax(560px,1.18fr)}
 .fat-hint{border:1px solid rgba(80,130,180,.28);background:rgba(10,31,52,.55);border-radius:8px;padding:10px 12px;color:#9db4ce;font-size:11px;line-height:1.45}
 .fat-manual-box{display:none;border:1px solid rgba(0,105,180,.22);background:rgba(0,105,180,.06);border-radius:10px;padding:10px 12px;margin-top:10px;color:#28415d;font-size:11px}
@@ -26728,6 +26735,16 @@ function infCopiarPlano(i){
   const txt = `Plano ${p.nome}: ${infValor(p.preco)} por mês.\n`+infLista(d.inclusos).map(x=>'- '+x).join('\n')+(infLista(d.beneficios).length?`\n- Benefício digital incluso, à escolha: ${infLista(d.beneficios).join(', ')}.`:'');
   navigator.clipboard.writeText(txt).then(()=>toast('Texto do plano copiado. É só colar na conversa com o cliente.','success'),()=>toast('Não consegui copiar. Selecione o texto e copie manualmente.','warn'));
 }
+function infMostrar(i){
+  const a = infLista((INF.dados||{}).acessos)[i], el = document.getElementById('inf-senha-'+i); if(!a||!el) return;
+  const aberto = el.dataset.aberto==='1';
+  el.textContent = aberto ? '••••••' : a.senha; el.dataset.aberto = aberto ? '' : '1';
+  if(!aberto) setTimeout(()=>{ if(el.dataset.aberto==='1'){ el.textContent='••••••'; el.dataset.aberto=''; } }, 30000);
+}
+function infCopiarSenha(i){
+  const a = infLista((INF.dados||{}).acessos)[i]; if(!a) return;
+  navigator.clipboard.writeText(a.senha).then(()=>toast('Senha copiada.','success'),()=>toast('Não consegui copiar.','warn'));
+}
 function infBuscar(v){
   INF.busca = String(v||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
   document.querySelectorAll('#mod-informacoes [data-inf-busca]').forEach(el=>{
@@ -26773,6 +26790,19 @@ function renderInformacoes(){
       ${linhas.map(l=>`<tr data-inf-busca="${infChave(l.nome,l.detalhe,l.valor)}"><td>${infEsc(l.nome)}</td><td class="inf-num">${String(l.valor||'').trim()?infEsc(l.valor):'a definir'}</td><td>${infEsc(l.detalhe||'')}</td></tr>`).join('')}
       </tbody></table></div></div>`;
   }).join('');
+  const procs = infLista(d.procedimentos);
+  const procHtml = procs.length ? `<div class="cdg-box"><div class="cdg-eyebrow">Procedimentos e padrões</div><div class="cdg-nota">como fazer, do jeito Hilink</div>
+      <div class="inf-procs">${procs.map(x=>`<div class="inf-proc" data-inf-busca="${infChave(x.titulo,x.texto)}"><b>${infEsc(x.titulo)}</b>${infEsc(x.texto).replace(/\n/g,'<br>')}</div>`).join('')}</div></div>` : '';
+  const acs = infLista(d.acessos);
+  const acessosHtml = acs.length ? `<div class="cdg-box"><div class="cdg-eyebrow">Acessos técnicos</div><div class="cdg-nota">${d.acessos_visivel==='lideranca'?'Visível só para a liderança.':'Visível para todo o time.'} A senha fica oculta até clicar em mostrar.</div>
+      <div class="inf-tbl"><table class="decision-table"><thead><tr><th>Acesso</th><th>Endereço</th><th>Usuário</th><th>Porta</th><th>Senha</th><th>Observações</th></tr></thead><tbody>
+      ${acs.map((a,i)=>`<tr data-inf-busca="${infChave('acesso senha porta',a.titulo,a.endereco,a.usuario,a.porta,a.obs)}">
+        <td><b>${infEsc(a.titulo)}</b></td>
+        <td>${a.endereco?`<a href="${/^https?:\/\//i.test(a.endereco)?infEsc(a.endereco):'#'}" target="_blank" rel="noopener noreferrer">${infEsc(a.endereco)}</a>`:'-'}</td>
+        <td>${infEsc(a.usuario||'-')}</td><td>${infEsc(a.porta||'-')}</td>
+        <td><div class="inf-acesso-bts"><span class="inf-senha" id="inf-senha-${i}">••••••</span>${a.senha?`<button type="button" class="cdg-mini" onclick="infMostrar(${i})">mostrar</button><button type="button" class="cdg-mini" onclick="infCopiarSenha(${i})">copiar</button>`:''}</div></td>
+        <td>${infEsc(a.obs||'')}</td></tr>`).join('')}
+      </tbody></table></div></div>` : '';
   const obs = String(d.observacoes||'').trim() ? `<div class="cdg-alerta"><i></i><div>${infEsc(d.observacoes).replace(/\n/g,'<br>')}</div></div>` : '';
 
   box.innerHTML = `<div class="section compact-section inf">
@@ -26785,7 +26815,7 @@ function renderInformacoes(){
         <div class="cdg-box"><div class="cdg-eyebrow">Benefício digital incluso</div><div class="cdg-nota">${infEsc(d.beneficios_texto||'')}</div><div class="inf-chips">${benef}</div></div>
       </div>
       <div class="cdg-box"><div class="cdg-eyebrow">Serviços avulsos</div><div class="cdg-nota">contratados à parte, somados à mensalidade</div><div class="inf-avulsos">${avulsos}</div></div>
-      ${tabelas}
+      ${tabelas}${procHtml}${acessosHtml}
     </div>`;
   if(INF.busca) infBuscar(INF.busca);
 }
@@ -26827,13 +26857,20 @@ function renderInformacoesEdicao(box){
         <textarea class="inf-ta" rows="6" oninput="infTexto('beneficios',this,true)">${infEsc(infLista(r.beneficios).join('\n'))}</textarea></div>
       ${tabela('avulsos', [['nome','Serviço'],['valor','Valor','curto'],['unidade','Unidade (ex.: por mês)'],['detalhe','Descrição']], {nome:'',valor:'',unidade:'por mês',detalhe:''}, 'Serviços avulsos')}
       ${INF_TABELAS.map(t=>tabela(t.k, [['nome',t.cols[0][1]],['valor','Valor','curto'],['detalhe','Observações']], {nome:'',valor:'',detalhe:''}, t.titulo)).join('')}
+      ${tabela('procedimentos', [['titulo','Título'],['texto','Como fazer']], {titulo:'',texto:''}, 'Procedimentos e padrões')}
+      <div class="cdg-box"><div class="cdg-eyebrow">Quem vê os acessos técnicos</div>
+        <select class="inf-in" onchange="INF.rascunho.acessos_visivel=this.value">
+          <option value="todos" ${r.acessos_visivel!=='lideranca'?'selected':''}>Todo o time</option>
+          <option value="lideranca" ${r.acessos_visivel==='lideranca'?'selected':''}>Só a liderança (gestão e líderes)</option>
+        </select></div>
+      ${tabela('acessos', [['titulo','Acesso'],['endereco','Endereço (https://...)'],['usuario','Usuário','curto'],['porta','Porta','curto'],['senha','Senha','curto'],['obs','Observações']], {titulo:'',endereco:'',usuario:'',porta:'',senha:'',obs:''}, 'Acessos técnicos')}
       <div class="cdg-box"><div class="cdg-eyebrow">Aviso no topo (opcional)</div>
         <textarea class="inf-ta" rows="3" oninput="infTexto('observacoes',this,false)">${infEsc(r.observacoes||'')}</textarea></div>
       <div class="inf-acoes"><button type="button" class="btn sm" onclick="infCancelar()">Cancelar</button>
         <button type="button" id="inf-salvar" class="btn sm primary" onclick="infSalvar()">Salvar para todo o time</button></div>
     </div>`;
 }
-Object.assign(window, { renderInformacoes, infEditar, infCancelar, infCampo, infTexto, infAdd, infDel, infSalvar, infCopiarPlano, infBuscar });
+Object.assign(window, { infMostrar, infCopiarSenha, renderInformacoes, infEditar, infCancelar, infCampo, infTexto, infAdd, infDel, infSalvar, infCopiarPlano, infBuscar });
 
 /* Botão fixo: Atualizar todos os dados (IXC, OPA e planilha) com registro da última leitura */
 function radarFixoUltimaLeitura(st){
