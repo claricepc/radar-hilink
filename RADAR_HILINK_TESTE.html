@@ -2511,6 +2511,10 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .inf-campo a{color:var(--azul-forte);overflow-wrap:anywhere}
 .inf .inf-senha{font-family:ui-monospace,Consolas,monospace;font-size:14px;letter-spacing:.4px}
 .inf .vg-fazer li b{color:var(--texto)}
+.inf .vg-fazer li a{color:var(--azul-forte);overflow-wrap:anywhere}
+.inf .inf-videos{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.inf .inf-video-bts{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.inf .inf-video-bts .btn{text-decoration:none}
 .inf-ed{display:grid;gap:8px;margin:10px 0}
 .inf-ed-l{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .inf-in{flex:1 1 180px;padding:6px 9px;border:1px solid #d1d5db;border-radius:7px;font:inherit;font-size:13px}
@@ -26736,6 +26740,7 @@ async function infCarregar(){
   INF.carregando = false;
   if(STATE.activeMod==='informacoes') renderInformacoes();
 }
+function infLinkar(t){ return String(t).replace(/(https?:\/\/[^\s<]+)/g, u=>`<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`); }
 function infBenNome(x){ return typeof x==='string' ? x : ((x&&x.nome)||''); }
 function infBenVideo(x){ const v = typeof x==='object' && x ? String(x.video||'').trim() : ''; return /^https?:\/\//i.test(v) ? v : ''; }
 function infCopiarPlano(i){
@@ -26805,7 +26810,7 @@ function renderInformacoes(){
   const lista = (linhas) => linhas.length ? `<div class="vg-card inf-card inf-baixo inf-lista-card">${linhas.map(l=>`<div class="inf-linha" data-inf-busca="${infChave(l.nome,l.detalhe,l.valor)}">
       <div><b>${infEsc(l.nome)}</b>${l.detalhe?`<span>${infEsc(l.detalhe)}</span>`:''}</div><div class="inf-valor">${preco(l.valor)}</div></div>`).join('')}</div>` : '';
 
-  const procs = infLista(d.procedimentos).length ? `<ol class="vg-fazer">${infLista(d.procedimentos).map((x,i)=>`<li data-inf-busca="${infChave(x.titulo,x.texto)}"><span class="vg-n">${i+1}</span><div><b>${infEsc(x.titulo)}</b><br>${infEsc(x.texto).replace(/\n/g,'<br>')}</div></li>`).join('')}</ol>` : '';
+  const procs = infLista(d.procedimentos).length ? `<ol class="vg-fazer">${infLista(d.procedimentos).map((x,i)=>`<li data-inf-busca="${infChave(x.titulo,x.texto)}"><span class="vg-n">${i+1}</span><div><b>${infEsc(x.titulo)}</b><br>${infLinkar(infEsc(x.texto)).replace(/\n/g,'<br>')}</div></li>`).join('')}</ol>` : '';
 
   const campo = (rot, val, copiar) => val ? `<div class="inf-campo"><span>${rot}</span><b class="${copiar==='senha'?'inf-senha':''}">${infEsc(val)}</b>${copiar?`<button type="button" class="cdg-mini" onclick="${copiar}">copiar</button>`:''}</div>` : '';
   const acessos = infLista(d.acessos).map((a,i)=>`<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave('acesso senha porta roteador',a.titulo,a.endereco,a.usuario,a.porta,a.obs)}">
@@ -26829,11 +26834,16 @@ function renderInformacoes(){
       <div class="vg-l">Primeiro acesso do cliente</div>
       <div class="inf-campos">${ac.login?`<div class="inf-campo"><span>Login</span><b>${infEsc(ac.login)}</b></div>`:''}${ac.senha?`<div class="inf-campo"><span>Senha padrão</span><b class="inf-senha">${infEsc(ac.senha)}</b><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.acesso_cliente.senha,'Senha copiada.')">copiar</button></div>`:''}</div>
     </div>` : '';
+  const videos = infLista(d.videos).filter(v=>/^https?:\/\//i.test(String(v.url||''))).map((v,i)=>`<div class="vg-card inf-card inf-baixo inf-video" data-inf-busca="${infChave('video instalacao app playhub',v.nome)}">
+      <div class="vg-l">${infEsc(v.nome)}</div>
+      <div class="inf-video-bts"><a class="btn sm" href="${infEsc(v.url)}" target="_blank" rel="noopener noreferrer">Assistir</a><button type="button" class="cdg-mini" onclick="infCopiar('${infEsc(v.url)}','Link do vídeo de ${infEsc(v.nome).replace(/'/g,'')} copiado. É só colar para o cliente.')">copiar link</button></div>
+    </div>`).join('');
   const tab = k => lista(infLista(d[k]));
   box.innerHTML = `<div class="vg inf">${topo}
       ${infSec('Planos','valor mensal · use estes valores com o cliente', planos?`<div class="vg-cards">${planos}</div>`:'', 'planos')}
       ${infSec('Todo plano inclui','vale para os três planos', inclusos?`<div class="vg-cards">${inclusos}</div>`:'', 'inclusos')}
       ${infSec('Benefício digital incluso','o cliente escolhe', benef, 'beneficios')}
+      ${infSec('Vídeos de instalação','passo a passo de cada app da PlayHub · copie o link e envie ao cliente', videos?`<div class="vg-cards inf-videos">${videos}</div>`:'', 'videos')}
       ${infSec('Serviços avulsos','contratados à parte, somados à mensalidade', avulsos?`<div class="vg-cards">${avulsos}</div>`:'', 'avulsos')}
       ${infSec('Aplicativo, site e redes','links para enviar ao cliente', (linksCards||acCard)?`<div class="vg-cards">${linksCards}${acCard}</div>`:'', 'app')}
       <div class="inf-2col">
@@ -26890,6 +26900,7 @@ function renderInformacoesEdicao(box){
           <option value="lideranca" ${r.acessos_visivel==='lideranca'?'selected':''}>Só a liderança (gestão e líderes)</option>
         </select></div>
       ${tabela('acessos', [['titulo','Acesso'],['endereco','Endereço (https://...)'],['usuario','Usuário','curto'],['porta','Porta','curto'],['senha','Senha','curto'],['obs','Observações']], {titulo:'',endereco:'',usuario:'',porta:'',senha:'',obs:''}, 'Acessos técnicos')}
+      ${tabela('videos', [['nome','App'],['url','Link do vídeo (https://...)']], {nome:'',url:''}, 'Vídeos de instalação')}
       ${tabela('links', [['titulo','Nome'],['url','Link (https://...)'],['detalhe','Detalhe','curto']], {titulo:'',url:'',detalhe:''}, 'Aplicativo, site e redes')}
       <div class="cdg-box"><div class="cdg-eyebrow">Primeiro acesso do cliente</div>
         <div class="inf-ed-l"><input type="text" class="inf-in" value="${infEsc((r.acesso_cliente||{}).login||'')}" placeholder="Login" oninput="(INF.rascunho.acesso_cliente=INF.rascunho.acesso_cliente||{}).login=this.value">
