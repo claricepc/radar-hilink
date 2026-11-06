@@ -26635,7 +26635,8 @@ function rctGraficos(b){
   Object.keys(CHARTS).filter(k=>k.startsWith('rct-')).forEach(k=>destroyChart(k));
   const labels = b.meses.map(m=>rctNomeMes(m)+(m===b.mesParcial?'*':''));
   const claro = (cor, m) => m===b.mesParcial ? cor+'66' : cor;
-  const eixo = { ticks:{ callback:v=>rctCompacto(v) }, beginAtZero:true };
+  const eixo = { ticks:{ callback:v=>rctCompacto(v), color:'#4b5563' }, grid:{ color:'rgba(0,0,0,.06)' }, beginAtZero:true };
+  const eixoX = { grid:{display:false}, ticks:{ color:'#4b5563', autoSkip:true, maxRotation:0 } };
   const tip = { callbacks:{ label:c=>(c.dataset.label?c.dataset.label+': ':'')+rctMoeda(c.parsed.y) } };
   const el = document.getElementById('rct-ch-principal');
   if(el){
@@ -26647,13 +26648,13 @@ function rctGraficos(b){
       const f = RCT.filial;
       datasets = [{ label:rctNomeFilial(f), data:b.meses.map(m=>b.val(m,f)), backgroundColor:b.meses.map(m=>claro(RCT_COR[rctGrupo(f)],m)), borderRadius:3 }];
     }
-    CHARTS['rct-principal'] = new Chart(el, { type:'bar', data:{ labels, datasets }, options:{ maintainAspectRatio:false, plugins:{ legend:{ display:RCT.filial==='todas', position:'bottom' }, tooltip:tip }, scales:{ x:{ stacked:RCT.filial==='todas', grid:{display:false} }, y:{ ...eixo, stacked:RCT.filial==='todas' } } } });
+    CHARTS['rct-principal'] = new Chart(el, { type:'bar', data:{ labels, datasets }, options:{ maintainAspectRatio:false, plugins:{ barValueLabels:{display:false}, legend:{ display:RCT.filial==='todas', position:'bottom', labels:{ color:'#374151' } }, tooltip:tip }, scales:{ x:{ ...eixoX, stacked:RCT.filial==='todas' }, y:{ ...eixo, stacked:RCT.filial==='todas' } } } });
   }
   b.filiais.forEach(f=>{
     const c = document.getElementById('rct-ch-f'+f); if(!c) return;
     const cor = RCT_COR[rctGrupo(f)];
     CHARTS['rct-f'+f] = new Chart(c, { type:'bar', data:{ labels, datasets:[{ data:b.meses.map(m=>b.val(m,f)), backgroundColor:b.meses.map(m=>RCT_AQUIS.includes(f)&&m<RCT_AQUIS_DESDE ? cor+'8c' : claro(cor,m)), borderRadius:3 }] },
-      options:{ maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:tip }, scales:{ x:{ grid:{display:false}, ticks:{ autoSkip:true, maxRotation:0 } }, y:eixo } } });
+      options:{ maintainAspectRatio:false, plugins:{ barValueLabels:{display:false}, legend:{display:false}, tooltip:tip }, scales:{ x:eixoX, y:eixo } } });
   });
 }
 
