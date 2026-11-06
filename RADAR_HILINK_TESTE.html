@@ -2455,6 +2455,8 @@ h2.section-title .info-btn{margin-left:6px}
 }
 
 .fat-section{margin-top:16px}
+/* Recebimentos/Declaracao de Faturamento: so Clarice e Urbano (06/11/2026). Fica oculto ate o banco confirmar. */
+body:not(.radar-recebimentos-ok) .fat-section{display:none!important}
 .fat-grid{grid-template-columns:minmax(380px,.82fr) minmax(560px,1.18fr)}
 .fat-hint{border:1px solid rgba(80,130,180,.28);background:rgba(10,31,52,.55);border-radius:8px;padding:10px 12px;color:#9db4ce;font-size:11px;line-height:1.45}
 .fat-manual-box{display:none;border:1px solid rgba(0,105,180,.22);background:rgba(0,105,180,.06);border-radius:10px;padding:10px 12px;margin-top:10px;color:#28415d;font-size:11px}
@@ -26067,6 +26069,7 @@ async function radarAplicarPerfil(){
     document.body.classList.toggle('radar-modo-atendente', CD.perfil==='atendente'); try{ radarAplicarModulos(); }catch(e){}
     document.body.classList.toggle('radar-pode-foto', cdPodeGerenciar()); try{ premAvataresCarregar(); }catch(e){}
     const navU = document.querySelector('.nav-item[data-mod="usuarios"]'); if(navU) navU.style.display = cdPodeGerenciar() ? '' : 'none';
+    try{ const rr = await sb.rpc('radar_pode_recebimentos'); document.body.classList.toggle('radar-recebimentos-ok', !rr.error && rr.data===true); }catch(e){ document.body.classList.remove('radar-recebimentos-ok'); }
     if(data?.trocar_senha) radarTrocarSenhaModal();
     if(CD.perfil==='atendente'){ CD.atv.lista=null; go('cobrancaDia'); }
     else if(!CD._abriuInicio && (!STATE.activeMod || STATE.activeMod==='setup' || document.querySelector('.nav-item.active')?.dataset.mod==='setup')){ CD._abriuInicio = true; go('inicio'); }
