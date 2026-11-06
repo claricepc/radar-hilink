@@ -2457,6 +2457,27 @@ h2.section-title .info-btn{margin-left:6px}
 .fat-section{margin-top:16px}
 /* Recebimentos/Declaracao de Faturamento: so Clarice e Urbano (06/11/2026). Fica oculto ate o banco confirmar. */
 body:not(.radar-recebimentos-ok) .fat-section{display:none!important}
+/* RECEITAS: so Clarice e Urbano */
+body:not(.radar-recebimentos-ok) .nav-item[data-mod="receitas"]{display:none!important}
+.rct .cdg-box{margin-top:14px}
+.rct-kpis{grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))!important}
+.rct-card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.rct-select{padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font:inherit;font-size:13px;max-width:100%}
+.rct-chart{position:relative;height:170px}
+.rct-chart.big{height:300px}
+.rct-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
+.rct-grid .cdg-box{margin-top:0}
+.rct-mini-h{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:6px}
+.rct-mini-h span{color:#59595B;font-variant-numeric:tabular-nums}
+.rct-sec{margin:22px 0 10px;font-size:15px;color:#1f2937}
+.rct-tbl{overflow-x:auto}
+.rct-tbl table{font-variant-numeric:tabular-nums;white-space:nowrap}
+.rct-tbl td:not(:first-child),.rct-tbl th:not(:first-child){text-align:right}
+.rct-tbl .rct-parcial{color:#6b7280}
+.rct-tbl tr.rct-tot td{font-weight:700;border-top:2px solid #d1d5db}
+.rct-notas{margin-top:16px;font-size:13px;color:#4b5563}
+.rct-notas summary{cursor:pointer;font-weight:600;color:#1f2937}
+.rct-notas p{margin:6px 0}
 .fat-grid{grid-template-columns:minmax(380px,.82fr) minmax(560px,1.18fr)}
 .fat-hint{border:1px solid rgba(80,130,180,.28);background:rgba(10,31,52,.55);border-radius:8px;padding:10px 12px;color:#9db4ce;font-size:11px;line-height:1.45}
 .fat-manual-box{display:none;border:1px solid rgba(0,105,180,.22);background:rgba(0,105,180,.06);border-radius:10px;padding:10px 12px;margin-top:10px;color:#28415d;font-size:11px}
@@ -3134,6 +3155,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
         <div class="nav-sub" data-cd="carteiras" onclick="go('cobrancaDia');cdSub('carteiras')">Conferir filial x carteira</div>
         <div class="nav-item" data-mod="carneCorreios" onclick="go('carneCorreios')"><span>Envio Correios<small>carn&ecirc; de boletos via e-Carta</small></span></div>
         <div class="nav-item" data-mod="acao" onclick="go('acao')"><span>Estrat&eacute;gia de Atua&ccedil;&atilde;o<small>prioridades e plano de a&ccedil;&atilde;o</small></span></div>
+        <div class="nav-item" data-mod="receitas" onclick="go('receitas')"><span>Receitas<small>recebido por filial e m&ecirc;s</small></span></div>
       </div></div>
     <div class="nav-group nav-hub nav-area collapsed" data-area="comercial"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Comercial</div><div class="nav-group-items">
         <div class="nav-item" data-mod="oportunidades" onclick="go('oportunidades')"><span>Oportunidades<small>upgrade e reativa&ccedil;&atilde;o</small></span></div>
@@ -8561,6 +8583,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
   <div class="module" id="mod-oportunidades"></div>
   <div class="module" id="mod-inicio"></div>
   <div class="module" id="mod-usuarios"></div>
+  <div class="module" id="mod-receitas"></div>
 
   <!-- ====================== MÓDULO: CARNÊ CORREIOS ====================== -->
   <div class="module" id="mod-carneCorreios">
@@ -10708,12 +10731,12 @@ function go(mod){
   if(mod==='setup') mod='inicio';
   // Premiação: sem base carregada, busca direto do IXC (banco) em vez de pedir upload
   // Módulos que usam a base do IXC: sem base carregada, busca direto do banco em vez de pedir upload
-  const SEM_BASE=['setup','historico','propostas','relatorios','carneCorreios','cobrancaDia','oportunidades','inicio','usuarios','tecnica'];
+  const SEM_BASE=['setup','historico','propostas','relatorios','carneCorreios','cobrancaDia','oportunidades','inicio','usuarios','tecnica','receitas'];
   if(!SEM_BASE.includes(mod) && !STATE.processed && typeof ixcCargaUsar==='function' && getRadarUser?.()){
     if(!(IXC_CARGA && IXC_CARGA.carregando)){ toast('Buscando os dados direto do IXC...','success'); ixcCargaUsar(mod); }
     return;
   }
-  if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='oportunidades'&&mod!=='inicio'&&mod!=='usuarios'&&mod!=='tecnica'&&!STATE.processed){toast('Processe a base primeiro','error');return}
+  if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='oportunidades'&&mod!=='inicio'&&mod!=='usuarios'&&mod!=='tecnica'&&mod!=='receitas'&&!STATE.processed){toast('Processe a base primeiro','error');return}
   if((mod==='segmentacao'||mod==='disparo')&&!STATE.campaign){toast('Mapeie uma campanha primeiro','error');mod='mapear'}
   if(!document.getElementById('mod-'+mod)){toast('Módulo não encontrado: '+mod,'error');return}
   document.querySelector(`.nav-item[data-mod="${mod}"]`)?.classList.remove('disabled');
@@ -10786,6 +10809,7 @@ function go(mod){
     if(mod==='historico') renderHistorico();
     if(mod==='cobrancaDia') renderCobrancaDia();
     if(mod==='usuarios') renderUsuarios();
+    if(mod==='receitas') renderReceitas();
   }catch(err){
     console.error('[RADAR] Erro no módulo',mod,err);
     renderModuleError(mod,err);
@@ -26464,6 +26488,186 @@ async function ixcCargaUsar(destino){
   finally{ IXC_CARGA.carregando=false; IXC_CARGA.progresso=''; document.getElementById('loading').classList.remove('show'); ixcCargaRender(); radarFixoRender(); }
 }
 window.ixcCargaAtualizar=ixcCargaAtualizar; window.ixcCargaUsar=ixcCargaUsar; window.ixcCargaRender=ixcCargaRender;
+/* ===================== RECEITAS: recebido por filial e mês (só Clarice e Urbano) ===================== */
+const RCT = { dados:null, erro:null, carregando:false, timer:null, filial:'todas' };
+const RCT_NOMES = {'1':'Hilink Recife','4':'Hilink Madalena','5':'Igarassu, Itapissuma e Itamaracá','6':'Hilink Jaboatão','7':'Hilink IG/Cohab','10':'Filial 10','13':'Nandonet','14':'Pablom'};
+const RCT_ORDEM = ['1','6','5','7','4','13','14','10'];
+const RCT_HILINK = ['1','4','5','6','7'];
+const RCT_AQUIS = ['13','14'];
+const RCT_AQUIS_DESDE = '2026-09';
+const RCT_MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const RCT_COR = { hilink:'#0071BC', aquis:'#2E3192', f10:'#59595B' };
+function rctPode(){ return document.body.classList.contains('radar-recebimentos-ok'); }
+function rctNomeFilial(f){ return RCT_NOMES[f] || ('Filial '+f); }
+function rctNomeMes(m){ const p=String(m).split('-'); return RCT_MESES[Number(p[1])-1]+'/'+String(p[0]).slice(2); }
+function rctData(d){ if(!d) return '-'; const p=String(d).slice(0,10).split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function rctMoeda(v){ return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function rctNum(v){ return Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function rctCompacto(v){ return Number(v||0).toLocaleString('pt-BR',{notation:'compact',maximumFractionDigits:1}); }
+function rctGrupo(f){ return RCT_HILINK.includes(f) ? 'hilink' : RCT_AQUIS.includes(f) ? 'aquis' : 'f10'; }
+function rctEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function rctCarregar(){
+  if(RCT.carregando) return;
+  RCT.carregando = true;
+  try{
+    const r = await getSB().rpc('radar_receita_dados');
+    if(r.error) throw new Error(r.error.message);
+    RCT.dados = r.data || {}; RCT.erro = null;
+  }catch(e){ RCT.erro = e.message; }
+  RCT.carregando = false;
+  if(STATE.activeMod==='receitas') renderReceitas();
+}
+function rctAndamento(){
+  const u = RCT.dados && RCT.dados.ultima_leitura;
+  return u && (u.status==='buscando' || u.status==='mapeando') ? u : null;
+}
+async function rctAtualizar(){
+  try{
+    const r = await getSB().rpc('radar_receita_atualizar');
+    if(r.error) throw new Error(r.error.message);
+    toast('Leitura das receitas pedida ao IXC. Leva de 15 a 25 minutos. Pode continuar usando o Radar.','success');
+  }catch(e){ toast(e.message,'error'); }
+  rctCarregar();
+}
+// Monta a grade mês x filial a partir das linhas gravadas
+function rctBase(){
+  const d = RCT.dados || {}, linhas = Array.isArray(d.linhas) ? d.linhas : [];
+  const meses = [...new Set(linhas.map(l=>l.mes))].sort();
+  const filiais = RCT_ORDEM.filter(f=>linhas.some(l=>l.filial===f)).concat([...new Set(linhas.map(l=>l.filial))].filter(f=>!RCT_ORDEM.includes(f)).sort());
+  const v = {}, n = {};
+  linhas.forEach(l=>{ v[l.mes+'|'+l.filial] = Number(l.recebido)||0; n[l.mes+'|'+l.filial] = Number(l.recebimentos)||0; });
+  const ate = d.ate ? String(d.ate).slice(0,10) : '';
+  const ultimoDia = ate ? new Date(Number(ate.slice(0,4)), Number(ate.slice(5,7)), 0).getDate() : 0;
+  const mesParcial = ate && Number(ate.slice(8,10)) < ultimoDia ? ate.slice(0,7) : null;
+  return { d, meses, filiais, v, n, mesParcial, val:(m,f)=>v[m+'|'+f]||0, qtd:(m,f)=>n[m+'|'+f]||0 };
+}
+function rctTotais(b){
+  let total=0, hilink=0, aquisDesde=0, completo=0, mesesCompletos=0;
+  b.meses.forEach(m=>{
+    let doMes=0;
+    b.filiais.forEach(f=>{ const x=b.val(m,f); total+=x; doMes+=x; if(RCT_HILINK.includes(f)) hilink+=x; if(RCT_AQUIS.includes(f) && m>=RCT_AQUIS_DESDE) aquisDesde+=x; });
+    if(m!==b.mesParcial){ completo+=doMes; mesesCompletos++; }
+  });
+  return { total, hilink, aquisDesde, regra:hilink+aquisDesde, media: mesesCompletos ? completo/mesesCompletos : 0, mesesCompletos };
+}
+
+function renderReceitas(){
+  const box = document.getElementById('mod-receitas'); if(!box) return;
+  clearTimeout(RCT.timer);
+  if(!rctPode()){
+    box.innerHTML = `<div class="section compact-section"><h2 class="section-title">RECEITAS</h2><p class="cdg-nota">Acesso restrito. Este módulo é liberado apenas para Clarice e Urbano.</p></div>`;
+    return;
+  }
+  if(!RCT.dados && !RCT.erro){
+    box.innerHTML = `<div class="section compact-section"><h2 class="section-title">RECEITAS</h2><p class="cdg-nota">Carregando as receitas...</p></div>`;
+    rctCarregar(); return;
+  }
+  if(RCT.erro && !RCT.dados){
+    box.innerHTML = `<div class="section compact-section"><h2 class="section-title">RECEITAS</h2><div class="cdg-alerta warn"><i></i><div><b>Não consegui ler as receitas.</b> ${rctEsc(RCT.erro)}</div></div></div>`;
+    return;
+  }
+  const b = rctBase(), t = rctTotais(b), d = b.d, and = rctAndamento(), ult = d.ultima_leitura;
+  const falhou = ult && ult.status==='erro' && (!d.atualizado_em || new Date(ult.criado_em) > new Date(d.atualizado_em));
+  if(and) RCT.timer = setTimeout(rctCarregar, 15000);
+
+  const progresso = and ? `Lendo o IXC: ${Number(and.lidos||0).toLocaleString('pt-BR')}${and.total?' de '+Number(and.total).toLocaleString('pt-BR'):''} movimentos` : '';
+  const status = `<div class="cdg-status">
+      <span class="cdg-pill ${and?'warn':'ok'}">${and?'Atualizando':'Dados gravados'}</span>
+      <span>Recebido de <b>${rctData(d.de)}</b> a <b>${rctData(d.ate)}</b>. Atualizado em <b>${d.atualizado_em?new Date(d.atualizado_em).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'-'}</b>.</span>
+      <span class="cdg-sp"></span>
+      <button type="button" class="btn sm primary" onclick="rctAtualizar()" ${and?'disabled':''}>${and?progresso:'Atualizar receitas com o IXC'}</button>
+    </div>
+    ${falhou?`<div class="cdg-alerta warn" style="margin:10px 0"><i></i><div><b>A última leitura não terminou.</b> ${rctEsc(ult.erro||'')} Os números abaixo são da leitura anterior, que continua válida.</div></div>`:''}`;
+
+  const num = (rot, v, sub) => `<div class="cdg-num"><div class="l">${rot}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`;
+  const kpis = `<div class="cdg-box"><div class="cdg-eyebrow">Totais do período</div><div class="cdg-numeros rct-kpis">
+      ${num('Total recebido', rctMoeda(t.total), 'todas as filiais do IXC')}
+      ${num('Média mensal', rctMoeda(t.media), t.mesesCompletos+' meses completos')}
+      ${num('Hilink', rctMoeda(t.hilink), 'filiais 1, 4, 5, 6 e 7')}
+      ${num('Nandonet e Pablom', rctMoeda(t.aquisDesde), 'desde 01/09, quando a receita passou a ser da Hilink')}
+      ${num('Receita Hilink pela regra', rctMoeda(t.regra), 'Hilink mais Nandonet e Pablom desde 01/09, sem a filial 10')}
+    </div><div class="cdg-nota">Valor efetivamente pago, pela data do pagamento. ${b.mesParcial?rctNomeMes(b.mesParcial)+' está parcial (até '+rctData(d.ate)+').':''}</div></div>`;
+
+  const opcoes = ['<option value="todas">Todas as filiais (por grupo)</option>'].concat(b.filiais.map(f=>`<option value="${rctEsc(f)}" ${RCT.filial===f?'selected':''}>${rctEsc(f+' '+rctNomeFilial(f))}</option>`)).join('');
+  const grafico = `<div class="cdg-box rct-card"><div class="rct-card-h"><div><div class="cdg-eyebrow">Evolução mensal</div><div class="cdg-nota">Barras por mês. O mês parcial aparece mais claro.</div></div>
+      <select class="rct-select" onchange="RCT.filial=this.value;renderReceitas()">${opcoes}</select></div>
+      <div class="rct-chart big"><canvas id="rct-ch-principal"></canvas></div></div>`;
+
+  const mini = b.filiais.map(f=>`<div class="cdg-box rct-card"><div class="rct-mini-h"><b>${rctEsc(f+' '+rctNomeFilial(f))}</b><span>${rctMoeda(b.meses.reduce((s,m)=>s+b.val(m,f),0))}</span></div>
+      ${RCT_AQUIS.includes(f)?'<div class="cdg-nota">Receita da Hilink só a partir de setembro</div>':''}
+      <div class="rct-chart"><canvas id="rct-ch-f${rctEsc(f)}"></canvas></div></div>`).join('');
+
+  const cab = b.meses.map(m=>`<th class="${m===b.mesParcial?'rct-parcial':''}">${rctNomeMes(m)}${m===b.mesParcial?' (parcial)':''}</th>`).join('');
+  const linhasFil = b.filiais.map(f=>`<tr><td>${rctEsc(f+' '+rctNomeFilial(f))}</td>${b.meses.map(m=>`<td class="${m===b.mesParcial?'rct-parcial':''}">${rctNum(b.val(m,f))}</td>`).join('')}<td><b>${rctNum(b.meses.reduce((s,m)=>s+b.val(m,f),0))}</b></td></tr>`).join('');
+  const totMes = m => b.filiais.reduce((s,f)=>s+b.val(m,f),0);
+  const tabFil = `<div class="cdg-box rct-card"><div class="rct-card-h"><div><div class="cdg-eyebrow">Mensal por filial</div><div class="cdg-nota">Valores em reais.</div></div>
+      <button type="button" class="btn sm" onclick="rctCsv()">Baixar CSV</button></div>
+      <div class="rct-tbl"><table class="decision-table"><thead><tr><th>Filial</th>${cab}<th>Total</th></tr></thead>
+      <tbody>${linhasFil}<tr class="rct-tot"><td>Total</td>${b.meses.map(m=>`<td class="${m===b.mesParcial?'rct-parcial':''}">${rctNum(totMes(m))}</td>`).join('')}<td>${rctNum(t.total)}</td></tr></tbody></table></div></div>`;
+
+  const g = (m, grp) => b.filiais.filter(f=>rctGrupo(f)===grp).reduce((s,f)=>s+b.val(m,f),0);
+  const pag = m => b.filiais.reduce((s,f)=>s+b.qtd(m,f),0);
+  const tabCons = `<div class="cdg-box rct-card"><div class="cdg-eyebrow">Consolidado</div><div class="cdg-nota">Soma de todas as filiais em cada mês.</div>
+      <div class="rct-tbl"><table class="decision-table"><thead><tr><th>Mês</th><th>Hilink</th><th>Nandonet e Pablom</th><th>Filial 10</th><th>Total</th><th>Pagamentos</th></tr></thead><tbody>
+      ${b.meses.map(m=>`<tr class="${m===b.mesParcial?'rct-parcial':''}"><td>${rctNomeMes(m)}${m===b.mesParcial?' (parcial)':''}</td><td>${rctNum(g(m,'hilink'))}</td><td>${rctNum(g(m,'aquis'))}</td><td>${rctNum(g(m,'f10'))}</td><td><b>${rctNum(totMes(m))}</b></td><td>${pag(m).toLocaleString('pt-BR')}</td></tr>`).join('')}
+      <tr class="rct-tot"><td>Total</td><td>${rctNum(b.meses.reduce((s,m)=>s+g(m,'hilink'),0))}</td><td>${rctNum(b.meses.reduce((s,m)=>s+g(m,'aquis'),0))}</td><td>${rctNum(b.meses.reduce((s,m)=>s+g(m,'f10'),0))}</td><td>${rctNum(t.total)}</td><td>${b.meses.reduce((s,m)=>s+pag(m),0).toLocaleString('pt-BR')}</td></tr>
+      </tbody></table></div></div>`;
+
+  box.innerHTML = `<div class="section compact-section rct">
+      <h2 class="section-title">RECEITAS</h2>
+      ${status}${kpis}${grafico}
+      <h3 class="rct-sec">Evolução mensal por filial</h3><div class="rct-grid">${mini}</div>
+      ${tabFil}
+      <h3 class="rct-sec">Consolidado</h3>${tabCons}
+      <details class="rct-notas"><summary>Como os números são calculados</summary>
+        <p><b>Receita recebida:</b> soma dos valores pagos de títulos a receber no IXC, pela data do pagamento (regime de caixa). Não é o faturado por competência.</p>
+        <p><b>Filial:</b> a filial registrada no movimento financeiro do IXC.</p>
+        <p><b>Atualização:</b> só pelo botão. A leitura vai de 01/01 do ano até ontem, porque os pagamentos de hoje ainda estão entrando.</p>
+        <p><b>Nandonet e Pablom:</b> a Hilink assumiu as receitas em 01/09/2026. Os meses anteriores aparecem para comparação, mas não entram na receita Hilink pela regra.</p>
+      </details>
+    </div>`;
+  rctGraficos(b);
+}
+
+function rctGraficos(b){
+  if(typeof Chart==='undefined') return;
+  Object.keys(CHARTS).filter(k=>k.startsWith('rct-')).forEach(k=>destroyChart(k));
+  const labels = b.meses.map(m=>rctNomeMes(m)+(m===b.mesParcial?'*':''));
+  const claro = (cor, m) => m===b.mesParcial ? cor+'66' : cor;
+  const eixo = { ticks:{ callback:v=>rctCompacto(v) }, beginAtZero:true };
+  const tip = { callbacks:{ label:c=>(c.dataset.label?c.dataset.label+': ':'')+rctMoeda(c.parsed.y) } };
+  const el = document.getElementById('rct-ch-principal');
+  if(el){
+    let datasets;
+    if(RCT.filial==='todas'){
+      const grupos = [['hilink','Hilink'],['aquis','Nandonet e Pablom'],['f10','Filial 10']];
+      datasets = grupos.map(([k,nome])=>({ label:nome, data:b.meses.map(m=>b.filiais.filter(f=>rctGrupo(f)===k).reduce((s,f)=>s+b.val(m,f),0)), backgroundColor:b.meses.map(m=>claro(RCT_COR[k],m)), borderRadius:3, stack:'s' }));
+    } else {
+      const f = RCT.filial;
+      datasets = [{ label:rctNomeFilial(f), data:b.meses.map(m=>b.val(m,f)), backgroundColor:b.meses.map(m=>claro(RCT_COR[rctGrupo(f)],m)), borderRadius:3 }];
+    }
+    CHARTS['rct-principal'] = new Chart(el, { type:'bar', data:{ labels, datasets }, options:{ maintainAspectRatio:false, plugins:{ legend:{ display:RCT.filial==='todas', position:'bottom' }, tooltip:tip }, scales:{ x:{ stacked:RCT.filial==='todas', grid:{display:false} }, y:{ ...eixo, stacked:RCT.filial==='todas' } } } });
+  }
+  b.filiais.forEach(f=>{
+    const c = document.getElementById('rct-ch-f'+f); if(!c) return;
+    const cor = RCT_COR[rctGrupo(f)];
+    CHARTS['rct-f'+f] = new Chart(c, { type:'bar', data:{ labels, datasets:[{ data:b.meses.map(m=>b.val(m,f)), backgroundColor:b.meses.map(m=>RCT_AQUIS.includes(f)&&m<RCT_AQUIS_DESDE ? cor+'8c' : claro(cor,m)), borderRadius:3 }] },
+      options:{ maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:tip }, scales:{ x:{ grid:{display:false}, ticks:{ autoSkip:true, maxRotation:0 } }, y:eixo } } });
+  });
+}
+
+function rctCsv(){
+  const b = rctBase(); if(!b.meses.length){ toast('Sem dados para baixar.','warn'); return; }
+  const linhas = [['mes','filial','nome_filial','recebido','pagamentos','parcial'].join(';')];
+  b.meses.forEach(m=>b.filiais.forEach(f=>linhas.push([m,f,rctNomeFilial(f),rctNum(b.val(m,f)),b.qtd(m,f),m===b.mesParcial?'sim':'nao'].join(';'))));
+  const blob = new Blob(['﻿'+linhas.join('\r\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'receitas_por_filial_'+String(b.d.de||'').slice(0,10)+'_a_'+String(b.d.ate||'').slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+Object.assign(window, { renderReceitas, rctAtualizar, rctCsv, RCT });
+
 /* Botão fixo: Atualizar todos os dados (IXC, OPA e planilha) com registro da última leitura */
 function radarFixoUltimaLeitura(st){
   const ts = Object.values((st&&st.tipos)||{}).map(x=>x&&x.atualizado_em?new Date(x.atualizado_em).getTime():0).filter(Boolean);
@@ -26511,8 +26715,8 @@ window.radarFixoRender=radarFixoRender; window.radarFixoAtualizar=radarFixoAtual
 document.addEventListener('DOMContentLoaded', ()=>setTimeout(radarFixoRender, 2500));
 
 /* ===================== NAVEGACAO POR AREAS (versao NOVO) ===================== */
-const RADAR_AREA_DE = { inicio:'Início', cobrancaDia:'Financeiro', carneCorreios:'Financeiro', acao:'Financeiro', oportunidades:'Comercial', premiacoes:'Comercial', propostas:'Comercial', tecnica:'Rede', setup:'Configurações', relatorios:'Configurações', usuarios:'Configurações' };
-const RADAR_NOME_DE = { inicio:'Visão geral', cobrancaDia:'Cobrança do Dia', carneCorreios:'Envio Correios', acao:'Estratégia de Atuação', oportunidades:'Oportunidades', premiacoes:'Premiação', propostas:'Propostas Corporativas', tecnica:'Saúde da Rede', setup:'Carregar Relatórios', relatorios:'Relatórios Personalizados', usuarios:'Usuários e acessos' };
+const RADAR_AREA_DE = { inicio:'Início', cobrancaDia:'Financeiro', carneCorreios:'Financeiro', acao:'Financeiro', receitas:'Financeiro', oportunidades:'Comercial', premiacoes:'Comercial', propostas:'Comercial', tecnica:'Rede', setup:'Configurações', relatorios:'Configurações', usuarios:'Configurações' };
+const RADAR_NOME_DE = { inicio:'Visão geral', cobrancaDia:'Cobrança do Dia', carneCorreios:'Envio Correios', acao:'Estratégia de Atuação', receitas:'Receitas', oportunidades:'Oportunidades', premiacoes:'Premiação', propostas:'Propostas Corporativas', tecnica:'Saúde da Rede', setup:'Carregar Relatórios', relatorios:'Relatórios Personalizados', usuarios:'Usuários e acessos' };
 // Menu no estilo do IXC: só os títulos das áreas aparecem; quem quiser abre a área e depois o módulo.
 // Abrir uma área fecha as outras. Início fica sempre aberto.
 function radarAreaToggle(el){
