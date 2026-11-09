@@ -3289,7 +3289,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
         <div class="nav-sub" data-tec="tecnico" onclick="go('tecnica');tecSub('tecnico')">Painel técnico completo</div>
       </div></div>
     <div class="nav-group nav-hub nav-area collapsed" data-area="equipe"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Equipe</div><div class="nav-group-items">
-        <div class="nav-item" data-mod="informacoes" onclick="go('informacoes')"><span>Informa&ccedil;&otilde;es gerais<small>planos, valores e taxas</small></span></div>
+        <div class="nav-item nav-item-sub" data-mod="informacoes" onclick="go('informacoes')"><span>Informações gerais</span></div>
         <div class="nav-sub nav-sub-fixo" data-cd="atividades" onclick="radarIrAtividades()">Atividades da equipe</div>
         <div class="nav-sub nav-sub-fixo" data-cd="decisoes" onclick="go('cobrancaDia');cdSub('decisoes')">Decisão da gerência</div>
         <div class="nav-sub nav-sub-fixo" data-cd="desempenho" onclick="go('cobrancaDia');cdSub('desempenho')">Desempenho da equipe</div>
@@ -27075,7 +27075,7 @@ function radarAreaDoModulo(mod){
 document.querySelectorAll('.nav-area .nav-item').forEach(item=>{
   const subs=[];
   for(let el=item.nextElementSibling;el?.classList.contains('nav-sub');el=el.nextElementSibling)subs.push(el);
-  if(!subs.length)return;
+  if(!subs.length||item.classList.contains('nav-item-sub'))return;
   const navigate=item.onclick;
   item.setAttribute('role','button');
   item.setAttribute('tabindex','0');
@@ -28544,6 +28544,8 @@ html[data-radar-tema="claro"] .sidebar .nav-group{padding:4px 0 10px;border-bott
 html[data-radar-tema="claro"] .sidebar .nav-group:last-of-type{border-bottom:0}
 html[data-radar-tema="claro"] .sidebar .nav-section{color:#8DB5DE!important;font-size:10.5px!important;font-weight:800!important;letter-spacing:.12em!important;text-transform:uppercase;padding:14px 12px 8px!important;opacity:1!important}
 html[data-radar-tema="claro"] .sidebar .nav-item{color:#EAF1F9!important;background:transparent!important;font-size:13.5px!important;font-weight:700!important;padding:10px 12px!important;border-radius:8px!important;margin-bottom:3px!important;border:0!important;box-shadow:none!important;transition:background .15s}
+.sidebar .nav-area.nav-hub .nav-item.nav-item-sub{padding:6px 14px 6px 28px!important;font-size:12px!important;font-weight:400!important;border-radius:6px!important;margin-bottom:0!important;opacity:.85}.sidebar .nav-area.nav-hub .nav-item.nav-item-sub:hover{background:rgba(77,163,224,.12)!important;opacity:1}.sidebar .nav-area.nav-hub .nav-item.nav-item-sub.active{font-weight:800!important;opacity:1;color:#2da3ff!important;background:transparent!important}
+.sidebar .nav-hub .nav-item.nav-item-sub > span{text-transform:none;letter-spacing:0}.sidebar .nav-item.nav-item-sub::after{content:none!important}
 html[data-radar-tema="claro"] .sidebar .nav-item small{color:rgba(234,241,249,.62)!important;font-size:11px!important;font-weight:500!important;margin-top:3px!important;opacity:1!important}
 html[data-radar-tema="claro"] .sidebar .nav-item:hover{background:rgba(255,255,255,.08)!important}
 html[data-radar-tema="claro"] .sidebar .nav-item.disabled{opacity:.55}
