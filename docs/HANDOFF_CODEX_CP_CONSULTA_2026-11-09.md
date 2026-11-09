@@ -15,7 +15,7 @@ Nenhuma chamada de escrita no IXC. Nenhum lancamento ou extrato foi modificado.
 ## Base de trabalho e preservacao
 
 - Checkout isolado: C:\Hilink\RADAR HILINK\_cp_consulta_codex_20261109.
-- Base: main 7deae4a10f4ab6d8cd24f08e61a845b46dfc5d35, clonada da producao.
+- Base efetivamente conferida antes de publicar: main 5950c00d5626fc4b5652236a8093fcac4fa68c26.
 - O HTML recebeu somente os pontos de integracao do novo modulo cp; 27 modulos
   anteriores continuam presentes. Isso nao substitui teste funcional de regressao.
 - NOVO e TESTE nao foram sobrescritos. Nao copiar NOVO por cima da producao.
@@ -128,3 +128,48 @@ o acesso tecnico ja criado, administrador pode executar ALTER ROLE
 radar_cp_consulta NOLOGIN; para desfazer a integracao depois, remover somente
 o menu/inclusoes cp e revogar o papel dedicado. Nao executar DROP OWNED global
 nem remover tabelas, lancamentos, policies de outros papeis ou dados do IXC.
+
+## Atualizacao: publicacao autorizada em 09/11/2026
+
+Clarice autorizou publicar e informou que Claude esta ausente ate quarta.
+Esta secao atualiza os estados preparatorios descritos acima.
+
+- Nova Edge Function contas-pagar-consulta publicada no Radar: ACTIVE, versao 1,
+  verify_jwt=true; nenhuma outra Edge Function substituida.
+- Commit 75bb535 publicado em main. GitHub Pages concluiu build/deploy com sucesso.
+- Teste real usando a sessao ja aberta de Clarice: menu, acesso, consulta por
+  competencia em novembro e outubro, e achados registrados na Auditoria.
+- O agregado de novembro exibido na tela foi comparado com SELECT independente
+  na fonte e coincidiu. Valores detalhados nao foram publicados neste documento.
+- TCP/TLS e uso da credencial do Vault funcionaram pelo servidor em producao.
+- Chamada sem autenticacao retornou HTTP 401. Casos de usuario inativo/sem
+  autorizacao continuam testados localmente; nao houve troca de cadastro ou
+  criacao de sessao falsa para testar usuarios reais.
+- DRE/caixa continuam parciais, extratos continuam com a cobertura antiga.
+- Ajustes posteriores: formato da data da rodada, trilha de navegacao e ocultacao
+  dos selos genericos de processamento local/multicampanha dentro deste modulo.
+- Sem pagamentos, alteracoes de lancamentos, conciliacoes, cron ou escrita IXC.
+
+## Informacoes gerais: solicitacao adicional de Clarice
+
+- Hierarquia: Planos e beneficios; Taxas e servicos; Vencimentos e pagamento;
+  Aplicativo e canais do cliente; Procedimentos e padroes; Acessos tecnicos.
+- Mesh/aplicativos adicionais e materiais reunidos sob Taxas e servicos, com
+  subtitulos distintos para taxa e adicional mensal. Dados e precos anteriores
+  preservados; campos de edicao existentes continuam funcionando.
+- Informacao regional adicionada no Supabase do Radar, chave principal de
+  radar_info_geral: instalacao de R$ 150,00 + pre-pago do plano apenas na area de
+  Itamaraca da filial 5 (Hilink Igarassu). Nenhum cadastro/titulo do IXC alterado.
+- O texto geral que prometia instalacao gratuita foi ajustado para conter essa
+  excecao; evita contradicao tambem no texto de plano copiado para o cliente.
+- Novo objeto dados.cobranca com vencimentos 5, 10, 15, 20 e 25, orientacao para
+  sabado/domingo/feriado e mensagem pronta. O adiamento so vale no mes afetado;
+  dia escolhido continua nos meses seguintes. Nao ha calculo de feriados/data
+  especifica nem alteracao automatica de vencimentos de boletos.
+- Mensagem pode ser copiada e editada pela gestao no editor existente. Nao foi
+  acrescentada promessa sobre juros, multa ou condicoes nao informadas.
+- Backup local dos tres campos alterados (sem acessos/senhas):
+  C:\Hilink\RADAR HILINK\outputs\INFO_GERAIS_2026-11-09_ANTES.json.
+- scripts/test-informacoes.cjs verifica agrupamento do Mesh, escopo regional,
+  datas, texto copiado, busca e edicao sem alterar o original antes de Salvar,
+  desktop/mobile. As fixtures nao contem acessos/senhas reais.

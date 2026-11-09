@@ -3,7 +3,7 @@
 <head>
 <meta name="radar-build" content="20261103114525">
 <meta charset="UTF-8">
-<link rel="stylesheet" href="contas-pagar.css?v=20261109-consulta1">
+<link rel="stylesheet" href="contas-pagar.css?v=20261109-consulta2">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -2506,6 +2506,10 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .inf-linha:last-child{border-bottom:0}
 .inf .inf-linha span{display:block;font-size:12px;color:var(--texto-3)}
 .inf .inf-valor{font:800 15px var(--font-titulo);color:var(--texto);white-space:nowrap;font-variant-numeric:tabular-nums}
+.inf .inf-subtitulo{font-size:13px;margin:18px 0 8px;color:var(--texto);font-weight:700;letter-spacing:0}
+.inf .inf-vencimentos{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+.inf .inf-dia{display:inline-grid;place-items:center;width:40px;height:36px;border:1px solid var(--linha);border-radius:4px;color:var(--azul-forte);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.inf .inf-texto-cliente{white-space:pre-wrap;font-size:13px;line-height:1.6;color:var(--texto);border-left:3px solid var(--azul);padding:8px 12px;margin:12px 0}
 .inf .inf-campos{display:grid;gap:6px;margin-top:8px}
 .inf .inf-campo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--texto)}
 .inf .inf-campo>span{flex:0 0 74px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--texto-3)}
@@ -26755,6 +26759,8 @@ function infCopiar(txt, msg){
   navigator.clipboard.writeText(String(txt||'')).then(()=>toast(msg||'Copiado.','success'),()=>toast('Não consegui copiar. Selecione e copie manualmente.','warn'));
 }
 function infCopiarSenha(i){ const a = infLista((INF.dados||{}).acessos)[i]; if(a) infCopiar(a.senha, 'Senha copiada.'); }
+function infCopiarVencimentos(){ const texto=(INF.dados||{}).cobranca?.texto_cliente; if(texto)infCopiar(texto,'Texto dos vencimentos copiado.'); }
+function infCobrancaCampo(campo,el){ const r=INF.rascunho; if(r) (r.cobranca=r.cobranca||{})[campo]=el.value; }
 function infBuscar(v){
   INF.busca = String(v||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
   document.querySelectorAll('#mod-informacoes [data-inf-busca]').forEach(el=>{
@@ -26838,18 +26844,23 @@ function renderInformacoes(){
       <div class="inf-campos">${ac.login?`<div class="inf-campo"><span>Login</span><b>${infEsc(ac.login)}</b></div>`:''}${ac.senha?`<div class="inf-campo"><span>Senha padrão</span><b class="inf-senha">${infEsc(ac.senha)}</b><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.acesso_cliente.senha,'Senha copiada.')">copiar</button></div>`:''}</div>
     </div>` : '';
   const tab = k => lista(infLista(d[k]));
+  const cobranca=d.cobranca||{};
+  const pagamento=infLista(cobranca.vencimentos).length?`<div data-inf-busca="${infChave('cobranca pagamento vencimentos dias uteis feriados',cobranca.regra_dia_nao_util,cobranca.texto_cliente)}">
+      <div class="inf-vencimentos" aria-label="Dias de vencimento">${infLista(cobranca.vencimentos).map(dia=>`<span class="inf-dia">${infEsc(dia)}</span>`).join('')}</div>
+      <p class="vg-s">${infEsc(cobranca.regra_dia_nao_util||'')}</p>
+      ${cobranca.texto_cliente?`<h4 class="inf-subtitulo">Mensagem para o cliente</h4><div class="inf-texto-cliente">${infEsc(cobranca.texto_cliente)}</div><button type="button" class="btn sm" onclick="infCopiarVencimentos()">Copiar mensagem</button>`:''}
+    </div>`:'';
+  const taxasServicos=(tab('taxas')?`<h4 class="inf-subtitulo">Instalação, mudanças e outras taxas</h4>${tab('taxas')}`:'')+
+    (avulsos?`<h4 class="inf-subtitulo">Serviços adicionais à mensalidade</h4><div class="vg-cards">${avulsos}</div>`:'')+
+    (tab('materiais')?`<h4 class="inf-subtitulo">Materiais avulsos · venda de produtos</h4>${tab('materiais')}`:'');
   box.innerHTML = `<div class="vg inf">${topo}
-      ${infSec('Planos','valor mensal · use estes valores com o cliente', planos?`<div class="vg-cards">${planos}</div>`:'', 'planos')}
-      ${infSec('Todo plano inclui','vale para os três planos', inclusos?`<div class="vg-cards">${inclusos}</div>`:'', 'inclusos')}
-      ${infSec('Benefício digital incluso','o cliente escolhe', benef, 'beneficios')}
-      ${infSec('Serviços avulsos','contratados à parte, somados à mensalidade', avulsos?`<div class="vg-cards">${avulsos}</div>`:'', 'avulsos')}
-      ${infSec('Aplicativo, site e redes','links para enviar ao cliente', (linksCards||acCard)?`<div class="vg-cards">${linksCards}${acCard}</div>`:'', 'app')}
-      <div class="inf-2col">
-        ${infSec('Taxas e serviços','valores cobrados do cliente', tab('taxas'), 'taxas')}
-        ${infSec('Materiais avulsos','venda de produtos', tab('materiais'), 'materiais')}
-      </div>
-      ${infSec('Procedimentos e padrões','como fazer, do jeito Hilink', procs, 'procs')}
-      ${infSec('Acessos técnicos', d.acessos_visivel==='lideranca'?'visível só para a liderança':'roteadores e plataformas', acessos?`<div class="vg-cards">${acessos}</div>`:'', 'acessos')}
+      ${infSec('1. Planos e benefícios','valores mensais e o que está incluído',
+        (planos?`<div class="vg-cards">${planos}</div>`:'')+(inclusos?`<h4 class="inf-subtitulo">Todo plano inclui</h4><div class="vg-cards">${inclusos}</div>`:'')+(benef?`<h4 class="inf-subtitulo">Benefício digital incluso</h4>${benef}`:''), 'planos')}
+      ${infSec('2. Taxas e serviços','instalação, adicionais e materiais', taxasServicos, 'taxas')}
+      ${infSec('3. Vencimentos e pagamento','dia contratado e ajuste para dia útil', pagamento, 'cobranca')}
+      ${infSec('4. Aplicativo e canais do cliente','primeiro acesso e links oficiais', (linksCards||acCard)?`<div class="vg-cards">${acCard}${linksCards}</div>`:'', 'app')}
+      ${infSec('5. Procedimentos e padrões','rotinas de atendimento e suporte', procs, 'procs')}
+      ${infSec('6. Acessos técnicos', d.acessos_visivel==='lideranca'?'visível só para a liderança':'roteadores e plataformas', acessos?`<div class="vg-cards">${acessos}</div>`:'', 'acessos')}
     </div>`;
   if(INF.busca) infBuscar(INF.busca);
 }
@@ -26889,8 +26900,12 @@ function renderInformacoesEdicao(box){
         <input type="text" class="inf-in" value="${infEsc(r.beneficios_texto||'')}" placeholder="Texto de apoio" oninput="infTexto('beneficios_texto',this,false)">
         <input type="text" class="inf-in" value="${infEsc(r.beneficios_video_geral||'')}" placeholder="Vídeo geral de instalação do app PlayHub (https://...)" oninput="infTexto('beneficios_video_geral',this,false)" style="margin-top:6px"></div>
       ${tabela('beneficios', [['nome','App'],['video','Link do vídeo de instalação (https://...)']], {nome:'',video:''}, 'Apps do benefício digital')}
-      ${tabela('avulsos', [['nome','Serviço'],['valor','Valor','curto'],['unidade','Unidade (ex.: por mês)'],['detalhe','Descrição']], {nome:'',valor:'',unidade:'por mês',detalhe:''}, 'Serviços avulsos')}
-      ${INF_TABELAS.map(t=>tabela(t.k, [['nome',t.cols[0][1]],['valor','Valor','curto'],['detalhe','Observações']], {nome:'',valor:'',detalhe:''}, t.titulo)).join('')}
+      ${tabela('taxas', [['nome','Serviço'],['valor','Valor','curto'],['detalhe','Condição e região']], {nome:'',valor:'',detalhe:''}, 'Taxas e serviços · instalação e outras taxas')}
+      ${tabela('avulsos', [['nome','Serviço'],['valor','Valor','curto'],['unidade','Unidade (ex.: por mês)'],['detalhe','Descrição']], {nome:'',valor:'',unidade:'por mês',detalhe:''}, 'Taxas e serviços · adicionais à mensalidade (Mesh e aplicativos)')}
+      ${tabela('materiais', [['nome','Item'],['valor','Valor','curto'],['detalhe','Observações']], {nome:'',valor:'',detalhe:''}, 'Taxas e serviços · materiais avulsos')}
+      <div class="cdg-box"><div class="cdg-eyebrow">Vencimentos e pagamento · dias 5, 10, 15, 20 e 25</div>
+        <label>Regra para dia não útil<textarea class="inf-ta" rows="3" oninput="infCobrancaCampo('regra_dia_nao_util',this)">${infEsc((r.cobranca||{}).regra_dia_nao_util||'')}</textarea></label>
+        <label>Mensagem para copiar e enviar ao cliente<textarea class="inf-ta" rows="4" oninput="infCobrancaCampo('texto_cliente',this)">${infEsc((r.cobranca||{}).texto_cliente||'')}</textarea></label></div>
       ${tabela('procedimentos', [['titulo','Título'],['texto','Como fazer']], {titulo:'',texto:''}, 'Procedimentos e padrões')}
       <div class="cdg-box"><div class="cdg-eyebrow">Quem vê os acessos técnicos</div>
         <select class="inf-in" onchange="INF.rascunho.acessos_visivel=this.value">
@@ -26908,7 +26923,7 @@ function renderInformacoesEdicao(box){
         <button type="button" id="inf-salvar" class="btn sm primary" onclick="infSalvar()">Salvar para todo o time</button></div>
     </div>`;
 }
-Object.assign(window, { infCopiar, infCopiarSenha, renderInformacoes, infEditar, infCancelar, infCampo, infTexto, infAdd, infDel, infSalvar, infCopiarPlano, infBuscar });
+Object.assign(window, { infCopiar, infCopiarSenha, infCopiarVencimentos, infCobrancaCampo, renderInformacoes, infEditar, infCancelar, infCampo, infTexto, infAdd, infDel, infSalvar, infCopiarPlano, infBuscar });
 
 /* Botão fixo: Atualizar todos os dados (IXC, OPA e planilha) com registro da última leitura */
 function radarFixoUltimaLeitura(st){
@@ -26957,8 +26972,8 @@ window.radarFixoRender=radarFixoRender; window.radarFixoAtualizar=radarFixoAtual
 document.addEventListener('DOMContentLoaded', ()=>setTimeout(radarFixoRender, 2500));
 
 /* ===================== NAVEGACAO POR AREAS (versao NOVO) ===================== */
-const RADAR_AREA_DE = { inicio:'Início', cobrancaDia:'Contas a receber', carneCorreios:'Contas a receber', acao:'Contas a receber', receitas:'Contas a receber', informacoes:'Equipe', oportunidades:'Comercial', premiacoes:'Comercial', propostas:'Comercial', tecnica:'Rede', setup:'Configurações', relatorios:'Configurações', usuarios:'Configurações' };
-const RADAR_NOME_DE = { inicio:'Visão geral', cobrancaDia:'Cobrança do Dia', carneCorreios:'Envio Correios', acao:'Estratégia de Atuação', receitas:'Receitas', informacoes:'Informações gerais', oportunidades:'Oportunidades', premiacoes:'Premiação', propostas:'Propostas Corporativas', tecnica:'Saúde da Rede', setup:'Carregar Relatórios', relatorios:'Relatórios Personalizados', usuarios:'Usuários e acessos' };
+const RADAR_AREA_DE = { inicio:'Início', cp:'Contas a pagar', cobrancaDia:'Contas a receber', carneCorreios:'Contas a receber', acao:'Contas a receber', receitas:'Contas a receber', informacoes:'Equipe', oportunidades:'Comercial', premiacoes:'Comercial', propostas:'Comercial', tecnica:'Rede', setup:'Configurações', relatorios:'Configurações', usuarios:'Configurações' };
+const RADAR_NOME_DE = { inicio:'Visão geral', cp:'Consulta e auditoria', cobrancaDia:'Cobrança do Dia', carneCorreios:'Envio Correios', acao:'Estratégia de Atuação', receitas:'Receitas', informacoes:'Informações gerais', oportunidades:'Oportunidades', premiacoes:'Premiação', propostas:'Propostas Corporativas', tecnica:'Saúde da Rede', setup:'Carregar Relatórios', relatorios:'Relatórios Personalizados', usuarios:'Usuários e acessos' };
 // Menu no estilo do IXC: só os títulos das áreas aparecem; quem quiser abre a área e depois o módulo.
 // Abrir uma área fecha as outras. Início fica sempre aberto.
 function radarAreaToggle(el){
@@ -32259,5 +32274,5 @@ async function _doGerarCorreiosZip(selecionados){
 <!-- radar-build: opa-csv-drill-2026-06-30-1542 -->
 <script src="faturamento-ixc.js?v=20261104"></script>
 <script src="dici-anatel.js?v=20261104-persist1"></script>
-<script src="contas-pagar.js?v=20261109-consulta1"></script>
+<script src="contas-pagar.js?v=20261109-consulta2"></script>
 </html>

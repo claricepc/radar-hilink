@@ -46,7 +46,7 @@
   function table(rows){
     if(!rows.length)return msg('Nenhum registro localizado neste recorte. Isso não confirma ausência de despesas: confira a cobertura da fonte.');
     const keys=Object.keys(rows[0]).filter(k=>k in labels);
-    return `<div class="cp-table"><table><thead><tr>${keys.map(k=>`<th scope="col">${labels[k]}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${keys.map(k=>`<td class="${amounts.has(k)?'cp-number':''}">${esc(amounts.has(k)?money(row[k]):k.startsWith('data_')?date(row[k]):row[k]??'Não informado')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    return `<div class="cp-table"><table><thead><tr>${keys.map(k=>`<th scope="col">${labels[k]}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${keys.map(k=>`<td class="${amounts.has(k)?'cp-number':''}">${esc(amounts.has(k)?money(row[k]):k.startsWith('data_')||k==='rodada'?date(row[k]):row[k]??'Não informado')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }
   function display(data){
     const b=box();if(!b)return;
