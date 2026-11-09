@@ -2522,9 +2522,9 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .inf-precos-grid .inf-valor{text-align:right;flex:0 0 auto}
 .inf .inf-precos-grid .inf-valor small{display:block;max-width:150px;white-space:normal;font:400 11px var(--font-texto);color:var(--texto-3);margin-top:3px}
 @media(max-width:760px){.inf .inf-precos-grid{grid-template-columns:1fr}}
-.inf .inf-regional{border-left:4px solid var(--atencao);background:var(--atencao-suave);color:var(--texto);padding:14px 16px;margin:14px 0;border-radius:4px;line-height:1.5}
-.inf .inf-regional strong{display:block;font-size:15px;color:var(--atencao)}
-.inf .inf-regional p{margin:5px 0 0;font-size:13px}
+.inf .vg-card.inf-regional{border-left:4px solid var(--atencao);background:var(--atencao-suave);color:var(--texto);margin:0;line-height:1.5}
+.inf .inf-regional strong{display:block;font-size:13px;color:var(--atencao);margin-top:5px}
+.inf .inf-regional p{margin:5px 0 0;font-size:12px}
 .inf .inf-orientacao{font-size:13px;line-height:1.6;color:var(--texto-2);margin:14px 0 0}
 .inf .inf-orientacao h4{margin:0 0 6px;font-size:13px;color:var(--texto)}
 .inf .inf-orientacao ol{margin:0;padding-left:20px}
@@ -26814,7 +26814,11 @@ function renderInformacoes(){
       <div class="vg-x"><button type="button" class="vg-link" onclick="infCopiarPlano(${i})">Copiar texto para o cliente</button></div>
     </div>`).join('');
 
+  const regional=infLista(d.taxas).find(x=>x.id==='instalacao_itamaraca_filial5');
   const inclusos = infLista(d.inclusos).map(x=>{
+    if(regional && /^instalacao\b/.test(String(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())){
+      return `<div class="vg-card inf-card inf-baixo inf-regional" role="note" data-inf-busca="${infChave(x,'instalacao gratuita excecao itamaraca igarassu filial 5',regional.detalhe)}"><div class="vg-l">Instalação</div><strong>Gratuita, exceto em Itamaracá</strong><p>Mediante permanência contratual. Em Itamaracá, na filial 5 (Hilink Igarassu): <b>${preco(regional.valor)}</b> de instalação + valor do pré-pago do plano contratado.</p></div>`;
+    }
     const k = String(x).indexOf(':'), t = k>0 ? x.slice(0,k) : x, s = k>0 ? x.slice(k+1).trim() : '';
     return `<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave(x)}"><div class="vg-l">${infEsc(t)}</div>${s?`<div class="vg-s">${infEsc(s)}</div>`:''}</div>`;
   }).join('');
@@ -26852,8 +26856,6 @@ function renderInformacoes(){
       <div class="inf-campos">${ac.login?`<div class="inf-campo"><span>Login</span><b>${infEsc(ac.login)}</b></div>`:''}${ac.senha?`<div class="inf-campo"><span>Senha padrão</span><b class="inf-senha">${infEsc(ac.senha)}</b><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.acesso_cliente.senha,'Senha copiada.')">copiar</button></div>`:''}</div>
     </div>` : '';
   const tab = k => lista(infLista(d[k]));
-  const regional=infLista(d.taxas).find(x=>x.id==='instalacao_itamaraca_filial5');
-  const destaqueRegional=regional?`<aside class="inf-regional" role="note" data-inf-busca="${infChave('instalacao gratuita excecao itamaraca igarassu filial 5',regional.detalhe)}"><strong>Instalação gratuita, exceto em Itamaracá</strong><p>Na área de Itamaracá da filial 5 (Hilink Igarassu): <b>${preco(regional.valor)}</b> de instalação + valor do pré-pago do plano contratado.</p></aside>`:'';
   const cobranca=d.cobranca||{};
   const pagamento=infLista(cobranca.vencimentos).length?`<div class="inf-pagamento-faixa" data-inf-busca="${infChave('cobranca pagamento vencimentos dias uteis feriados',cobranca.regra_dia_nao_util,cobranca.texto_cliente)}">
       <div class="inf-vencimentos" aria-label="Dias de vencimento">${infLista(cobranca.vencimentos).map(dia=>`<span class="inf-dia">${infEsc(dia)}</span>`).join('')}</div>
@@ -26867,7 +26869,7 @@ function renderInformacoes(){
     </div>`:'';
   box.innerHTML = `<div class="vg inf">${topo}
       ${infSec('1. Planos e benefícios','valores mensais e o que está incluído',
-        (planos?`<div class="vg-cards">${planos}</div>`:'')+destaqueRegional+(inclusos?`<h4 class="inf-subtitulo">Todo plano inclui</h4><div class="vg-cards">${inclusos}</div>`:'')+(benef?`<h4 class="inf-subtitulo">Benefício digital incluso</h4>${benef}`:''), 'planos')}
+        (planos?`<div class="vg-cards">${planos}</div>`:'')+(inclusos?`<h4 class="inf-subtitulo">Todo plano inclui</h4><div class="vg-cards inf-inclusos">${inclusos}</div>`:'')+(benef?`<h4 class="inf-subtitulo">Benefício digital incluso</h4>${benef}`:''), 'planos')}
       ${infSec('2. Taxas e serviços','instalação, adicionais e materiais', taxasServicos, 'taxas')}
       ${infSec('3. Vencimentos e pagamento','dia contratado e ajuste para dia útil', pagamento, 'cobranca')}
       ${infSec('4. Aplicativo e canais do cliente','primeiro acesso e links oficiais', (linksCards||acCard)?`<div class="vg-cards">${acCard}${linksCards}</div>`:'', 'app')}

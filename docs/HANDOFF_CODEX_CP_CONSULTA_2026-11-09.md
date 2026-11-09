@@ -208,3 +208,11 @@ Esta secao atualiza os estados preparatorios descritos acima.
 - Caso de titulo nao liberado levantado por Clarice: consulta apenas, sem
   cancelar/liberar/receber no IXC e sem ocultar alerta. Evidencias privadas em
   C:\Hilink\RADAR HILINK\outputs\CHECAGEM_TITULO_NAO_LIBERADO_2026-11-09.md.
+
+### Posicao da nota de Itamaraca
+
+- A pedido de Clarice, o destaque foi movido para o proprio item Instalacao em
+  Todo plano inclui. Removida a faixa separada acima desse grupo.
+- Preservados o destaque visual, filial 5, R$ 150,00 + pre-pago e os demais itens.
+- Sem alteracao de banco ou de regras; teste exige um unico destaque, dentro
+  da grade de inclusos, com os quatro itens preservados.
