@@ -3,6 +3,7 @@
 <head>
 <meta name="radar-build" content="20261103114525">
 <meta charset="UTF-8">
+<link rel="stylesheet" href="contas-pagar.css?v=20261109-consulta1">
 <title>Hilink Intelligence Hub — Central de Campanhas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -3198,6 +3199,9 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
         <div class="nav-item" data-mod="acao" onclick="go('acao')"><span>Estrat&eacute;gia de Atua&ccedil;&atilde;o<small>prioridades e plano de a&ccedil;&atilde;o</small></span></div>
         <div class="nav-item" data-mod="receitas" onclick="go('receitas')"><span>Receitas<small>recebido por filial e m&ecirc;s</small></span></div>
       </div></div>
+    <div id="cp-nav" hidden class="nav-group nav-hub nav-area collapsed" data-area="contas-pagar"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Contas a pagar</div><div class="nav-group-items">
+      <div class="nav-item" data-mod="cp" onclick="go('cp')"><span>Consulta e auditoria<small>financeiro existente, somente leitura</small></span></div>
+    </div></div>
     <div class="nav-group nav-hub nav-area collapsed" data-area="comercial"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Comercial</div><div class="nav-group-items">
         <div class="nav-item" data-mod="oportunidades" onclick="go('oportunidades')"><span>Oportunidades<small>upgrade e reativa&ccedil;&atilde;o</small></span></div>
         <div class="nav-sub" onclick="go('oportunidades');opSub('resumo')">Resumo</div>
@@ -8626,6 +8630,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
   <div class="module" id="mod-inicio"></div>
   <div class="module" id="mod-usuarios"></div>
   <div class="module" id="mod-receitas"></div>
+  <div class="module" id="mod-cp"></div>
   <div class="module" id="mod-informacoes"></div>
 
   <!-- ====================== MÓDULO: CARNÊ CORREIOS ====================== -->
@@ -10770,16 +10775,17 @@ function renderModuleError(mod,err){
   console.error('[Radar] Erro ao renderizar módulo',mod,err);
 }
 function go(mod){
+  if(mod!=='cp' && typeof cpClear==='function')cpClear();
   // O módulo de carregar relatórios saiu do menu: o Radar lê tudo direto do IXC. Quem pedir "setup" vai para a Visão geral.
   if(mod==='setup') mod='inicio';
   // Premiação: sem base carregada, busca direto do IXC (banco) em vez de pedir upload
   // Módulos que usam a base do IXC: sem base carregada, busca direto do banco em vez de pedir upload
-  const SEM_BASE=['setup','historico','propostas','relatorios','carneCorreios','cobrancaDia','oportunidades','inicio','usuarios','tecnica','receitas','informacoes'];
+  const SEM_BASE=['setup','historico','propostas','relatorios','carneCorreios','cobrancaDia','oportunidades','inicio','usuarios','tecnica','receitas','informacoes','cp'];
   if(!SEM_BASE.includes(mod) && !STATE.processed && typeof ixcCargaUsar==='function' && getRadarUser?.()){
     if(!(IXC_CARGA && IXC_CARGA.carregando)){ toast('Buscando os dados direto do IXC...','success'); ixcCargaUsar(mod); }
     return;
   }
-  if(mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='oportunidades'&&mod!=='inicio'&&mod!=='usuarios'&&mod!=='tecnica'&&mod!=='receitas'&&mod!=='informacoes'&&!STATE.processed){toast('Processe a base primeiro','error');return}
+  if(mod!=='cp'&&mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='oportunidades'&&mod!=='inicio'&&mod!=='usuarios'&&mod!=='tecnica'&&mod!=='receitas'&&mod!=='informacoes'&&!STATE.processed){toast('Processe a base primeiro','error');return}
   if((mod==='segmentacao'||mod==='disparo')&&!STATE.campaign){toast('Mapeie uma campanha primeiro','error');mod='mapear'}
   if(!document.getElementById('mod-'+mod)){toast('Módulo não encontrado: '+mod,'error');return}
   document.querySelector(`.nav-item[data-mod="${mod}"]`)?.classList.remove('disabled');
@@ -10810,6 +10816,7 @@ function go(mod){
                 propostas:['Propostas Corporativas','Geração assistida de proposta comercial a partir do CRM e viabilidade'],
                 acao:['Estratégia de Atuação','Prioridades automáticas, campanhas e plano de ação operacional'],
                 usuarios:['Usuários e acessos','Cadastro de usuários do Radar, redefinição de senha e permissões'],
+                cp:['Contas a pagar','Consulta e auditoria do financeiro existente, sem alterar lançamentos.'],
                 receitas:['RECEITAS','Recebido por filial e mês, direto do IXC. Atualiza pelo botão.'],
                 informacoes:['INFORMAÇÕES GERAIS','Planos, valores, taxas, links e acessos. Fonte oficial para todo o time.'],
                 inicio:['INÍCIO','Os números de todas as áreas. Clique em qualquer cartão para abrir a tela.'],
@@ -10855,6 +10862,7 @@ function go(mod){
     if(mod==='cobrancaDia') renderCobrancaDia();
     if(mod==='usuarios') renderUsuarios();
     if(mod==='receitas') renderReceitas();
+    if(mod==='cp') renderContasPagar();
     if(mod==='informacoes') renderInformacoes();
   }catch(err){
     console.error('[RADAR] Erro no módulo',mod,err);
@@ -32251,4 +32259,5 @@ async function _doGerarCorreiosZip(selecionados){
 <!-- radar-build: opa-csv-drill-2026-06-30-1542 -->
 <script src="faturamento-ixc.js?v=20261104"></script>
 <script src="dici-anatel.js?v=20261104-persist1"></script>
+<script src="contas-pagar.js?v=20261109-consulta1"></script>
 </html>
