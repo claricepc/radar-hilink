@@ -192,3 +192,19 @@ Esta secao atualiza os estados preparatorios descritos acima.
   C:\Hilink\RADAR HILINK\outputs\INFO_GERAIS_VIDEOS_2026-11-09_ANTES.json.
 - Teste ampliado: destaque regional, Fonte no grupo correto e ausencia de links
   mp4 na tela mesmo se o cliente receber objeto antigo em cache.
+
+### Compactacao solicitada depois da primeira publicacao
+
+- Taxas e servicos em duas colunas no desktop: Servicos a esquerda (Mesh,
+  aplicativos, mudanca e instalacao) e Produtos a direita. Valores e unidades
+  preservados; adicionais mensais continuam identificados por mes/ponto/app.
+- Em celular, uma coluna para evitar sobreposicao ou corte de texto.
+- Vencimentos, observacao complementar e Copiar mensagem na mesma faixa no
+  desktop. Removido o bloco repetido Mensagem para o cliente. Texto completo
+  continua no campo editavel da gestao e no conteudo copiado.
+- Regra curta atualizada em dados.cobranca.regra_dia_nao_util, sem alterar os
+  dias contratados ou dados.cobranca.texto_cliente.
+- Testes verificam alinhamento das duas colunas e da faixa, copia e mobile.
+- Caso de titulo nao liberado levantado por Clarice: consulta apenas, sem
+  cancelar/liberar/receber no IXC e sem ocultar alerta. Evidencias privadas em
+  C:\Hilink\RADAR HILINK\outputs\CHECAGEM_TITULO_NAO_LIBERADO_2026-11-09.md.

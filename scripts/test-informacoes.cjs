@@ -37,6 +37,13 @@ const fixture={planos:[{nome:'300 Mega',preco:'79,90'}],inclusos:['Wi-Fi em como
     assert.equal(headings.length,3); // Empty unrelated categories do not create blank sections.
     assert.ok(headings[0].startsWith('1. Planos'));assert.ok(headings[1].startsWith('2. Taxas'));assert.ok(headings[2].startsWith('3. Vencimentos'));
     await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:'qa-cp/informacoes-desktop.png',fullPage:true});
+    const centers=await page.locator('.inf-pagamento-faixa').evaluate(el=>Array.from(el.children).map(e=>{const r=e.getBoundingClientRect();return r.y+r.height/2;}));
+    assert.ok(Math.max(...centers)-Math.min(...centers)<2,'Billing row should align on desktop');
+    const columns=await page.locator('.inf-precos-col').evaluateAll(els=>els.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y};}));
+    assert.equal(columns.length,2);assert.ok(Math.abs(columns[0].y-columns[1].y)<2);assert.ok(columns[1].x>columns[0].x);
+    assert.ok((await page.locator('.inf-precos-col').first().innerText()).includes('Ponto Mesh'));
+    assert.ok((await page.locator('.inf-precos-col').last().innerText()).includes('Fonte 12V'));
+    assert.equal(await page.getByText('Mensagem para o cliente',{exact:true}).count(),0);
     await page.setViewportSize({width:390,height:844});await page.screenshot({path:'qa-cp/informacoes-mobile.png',fullPage:true});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await page.evaluate(()=>infBuscar('itamaraca'));

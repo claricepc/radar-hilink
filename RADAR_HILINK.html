@@ -2509,7 +2509,19 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .inf-subtitulo{font-size:13px;margin:18px 0 8px;color:var(--texto);font-weight:700;letter-spacing:0}
 .inf .inf-vencimentos{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
 .inf .inf-dia{display:inline-grid;place-items:center;width:40px;height:36px;border:1px solid var(--linha);border-radius:4px;color:var(--azul-forte);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
-.inf .inf-texto-cliente{white-space:pre-wrap;font-size:13px;line-height:1.6;color:var(--texto);border-left:3px solid var(--azul);padding:8px 12px;margin:12px 0}
+.inf .inf-pagamento-faixa{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
+.inf .inf-pagamento-faixa .inf-vencimentos{margin:0;flex:0 0 auto}
+.inf .inf-pagamento-faixa .inf-dia{width:32px;height:32px;font-size:14px}
+.inf .inf-venc-nota{flex:1 1 460px;margin:0;font-size:12px;line-height:1.5;color:var(--texto-2);min-width:0}
+.inf .inf-pagamento-faixa>button{flex:0 0 auto}
+.inf .inf-precos-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.inf .inf-precos-grid .inf-subtitulo{margin:0 0 8px}
+.inf .inf-precos-grid .inf-lista-card{border-radius:8px}
+.inf .inf-precos-grid .inf-linha{padding:9px 0;min-height:48px}
+.inf .inf-precos-grid .inf-linha>div:first-child{min-width:0}
+.inf .inf-precos-grid .inf-valor{text-align:right;flex:0 0 auto}
+.inf .inf-precos-grid .inf-valor small{display:block;max-width:150px;white-space:normal;font:400 11px var(--font-texto);color:var(--texto-3);margin-top:3px}
+@media(max-width:760px){.inf .inf-precos-grid{grid-template-columns:1fr}}
 .inf .inf-regional{border-left:4px solid var(--atencao);background:var(--atencao-suave);color:var(--texto);padding:14px 16px;margin:14px 0;border-radius:4px;line-height:1.5}
 .inf .inf-regional strong{display:block;font-size:15px;color:var(--atencao)}
 .inf .inf-regional p{margin:5px 0 0;font-size:13px}
@@ -26812,14 +26824,8 @@ function renderInformacoes(){
       <div class="inf-chips">${infLista(d.beneficios).map(x=>`<span class="inf-chip" data-inf-busca="${infChave('beneficio',infBenNome(x))}">${infEsc(infBenNome(x))}</span>`).join('')}</div></div>
       ${infLista(d.beneficios_orientacao_opa).length?`<div class="inf-orientacao" data-inf-busca="${infChave('videos mensagens rapidas opa playhub',...d.beneficios_orientacao_opa)}"><h4>Vídeos de orientação · Mensagens rápidas do Opa!</h4><ol>${d.beneficios_orientacao_opa.map(x=>`<li>${infEsc(x)}</li>`).join('')}</ol></div>`:''}` : '';
 
-  const avulsos = infLista(d.avulsos).map(a=>`<div class="vg-card inf-card" data-inf-busca="${infChave(a.nome,a.detalhe,a.valor)}">
-      <div class="vg-l">${infEsc(a.nome)}</div>
-      <div class="vg-v">${preco(a.valor)}<small> ${infEsc(a.unidade||'')}</small></div>
-      ${a.detalhe?`<div class="vg-x">${infEsc(a.detalhe)}</div>`:''}
-    </div>`).join('');
-
-  const lista = (linhas) => linhas.length ? `<div class="vg-card inf-card inf-baixo inf-lista-card">${linhas.map(l=>`<div class="inf-linha" data-inf-busca="${infChave(l.nome,l.detalhe,l.valor)}">
-      <div><b>${infEsc(l.nome)}</b>${l.detalhe?`<span>${infEsc(l.detalhe)}</span>`:''}</div><div class="inf-valor">${preco(l.valor)}</div></div>`).join('')}</div>` : '';
+  const lista = (linhas) => linhas.length ? `<div class="vg-card inf-card inf-baixo inf-lista-card">${linhas.map(l=>`<div class="inf-linha" data-inf-busca="${infChave(l.nome,l.detalhe,l.valor,l.unidade)}">
+      <div><b>${infEsc(l.nome)}</b>${l.detalhe?`<span>${infEsc(l.detalhe)}</span>`:''}</div><div class="inf-valor">${preco(l.valor)}${l.unidade?`<small>${infEsc(l.unidade)}</small>`:''}</div></div>`).join('')}</div>` : '';
 
   const procs = infLista(d.procedimentos).length ? `<ol class="vg-fazer">${infLista(d.procedimentos).map((x,i)=>`<li data-inf-busca="${infChave(x.titulo,x.texto)}"><span class="vg-n">${i+1}</span><div><b>${infEsc(x.titulo)}</b><br>${infEsc(x.texto).replace(/\n/g,'<br>')}</div></li>`).join('')}</ol>` : '';
 
@@ -26849,14 +26855,16 @@ function renderInformacoes(){
   const regional=infLista(d.taxas).find(x=>x.id==='instalacao_itamaraca_filial5');
   const destaqueRegional=regional?`<aside class="inf-regional" role="note" data-inf-busca="${infChave('instalacao gratuita excecao itamaraca igarassu filial 5',regional.detalhe)}"><strong>Instalação gratuita, exceto em Itamaracá</strong><p>Na área de Itamaracá da filial 5 (Hilink Igarassu): <b>${preco(regional.valor)}</b> de instalação + valor do pré-pago do plano contratado.</p></aside>`:'';
   const cobranca=d.cobranca||{};
-  const pagamento=infLista(cobranca.vencimentos).length?`<div data-inf-busca="${infChave('cobranca pagamento vencimentos dias uteis feriados',cobranca.regra_dia_nao_util,cobranca.texto_cliente)}">
+  const pagamento=infLista(cobranca.vencimentos).length?`<div class="inf-pagamento-faixa" data-inf-busca="${infChave('cobranca pagamento vencimentos dias uteis feriados',cobranca.regra_dia_nao_util,cobranca.texto_cliente)}">
       <div class="inf-vencimentos" aria-label="Dias de vencimento">${infLista(cobranca.vencimentos).map(dia=>`<span class="inf-dia">${infEsc(dia)}</span>`).join('')}</div>
-      <p class="vg-s">${infEsc(cobranca.regra_dia_nao_util||'')}</p>
-      ${cobranca.texto_cliente?`<h4 class="inf-subtitulo">Mensagem para o cliente</h4><div class="inf-texto-cliente">${infEsc(cobranca.texto_cliente)}</div><button type="button" class="btn sm" onclick="infCopiarVencimentos()">Copiar mensagem</button>`:''}
+      <p class="inf-venc-nota">${infEsc(cobranca.regra_dia_nao_util||'')}</p>
+      ${cobranca.texto_cliente?`<button type="button" class="btn sm" onclick="infCopiarVencimentos()">Copiar mensagem</button>`:''}
     </div>`:'';
-  const taxasServicos=(tab('taxas')?`<h4 class="inf-subtitulo">Instalação, mudanças e outras taxas</h4>${tab('taxas')}`:'')+
-    (avulsos?`<h4 class="inf-subtitulo">Serviços adicionais à mensalidade</h4><div class="vg-cards">${avulsos}</div>`:'')+
-    (tab('materiais')?`<h4 class="inf-subtitulo">Produtos avulsos · venda de produtos</h4>${tab('materiais')}`:'');
+  const servicos=[...infLista(d.avulsos),...infLista(d.taxas)];
+  const taxasServicos=servicos.length||infLista(d.materiais).length?`<div class="inf-precos-grid">
+    <div class="inf-precos-col"><h4 class="inf-subtitulo">Serviços</h4>${lista(servicos)}</div>
+    <div class="inf-precos-col"><h4 class="inf-subtitulo">Produtos</h4>${tab('materiais')}</div>
+    </div>`:'';
   box.innerHTML = `<div class="vg inf">${topo}
       ${infSec('1. Planos e benefícios','valores mensais e o que está incluído',
         (planos?`<div class="vg-cards">${planos}</div>`:'')+destaqueRegional+(inclusos?`<h4 class="inf-subtitulo">Todo plano inclui</h4><div class="vg-cards">${inclusos}</div>`:'')+(benef?`<h4 class="inf-subtitulo">Benefício digital incluso</h4>${benef}`:''), 'planos')}
