@@ -3184,7 +3184,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
     <div class="nav-group nav-hub nav-area" data-area="inicio"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Início</div><div class="nav-group-items">
         <div class="nav-item" data-mod="inicio" onclick="go('inicio')"><span>Visão geral<small>os números de todas as áreas</small></span></div>
       </div></div>
-    <div class="nav-group nav-hub nav-area collapsed" data-area="financeiro"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Financeiro</div><div class="nav-group-items">
+    <div class="nav-group nav-hub nav-area collapsed" data-area="financeiro"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Contas a receber</div><div class="nav-group-items">
         <div class="nav-item" data-mod="cobrancaDia" onclick="go('cobrancaDia')"><span>Cobran&ccedil;a do Dia<small>vencidos, antes do bloqueio e listas</small></span></div>
         <div class="nav-sub" data-cd="resumo" onclick="go('cobrancaDia');cdSub('resumo')">Resumo do dia</div>
         <div class="nav-sub" data-cd="onde" onclick="go('cobrancaDia');cdSub('onde')">Onde está o dinheiro</div>
@@ -26949,7 +26949,7 @@ window.radarFixoRender=radarFixoRender; window.radarFixoAtualizar=radarFixoAtual
 document.addEventListener('DOMContentLoaded', ()=>setTimeout(radarFixoRender, 2500));
 
 /* ===================== NAVEGACAO POR AREAS (versao NOVO) ===================== */
-const RADAR_AREA_DE = { inicio:'Início', cobrancaDia:'Financeiro', carneCorreios:'Financeiro', acao:'Financeiro', receitas:'Financeiro', informacoes:'Equipe', oportunidades:'Comercial', premiacoes:'Comercial', propostas:'Comercial', tecnica:'Rede', setup:'Configurações', relatorios:'Configurações', usuarios:'Configurações' };
+const RADAR_AREA_DE = { inicio:'Início', cobrancaDia:'Contas a receber', carneCorreios:'Contas a receber', acao:'Contas a receber', receitas:'Contas a receber', informacoes:'Equipe', oportunidades:'Comercial', premiacoes:'Comercial', propostas:'Comercial', tecnica:'Rede', setup:'Configurações', relatorios:'Configurações', usuarios:'Configurações' };
 const RADAR_NOME_DE = { inicio:'Visão geral', cobrancaDia:'Cobrança do Dia', carneCorreios:'Envio Correios', acao:'Estratégia de Atuação', receitas:'Receitas', informacoes:'Informações gerais', oportunidades:'Oportunidades', premiacoes:'Premiação', propostas:'Propostas Corporativas', tecnica:'Saúde da Rede', setup:'Carregar Relatórios', relatorios:'Relatórios Personalizados', usuarios:'Usuários e acessos' };
 // Menu no estilo do IXC: só os títulos das áreas aparecem; quem quiser abre a área e depois o módulo.
 // Abrir uma área fecha as outras. Início fica sempre aberto.
