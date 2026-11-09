@@ -12,7 +12,7 @@ const styles=[...dom.window.document.querySelectorAll('style')].map(s=>s.textCon
 const vgStart=html.indexOf("(function(){ if(document.getElementById('vg-css'))");
 const vgEnd=html.indexOf('})();',vgStart)+5;
 const text='Nossas opções de vencimento são os dias 5, 10, 15, 20 e 25. Se cair em sábado, domingo ou feriado, fica para o próximo dia útil apenas naquele mês.';
-const fixture={planos:[{nome:'300 Mega',preco:'79,90'}],inclusos:['Wi-Fi em comodato'],beneficios:[],taxas:[{nome:'Instalação em Itamaracá · filial 5',valor:'150,00',detalhe:'Taxa mais pré-pago. Somente Itamaracá, Hilink Igarassu.'}],avulsos:[{nome:'Ponto Mesh',valor:'29,90',unidade:'por mês, por ponto',detalhe:'Cobertura'}],materiais:[{nome:'Cabo',valor:'21,00'}],cobranca:{vencimentos:[5,10,15,20,25],regra_dia_nao_util:'O ajuste vale somente naquele mês. O dia contratado permanece.',texto_cliente:text},links:[],procedimentos:[],acessos:[]};
+const fixture={planos:[{nome:'300 Mega',preco:'79,90'}],inclusos:['Wi-Fi em comodato'],beneficios:[{nome:'Deezer',video:'https://example.test/antigo.mp4'}],beneficios_orientacao_opa:['No chat do Opa!, abra Mensagens rápidas.','Procure o aplicativo e confira o vídeo antes de enviar.'],taxas:[{id:'instalacao_itamaraca_filial5',nome:'Instalação em Itamaracá · filial 5',valor:'150,00',detalhe:'Taxa mais pré-pago. Somente Itamaracá, Hilink Igarassu.'}],avulsos:[{nome:'Ponto Mesh',valor:'29,90',unidade:'por mês, por ponto',detalhe:'Cobertura'}],materiais:[{nome:'Cabo',valor:'21,00'},{nome:'Fonte 12V',valor:'20,00'}],cobranca:{vencimentos:[5,10,15,20,25],regra_dia_nao_util:'O ajuste vale somente naquele mês. O dia contratado permanece.',texto_cliente:text},links:[],procedimentos:[],acessos:[]};
 (async()=>{
   const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
   try{
@@ -24,6 +24,12 @@ const fixture={planos:[{nome:'300 Mega',preco:'79,90'}],inclusos:['Wi-Fi em como
     await page.evaluate(data=>{INF.dados=data;INF.meta={pode_editar:true};renderInformacoes();},fixture);
     assert.equal(await page.getByText('Ponto Mesh',{exact:true}).evaluate(e=>e.closest('[data-inf-sec]').getAttribute('data-inf-sec')),'taxas');
     assert.equal(await page.getByText('Instalação em Itamaracá · filial 5',{exact:true}).evaluate(e=>e.closest('[data-inf-sec]').getAttribute('data-inf-sec')),'taxas');
+    assert.ok((await page.getByRole('note').innerText()).includes('Instalação gratuita, exceto em Itamaracá'));
+    assert.ok((await page.getByRole('note').innerText()).includes('filial 5'));
+    assert.ok((await page.getByRole('note').innerText()).includes('150,00'));
+    assert.equal(await page.getByText('Fonte 12V',{exact:true}).evaluate(e=>e.closest('[data-inf-sec]').getAttribute('data-inf-sec')),'taxas');
+    assert.equal(await page.locator('a[href$=".mp4"]').count(),0);
+    assert.ok(await page.getByText('No chat do Opa!, abra Mensagens rápidas.',{exact:true}).isVisible());
     assert.deepEqual(await page.locator('.inf-dia').allTextContents(),['5','10','15','20','25']);
     await page.getByRole('button',{name:'Copiar mensagem',exact:true}).click();
     assert.equal(await page.evaluate(()=>window.copied),text);

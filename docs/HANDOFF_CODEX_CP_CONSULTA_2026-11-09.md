@@ -173,3 +173,22 @@ Esta secao atualiza os estados preparatorios descritos acima.
 - scripts/test-informacoes.cjs verifica agrupamento do Mesh, escopo regional,
   datas, texto copiado, busca e edicao sem alterar o original antes de Salvar,
   desktop/mobile. As fixtures nao contem acessos/senhas reais.
+
+### Complemento solicitado por Clarice durante a publicacao
+
+- Regra de instalacao agora tem aviso destacado no grupo Planos e beneficios:
+  gratuita, exceto Itamaraca, com filial 5 / Hilink Igarassu e taxa + pre-pago.
+- Produtos avulsos (dentro de Taxas e servicos) inclui Fonte 12V por R$ 20,00.
+  Demais produtos/precos, planos, Mesh e taxas anteriores foram preservados.
+- A pedido de Clarice, removidos da base ativa dados.videos,
+  dados.beneficios_video_geral e campo video dos objetos dados.beneficios.
+  Nenhum arquivo fisico do repositorio foi apagado e nada foi alterado no Opa!.
+- Inclusa orientacao curta: abrir Mensagens rapidas no chat do Opa!, procurar
+  aplicativo, selecionar video disponivel, conferir/ajustar texto e anexo e enviar.
+- Procedimento de ativacao PlayHub atualizado apenas no passo de envio do video;
+  links de cadastro PlayHub e Portal do Assinante foram mantidos.
+- Editor nao oferece mais campos de video; orientacao do Opa! segue editavel.
+- Backup local dos campos afetados, sem acessos/senhas:
+  C:\Hilink\RADAR HILINK\outputs\INFO_GERAIS_VIDEOS_2026-11-09_ANTES.json.
+- Teste ampliado: destaque regional, Fonte no grupo correto e ausencia de links
+  mp4 na tela mesmo se o cliente receber objeto antigo em cache.

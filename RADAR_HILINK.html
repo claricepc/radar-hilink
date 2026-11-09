@@ -2510,6 +2510,12 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .inf-vencimentos{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
 .inf .inf-dia{display:inline-grid;place-items:center;width:40px;height:36px;border:1px solid var(--linha);border-radius:4px;color:var(--azul-forte);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
 .inf .inf-texto-cliente{white-space:pre-wrap;font-size:13px;line-height:1.6;color:var(--texto);border-left:3px solid var(--azul);padding:8px 12px;margin:12px 0}
+.inf .inf-regional{border-left:4px solid var(--atencao);background:var(--atencao-suave);color:var(--texto);padding:14px 16px;margin:14px 0;border-radius:4px;line-height:1.5}
+.inf .inf-regional strong{display:block;font-size:15px;color:var(--atencao)}
+.inf .inf-regional p{margin:5px 0 0;font-size:13px}
+.inf .inf-orientacao{font-size:13px;line-height:1.6;color:var(--texto-2);margin:14px 0 0}
+.inf .inf-orientacao h4{margin:0 0 6px;font-size:13px;color:var(--texto)}
+.inf .inf-orientacao ol{margin:0;padding-left:20px}
 .inf .inf-campos{display:grid;gap:6px;margin-top:8px}
 .inf .inf-campo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--texto)}
 .inf .inf-campo>span{flex:0 0 74px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--texto-3)}
@@ -26732,7 +26738,7 @@ Object.assign(window, { renderReceitas, rctAtualizar, rctCsv, RCT });
 const INF = { dados:null, meta:null, erro:null, carregando:false, editando:false, rascunho:null, busca:'' };
 const INF_TABELAS = [
   { k:'taxas', titulo:'Taxas e serviços', sub:'valores cobrados do cliente', cols:[['nome','Serviço'],['valor','R$'],['detalhe','Observações']] },
-  { k:'materiais', titulo:'Materiais avulsos', sub:'venda de produtos', cols:[['nome','Item'],['valor','R$'],['detalhe','Observações']] }
+  { k:'materiais', titulo:'Produtos avulsos', sub:'venda de produtos', cols:[['nome','Item'],['valor','R$'],['detalhe','Observações']] }
 ];
 function infEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function infValor(v){ const t=String(v||'').trim(); return t ? 'R$ '+t : 'Valor a definir'; }
@@ -26749,7 +26755,6 @@ async function infCarregar(){
   if(STATE.activeMod==='informacoes') renderInformacoes();
 }
 function infBenNome(x){ return typeof x==='string' ? x : ((x&&x.nome)||''); }
-function infBenVideo(x){ const v = typeof x==='object' && x ? String(x.video||'').trim() : ''; return /^https?:\/\//i.test(v) ? v : ''; }
 function infCopiarPlano(i){
   const d = INF.dados||{}, p = infLista(d.planos)[i]; if(!p) return;
   const txt = `Plano ${p.nome}: ${infValor(p.preco)} por mês.\n`+infLista(d.inclusos).map(x=>'- '+x).join('\n')+(infLista(d.beneficios).length?`\n- Benefício digital incluso, à escolha: ${infLista(d.beneficios).map(infBenNome).join(', ')}.`:'');
@@ -26804,11 +26809,8 @@ function renderInformacoes(){
 
   const benef = infLista(d.beneficios).length ? `<div class="vg-card inf-card inf-baixo">
       ${d.beneficios_texto?`<div class="vg-s">${infEsc(d.beneficios_texto)}</div>`:''}
-      ${/^https?:\/\//i.test(String(d.beneficios_video_geral||'').trim())?`<div class="inf-campos"><div class="inf-campo"><span>Vídeo</span><a href="${infEsc(String(d.beneficios_video_geral).trim())}" target="_blank" rel="noopener noreferrer">Como instalar o app PlayHub</a><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.beneficios_video_geral,'Link do vídeo copiado. É só colar para o cliente.')">copiar</button></div></div>`:''}
-      <div class="inf-chips">${infLista(d.beneficios).map((x,i)=>{ const n=infBenNome(x), v=infBenVideo(x);
-        return v ? `<span class="inf-chip inf-chip-video" data-inf-busca="${infChave('beneficio video instalacao',n)}"><a href="${infEsc(v)}" target="_blank" rel="noopener noreferrer" title="Abrir vídeo de instalação">${infEsc(n)} · vídeo</a><button type="button" onclick="infCopiar(infBenVideo(INF.dados.beneficios[${i}]),'Link do vídeo de ${infEsc(n).replace(/'/g,'')} copiado.')" title="Copiar link do vídeo">copiar</button></span>`
-                 : `<span class="inf-chip" data-inf-busca="${infChave('beneficio',n)}">${infEsc(n)}</span>`; }).join('')}</div>
-      ${infLista(d.beneficios).some(infBenVideo)?'<div class="vg-x">Os apps com "vídeo" abrem o passo a passo de instalação. Use "copiar" para mandar o link ao cliente.</div>':''}</div>` : '';
+      <div class="inf-chips">${infLista(d.beneficios).map(x=>`<span class="inf-chip" data-inf-busca="${infChave('beneficio',infBenNome(x))}">${infEsc(infBenNome(x))}</span>`).join('')}</div></div>
+      ${infLista(d.beneficios_orientacao_opa).length?`<div class="inf-orientacao" data-inf-busca="${infChave('videos mensagens rapidas opa playhub',...d.beneficios_orientacao_opa)}"><h4>Vídeos de orientação · Mensagens rápidas do Opa!</h4><ol>${d.beneficios_orientacao_opa.map(x=>`<li>${infEsc(x)}</li>`).join('')}</ol></div>`:''}` : '';
 
   const avulsos = infLista(d.avulsos).map(a=>`<div class="vg-card inf-card" data-inf-busca="${infChave(a.nome,a.detalhe,a.valor)}">
       <div class="vg-l">${infEsc(a.nome)}</div>
@@ -26844,6 +26846,8 @@ function renderInformacoes(){
       <div class="inf-campos">${ac.login?`<div class="inf-campo"><span>Login</span><b>${infEsc(ac.login)}</b></div>`:''}${ac.senha?`<div class="inf-campo"><span>Senha padrão</span><b class="inf-senha">${infEsc(ac.senha)}</b><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.acesso_cliente.senha,'Senha copiada.')">copiar</button></div>`:''}</div>
     </div>` : '';
   const tab = k => lista(infLista(d[k]));
+  const regional=infLista(d.taxas).find(x=>x.id==='instalacao_itamaraca_filial5');
+  const destaqueRegional=regional?`<aside class="inf-regional" role="note" data-inf-busca="${infChave('instalacao gratuita excecao itamaraca igarassu filial 5',regional.detalhe)}"><strong>Instalação gratuita, exceto em Itamaracá</strong><p>Na área de Itamaracá da filial 5 (Hilink Igarassu): <b>${preco(regional.valor)}</b> de instalação + valor do pré-pago do plano contratado.</p></aside>`:'';
   const cobranca=d.cobranca||{};
   const pagamento=infLista(cobranca.vencimentos).length?`<div data-inf-busca="${infChave('cobranca pagamento vencimentos dias uteis feriados',cobranca.regra_dia_nao_util,cobranca.texto_cliente)}">
       <div class="inf-vencimentos" aria-label="Dias de vencimento">${infLista(cobranca.vencimentos).map(dia=>`<span class="inf-dia">${infEsc(dia)}</span>`).join('')}</div>
@@ -26852,10 +26856,10 @@ function renderInformacoes(){
     </div>`:'';
   const taxasServicos=(tab('taxas')?`<h4 class="inf-subtitulo">Instalação, mudanças e outras taxas</h4>${tab('taxas')}`:'')+
     (avulsos?`<h4 class="inf-subtitulo">Serviços adicionais à mensalidade</h4><div class="vg-cards">${avulsos}</div>`:'')+
-    (tab('materiais')?`<h4 class="inf-subtitulo">Materiais avulsos · venda de produtos</h4>${tab('materiais')}`:'');
+    (tab('materiais')?`<h4 class="inf-subtitulo">Produtos avulsos · venda de produtos</h4>${tab('materiais')}`:'');
   box.innerHTML = `<div class="vg inf">${topo}
       ${infSec('1. Planos e benefícios','valores mensais e o que está incluído',
-        (planos?`<div class="vg-cards">${planos}</div>`:'')+(inclusos?`<h4 class="inf-subtitulo">Todo plano inclui</h4><div class="vg-cards">${inclusos}</div>`:'')+(benef?`<h4 class="inf-subtitulo">Benefício digital incluso</h4>${benef}`:''), 'planos')}
+        (planos?`<div class="vg-cards">${planos}</div>`:'')+destaqueRegional+(inclusos?`<h4 class="inf-subtitulo">Todo plano inclui</h4><div class="vg-cards">${inclusos}</div>`:'')+(benef?`<h4 class="inf-subtitulo">Benefício digital incluso</h4>${benef}`:''), 'planos')}
       ${infSec('2. Taxas e serviços','instalação, adicionais e materiais', taxasServicos, 'taxas')}
       ${infSec('3. Vencimentos e pagamento','dia contratado e ajuste para dia útil', pagamento, 'cobranca')}
       ${infSec('4. Aplicativo e canais do cliente','primeiro acesso e links oficiais', (linksCards||acCard)?`<div class="vg-cards">${acCard}${linksCards}</div>`:'', 'app')}
@@ -26898,11 +26902,11 @@ function renderInformacoesEdicao(box){
         <textarea class="inf-ta" rows="5" oninput="infTexto('inclusos',this,true)">${infEsc(infLista(r.inclusos).join('\n'))}</textarea></div>
       <div class="cdg-box"><div class="cdg-eyebrow">Benefício digital incluso</div>
         <input type="text" class="inf-in" value="${infEsc(r.beneficios_texto||'')}" placeholder="Texto de apoio" oninput="infTexto('beneficios_texto',this,false)">
-        <input type="text" class="inf-in" value="${infEsc(r.beneficios_video_geral||'')}" placeholder="Vídeo geral de instalação do app PlayHub (https://...)" oninput="infTexto('beneficios_video_geral',this,false)" style="margin-top:6px"></div>
-      ${tabela('beneficios', [['nome','App'],['video','Link do vídeo de instalação (https://...)']], {nome:'',video:''}, 'Apps do benefício digital')}
+        <label>Orientação sobre vídeos no Opa! (uma etapa por linha)<textarea class="inf-ta" rows="4" oninput="infTexto('beneficios_orientacao_opa',this,true)">${infEsc(infLista(r.beneficios_orientacao_opa).join('\n'))}</textarea></label></div>
+      ${tabela('beneficios', [['nome','App']], {nome:''}, 'Apps do benefício digital')}
       ${tabela('taxas', [['nome','Serviço'],['valor','Valor','curto'],['detalhe','Condição e região']], {nome:'',valor:'',detalhe:''}, 'Taxas e serviços · instalação e outras taxas')}
       ${tabela('avulsos', [['nome','Serviço'],['valor','Valor','curto'],['unidade','Unidade (ex.: por mês)'],['detalhe','Descrição']], {nome:'',valor:'',unidade:'por mês',detalhe:''}, 'Taxas e serviços · adicionais à mensalidade (Mesh e aplicativos)')}
-      ${tabela('materiais', [['nome','Item'],['valor','Valor','curto'],['detalhe','Observações']], {nome:'',valor:'',detalhe:''}, 'Taxas e serviços · materiais avulsos')}
+      ${tabela('materiais', [['nome','Item'],['valor','Valor','curto'],['detalhe','Observações']], {nome:'',valor:'',detalhe:''}, 'Taxas e serviços · produtos avulsos')}
       <div class="cdg-box"><div class="cdg-eyebrow">Vencimentos e pagamento · dias 5, 10, 15, 20 e 25</div>
         <label>Regra para dia não útil<textarea class="inf-ta" rows="3" oninput="infCobrancaCampo('regra_dia_nao_util',this)">${infEsc((r.cobranca||{}).regra_dia_nao_util||'')}</textarea></label>
         <label>Mensagem para copiar e enviar ao cliente<textarea class="inf-ta" rows="4" oninput="infCobrancaCampo('texto_cliente',this)">${infEsc((r.cobranca||{}).texto_cliente||'')}</textarea></label></div>
