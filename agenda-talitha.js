@@ -88,40 +88,95 @@
 
   function paint() {
     if(!allowed()) return;
-    const now = new Date(), zone = {timeZone:'America/Sao_Paulo'};
+    const zone = {timeZone:'America/Sao_Paulo'}, now = new Date();
     const today = now.toLocaleDateString('sv-SE', zone);
     const time = now.toLocaleTimeString('pt-BR',{...zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+    const dias = p => Math.round((new Date(p+'T12:00:00') - new Date(today+'T12:00:00')) / 86400000);
     const late = t => t.prazo && (t.prazo < today || (t.prazo === today && t.hora && t.hora.slice(0,5) < time));
     const rows = tasks.filter(t => Boolean(t.arquivada_em) === archive && (uid() !== clarice || t.agenda === scope));
-    box().innerHTML = `${uid() === clarice ? `<div class="ag-tabs ag-bar">
+    const urg = t => {
+      if(t.status === 'concluida') return 'ok';
+      if(!t.prazo) return 'sem';
+      const d = dias(t.prazo);
+      if(d < 0 || late(t)) return 'atrasada';
+      if(d === 0) return 'hoje';
+      return d <= 7 ? 'semana' : 'depois';
+    };
+    const prazoTxt = t => {
+      if(!t.prazo) return 'Sem prazo';
+      const d = dias(t.prazo), h = t.hora ? ' às ' + t.hora.slice(0,5) : '';
+      if(t.status === 'concluida') return 'Prazo ' + date(t.prazo);
+      if(d < 0) return `Atrasada há ${-d} dia${d === -1 ? '' : 's'} (${date(t.prazo)})`;
+      if(d === 0) return (late(t) ? 'Venceu hoje' : 'Vence hoje') + h;
+      if(d === 1) return 'Vence amanhã' + h;
+      return `Vence em ${d} dias (${date(t.prazo)}${h})`;
+    };
+    const grupos = [
+      ['atrasada','Atrasadas','Prazo vencido e ainda não concluídas'],
+      ['hoje','Para hoje',''],
+      ['semana','Próximos 7 dias',''],
+      ['depois','Mais adiante',''],
+      ['sem','Sem prazo','Rotinas contínuas'],
+    ];
+    const abertas = rows.filter(t => t.status !== 'concluida');
+    const conta = k => abertas.filter(t => urg(t) === k).length;
+    const card = t => {
+      const u = urg(t), ult = (t.historico || [])[0];
+      return `<article class="ag-card" data-urg="${u}">
+        <div class="ag-card-top"><span class="ag-prazo">${esc(prazoTxt(t))}</span><span class="ag-status" data-status="${esc(t.status)}">${esc(statuses[t.status])}</span></div>
+        <h3>${esc(t.titulo)}</h3>
+        <p class="ag-meta">Atribuída por ${esc(t.autor)}${t.semanal ? ' · Repete toda segunda-feira' : ''}</p>
+        ${t.detalhes ? `<p class="ag-note">${esc(t.detalhes)}</p>` : ''}
+        ${ult ? `<div class="ag-ultima"><b>Última atualização</b> · ${esc(ult.autor)}, ${esc(new Date(ult.em).toLocaleString('pt-BR',{...zone,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))}<br>${esc(ult.justificativa)}</div>` : '<div class="ag-ultima ag-vazio">Nenhuma atualização registrada ainda.</div>'}
+        <details><summary>${archive ? 'Ver histórico' : 'Atualizar status e ver histórico'} (${(t.historico || []).length})</summary>
+        ${archive ? '' : `<form class="ag-form" data-action="atualizar" data-id="${esc(t.id)}">
+          <label>Novo status<select name="status">${Object.entries(statuses).map(([k,v]) => `<option value="${k}" ${k===t.status?'selected':''}>${v}</option>`).join('')}</select></label>
+          <label class="ag-wide">O que foi feito ou o que está impedindo<textarea name="justificativa" rows="2" required maxlength="2000"></textarea></label>
+          <div class="ag-wide"><button class="btn sm primary">Salvar atualização</button></div>
+        </form>`}
+        ${(t.historico || []).map(h => `<div class="ag-history"><small>${esc(new Date(h.em).toLocaleString('pt-BR',{...zone,day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}))} · ${esc(h.autor)} · <b>${esc(statuses[h.status])}</b></small><p class="ag-note">${esc(h.justificativa)}</p></div>`).join('')}
+        </details>
+        ${t.pode_arquivar ? `<div class="ag-card-acoes"><button type="button" class="ag-link" data-archive="${esc(t.id)}">Arquivar</button></div>` : ''}
+      </article>`;
+    };
+    const resumo = archive ? '' : `<div class="ag-resumo">
+      <div class="ag-kpi" data-urg="atrasada"><b>${conta('atrasada')}</b><span>Atrasadas</span></div>
+      <div class="ag-kpi" data-urg="hoje"><b>${conta('hoje')}</b><span>Para hoje</span></div>
+      <div class="ag-kpi" data-urg="semana"><b>${conta('semana')}</b><span>Próximos 7 dias</span></div>
+      <div class="ag-kpi"><b>${abertas.filter(t => t.status === 'andamento').length}</b><span>Em andamento</span></div>
+      <div class="ag-kpi" data-urg="bloq"><b>${abertas.filter(t => t.status === 'bloqueada').length}</b><span>Bloqueadas</span></div>
+    </div>`;
+    const lista = archive
+      ? `<div class="ag-grid">${rows.map(card).join('') || '<p class="ag-vazio">Nenhuma atividade arquivada.</p>'}</div>`
+      : grupos.map(([k, titulo, sub]) => {
+          const g = abertas.filter(t => urg(t) === k);
+          return g.length ? `<section class="ag-grupo" data-urg="${k}"><h2>${titulo} <span>${g.length}</span>${sub ? `<small>${sub}</small>` : ''}</h2><div class="ag-grid">${g.map(card).join('')}</div></section>` : '';
+        }).join('') + (() => {
+          const c = rows.filter(t => t.status === 'concluida');
+          return c.length ? `<details class="ag-grupo ag-concluidas"><summary>Concluídas, aguardando arquivamento <span>${c.length}</span></summary><div class="ag-grid">${c.map(card).join('')}</div></details>` : '';
+        })() || '<p class="ag-vazio">Nenhuma atividade nesta agenda. Use "Nova atividade" para começar.</p>';
+    box().innerHTML = `<div class="ag-topo">
+      <div><h1 class="ag-titulo">${uid() === clarice ? (scope === 'talitha' ? 'Agenda da Talitha' : 'Minha agenda') : 'Minha agenda'}</h1>
+      <p class="ag-sub">${archive ? 'Atividades arquivadas, com o histórico guardado.' : 'Prazos, status e o que foi feito em cada atividade.'}</p></div>
+      <button type="button" class="btn sm primary" data-new>Nova atividade</button></div>
+      ${uid() === clarice ? `<div class="ag-tabs ag-bar">
       <button type="button" class="btn sm" data-scope="talitha" aria-pressed="${scope==='talitha'}">Agenda da Talitha</button>
       <button type="button" class="btn sm" data-scope="pessoal" aria-pressed="${scope==='pessoal'}">Minha agenda</button>
-      </div>` : ''}<div class="ag-bar"><div class="ag-tabs" aria-label="Visualização">
-      <button type="button" class="btn sm" data-view="ativas" aria-pressed="${!archive}">Na agenda</button>
-      <button type="button" class="btn sm" data-view="arquivadas" aria-pressed="${archive}">Arquivadas</button>
-      </div><button type="button" class="btn sm primary" data-new>Nova atividade</button></div>
-      <form class="ag-form" data-action="criar" hidden>
-        <label>Título<input name="titulo" required maxlength="160"></label>
+      </div>` : ''}
+      <form class="ag-form ag-nova" data-action="criar" hidden>
+        <label class="ag-wide">Título<input name="titulo" required maxlength="160" placeholder="O que precisa ser feito"></label>
         <label>Prazo<input type="date" name="prazo" required></label>
         <label>Horário (opcional)<input type="time" name="hora"></label>
-        <label class="ag-wide">Detalhes<textarea name="detalhes" rows="2" maxlength="3000"></textarea></label>
+        <label class="ag-wide">Detalhes<textarea name="detalhes" rows="2" maxlength="3000" placeholder="Contexto, critério de pronto, contatos"></textarea></label>
         <div class="ag-wide"><button class="btn sm primary">Adicionar à agenda</button></div>
       </form>
       <p class="ag-error" role="alert" hidden></p>
-      <div class="ag-list">${rows.map(t => `<article class="ag-item">
-        <div class="ag-item-head"><div><h3>${esc(t.titulo)}</h3><small>${esc(t.autor)} · ${t.prazo ? 'Prazo: '+esc(date(t.prazo))+(t.hora?' às '+esc(t.hora.slice(0,5)):'') : 'Rotina contínua'}${t.semanal?' · Toda segunda-feira':''}${late(t) && t.status !== 'concluida' && !archive ? ' · Em atraso' : ''}</small></div>
-        <span class="ag-status" data-status="${esc(t.status)}">${esc(statuses[t.status])}</span></div>
-        ${t.detalhes ? `<p class="ag-note">${esc(t.detalhes)}</p>` : ''}
-        <details><summary>${archive ? 'Histórico' : 'Atualizar e ver histórico'}</summary>
-        ${archive ? '' : `<form class="ag-form" data-action="atualizar" data-id="${esc(t.id)}">
-          <label>Status<select name="status">${Object.entries(statuses).map(([k,v]) => `<option value="${k}" ${k===t.status?'selected':''}>${v}</option>`).join('')}</select></label>
-          <label>Justificativa<textarea name="justificativa" rows="2" required maxlength="2000"></textarea></label>
-          <div class="ag-wide"><button class="btn sm primary">Salvar atualização</button></div>
-        </form>`}
-        ${(t.historico || []).map(h => `<div class="ag-history"><small>${esc(h.autor)} · ${esc(new Date(h.em).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}))} · ${esc(statuses[h.status])}</small><p class="ag-note">${esc(h.justificativa)}</p></div>`).join('') || '<p>Sem atualizações.</p>'}
-        </details>
-        ${t.pode_arquivar ? `<button type="button" class="btn sm" data-archive="${esc(t.id)}">Arquivar</button>` : ''}
-      </article>`).join('') || '<p>Nenhuma atividade nesta lista.</p>'}</div>`;
+      ${resumo}
+      <div class="ag-tabs ag-bar" aria-label="Visualização">
+        <button type="button" class="btn sm" data-view="ativas" aria-pressed="${!archive}">Na agenda</button>
+        <button type="button" class="btn sm" data-view="arquivadas" aria-pressed="${archive}">Arquivadas</button>
+      </div>
+      <div class="ag-list">${lista}</div>`;
   }
 
   async function save(action, data, trigger) {

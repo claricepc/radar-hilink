@@ -1,26 +1,59 @@
 [data-mod="agendaTalitha"][hidden], #mod-agendaTalitha [hidden]{display:none!important}
 body[data-active-mod="agendaTalitha"] :is(#global-filters,#context-badge,#page-meta .tag){display:none!important}
-#mod-agendaTalitha .ag-bar,#mod-agendaTalitha .ag-tabs,#mod-agendaTalitha .ag-item-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-#mod-agendaTalitha .ag-bar,#mod-agendaTalitha .ag-item-head{justify-content:space-between}
-#mod-agendaTalitha .ag-bar{margin-bottom:12px}
-#mod-agendaTalitha [aria-pressed="true"]{border-color:var(--azul);color:var(--azul-forte)}
-#mod-agendaTalitha .ag-item{border-bottom:1px solid var(--linha);padding:14px 0}
-#mod-agendaTalitha h3{font-size:15px;margin:0 0 4px;overflow-wrap:anywhere}
-#mod-agendaTalitha .ag-item-head>div{min-width:0}
-#mod-agendaTalitha small{color:var(--texto-3)}
-#mod-agendaTalitha .ag-status{border:1px solid var(--linha);border-radius:4px;padding:4px 8px;font-size:12px}
-#mod-agendaTalitha [data-status="bloqueada"]{background:var(--atencao-suave);color:var(--atencao)}
-#mod-agendaTalitha [data-status="concluida"]{background:var(--ok-suave);color:var(--ok)}
-#mod-agendaTalitha .ag-note{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}
-#mod-agendaTalitha details{margin:8px 0}
-#mod-agendaTalitha summary{cursor:pointer}
-#mod-agendaTalitha .ag-form{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:10px;padding:12px 0}
-#mod-agendaTalitha .ag-form label{display:grid;gap:4px;font-size:12px}
+#mod-agendaTalitha{--ag-r:var(--risco,#c0392b);--ag-rs:var(--risco-suave,#fdecea);--ag-a:var(--atencao,#8a5a00);--ag-as:var(--atencao-suave,#fff3d6);--ag-b:var(--azul,#0071bc);--ag-bs:var(--azul-suave,#e3f0fa);--ag-o:var(--ok,#1e7e34);--ag-os:var(--ok-suave,#e6f4ea)}
+#mod-agendaTalitha .ag-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+#mod-agendaTalitha .ag-titulo{font-size:22px;margin:0;color:var(--texto)}
+#mod-agendaTalitha .ag-sub{margin:4px 0 0;color:var(--texto-2);font-size:13px}
+#mod-agendaTalitha .ag-bar,#mod-agendaTalitha .ag-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+#mod-agendaTalitha .ag-tabs .btn[aria-pressed]{background:var(--superficie)!important;color:var(--texto-2)!important;border:1px solid var(--linha)!important;box-shadow:none!important}
+#mod-agendaTalitha .ag-tabs .btn[aria-pressed="true"]{background:var(--azul-forte)!important;color:#fff!important;border-color:var(--azul-forte)!important}
+#mod-agendaTalitha .ag-resumo{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:0 0 16px}
+#mod-agendaTalitha .ag-kpi{background:var(--superficie);border:1px solid var(--linha);border-top:4px solid var(--linha);border-radius:10px;padding:12px 14px}
+#mod-agendaTalitha .ag-kpi b{display:block;font-size:28px;line-height:1.1;color:var(--texto)}
+#mod-agendaTalitha .ag-kpi span{font-size:12px;color:var(--texto-2);font-weight:600}
+#mod-agendaTalitha .ag-kpi[data-urg="atrasada"]{border-top-color:var(--ag-r)}#mod-agendaTalitha .ag-kpi[data-urg="atrasada"] b{color:var(--ag-r)}
+#mod-agendaTalitha .ag-kpi[data-urg="hoje"]{border-top-color:var(--ag-a)}
+#mod-agendaTalitha .ag-kpi[data-urg="semana"]{border-top-color:var(--ag-b)}
+#mod-agendaTalitha .ag-kpi[data-urg="bloq"]{border-top-color:var(--ag-a)}
+#mod-agendaTalitha .ag-grupo{margin:0 0 18px}
+#mod-agendaTalitha .ag-grupo h2,#mod-agendaTalitha .ag-concluidas>summary{display:flex;align-items:baseline;gap:8px;font-size:14px;text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;color:var(--texto);cursor:default}
+#mod-agendaTalitha .ag-concluidas>summary{cursor:pointer}
+#mod-agendaTalitha .ag-grupo h2 span,#mod-agendaTalitha .ag-concluidas>summary span{background:var(--superficie-2,var(--ag-bs));border-radius:999px;padding:1px 9px;font-size:12px}
+#mod-agendaTalitha .ag-grupo[data-urg="atrasada"] h2{color:var(--ag-r)}
+#mod-agendaTalitha .ag-grupo h2 small{text-transform:none;letter-spacing:0;font-weight:400;color:var(--texto-3);font-size:12px}
+#mod-agendaTalitha .ag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+#mod-agendaTalitha .ag-card{background:var(--superficie);border:1px solid var(--linha);border-left:5px solid var(--ag-b);border-radius:10px;padding:14px 16px;min-width:0}
+#mod-agendaTalitha .ag-card[data-urg="atrasada"]{border-left-color:var(--ag-r);background:linear-gradient(90deg,var(--ag-rs),var(--superficie) 40%)}
+#mod-agendaTalitha .ag-card[data-urg="hoje"]{border-left-color:var(--ag-a)}
+#mod-agendaTalitha .ag-card[data-urg="depois"],#mod-agendaTalitha .ag-card[data-urg="sem"]{border-left-color:var(--linha)}
+#mod-agendaTalitha .ag-card[data-urg="ok"]{border-left-color:var(--ag-o);opacity:.85}
+#mod-agendaTalitha .ag-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+#mod-agendaTalitha .ag-prazo{font-size:12px;font-weight:700;color:var(--texto-2)}
+#mod-agendaTalitha .ag-card[data-urg="atrasada"] .ag-prazo{color:var(--ag-r)}
+#mod-agendaTalitha .ag-card[data-urg="hoje"] .ag-prazo{color:var(--ag-a)}
+#mod-agendaTalitha h3{font-size:15px;line-height:1.35;margin:0 0 4px;color:var(--texto);overflow-wrap:anywhere}
+#mod-agendaTalitha .ag-meta{margin:0 0 6px;font-size:12px;color:var(--texto-3)}
+#mod-agendaTalitha .ag-status{border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap;background:var(--ag-bs);color:var(--azul-forte)}
+#mod-agendaTalitha .ag-status[data-status="pendente"]{background:var(--superficie-2,#eef1f5);color:var(--texto-2)}
+#mod-agendaTalitha .ag-status[data-status="bloqueada"]{background:var(--ag-as);color:var(--ag-a)}
+#mod-agendaTalitha .ag-status[data-status="concluida"]{background:var(--ag-os);color:var(--ag-o)}
+#mod-agendaTalitha .ag-note{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0;font-size:13px;color:var(--texto)}
+#mod-agendaTalitha .ag-ultima{margin:8px 0;padding:8px 10px;border-radius:8px;background:var(--superficie-2,#f4f6f9);font-size:12px;color:var(--texto-2);overflow-wrap:anywhere}
+#mod-agendaTalitha .ag-ultima.ag-vazio{font-style:italic;color:var(--texto-3)}
+#mod-agendaTalitha details{margin:8px 0 0}
+#mod-agendaTalitha .ag-card summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--azul-forte)}
+#mod-agendaTalitha .ag-card-acoes{display:flex;justify-content:flex-end;margin-top:8px}
+#mod-agendaTalitha .ag-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;padding:12px 0}
+#mod-agendaTalitha .ag-nova{background:var(--superficie);border:1px solid var(--linha);border-radius:10px;padding:14px;margin-bottom:14px}
+#mod-agendaTalitha .ag-form label{display:grid;gap:4px;font-size:12px;font-weight:600;color:var(--texto-2)}
 #mod-agendaTalitha .ag-wide{grid-column:1/-1}
-#mod-agendaTalitha .ag-form :is(input,select,textarea){width:100%;min-width:0;color:var(--texto);background:var(--superficie);border:1px solid var(--linha);border-radius:4px;padding:7px;font:inherit}
-#mod-agendaTalitha .ag-history{border-left:2px solid var(--linha);padding:4px 10px;margin:8px 0}
-#mod-agendaTalitha .ag-error{color:var(--risco)}
-@media(max-width:650px){#mod-agendaTalitha .ag-form{grid-template-columns:1fr}}
+#mod-agendaTalitha .ag-form :is(input,select,textarea){width:100%;min-width:0;color:var(--texto);background:var(--superficie);border:1px solid var(--linha);border-radius:6px;padding:8px;font:inherit;font-weight:400}
+#mod-agendaTalitha .ag-history{border-left:3px solid var(--linha);padding:4px 10px;margin:8px 0}
+#mod-agendaTalitha .ag-history small{color:var(--texto-3)}
+#mod-agendaTalitha .ag-error{color:var(--ag-r)}
+#mod-agendaTalitha .ag-vazio{color:var(--texto-3)}
+@media(max-width:900px){#mod-agendaTalitha .ag-resumo{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){#mod-agendaTalitha .ag-form{grid-template-columns:1fr}#mod-agendaTalitha .ag-resumo{grid-template-columns:repeat(2,minmax(0,1fr))}#mod-agendaTalitha .ag-grid{grid-template-columns:1fr}#mod-agendaTalitha .ag-topo{flex-direction:column}}
 #ag-aviso{position:fixed;right:20px;bottom:20px;z-index:9999;max-width:380px;background:var(--superficie,#fff);color:var(--texto,#111);border:1px solid var(--linha,#ddd);border-left:4px solid var(--risco,#c0392b);border-radius:8px;padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px}
 #ag-aviso h4{margin:0 0 8px;font-size:14px}
 #ag-aviso ul{margin:0 0 10px;padding-left:18px}
@@ -28,3 +61,5 @@ body[data-active-mod="agendaTalitha"] :is(#global-filters,#context-badge,#page-m
 #ag-aviso .ag-aviso-acoes{display:flex;gap:8px}
 .ag-badge{display:inline-block;margin-left:6px;min-width:18px;padding:0 6px;border-radius:999px;background:var(--risco,#c0392b);color:#fff;font-size:11px;line-height:18px;text-align:center}
 @media(max-width:650px){#ag-aviso{left:12px;right:12px;bottom:12px;max-width:none}}
+#mod-agendaTalitha .ag-link{background:none;border:0;padding:4px 0;font:inherit;font-size:12px;color:var(--texto-3);text-decoration:underline;cursor:pointer}
+#mod-agendaTalitha .ag-link:hover{color:var(--ag-r)}
