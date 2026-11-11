@@ -71,7 +71,9 @@ Deno.serve(async (req) => {
   if (!tok) return json({ ok: false, erro: "nao autorizado" }, 401);
   // Quem e o dono do token: a propria API do Drive informa o e-mail (o script ja tem permissao de Drive).
   const ab = await fetch("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)", { headers: { Authorization: "Bearer " + tok } });
-  const info = ab.ok ? await ab.json() : {};
+  const corpoGoogle = await ab.text();
+  let info: any = {}; try { info = JSON.parse(corpoGoogle); } catch { /* */ }
+  if (!ab.ok) console.error("google about", ab.status, corpoGoogle.slice(0, 300));
   const email = String(info?.user?.emailAddress ?? "").toLowerCase();
   if (!email) return json({ ok: false, erro: "nao autorizado (google " + ab.status + ")" }, 401);
   const [perm] = await sql`select 1 ok from fin.planilha_remetente where lower(email) = ${email}`;
