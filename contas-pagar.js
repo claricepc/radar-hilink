@@ -1,10 +1,10 @@
 /* Read-only financial consultation. No browser financial cache or mutation API. */
 (()=>{
   'use strict';
-  const tabs={resumo:'Resumo',lancamentos:'Lançamentos',agenda:'Agenda',dre:'DRE',razao:'Razão',caixa:'Caixa',conciliacao:'Conciliação',auditoria:'Auditoria'};
+  const tabs={pagamentos:'Agenda de pagamentos',resumo:'Resumo',lancamentos:'Lançamentos',agenda:'Agenda',dre:'DRE',razao:'Razão',caixa:'Caixa',conciliacao:'Conciliação',auditoria:'Auditoria'};
   const now=new Date(),pad=n=>String(n).padStart(2,'0');
   const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const state={view:'resumo',de:local(new Date(now.getFullYear(),now.getMonth(),1)),ate:local(now),empresa:null,pagina:1,status:'todos',regime:'competencia'};
+  const state={view:'pagamentos',filialAg:'',de:local(new Date(now.getFullYear(),now.getMonth(),1)),ate:local(now),empresa:null,pagina:1,status:'todos',regime:'competencia'};
   let generation=0,controller=null,identity=null,authorized=false,last=null;
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money=v=>v===null||v===undefined?'Não disponível':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -69,10 +69,48 @@
     b.querySelector('#cp-coverage').innerHTML=`<details><summary>Cobertura da fonte por empresa</summary><p>Última competência pode incluir previsão futura. Ela não comprova atualização bancária.</p>${table(coverageRows)}</details>`;
     if(coverage.some(e=>!e.extrato_ate||String(e.extrato_ate).slice(0,10)<state.ate))b.querySelector('#cp-context').insertAdjacentHTML('beforeend','<div class="cp-notice">Cobertura bancária incompleta neste período. Não use esta consulta como fechamento definitivo.</div>');
   }
+
+  const ATRASO=['Atrasados','Vencem hoje','Próximos 7 dias','Depois'];
+  const outraFilial=t=>/PAGO\s+(POR|PELA|PELO|NO)\b|AGENDAD/i.test(String(t||''));
+  async function loadAgenda(own){
+    const b=box();if(!b)return;
+    b.querySelector('#cp-form').style.display='none';
+    b.querySelectorAll('[data-view]').forEach(el=>el.setAttribute('aria-selected',String(el.dataset.view===state.view)));
+    b.querySelector('#cp-result').innerHTML=msg('Lendo a agenda das planilhas…');b.querySelector('#cp-context').replaceChildren();b.querySelector('#cp-coverage').replaceChildren();
+    const {data,error}=await getSB().rpc('radar_cp_planilhas',{});
+    if(own!==generation||!box())return;
+    if(error){b.querySelector('#cp-result').innerHTML=msg('Agenda indisponível: '+error.message);return;}
+    paintAgenda(data);
+  }
+  function paintAgenda(d){
+    const b=box();if(!b)return;
+    const hoje=d.hoje, mais7=local(new Date(new Date(hoje+'T12:00:00').getTime()+7*864e5));
+    const itens=(d.agenda||[]).filter(i=>!state.filialAg||i.filial===state.filialAg);
+    const grupo=i=>i.data_vencimento<hoje?0:i.data_vencimento===hoje?1:i.data_vencimento<=mais7?2:3;
+    const g=[[],[],[],[]];itens.forEach(i=>g[grupo(i)].push(i));
+    const soma=a=>a.reduce((t,i)=>t+Number(i.previsto||0),0);
+    const filiais=[...new Set((d.leituras||[]).map(l=>l.filial))];
+    const dias=v=>Math.round((new Date(hoje+'T12:00:00')-new Date(v+'T12:00:00'))/864e5);
+    const prazo=i=>{const n=dias(i.data_vencimento);return n>0?`Venceu há ${n} dia${n>1?'s':''}`:n===0?'Vence hoje':n===-1?'Vence amanhã':`Vence em ${-n} dias`;};
+    let html=`<div class="cp-stats">${ATRASO.map((t,k)=>`<div class="cp-stat${k===0&&g[0].length?' cp-alerta':''}"><span>${t}</span><strong>${g[k].length} · ${money(soma(g[k]))}</strong></div>`).join('')}</div>
+      <div class="cp-chips"><button type="button" data-fil="" aria-pressed="${!state.filialAg}">Todas</button>${filiais.map(f=>`<button type="button" data-fil="${esc(f)}" aria-pressed="${state.filialAg===f}">${esc(f)}</button>`).join('')}</div>`;
+    g.forEach((lista,k)=>{
+      if(!lista.length)return;
+      html+=`<details class="cp-grupo"${k<3?' open':''}><summary>${ATRASO[k]} <span>${lista.length} · ${money(soma(lista))}</span></summary><div class="cp-table"><table><thead><tr><th>Vencimento</th><th>Empresa</th><th>Despesa</th><th>Grupo</th><th class="cp-number">Previsto</th><th>Observação</th></tr></thead><tbody>${lista.map(i=>`<tr><td>${date(i.data_vencimento)}<br><small>${prazo(i)}</small></td><td>${esc(i.filial)}</td><td>${esc(i.descricao)}</td><td>${esc(i.secao||'')}</td><td class="cp-number">${money(i.previsto)}</td><td>${outraFilial(i.info)?'<b>Conferir: </b>':''}${esc(i.info||'')}</td></tr>`).join('')}</tbody></table></div></details>`;
+    });
+    if(!itens.length)html+=msg('Nenhum pagamento em aberto neste recorte, ou as planilhas ainda não foram lidas.');
+    b.querySelector('#cp-result').innerHTML=html;
+    b.querySelectorAll('[data-fil]').forEach(x=>x.onclick=()=>{state.filialAg=x.dataset.fil;paintAgenda(d);});
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Fonte: planilhas de fluxo de caixa de cada filial, lidas todo dia às 6h. Entra aqui o que tem valor previsto e está com a coluna REALIZADO vazia, do mês anterior até os próximos 30 dias. Linhas marcadas com "Conferir" dizem que foram pagas por outra filial ou agendadas: confirme e preencha o REALIZADO na planilha.</div>`;
+    const lt=(d.leituras||[]).map(l=>{const u=l.ultima||{};return {filial:l.filial,lida:l.ultima_ok?new Date(l.ultima_ok).toLocaleString('pt-BR'):'Ainda não lida',alterada:u.modificado_em?new Date(u.modificado_em).toLocaleString('pt-BR'):'',situacao:!l.ativo?'Desativada':!u.em?'Aguardando primeira leitura':u.ok?'OK':'Erro: '+(u.erro||'')};});
+    b.querySelector('#cp-coverage').innerHTML=`<details><summary>Leitura das planilhas</summary><div class="cp-table"><table><thead><tr><th>Filial</th><th>Última leitura</th><th>Planilha alterada em</th><th>Situação</th></tr></thead><tbody>${lt.map(r=>`<tr><td>${esc(r.filial)}</td><td>${esc(r.lida)}</td><td>${esc(r.alterada)}</td><td>${esc(r.situacao)}</td></tr>`).join('')}</tbody></table></div></details>`;
+  }
   async function load(){
     const b=box();if(!b)return;
     if(!authorized||document.body.dataset.activeMod!=='cp')return;
     const own=++generation;controller?.abort();controller=new AbortController();
+    if(state.view==='pagamentos')return loadAgenda(own);
+    b.querySelector('#cp-form').style.display='';
     const active=['resumo','lancamentos','dre'].includes(state.view);
     b.querySelector('#cp-regime').disabled=!active;b.querySelector('#cp-status').disabled=!active;
     b.querySelectorAll('[data-view]').forEach(el=>el.setAttribute('aria-selected',String(el.dataset.view===state.view)));
