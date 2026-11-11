@@ -35,21 +35,24 @@ function dataVenc(comp: string, dia: number | null): string | null {
 }
 
 type Linha = Record<string, unknown>;
-function parseAba(filial: string, nome: string, comp: string, rows: string[][]): Linha[] {
+type Total = { prev: number | null; real: number | null };
+function parseAba(filial: string, nome: string, comp: string, rows: string[][], total: Total): Linha[] {
   const out: Linha[] = [];
   let bloco: "saida" | "retirada" | null = null, secao: string | null = null, viuCabecalho = false;
   rows.forEach((r, i) => {
     const c = [0, 1, 2, 3, 4].map((k) => String(r[k] ?? "").trim());
     const a = up(c[0]);
     if (!a && !c[2] && !c[3]) return;
-    if (!viuCabecalho) { if (up(c[1]) === "VENC") { viuCabecalho = true; bloco = "saida"; } return; }
-    if (a.startsWith("TOTAL DAS SAIDAS")) { bloco = null; return; }
+    if (!viuCabecalho) { if (up(c[1]) === "VENC" || up(c[1]).startsWith("DATA") || up(c[2]).startsWith("PREVIS")) { viuCabecalho = true; bloco = "saida"; } return; }
+    if (a.startsWith("TOTAL DAS SAIDAS")) { if (bloco === "saida") { const tp = dinheiro(c[2]), tr = dinheiro(c[3]); total.prev = tp === null ? null : Math.abs(tp); total.real = tr === null ? null : Math.abs(tr); } bloco = null; return; }
     if (a.startsWith("REEMBOLSOS E RETIRADAS")) { bloco = "retirada"; secao = "REEMBOLSOS E RETIRADAS"; return; }
     if (bloco === "retirada" && a === "DESCRICAO") return;
     if (bloco === "retirada" && (a.startsWith("DEBITO/CREDITO") || a.startsWith("TOTAL DEBITO") || a.startsWith("RESULTADO") || a.startsWith("SALDO A PAGAR") || a.startsWith("BATIMENTO"))) { bloco = null; return; }
     if (!bloco || !c[0]) return;
     const dia = /^\d{1,2}$/.test(c[1]) && +c[1] >= 1 && +c[1] <= 31 ? +c[1] : null;
-    const prev = dinheiro(c[2]), real = dinheiro(c[3]);
+    // saidas: algumas abas antigas guardam o valor com sinal negativo; aqui vale o valor absoluto
+    const abs = (n: number | null) => (n === null || bloco === "retirada" ? n : Math.abs(n));
+    const prev = abs(dinheiro(c[2])), real = abs(dinheiro(c[3]));
     if (dia === null && prev === null && real === null && !c[2] && !c[3]) { secao = c[0]; return; }
     if (bloco === "saida" && dia === null && dinheiro(c[1]) !== null && !c[2] && !c[3]) { secao = c[0]; return; }
     out.push({
@@ -88,22 +91,28 @@ Deno.serve(async (req) => {
   if (!fonte) return json({ ok: false, erro: "filial invalida" }, 400);
   try {
     if (corpo.erro) throw new Error(String(corpo.erro).slice(0, 400));
-    const linhas: Linha[] = []; const comps = new Set<string>();
+    const linhas: Linha[] = []; const comps = new Set<string>(); const conf: any[] = [];
     for (const aba of (corpo.abas ?? [])) {
       const comp = competencia(String(aba.nome ?? ""));
       if (!comp || !Array.isArray(aba.linhas)) continue;
       if (comps.has(comp)) continue;
       comps.add(comp);
-      linhas.push(...parseAba(filial, String(aba.nome), comp, aba.linhas));
+      const total: Total = { prev: null, real: null };
+      const ls = parseAba(filial, String(aba.nome), comp, aba.linhas, total);
+      linhas.push(...ls);
+      const soma = (k: string) => Math.round(ls.filter((l) => l.bloco === "saida").reduce((t, l) => t + Number(l[k] ?? 0), 0) * 100) / 100;
+      const sp = soma("previsto"), sr = soma("realizado");
+      conf.push({ competencia: comp, aba: String(aba.nome), linhas: ls.length, soma_previsto: sp, total_previsto: total.prev, soma_realizado: sr, total_realizado: total.real,
+        confere: total.prev !== null && Math.abs(sp - total.prev) < 0.05 && (total.real === null || Math.abs(sr - total.real) < 0.05) });
     }
     if (!comps.size) throw new Error("nenhuma aba de 2026 reconhecida");
     await sql.begin(async (t) => {
       await t`delete from fin.planilha_linha where filial = ${filial} and competencia = any(${[...comps]}::date[])`;
       for (let i = 0; i < linhas.length; i += 500) await t`insert into fin.planilha_linha ${t(linhas.slice(i, i + 500))}`;
-      await t`insert into fin.planilha_leitura (filial, ok, abas, linhas, modificado_em, modificado_por)
-              values (${filial}, true, ${comps.size}, ${linhas.length}, ${corpo.modificado_em ?? null}, ${corpo.modificado_por ?? null})`;
+      await t`insert into fin.planilha_leitura (filial, ok, abas, linhas, modificado_em, modificado_por, conferencia)
+              values (${filial}, true, ${comps.size}, ${linhas.length}, ${corpo.modificado_em ?? null}, ${corpo.modificado_por ?? null}, ${t.json(conf)})`;
     });
-    return json({ ok: true, filial, abas: comps.size, linhas: linhas.length });
+    return json({ ok: true, filial, abas: comps.size, linhas: linhas.length, divergentes: conf.filter((c) => !c.confere).map((c) => c.aba) });
   } catch (e) {
     const msg = String((e as Error).message ?? e).slice(0, 400);
     await sql`insert into fin.planilha_leitura (filial, ok, erro) values (${filial}, false, ${msg})`;
