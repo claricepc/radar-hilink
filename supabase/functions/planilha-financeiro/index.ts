@@ -1,8 +1,8 @@
 import postgres from "npm:postgres@3.4.4";
 
 // Recebe do Apps Script da Clarice as abas de 2026 das planilhas financeiras (somente leitura nas planilhas)
-// e grava em fin.planilha_linha. Autenticacao: token OAuth do Google do proprio script, conferido no Google;
-// o e-mail precisa estar em fin.planilha_remetente. Nenhum segredo compartilhado.
+// e grava em fin.planilha_linha. Autenticacao: token OAuth do Google do proprio script; o e-mail do dono
+// (informado pelo Google) precisa estar em fin.planilha_remetente. Nenhum segredo compartilhado.
 const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!, { prepare: false, max: 1 });
 
 const MESES: Record<string, number> = { JANEIRO: 1, FEVEREIRO: 2, MARCO: 3, ABRIL: 4, MAIO: 5, JUNHO: 6, JULHO: 7, AGOSTO: 8, SETEMBRO: 9, OUTUBRO: 10, NOVEMBRO: 11, DEZEMBRO: 12 };
@@ -69,10 +69,11 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ ok: false, erro: "use POST" }, 405);
   const tok = req.headers.get("x-google-token") ?? "";
   if (!tok) return json({ ok: false, erro: "nao autorizado" }, 401);
-  const ti = await fetch("https://oauth2.googleapis.com/tokeninfo?access_token=" + encodeURIComponent(tok));
-  const info = ti.ok ? await ti.json() : {};
-  const email = String(info.email ?? "").toLowerCase();
-  if (!email || String(info.email_verified) !== "true") return json({ ok: false, erro: "nao autorizado" }, 401);
+  // Quem e o dono do token: a propria API do Drive informa o e-mail (o script ja tem permissao de Drive).
+  const ab = await fetch("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)", { headers: { Authorization: "Bearer " + tok } });
+  const info = ab.ok ? await ab.json() : {};
+  const email = String(info?.user?.emailAddress ?? "").toLowerCase();
+  if (!email) return json({ ok: false, erro: "nao autorizado (google " + ab.status + ")" }, 401);
   const [perm] = await sql`select 1 ok from fin.planilha_remetente where lower(email) = ${email}`;
   if (!perm) return json({ ok: false, erro: "nao autorizado" }, 403);
 
