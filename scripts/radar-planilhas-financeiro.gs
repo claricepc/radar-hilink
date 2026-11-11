@@ -46,8 +46,7 @@ function enviar(f) {
     if (tmp) { try { DriveApp.getFileById(tmp).setTrashed(true); } catch (e2) {} }
   }
   var r = UrlFetchApp.fetch(FUNCAO, {
-    method: 'post', contentType: 'application/json', payload: JSON.stringify(corpo),
-    headers: { 'x-google-token': ScriptApp.getOAuthToken() }, muteHttpExceptions: true
+    method: 'post', contentType: 'application/json', payload: JSON.stringify(Object.assign(corpo, { token: ScriptApp.getOAuthToken() })), muteHttpExceptions: true
   });
   Logger.log(f.filial + ': ' + r.getResponseCode() + ' ' + r.getContentText());
 }

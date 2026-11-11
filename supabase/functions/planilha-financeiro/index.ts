@@ -67,8 +67,12 @@ const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { sta
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ ok: false, erro: "use POST" }, 405);
-  const tok = req.headers.get("x-google-token") ?? "";
-  if (!tok) return json({ ok: false, erro: "nao autorizado" }, 401);
+  let corpo: any;
+  try { corpo = await req.json(); } catch { return json({ ok: false, erro: "corpo invalido" }, 400); }
+  // o token vem no corpo (cabecalhos x-google-* sao descartados no caminho ate a funcao)
+  const tok = String(corpo?.token ?? req.headers.get("x-radar-token") ?? "");
+  delete corpo.token;
+  if (!tok) return json({ ok: false, erro: "nao autorizado (sem token)" }, 401);
   // Quem e o dono do token: a propria API do Drive informa o e-mail (o script ja tem permissao de Drive).
   const ab = await fetch("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)", { headers: { Authorization: "Bearer " + tok } });
   const corpoGoogle = await ab.text();
@@ -79,8 +83,6 @@ Deno.serve(async (req) => {
   const [perm] = await sql`select 1 ok from fin.planilha_remetente where lower(email) = ${email}`;
   if (!perm) return json({ ok: false, erro: "nao autorizado" }, 403);
 
-  let corpo: any;
-  try { corpo = await req.json(); } catch { return json({ ok: false, erro: "corpo invalido" }, 400); }
   const filial = up(corpo.filial);
   const [fonte] = await sql`select filial from fin.planilha_fonte where filial = ${filial} and ativo`;
   if (!fonte) return json({ ok: false, erro: "filial invalida" }, 400);
