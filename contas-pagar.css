@@ -32,3 +32,13 @@
 body[data-active-mod=cp] #global-filters,body[data-active-mod=cp] #context-badge,body[data-active-mod=cp] #page-meta .tag{display:none!important}
 body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9bb1c3}
 @media(max-width:700px){#mod-cp .cp-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#mod-cp .cp-head{align-items:start}#mod-cp label{flex:1 1 130px}#mod-cp .cp-stat strong{font-size:18px}}
+
+#mod-cp .cp-chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+#mod-cp .cp-chips button{border:1px solid #c9d3e3;background:#fff;border-radius:999px;padding:5px 12px;font-size:12px;cursor:pointer;color:#1f2d47}
+#mod-cp .cp-chips button[aria-pressed="true"]{background:#13315c;border-color:#13315c;color:#fff}
+#mod-cp .cp-stat.cp-alerta{border-color:#d9534f;background:#fff4f4}
+#mod-cp .cp-stat.cp-alerta strong{color:#b52a26}
+#mod-cp .cp-grupo{margin:10px 0;border:1px solid #e1e7f0;border-radius:10px;background:#fff}
+#mod-cp .cp-grupo summary{padding:10px 14px;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;gap:12px}
+#mod-cp .cp-grupo summary span{font-weight:500;color:#51607a}
+#mod-cp .cp-grupo td small{color:#6b7891}
