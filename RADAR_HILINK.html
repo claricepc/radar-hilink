@@ -3254,7 +3254,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
         <div class="nav-sub" data-tec="tecnico" onclick="go('tecnica');tecSub('tecnico')">Painel técnico completo</div>
       </div></div>
     <div class="nav-group nav-hub nav-area collapsed" data-area="equipe"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Equipe</div><div class="nav-group-items">
-        <div class="nav-item nav-item-sub" data-mod="agendaTalitha" onclick="go('agendaTalitha')" hidden><span>Agenda da Talitha</span></div>
+        <div class="nav-item nav-item-sub perm-ok" data-mod="agendaTalitha" onclick="go('agendaTalitha')" hidden><span>Agenda</span></div>
         <div class="nav-item nav-item-sub" data-mod="informacoes" onclick="go('informacoes')"><span>Informações gerais</span></div>
         <div class="nav-sub nav-sub-fixo" data-cd="atividades" onclick="radarIrAtividades()">Atividades da equipe</div>
         <div class="nav-sub nav-sub-fixo" data-cd="decisoes" onclick="go('cobrancaDia');cdSub('decisoes')">Decisão da gerência</div>
@@ -10844,7 +10844,7 @@ function go(mod){
                 propostas:['Propostas Corporativas','Geração assistida de proposta comercial a partir do CRM e viabilidade'],
                 acao:['Estratégia de Atuação','Prioridades automáticas, campanhas e plano de ação operacional'],
                 usuarios:['Usuários e acessos','Cadastro de usuários do Radar, redefinição de senha e permissões'],
-                agendaTalitha:['Agenda da Talitha','Atividades e prazos'],
+                agendaTalitha:['Agenda','Atividades e prazos'],
                 cp:['Contas a pagar','Consulta e auditoria do financeiro existente, sem alterar lançamentos.'],
                 receitas:['RECEITAS','Recebido por filial e mês, direto do IXC. Atualiza pelo botão.'],
                 informacoes:['INFORMAÇÕES GERAIS','Planos, valores, taxas, links e acessos. Fonte oficial para todo o time.'],
@@ -25964,9 +25964,10 @@ function radarAplicarModulos(){
   const restrito = perfil==='atendente' || (perfil==='usuario' && mods.size>0);
   if(perfil==='atendente') mods.add('cobrancaDia');
   document.body.classList.toggle('radar-modulos-restritos', restrito);
-  document.querySelectorAll('.sidebar nav .nav-item').forEach(el=>{ el.classList.toggle('perm-ok', !restrito || mods.has(el.dataset.mod) || el.dataset.mod==='informacoes'); });
+  document.querySelectorAll('.sidebar nav .nav-item').forEach(el=>{ el.classList.toggle('perm-ok', !restrito || mods.has(el.dataset.mod) || ['informacoes','agendaTalitha'].includes(el.dataset.mod)); });
 }
 function radarModuloPermitido(mod){
+  if(mod==='agendaTalitha') return !!window.agendaPodeAcessar?.();
   const perfil = CD.perfil, mods = new Set(CD.modulos||[]);
   if(mod==='informacoes') return true;
   if(perfil==='atendente') return mod==='cobrancaDia' || mods.has(mod);
@@ -32299,5 +32300,5 @@ async function _doGerarCorreiosZip(selecionados){
 <script src="dici-anatel.js?v=20261104-persist1"></script>
 <script src="contas-pagar.js?v=20261109-consulta2"></script>
 <link rel="stylesheet" href="agenda-talitha.css">
-<script src="agenda-talitha.js"></script>
+<script src="agenda-talitha.js?v=2"></script>
 </html>

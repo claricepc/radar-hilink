@@ -4,11 +4,11 @@
   const statuses = {pendente:'Pendente', andamento:'Em andamento', bloqueada:'Bloqueada', concluida:'Concluída'};
   const box = () => document.getElementById('mod-agendaTalitha');
   const uid = () => getRadarUser()?.id;
-  const allowed = () => [talitha,clarice].includes(uid());
+  const allowed = () => Boolean(uid());
   window.agendaPodeAcessar = allowed;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]);
   const date = value => String(value).slice(0,10).split('-').reverse().join('/');
-  let opened = null, archive = false, tasks = [], busy = false, generation = 0;
+  let opened = null, archive = false, scope = 'talitha', tasks = [], busy = false, generation = 0;
 
   window.agendaInicio = () => {
     const nav = document.querySelector('[data-mod="agendaTalitha"]');
@@ -24,6 +24,7 @@
     generation++;
     tasks = [];
     archive = false;
+    scope = 'talitha';
     busy = false;
     if(box()) box().replaceChildren();
   };
@@ -60,8 +61,11 @@
     const today = now.toLocaleDateString('sv-SE', zone);
     const time = now.toLocaleTimeString('pt-BR',{...zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
     const late = t => t.prazo && (t.prazo < today || (t.prazo === today && t.hora && t.hora.slice(0,5) < time));
-    const rows = tasks.filter(t => Boolean(t.arquivada_em) === archive);
-    box().innerHTML = `<div class="ag-bar"><div class="ag-tabs" aria-label="Visualização">
+    const rows = tasks.filter(t => Boolean(t.arquivada_em) === archive && (uid() !== clarice || t.agenda === scope));
+    box().innerHTML = `${uid() === clarice ? `<div class="ag-tabs ag-bar">
+      <button type="button" class="btn sm" data-scope="talitha" aria-pressed="${scope==='talitha'}">Agenda da Talitha</button>
+      <button type="button" class="btn sm" data-scope="pessoal" aria-pressed="${scope==='pessoal'}">Minha agenda</button>
+      </div>` : ''}<div class="ag-bar"><div class="ag-tabs" aria-label="Visualização">
       <button type="button" class="btn sm" data-view="ativas" aria-pressed="${!archive}">Na agenda</button>
       <button type="button" class="btn sm" data-view="arquivadas" aria-pressed="${archive}">Arquivadas</button>
       </div><button type="button" class="btn sm primary" data-new>Nova atividade</button></div>
@@ -116,12 +120,14 @@
     e.preventDefault();
     const form = e.target;
     const data = Object.fromEntries(new FormData(form));
+    if(form.dataset.action === 'criar' && uid() === clarice) data.agenda = scope;
     if(form.dataset.id) data.id = form.dataset.id;
     save(form.dataset.action, data, e.submitter);
   });
   box()?.addEventListener('click', e => {
     const button = e.target.closest('button');
     if(!button || busy) return;
+    if(button.dataset.scope) { scope = button.dataset.scope; archive = false; paint(); }
     if(button.dataset.view) { archive = button.dataset.view === 'arquivadas'; paint(); }
     if(button.hasAttribute('data-new')) {
       const form = box().querySelector('[data-action="criar"]');
