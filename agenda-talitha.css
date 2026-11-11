@@ -21,3 +21,10 @@ body[data-active-mod="agendaTalitha"] :is(#global-filters,#context-badge,#page-m
 #mod-agendaTalitha .ag-history{border-left:2px solid var(--linha);padding:4px 10px;margin:8px 0}
 #mod-agendaTalitha .ag-error{color:var(--risco)}
 @media(max-width:650px){#mod-agendaTalitha .ag-form{grid-template-columns:1fr}}
+#ag-aviso{position:fixed;right:20px;bottom:20px;z-index:9999;max-width:380px;background:var(--superficie,#fff);color:var(--texto,#111);border:1px solid var(--linha,#ddd);border-left:4px solid var(--risco,#c0392b);border-radius:8px;padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px}
+#ag-aviso h4{margin:0 0 8px;font-size:14px}
+#ag-aviso ul{margin:0 0 10px;padding-left:18px}
+#ag-aviso li{margin:3px 0}
+#ag-aviso .ag-aviso-acoes{display:flex;gap:8px}
+.ag-badge{display:inline-block;margin-left:6px;min-width:18px;padding:0 6px;border-radius:999px;background:var(--risco,#c0392b);color:#fff;font-size:11px;line-height:18px;text-align:center}
+@media(max-width:650px){#ag-aviso{left:12px;right:12px;bottom:12px;max-width:none}}

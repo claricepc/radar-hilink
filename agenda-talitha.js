@@ -20,6 +20,36 @@
     return true;
   };
 
+
+  // Aviso ao abrir o Radar: atividades atrasadas e do dia, uma vez por sessão.
+  window.agendaAviso = async () => {
+    if(!allowed()) return;
+    const quem = uid();
+    let r;
+    try { r = await getSB().rpc('radar_agenda_talitha', {p_acao:'listar', p_dados:{}}); } catch(e) { return; }
+    if(r.error || quem !== uid()) return;
+    const zone = {timeZone:'America/Sao_Paulo'};
+    const hoje = new Date().toLocaleDateString('sv-SE', zone);
+    const abertas = (r.data?.tarefas || []).filter(t => !t.arquivada_em && t.status !== 'concluida' && t.prazo);
+    const atrasadas = abertas.filter(t => t.prazo < hoje);
+    const doDia = abertas.filter(t => t.prazo === hoje);
+    const nav = document.querySelector('[data-mod="agendaTalitha"] span');
+    if(nav) nav.innerHTML = 'Agenda' + (atrasadas.length + doDia.length ? ` <b class="ag-badge">${atrasadas.length + doDia.length}</b>` : '');
+    if(!atrasadas.length && !doDia.length) return;
+    let chave = 'agendaAviso:' + quem + ':' + hoje;
+    try { if(sessionStorage.getItem(chave)) return; sessionStorage.setItem(chave, '1'); } catch(e) {}
+    document.getElementById('ag-aviso')?.remove();
+    const nome = t => esc(t.titulo) + (uid() === clarice && t.agenda === 'talitha' ? ' <small>(Talitha)</small>' : '');
+    const lista = [...atrasadas.map(t => `<li><b>Atrasada</b> desde ${esc(date(t.prazo))}: ${nome(t)}</li>`), ...doDia.map(t => `<li><b>Hoje</b>${t.hora ? ' às ' + esc(t.hora.slice(0,5)) : ''}: ${nome(t)}</li>`)];
+    const div = document.createElement('div');
+    div.id = 'ag-aviso';
+    div.setAttribute('role', 'alert');
+    div.innerHTML = `<h4>Agenda: ${atrasadas.length} atrasada(s) e ${doDia.length} para hoje</h4><ul>${lista.slice(0,6).join('')}</ul>${lista.length > 6 ? `<p>e mais ${lista.length - 6}.</p>` : ''}
+      <div class="ag-aviso-acoes"><button type="button" class="btn sm primary" data-abrir>Abrir agenda</button><button type="button" class="btn sm" data-fechar>Fechar</button></div>`;
+    div.querySelector('[data-abrir]').onclick = () => { div.remove(); go('agendaTalitha'); };
+    div.querySelector('[data-fechar]').onclick = () => div.remove();
+    document.body.append(div);
+  };
   window.agendaLimpar = () => {
     generation++;
     tasks = [];
@@ -27,6 +57,7 @@
     scope = 'talitha';
     busy = false;
     if(box()) box().replaceChildren();
+    document.getElementById('ag-aviso')?.remove();
   };
 
   async function request(action, data = {}) {

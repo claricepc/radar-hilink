@@ -3335,7 +3335,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
   </div>
 
   <!-- ====================== MÓDULO: SETUP ====================== -->
-  <div class="module active" id="mod-setup">
+  <div class="module" id="mod-setup">
     <div class="section setup-section upload-cockpit">
       <div class="setup-top compact">
         <div class="setup-intro">
@@ -8652,7 +8652,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
 
   <div class="module" id="mod-cobrancaDia"></div>
   <div class="module" id="mod-oportunidades"></div>
-  <div class="module" id="mod-inicio"></div>
+  <div class="module active" id="mod-inicio"><div class="section compact-section"><p class="cdg-nota">Carregando a visão geral...</p></div></div>
   <div class="module" id="mod-usuarios"></div>
   <div class="module" id="mod-receitas"></div>
   <div class="module" id="mod-cp"></div>
@@ -9530,7 +9530,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
 </div>
 <script>
 // ================== STATE ==================
-const STATE = { files:{logins:null,contratos:null,recebimentos:null,carneBoletos:null,fibra:null,acs:null,comodato:null,opa:null,alteracoes:null,historicoPgto:null,cadastro:null}, raw:{}, processed:null, campaign:null, selected:new Set(), activeMod:'setup', activeSeg:null, filtros:{competencia:'',dataDe:'',dataAte:'',filial:'Todas',categoria:'PF+PJ'} };
+const STATE = { files:{logins:null,contratos:null,recebimentos:null,carneBoletos:null,fibra:null,acs:null,comodato:null,opa:null,alteracoes:null,historicoPgto:null,cadastro:null}, raw:{}, processed:null, campaign:null, selected:new Set(), activeMod:'inicio', activeSeg:null, filtros:{competencia:'',dataDe:'',dataAte:'',filial:'Todas',categoria:'PF+PJ'} };
 
 // Projetos Hilink fixos: o relatório de projetos do IXC não é mais fonte de carga.
 // Projetos "(LEGADO)" são operacionais mesmo inativos no IXC; projetos infra são internos.
@@ -23699,7 +23699,7 @@ function bindNavigation(){
 }
 
 function ensureActiveModuleVisible(){
-  const mod=STATE.activeMod || document.querySelector('.nav-item.active')?.dataset.mod || 'setup';
+  const mod=STATE.activeMod || document.querySelector('.nav-item.active')?.dataset.mod || 'inicio';
   const box=document.getElementById('mod-'+mod);
   if(!box)return;
   document.querySelectorAll('.module').forEach(el=>{
@@ -26181,9 +26181,10 @@ async function radarAplicarPerfil(){
     const navU = document.querySelector('.nav-item[data-mod="usuarios"]'); if(navU) navU.style.display = cdPodeGerenciar() ? '' : 'none';
     try{ const rr = await sb.rpc('radar_pode_recebimentos'); document.body.classList.toggle('radar-recebimentos-ok', !rr.error && rr.data===true); }catch(e){ document.body.classList.remove('radar-recebimentos-ok'); }
     if(data?.trocar_senha) radarTrocarSenhaModal();
+    try{ window.agendaAviso?.(); }catch(e){}
     if(window.agendaInicio?.()){ CD._abriuInicio = true; return; }
     if(CD.perfil==='atendente'){ CD.atv.lista=null; go('cobrancaDia'); }
-    else if(!CD._abriuInicio && (!STATE.activeMod || STATE.activeMod==='setup' || document.querySelector('.nav-item.active')?.dataset.mod==='setup')){ CD._abriuInicio = true; go('inicio'); }
+    else if(!CD._abriuInicio && (!STATE.activeMod || STATE.activeMod==='setup' || STATE.activeMod==='inicio' || document.querySelector('.nav-item.active')?.dataset.mod==='setup')){ CD._abriuInicio = true; go('inicio'); }
     else if(document.body.dataset.activeMod==='cobrancaDia' || document.getElementById('mod-cobrancaDia')?.offsetParent) renderCobrancaDia();
   }catch(e){ console.warn('[Radar] perfil', e.message||e); }
 }
@@ -32299,6 +32300,6 @@ async function _doGerarCorreiosZip(selecionados){
 <script src="faturamento-ixc.js?v=20261104"></script>
 <script src="dici-anatel.js?v=20261104-persist1"></script>
 <script src="contas-pagar.js?v=20261109-consulta2"></script>
-<link rel="stylesheet" href="agenda-talitha.css">
-<script src="agenda-talitha.js?v=2"></script>
+<link rel="stylesheet" href="agenda-talitha.css?v=3">
+<script src="agenda-talitha.js?v=3"></script>
 </html>
