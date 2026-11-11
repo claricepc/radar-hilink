@@ -1,0 +1,23 @@
+[data-mod="agendaTalitha"][hidden], #mod-agendaTalitha [hidden]{display:none!important}
+body[data-active-mod="agendaTalitha"] :is(#global-filters,#context-badge,#page-meta .tag){display:none!important}
+#mod-agendaTalitha .ag-bar,#mod-agendaTalitha .ag-tabs,#mod-agendaTalitha .ag-item-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#mod-agendaTalitha .ag-bar,#mod-agendaTalitha .ag-item-head{justify-content:space-between}
+#mod-agendaTalitha .ag-bar{margin-bottom:12px}
+#mod-agendaTalitha [aria-pressed="true"]{border-color:var(--azul);color:var(--azul-forte)}
+#mod-agendaTalitha .ag-item{border-bottom:1px solid var(--linha);padding:14px 0}
+#mod-agendaTalitha h3{font-size:15px;margin:0 0 4px;overflow-wrap:anywhere}
+#mod-agendaTalitha .ag-item-head>div{min-width:0}
+#mod-agendaTalitha small{color:var(--texto-3)}
+#mod-agendaTalitha .ag-status{border:1px solid var(--linha);border-radius:4px;padding:4px 8px;font-size:12px}
+#mod-agendaTalitha [data-status="bloqueada"]{background:var(--atencao-suave);color:var(--atencao)}
+#mod-agendaTalitha [data-status="concluida"]{background:var(--ok-suave);color:var(--ok)}
+#mod-agendaTalitha .ag-note{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}
+#mod-agendaTalitha details{margin:8px 0}
+#mod-agendaTalitha summary{cursor:pointer}
+#mod-agendaTalitha .ag-form{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:10px;padding:12px 0}
+#mod-agendaTalitha .ag-form label{display:grid;gap:4px;font-size:12px}
+#mod-agendaTalitha .ag-wide{grid-column:1/-1}
+#mod-agendaTalitha .ag-form :is(input,select,textarea){width:100%;min-width:0;color:var(--texto);background:var(--superficie);border:1px solid var(--linha);border-radius:4px;padding:7px;font:inherit}
+#mod-agendaTalitha .ag-history{border-left:2px solid var(--linha);padding:4px 10px;margin:8px 0}
+#mod-agendaTalitha .ag-error{color:var(--risco)}
+@media(max-width:650px){#mod-agendaTalitha .ag-form{grid-template-columns:1fr}}

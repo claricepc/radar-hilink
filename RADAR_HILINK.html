@@ -139,6 +139,8 @@ function radarLogout(){
   const sb=getSB(); if(!sb)return;
   sb.auth.signOut().then(()=>{
     _radarUser=null;
+    window.agendaLimpar?.();
+    window.agendaInicio?.();
     location.reload();
   });
 }
@@ -3252,6 +3254,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
         <div class="nav-sub" data-tec="tecnico" onclick="go('tecnica');tecSub('tecnico')">Painel técnico completo</div>
       </div></div>
     <div class="nav-group nav-hub nav-area collapsed" data-area="equipe"><div class="nav-section nav-area-h" onclick="radarAreaToggle(this)">Equipe</div><div class="nav-group-items">
+        <div class="nav-item nav-item-sub" data-mod="agendaTalitha" onclick="go('agendaTalitha')" hidden><span>Agenda da Talitha</span></div>
         <div class="nav-item nav-item-sub" data-mod="informacoes" onclick="go('informacoes')"><span>Informações gerais</span></div>
         <div class="nav-sub nav-sub-fixo" data-cd="atividades" onclick="radarIrAtividades()">Atividades da equipe</div>
         <div class="nav-sub nav-sub-fixo" data-cd="decisoes" onclick="go('cobrancaDia');cdSub('decisoes')">Decisão da gerência</div>
@@ -8653,6 +8656,7 @@ html body .sidebar .logo-box{background:url("data:image/png;base64,iVBORw0KGgoAA
   <div class="module" id="mod-usuarios"></div>
   <div class="module" id="mod-receitas"></div>
   <div class="module" id="mod-cp"></div>
+  <div class="module" id="mod-agendaTalitha"></div>
   <div class="module" id="mod-informacoes"></div>
 
   <!-- ====================== MÓDULO: CARNÊ CORREIOS ====================== -->
@@ -10797,17 +10801,19 @@ function renderModuleError(mod,err){
   console.error('[Radar] Erro ao renderizar módulo',mod,err);
 }
 function go(mod){
+  if(mod==='agendaTalitha' && !window.agendaPodeAcessar?.()) return;
+  if(mod!=='agendaTalitha' && STATE.activeMod==='agendaTalitha') window.agendaLimpar?.();
   if(mod!=='cp' && typeof cpClear==='function')cpClear();
   // O módulo de carregar relatórios saiu do menu: o Radar lê tudo direto do IXC. Quem pedir "setup" vai para a Visão geral.
   if(mod==='setup') mod='inicio';
   // Premiação: sem base carregada, busca direto do IXC (banco) em vez de pedir upload
   // Módulos que usam a base do IXC: sem base carregada, busca direto do banco em vez de pedir upload
-  const SEM_BASE=['setup','historico','propostas','relatorios','carneCorreios','cobrancaDia','oportunidades','inicio','usuarios','tecnica','receitas','informacoes','cp'];
+  const SEM_BASE=['setup','historico','propostas','relatorios','carneCorreios','cobrancaDia','oportunidades','inicio','usuarios','tecnica','receitas','informacoes','cp','agendaTalitha'];
   if(!SEM_BASE.includes(mod) && !STATE.processed && typeof ixcCargaUsar==='function' && getRadarUser?.()){
     if(!(IXC_CARGA && IXC_CARGA.carregando)){ toast('Buscando os dados direto do IXC...','success'); ixcCargaUsar(mod); }
     return;
   }
-  if(mod!=='cp'&&mod!=='setup'&&mod!=='historico'&&mod!=='propostas'&&mod!=='relatorios'&&mod!=='carneCorreios'&&mod!=='cobrancaDia'&&mod!=='oportunidades'&&mod!=='inicio'&&mod!=='usuarios'&&mod!=='tecnica'&&mod!=='receitas'&&mod!=='informacoes'&&!STATE.processed){toast('Processe a base primeiro','error');return}
+  if(!SEM_BASE.includes(mod)&&!STATE.processed){toast('Processe a base primeiro','error');return}
   if((mod==='segmentacao'||mod==='disparo')&&!STATE.campaign){toast('Mapeie uma campanha primeiro','error');mod='mapear'}
   if(!document.getElementById('mod-'+mod)){toast('Módulo não encontrado: '+mod,'error');return}
   document.querySelector(`.nav-item[data-mod="${mod}"]`)?.classList.remove('disabled');
@@ -10838,6 +10844,7 @@ function go(mod){
                 propostas:['Propostas Corporativas','Geração assistida de proposta comercial a partir do CRM e viabilidade'],
                 acao:['Estratégia de Atuação','Prioridades automáticas, campanhas e plano de ação operacional'],
                 usuarios:['Usuários e acessos','Cadastro de usuários do Radar, redefinição de senha e permissões'],
+                agendaTalitha:['Agenda da Talitha','Atividades e prazos'],
                 cp:['Contas a pagar','Consulta e auditoria do financeiro existente, sem alterar lançamentos.'],
                 receitas:['RECEITAS','Recebido por filial e mês, direto do IXC. Atualiza pelo botão.'],
                 informacoes:['INFORMAÇÕES GERAIS','Planos, valores, taxas, links e acessos. Fonte oficial para todo o time.'],
@@ -10885,6 +10892,7 @@ function go(mod){
     if(mod==='usuarios') renderUsuarios();
     if(mod==='receitas') renderReceitas();
     if(mod==='cp') renderContasPagar();
+    if(mod==='agendaTalitha') window.renderAgendaTalitha?.();
     if(mod==='informacoes') renderInformacoes();
   }catch(err){
     console.error('[RADAR] Erro no módulo',mod,err);
@@ -26172,6 +26180,7 @@ async function radarAplicarPerfil(){
     const navU = document.querySelector('.nav-item[data-mod="usuarios"]'); if(navU) navU.style.display = cdPodeGerenciar() ? '' : 'none';
     try{ const rr = await sb.rpc('radar_pode_recebimentos'); document.body.classList.toggle('radar-recebimentos-ok', !rr.error && rr.data===true); }catch(e){ document.body.classList.remove('radar-recebimentos-ok'); }
     if(data?.trocar_senha) radarTrocarSenhaModal();
+    if(window.agendaInicio?.()){ CD._abriuInicio = true; return; }
     if(CD.perfil==='atendente'){ CD.atv.lista=null; go('cobrancaDia'); }
     else if(!CD._abriuInicio && (!STATE.activeMod || STATE.activeMod==='setup' || document.querySelector('.nav-item.active')?.dataset.mod==='setup')){ CD._abriuInicio = true; go('inicio'); }
     else if(document.body.dataset.activeMod==='cobrancaDia' || document.getElementById('mod-cobrancaDia')?.offsetParent) renderCobrancaDia();
@@ -32289,4 +32298,6 @@ async function _doGerarCorreiosZip(selecionados){
 <script src="faturamento-ixc.js?v=20261104"></script>
 <script src="dici-anatel.js?v=20261104-persist1"></script>
 <script src="contas-pagar.js?v=20261109-consulta2"></script>
+<link rel="stylesheet" href="agenda-talitha.css">
+<script src="agenda-talitha.js"></script>
 </html>
