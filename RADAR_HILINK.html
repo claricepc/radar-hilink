@@ -27308,7 +27308,7 @@ async function vgIaTarefaTalitha(){
   for(const e of envios){
     const titulo=`Corrigir fluxo da IA no OPA: disparo de ${e.tipo} ${cdData(String(e.enviado_em).slice(0,10)).slice(0,5)}`.slice(0,160);
     if(existentes.includes(titulo)) continue;
-    const detalhes=`No disparo de ${e.tipo} (oferta ${e.oferta||'-'}) enviado em ${cdData(String(e.enviado_em).slice(0,10))}, modelo do OPA: ${e.modelo||'não informado'}.\n${cdNum(e.n)} clientes responderam e a IA (Fernanda) encerrou a conversa sem passar para a equipe.\nO que fazer: revisar o fluxo desse modelo no OPA para transferir quem responde a uma atendente. Se não for possível ajustar, abrir chamado no suporte do OPA informando o nome do modelo.`;
+    const detalhes=`No disparo de ${e.tipo} (oferta ${e.oferta||'-'}) enviado em ${cdData(String(e.enviado_em).slice(0,10))}, modelo do OPA: ${e.modelo||'não informado'}.\n${cdNum(e.n)} clientes responderam e a IA (Fernanda) encerrou a conversa sem passar para a equipe.\nO que fazer: revisar o fluxo desse modelo no OPA. Depois que o cliente responde (mesmo um simples sim ou não), o fluxo precisa transferir a conversa para uma atendente em vez de encerrar. Se não for possível ajustar, abrir chamado no suporte do OPA informando o nome do modelo.`;
     const r=await getSB().rpc('radar_agenda_talitha',{p_acao:'criar',p_dados:{agenda:'talitha',titulo,detalhes,prazo:amanha}});
     if(!r.error) n++; else toast('Tarefa da Talitha não criada: '+r.error.message,'warn');
   }
