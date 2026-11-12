@@ -1,7 +1,7 @@
 /* Read-only financial consultation. No browser financial cache or mutation API. */
 (()=>{
   'use strict';
-  const tabs={pagamentos:'Agenda de pagamentos',mes:'Resumo do mês',caixa30:'Caixa projetado',depara:'De/para (plano de contas)',resumo:'Resumo (sistema antigo)',lancamentos:'Lançamentos',dre:'DRE',razao:'Razão',caixa:'Caixa (sistema antigo)',conciliacao:'Conciliação',auditoria:'Auditoria'};
+  const tabs={pagamentos:'Agenda de pagamentos',mes:'Resumo do mês',caixa30:'Caixa projetado',depara:'De/para (plano de contas)',dre26:'DRE gerencial',resumo:'Resumo (sistema antigo)',lancamentos:'Lançamentos',dre:'DRE (sistema antigo)',razao:'Razão',caixa:'Caixa (sistema antigo)',conciliacao:'Conciliação',auditoria:'Auditoria'};
   const now=new Date(),pad=n=>String(n).padStart(2,'0');
   const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   const state={view:'pagamentos',filialAg:'',de:local(new Date(now.getFullYear(),now.getMonth(),1)),ate:local(now),empresa:null,pagina:1,status:'todos',regime:'competencia'};
@@ -215,6 +215,59 @@
     });
     b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Cada descrição das planilhas de 2026 é ligada a uma conta do plano de contas. A ligação vale para todas as empresas e para os meses seguintes: decidiu uma vez, fica valendo. "Regra automática" foi sugerida pelo Radar a partir de palavras da descrição; "Sistema antigo" vem das importações até abril e tem erros conhecidos, por isso aparece para revisar. Ao salvar, a sua escolha passa na frente de qualquer regra.</div>`;
   }
+
+  const DRE_EST=[
+    {k:'REC',t:'Receita recebida (IXC)',tipo:'rec'},
+    {k:'DESP_TRIB',t:'(-) Impostos (Simples e tributos)',tipo:'desp'},
+    {k:'=RL',t:'Receita líquida',tipo:'tot',f:['REC','-DESP_TRIB']},
+    {k:'CSP',t:'(-) Custos dos serviços (link, sistemas, energia, materiais)',tipo:'desp'},
+    {k:'=LB',t:'Lucro bruto',tipo:'tot',f:['=RL','-CSP']},
+    {k:'DESP_PESSOAL',t:'(-) Pessoal',tipo:'desp'},
+    {k:'DESP_ADM',t:'(-) Administrativas e frota',tipo:'desp'},
+    {k:'DESP_VENDAS',t:'(-) Comerciais',tipo:'desp'},
+    {k:'=RO',t:'Resultado operacional',tipo:'tot',f:['=LB','-DESP_PESSOAL','-DESP_ADM','-DESP_VENDAS']},
+    {k:'DESP_FINANC',t:'(-) Financeiras e tarifas',tipo:'desp'},
+    {k:'OUTRAS_DESP',t:'(-) Outras (acordos, diversas)',tipo:'desp'},
+    {k:'A_CLASSIFICAR',t:'(-) Ainda sem conta no de/para',tipo:'desp'},
+    {k:'=RP',t:'Resultado do período',tipo:'tot',f:['=RO','-DESP_FINANC','-OUTRAS_DESP','-A_CLASSIFICAR']}];
+  async function loadDre(own){
+    const b=box();if(!b)return;
+    b.querySelector('#cp-form').style.display='none';
+    b.querySelectorAll('[data-view]').forEach(el=>el.setAttribute('aria-selected',String(el.dataset.view===state.view)));
+    b.querySelector('#cp-result').innerHTML=msg('Montando a DRE…');b.querySelector('#cp-context').replaceChildren();b.querySelector('#cp-coverage').replaceChildren();
+    const {data,error}=await getSB().rpc('radar_cp_dre',{p_ano:null,p_empresa:state.dreEmp||null});
+    if(own!==generation||!box())return;
+    if(error){b.querySelector('#cp-result').innerHTML=msg('DRE indisponível: '+error.message);return;}
+    paintDre(data);
+  }
+  function paintDre(d){
+    const b=box();if(!b)return;
+    const meses=(d.meses||[]).sort(), L=d.linhas||[], R=d.receita||{};
+    const v={}; const put=(k,m,x)=>{(v[k] ||= {})[m]=(v[k][m]||0)+Number(x||0);};
+    meses.forEach(m=>put('REC',m,R[m]||0));
+    L.forEach(x=>put(x.linha,x.mes,x.valor));
+    DRE_EST.filter(e=>e.f).forEach(e=>meses.forEach(m=>{let t=0;e.f.forEach(t2=>{const neg=t2.startsWith('-'),k=t2.replace('-','');t+=(neg?-1:1)*((v[k]||{})[m]||0);});put(e.k,m,t);}));
+    const tot=k=>meses.reduce((t,m)=>t+((v[k]||{})[m]||0),0);
+    const parcial=m=>d.receita_ate&&String(d.receita_ate).slice(0,7)<=m;
+    const emp=['','RECIFE','JABOATAO','ITAPISSUMA','IG','MADALENA'];
+    const det=k=>{const g={};L.filter(x=>x.linha===k).forEach(x=>{const c=(x.conta_codigo||'')+' '+(x.conta||'Sem conta');(g[c] ||= {})[x.mes]=(g[c][x.mes]||0)+Number(x.valor||0);});return Object.entries(g).sort((a,b2)=>Object.values(b2[1]).reduce((s,n)=>s+n,0)-Object.values(a[1]).reduce((s,n)=>s+n,0));};
+    let h=`<div class="cp-mes-top"><label class="cp-mes-sel">Empresa <select id="cp-dre-emp">${emp.map(e=>`<option value="${e}"${(state.dreEmp||'')===e?' selected':''}>${e||'Consolidado'}</option>`).join('')}</select></label></div>
+    <div class="cp-table"><table class="cp-dre"><thead><tr><th>${d.ano}</th>${meses.map(m=>`<th class="cp-number">${mesTxt(m+'-01')}${parcial(m)?'<br><small>parcial</small>':''}</th>`).join('')}<th class="cp-number">Total</th></tr></thead><tbody>`;
+    DRE_EST.forEach(e=>{
+      const cls=e.tipo==='tot'?'cp-total':e.tipo==='rec'?'cp-rec':'';
+      const exp=e.tipo==='desp'&&det(e.k).length;
+      h+=`<tr class="${cls}${exp?' cp-dre-exp':''}" ${exp?`data-dre="${e.k}"`:''}><td>${exp?'<span class="cp-mais">+</span> ':''}${esc(e.t)}</td>${meses.map(m=>`<td class="cp-number${(v[e.k]||{})[m]<0?' cp-dif':''}">${m0((v[e.k]||{})[m]||0)}</td>`).join('')}<td class="cp-number">${m0(tot(e.k))}</td></tr>`;
+      if(exp) det(e.k).forEach(([c,mm])=>{h+=`<tr class="cp-dre-det" data-pai="${e.k}" hidden><td><small>${esc(c)}</small></td>${meses.map(m=>`<td class="cp-number"><small>${mm[m]?m0(mm[m]):''}</small></td>`).join('')}<td class="cp-number"><small>${m0(Object.values(mm).reduce((s,n)=>s+n,0))}</small></td></tr>`;});
+      if(e.k==='=RP') h+=`<tr><td><small>Margem sobre a receita</small></td>${meses.map(m=>{const r=(v.REC||{})[m]||0;return `<td class="cp-number"><small>${r?Math.round(((v['=RP']||{})[m]||0)/r*100)+'%':'-'}</small></td>`;}).join('')}<td class="cp-number"><small>${tot('REC')?Math.round(tot('=RP')/tot('REC')*100)+'%':'-'}</small></td></tr>`;
+    });
+    h+=`</tbody></table></div>`;
+    const fora=[['FORA_ATIVO','Investimentos, compras de empresas, equipamentos e aplicações'],['FORA_PASSIVO','Parcelas de empréstimos e financiamentos, faturas de cartão e acordos com sócios']];
+    h+=`<h3 class="cp-h">Saídas de caixa que não são despesa</h3><div class="cp-table"><table><thead><tr><th></th>${meses.map(m=>`<th class="cp-number">${mesTxt(m+'-01')}</th>`).join('')}<th class="cp-number">Total</th></tr></thead><tbody>${fora.map(([k,t])=>`<tr class="cp-dre-exp" data-dre="${k}"><td><span class="cp-mais">+</span> ${t}</td>${meses.map(m=>`<td class="cp-number">${m0((v[k]||{})[m]||0)}</td>`).join('')}<td class="cp-number">${m0(tot(k))}</td></tr>${det(k).map(([c,mm])=>`<tr class="cp-dre-det" data-pai="${k}" hidden><td><small>${esc(c)}</small></td>${meses.map(m=>`<td class="cp-number"><small>${mm[m]?m0(mm[m]):''}</small></td>`).join('')}<td class="cp-number"><small>${m0(Object.values(mm).reduce((s,n)=>s+n,0))}</small></td></tr>`).join('')}`).join('')}</tbody></table></div>`;
+    b.querySelector('#cp-result').innerHTML=h;
+    b.querySelector('#cp-dre-emp').onchange=e=>{state.dreEmp=e.target.value;load();};
+    b.querySelectorAll('[data-dre]').forEach(tr=>tr.onclick=()=>{const k=tr.dataset.dre, rows=b.querySelectorAll(`[data-pai="${k}"]`), abrir=rows[0]?.hidden;rows.forEach(r=>r.hidden=!abrir);const s=tr.querySelector('.cp-mais');if(s)s.textContent=abrir?'-':'+';});
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês (inclui juros e multas, ainda sem separar), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique numa linha com + para ver as contas.</div>`;
+  }
   async function loadAgenda(own){
     const b=box();if(!b)return;
     b.querySelector('#cp-form').style.display='none';
@@ -256,6 +309,7 @@
     if(state.view==='mes')return loadMes(own);
     if(state.view==='caixa30')return loadCaixa(own);
     if(state.view==='depara')return loadDepara(own);
+    if(state.view==='dre26')return loadDre(own);
     b.querySelector('#cp-form').style.display='';
     const active=['resumo','lancamentos','dre'].includes(state.view);
     b.querySelector('#cp-regime').disabled=!active;b.querySelector('#cp-status').disabled=!active;

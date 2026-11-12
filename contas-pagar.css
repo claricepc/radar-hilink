@@ -74,3 +74,11 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp .cp-saldo-in input{width:110px;padding:5px 8px;border:1px solid #c9d3e3;border-radius:6px}
 #mod-cp .cp-btn{border:1px solid #13315c;background:#13315c;color:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px}
 #mod-cp .cp-btn:disabled{opacity:.6}
+
+#mod-cp table.cp-dre td:first-child{min-width:260px}
+#mod-cp tr.cp-rec td{font-weight:700;color:#1d7a46}
+#mod-cp tr.cp-dre-exp{cursor:pointer}
+#mod-cp tr.cp-dre-exp:hover td{background:#f4f7fc}
+#mod-cp .cp-mais{display:inline-block;width:14px;font-weight:700;color:#13315c}
+#mod-cp tr.cp-dre-det td{background:#fafbfd;padding-top:4px;padding-bottom:4px}
+#mod-cp tr.cp-dre-det td:first-child{padding-left:28px}
