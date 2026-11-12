@@ -27278,16 +27278,18 @@ function vgExportarOpa(){
 }
 function vgListaGrupo(k){ const L=VG_LISTA_ATUAL; if(!L) return; try{closeDrill()}catch(e){} vgListaAbrir(k==='Isento para limpeza do Pago até'?L.rows.filter(x=>/limpeza/.test(x.isento_txt||'')):k==='Isento sem justificativa'?L.rows.filter(x=>x.isento && !/limpeza/.test(x.isento_txt||'')):k?L.rows.filter(x=>(x.situacao||'Sem contrato encontrado')===k):L.rows, k); }
 Object.assign(window,{vgLista,vgExportarOpa,vgListaGrupo});
+function opFluxoDiferente(m,f){ const n=v=>String(v||'').trim().toLowerCase(); return !!(n(m)&&n(f)&&n(m)!==n(f)); }
 function vgIaEnvios(){
-  const g={}; (INI.iaPend||[]).forEach(x=>{ const k=x.lote||x.enviado_em; const e=(g[k] ||= {lote:x.lote, lista:x.lista, oferta:x.oferta, modelo:x.modelo, enviado_em:x.enviado_em, n:0}); e.n++; });
+  const g={}; (INI.iaPend||[]).forEach(x=>{ const k=x.lote||x.enviado_em; const e=(g[k] ||= {lote:x.lote, lista:x.lista, oferta:x.oferta, modelo:x.modelo, fluxo:x.fluxo, enviado_em:x.enviado_em, n:0}); e.n++; });
   return Object.values(g).map(e=>({...e, tipo:e.lista==='reativacao'?'reativação':'upgrade',
-    rotulo:`${e.lista==='reativacao'?'reativação':'upgrade'} ${e.oferta||''} de ${cdData(String(e.enviado_em||'').slice(0,10)).slice(0,5)}, modelo ${e.modelo?'"'+e.modelo+'"':'não informado'}: ${cdNum(e.n)}`}));
+    fluxoErrado: !!(e.modelo && e.fluxo && opFluxoDiferente(e.modelo, e.fluxo)),
+    rotulo:`${e.lista==='reativacao'?'reativação':'upgrade'} ${e.oferta||''} de ${cdData(String(e.enviado_em||'').slice(0,10)).slice(0,5)}, modelo ${e.modelo?'"'+e.modelo+'"':'não informado'}${e.fluxo?', fluxo "'+e.fluxo+'"':''}${e.modelo&&e.fluxo&&opFluxoDiferente(e.modelo,e.fluxo)?' (fluxo diferente do modelo)':''}: ${cdNum(e.n)}`}));
 }
 function vgIaPendentes(){
-  const rows=(INI.iaPend||[]).map(x=>({...x, enviado:cdData(String(x.enviado_em||'').slice(0,10)), tipo_txt:x.lista==='reativacao'?'Reativação':'Upgrade', modelo_txt:x.modelo||'Não informado', caminho_txt:x.caminho==='fechado pela IA em 0 s'?'IA encerrou na hora':'IA fez a triagem e encerrou'}));
+  const rows=(INI.iaPend||[]).map(x=>({...x, enviado:cdData(String(x.enviado_em||'').slice(0,10)), tipo_txt:x.lista==='reativacao'?'Reativação':'Upgrade', modelo_txt:x.modelo||'Não informado', fluxo_txt:x.fluxo||'Não informado', caminho_txt:x.caminho==='fechado pela IA em 0 s'?'IA encerrou na hora':'IA fez a triagem e encerrou'}));
   VG_LISTA_ATUAL={tipo:'ia', titulo:'Chamar de volta - encerrados pela IA', rows};
   const semModelo=vgIaEnvios().filter(e=>!e.modelo && e.lote);
-  openDrill('Responderam ao disparo e ninguém da equipe atendeu', rows, [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'tipo_txt',label:'Disparo'},{k:'modelo_txt',label:'Modelo do OPA'},{k:'enviado',label:'Enviado em'},{k:'oferta',label:'Oferta'},{k:'caminho_txt',label:'O que aconteceu'}],
+  openDrill('Responderam ao disparo e ninguém da equipe atendeu', rows, [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'tipo_txt',label:'Disparo'},{k:'modelo_txt',label:'Modelo do OPA'},{k:'fluxo_txt',label:'Fluxo usado'},{k:'enviado',label:'Enviado em'},{k:'oferta',label:'Oferta'},{k:'caminho_txt',label:'O que aconteceu'}],
     {sub:`${cdNum(rows.length)} clientes ainda sem retorno da equipe`, contextOnly:true,
      contextHtml:`<div class="vg-lista-ctx"><div>Estes clientes responderam ao disparo, mas a IA (Fernanda) encerrou a conversa e nenhuma pessoa da equipe falou com eles depois. São duas frentes: a Talitha corrige o fluxo no OPA (com o nome do modelo fica fácil acionar o suporte) e uma atendente chama os clientes de volta. Eles saem desta lista sozinhos quando entram numa atividade "chamar de volta", falam com alguém da equipe no OPA, fecham ou recusam.</div>
        ${semModelo.length?`<div class="cdg-nota">Disparo sem o nome do modelo registrado: ${semModelo.map(e=>`<button type="button" class="cdg-link" onclick="vgIaInformarModelo('${e.lote}')">informar o modelo do disparo de ${e.tipo} de ${cdData(String(e.enviado_em).slice(0,10)).slice(0,5)}</button>`).join(' · ')}</div>`:''}
@@ -27308,7 +27310,7 @@ async function vgIaTarefaTalitha(){
   for(const e of envios){
     const titulo=`Corrigir fluxo da IA no OPA: disparo de ${e.tipo} ${cdData(String(e.enviado_em).slice(0,10)).slice(0,5)}`.slice(0,160);
     if(existentes.includes(titulo)) continue;
-    const detalhes=`No disparo de ${e.tipo} (oferta ${e.oferta||'-'}) enviado em ${cdData(String(e.enviado_em).slice(0,10))}, modelo do OPA: ${e.modelo||'não informado'}.\n${cdNum(e.n)} clientes responderam e a IA (Fernanda) encerrou a conversa sem passar para a equipe.\nO que fazer: revisar o fluxo desse modelo no OPA. Depois que o cliente responde (mesmo um simples sim ou não), o fluxo precisa transferir a conversa para uma atendente em vez de encerrar. Se não for possível ajustar, abrir chamado no suporte do OPA informando o nome do modelo.`;
+    const detalhes=`No disparo de ${e.tipo} (oferta ${e.oferta||'-'}) enviado em ${cdData(String(e.enviado_em).slice(0,10))}, modelo do OPA: ${e.modelo||'não informado'}, fluxo usado: ${e.fluxo||'não informado'}.\n${e.fluxoErrado?`Causa provável: o fluxo usado não é o do modelo. Cada fluxo reconhece só os botões do próprio modelo; com o fluxo errado a resposta do cliente não é reconhecida e o atendimento é encerrado na hora. No próximo envio, escolher o fluxo "${e.modelo}" (mesmo nome do modelo).\n`:''}${cdNum(e.n)} clientes responderam e a IA (Fernanda) encerrou a conversa sem passar para a equipe.\nO que fazer: revisar o fluxo desse modelo no OPA. Depois que o cliente responde (mesmo um simples sim ou não), o fluxo precisa transferir a conversa para uma atendente em vez de encerrar. Se não for possível ajustar, abrir chamado no suporte do OPA informando o nome do modelo.`;
     const r=await getSB().rpc('radar_agenda_talitha',{p_acao:'criar',p_dados:{agenda:'talitha',titulo,detalhes,prazo:amanha}});
     if(!r.error) n++; else toast('Tarefa da Talitha não criada: '+r.error.message,'warn');
   }
@@ -27692,6 +27694,8 @@ async function opExportar(){
   if(!chaves.length){ toast('Nenhum contato com celular válido','warn'); return; }
   if(!confirm(`Gerar arquivos para o OPA com ${cdNum(linhas.length)} clientes, em blocos de 50 por filial e oferta?\n\nEsses clientes ficam 30 dias sem aparecer nas listas de oportunidade.`)) return;
   const modeloOpa = (prompt('Nome do modelo (template) do OPA que você vai usar neste disparo.\nFica registrado para acompanhar o retorno e acionar o suporte se a IA encerrar conversas.')||'').trim();
+  const fluxoOpa = (prompt('Nome do fluxo personalizado que você vai escolher no envio em massa do OPA.\nRegra: o fluxo tem que ter o mesmo nome do modelo. Com o fluxo errado, a resposta do cliente não é reconhecida e a IA encerra o atendimento.', modeloOpa)||'').trim();
+  if(opFluxoDiferente(modeloOpa, fluxoOpa) && !confirm(`Atenção: o fluxo "${fluxoOpa}" é diferente do modelo "${modeloOpa}".\n\nFoi isso que fez a IA encerrar as respostas do disparo de reativação de 11/11.\n\nOK = gerar assim mesmo. Cancelar = voltar e corrigir.`)) return;
   OP.exportando = true;
   const data = new Date().toISOString().slice(0,10), lote = crypto.randomUUID();
   let gerados = 0, falhas = 0;
@@ -27711,6 +27715,7 @@ async function opExportar(){
       if(gerados < arquivos.length) await new Promise(res=>setTimeout(res, 400));
     }
     if(modeloOpa){ try{ await getSB().rpc('radar_oportunidades_modelo',{p_lote:lote, p_modelo:modeloOpa}); }catch(e){} }
+    if(fluxoOpa){ try{ await getSB().rpc('radar_oportunidades_fluxo',{p_lote:lote, p_fluxo:fluxoOpa}); }catch(e){} }
     const saiu = new Set(linhas.map(opChave));
     OP.dados[OP.aba] = opLista().filter(x=>!saiu.has(opChave(x)));
     OP.sel.clear();
