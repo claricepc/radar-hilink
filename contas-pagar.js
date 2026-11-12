@@ -1,7 +1,7 @@
 /* Read-only financial consultation. No browser financial cache or mutation API. */
 (()=>{
   'use strict';
-  const tabs={pagamentos:'Agenda de pagamentos',mes:'Resumo do mês',caixa30:'Caixa projetado',resumo:'Resumo (sistema antigo)',lancamentos:'Lançamentos',dre:'DRE',razao:'Razão',caixa:'Caixa (sistema antigo)',conciliacao:'Conciliação',auditoria:'Auditoria'};
+  const tabs={pagamentos:'Agenda de pagamentos',mes:'Resumo do mês',caixa30:'Caixa projetado',depara:'De/para (plano de contas)',resumo:'Resumo (sistema antigo)',lancamentos:'Lançamentos',dre:'DRE',razao:'Razão',caixa:'Caixa (sistema antigo)',conciliacao:'Conciliação',auditoria:'Auditoria'};
   const now=new Date(),pad=n=>String(n).padStart(2,'0');
   const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   const state={view:'pagamentos',filialAg:'',de:local(new Date(now.getFullYear(),now.getMonth(),1)),ate:local(now),empresa:null,pagina:1,status:'todos',regime:'competencia'};
@@ -169,6 +169,52 @@
     });
     b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Como a conta é feita: saldo de partida + boletos do IXC a vencer em cada dia (pela carteira de cada empresa), multiplicados pelo percentual que foi pago no mês passado, menos as saídas da planilha ainda sem REALIZADO. Para os meses que ainda não têm aba na planilha, as saídas são estimadas repetindo as contas do mês anterior no mesmo dia. Os vencidos sem baixa não entram na projeção: confira se já foram pagos.</div>`;
   }
+
+  const ORIG={manual:'Definido por você',regra:'Regra automática',historico_filial:'Sistema antigo (revisar)',historico_geral:'Sistema antigo (revisar)'};
+  async function loadDepara(own){
+    const b=box();if(!b)return;
+    b.querySelector('#cp-form').style.display='none';
+    b.querySelectorAll('[data-view]').forEach(el=>el.setAttribute('aria-selected',String(el.dataset.view===state.view)));
+    b.querySelector('#cp-result').innerHTML=msg('Carregando o de/para…');b.querySelector('#cp-context').replaceChildren();b.querySelector('#cp-coverage').replaceChildren();
+    const {data,error}=await getSB().rpc('radar_cp_depara_lista');
+    if(own!==generation||!box())return;
+    if(error){b.querySelector('#cp-result').innerHTML=msg('De/para indisponível: '+error.message);return;}
+    state.dp=data; state.dpFiltro=state.dpFiltro||'pendentes'; paintDepara();
+  }
+  function paintDepara(){
+    const b=box(), d=state.dp; if(!b||!d)return;
+    const R=d.resumo||{}, C=d.contas||[], busca=(state.dpBusca||'').toUpperCase();
+    const pct=(a,t)=>t?Math.round(a/t*1000)/10+'%':'-';
+    const filtros={pendentes:['Sem conta',1],revisar:['Revisar (sistema antigo)',2],todos:['Todos',0]};
+    let it=(d.itens||[]).filter(x=>state.dpFiltro==='todos'||x.situacao===filtros[state.dpFiltro][1]);
+    if(busca) it=it.filter(x=>(x.desc_norm+' '+(x.exemplo||'')).toUpperCase().includes(busca));
+    const nome=c=>{const k=C.find(x=>x.codigo===c);return k?`${k.codigo} ${k.descricao}`:'';};
+    const opts=sel=>`<option value="">Escolha a conta</option>${C.map(c=>`<option value="${esc(c.codigo)}"${c.codigo===sel?' selected':''}>${esc(c.codigo+' '+c.descricao)}</option>`).join('')}`;
+    let h=`<div class="cp-stats">
+      <div class="cp-stat"><span>Valor de 2026 classificado</span><strong>${pct(R.classificado,R.total)}</strong></div>
+      <div class="cp-stat"><span>Por regra ou por você</span><strong>${pct(R.confirmado,R.total)}</strong></div>
+      <div class="cp-stat${R.pendentes?' cp-alerta':''}"><span>Descrições sem conta</span><strong>${R.pendentes||0}</strong></div>
+      <div class="cp-stat"><span>Vindas do sistema antigo, a revisar</span><strong>${R.revisar||0}</strong></div></div>
+      <div class="cp-chips">${Object.entries(filtros).map(([k,[t]])=>`<button type="button" data-dpf="${k}" aria-pressed="${state.dpFiltro===k}">${t}</button>`).join('')}
+      <input type="search" id="cp-dp-busca" placeholder="Buscar descrição" value="${esc(state.dpBusca||'')}" style="margin-left:auto;padding:5px 10px;border:1px solid #c9d3e3;border-radius:8px"></div>`;
+    h+=`<div class="cp-table"><table><thead><tr><th>Descrição na planilha</th><th>Empresas</th><th class="cp-number">Vezes</th><th class="cp-number">Valor 2026</th><th>Conta</th><th></th></tr></thead><tbody>${it.slice(0,300).map((x,i)=>`<tr>
+      <td><b>${esc(x.exemplo||x.desc_norm)}</b><br><small>${esc(x.secao||'')}</small></td><td><small>${esc(x.filiais)}</small></td>
+      <td class="cp-number">${x.ocorrencias}</td><td class="cp-number">${m0(x.valor)}</td>
+      <td><select data-dpsel="${i}" style="max-width:340px">${opts(x.conta_codigo)}</select><br><small>${x.conta_codigo?esc(ORIG[x.origem]||''):'Sem conta'}</small></td>
+      <td><button type="button" class="cp-btn" data-dpsave="${i}">Salvar</button></td></tr>`).join('')}</tbody></table></div>
+      ${it.length>300?`<p class="cp-legenda">Mostrando 300 de ${it.length}. Use a busca para achar os demais.</p>`:''}${!it.length?msg('Nada neste filtro.'):''}`;
+    b.querySelector('#cp-result').innerHTML=h;
+    b.querySelectorAll('[data-dpf]').forEach(x=>x.onclick=()=>{state.dpFiltro=x.dataset.dpf;paintDepara();});
+    const bs=b.querySelector('#cp-dp-busca'); bs.oninput=()=>{state.dpBusca=bs.value;clearTimeout(state.dpT);state.dpT=setTimeout(()=>{paintDepara();const n=box()?.querySelector('#cp-dp-busca');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length);}},350);};
+    b.querySelectorAll('[data-dpsave]').forEach(bt=>bt.onclick=async()=>{
+      const x=it[+bt.dataset.dpsave], conta=b.querySelector(`[data-dpsel="${bt.dataset.dpsave}"]`).value;
+      if(!conta)return; bt.disabled=true; bt.textContent='Salvando…';
+      const {error}=await getSB().rpc('radar_cp_depara_definir',{p_desc_norm:x.desc_norm,p_conta:conta});
+      if(error){bt.disabled=false;bt.textContent='Salvar';alert('Não salvou: '+error.message);return;}
+      x.conta_codigo=conta; x.origem='manual'; x.situacao=3; bt.textContent='Salvo';
+    });
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Cada descrição das planilhas de 2026 é ligada a uma conta do plano de contas. A ligação vale para todas as empresas e para os meses seguintes: decidiu uma vez, fica valendo. "Regra automática" foi sugerida pelo Radar a partir de palavras da descrição; "Sistema antigo" vem das importações até abril e tem erros conhecidos, por isso aparece para revisar. Ao salvar, a sua escolha passa na frente de qualquer regra.</div>`;
+  }
   async function loadAgenda(own){
     const b=box();if(!b)return;
     b.querySelector('#cp-form').style.display='none';
@@ -209,6 +255,7 @@
     if(state.view==='pagamentos')return loadAgenda(own);
     if(state.view==='mes')return loadMes(own);
     if(state.view==='caixa30')return loadCaixa(own);
+    if(state.view==='depara')return loadDepara(own);
     b.querySelector('#cp-form').style.display='';
     const active=['resumo','lancamentos','dre'].includes(state.view);
     b.querySelector('#cp-regime').disabled=!active;b.querySelector('#cp-status').disabled=!active;
