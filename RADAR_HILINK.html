@@ -27117,7 +27117,7 @@ async function renderInicio(){
   const pri = [];
   const ponOff = pons.reduce((t,x)=>t+((x.dados&&x.dados.clientes)||[]).filter(c=>c.online!=='S').length,0);
   if(pons.length) pri.push(`<b class="ruim">Rede:</b> ${lk(cdNum(ponCli)+' clientes com sinal fraco concentrado em '+cdNum(pons.length)+(pons.length===1?' porta (PON)':' portas (PON)'), irRede('noc'), true)}. ${cdNum(ponCli-ponOff)} ainda navegam e ${cdNum(ponOff)} estão sem conexão. Não é rompimento: é sinal piorando na mesma porta (fibra, emenda ou divisor). O NOC precisa verificar antes que caiam.`);
-  if(perd) pri.push(`<b class="ruim">Disparo sem retorno da equipe:</b> ${lk(cdNum(perd)+(perd===1?' cliente respondeu':' clientes responderam')+' ao disparo, a IA encerrou a conversa e ninguém da equipe falou com '+(perd===1?'ele':'eles'), "vgIaPendentes()", true)} (${vgIaEnvios().map(g=>g.rotulo).join('; ')}). Gere as duas atividades: Talitha corrige o fluxo no OPA e uma atendente chama de volta. O alerta sai sozinho quando o cliente entra numa atividade, fala com alguém da equipe no OPA, fecha ou recusa.`);
+  if(perd) pri.push(`<b class="ruim">Disparo sem retorno da equipe:</b> ${lk(cdNum(perd)+(perd===1?' cliente respondeu':' clientes responderam')+' ao disparo e ninguém da equipe falou com '+(perd===1?'ele':'eles'), "vgIaPendentes()", true)}. Abra a lista para gerar a atividade.`);
   const bqP = (INI.bq||[]).find(b=>b.clientes>=10) || (INI.bq||[])[0];
   if(bqP) pri.push(`${lk(cdNum(bqP.clientes)+(bqP.clientes===1?' cliente será bloqueado':' clientes serão bloqueados')+' em '+new Date(bqP.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'}), `radarBloqueioLista('${bqP.data}')`, true)} se não pagarem, somando <b>${cdMoeda(bqP.valor)}</b> em aberto hoje. Dispare a cobrança na véspera.`);
   else if(g && g.pre.clientes) pri.push(`${lk(cdNum(g.pre.clientes)+' clientes estão a até 5 dias do bloqueio', "go('cobrancaDia');cdIrLista('cobrar','pre')", true)}, somando <b>${cdMoeda(g.pre.valor)}</b>. É o dinheiro mais fácil de recuperar hoje.`);
@@ -27291,9 +27291,9 @@ function vgIaPendentes(){
   const semModelo=vgIaEnvios().filter(e=>!e.modelo && e.lote);
   openDrill('Responderam ao disparo e ninguém da equipe atendeu', rows, [{k:'filial',label:'Filial'},{k:'id_cliente',label:'Cód.'},{k:'nome',label:'Cliente'},{k:'telefone',label:'Telefone'},{k:'tipo_txt',label:'Disparo'},{k:'modelo_txt',label:'Modelo do OPA'},{k:'fluxo_txt',label:'Fluxo usado'},{k:'enviado',label:'Enviado em'},{k:'oferta',label:'Oferta'},{k:'caminho_txt',label:'O que aconteceu'}],
     {sub:`${cdNum(rows.length)} clientes ainda sem retorno da equipe`, contextOnly:true,
-     contextHtml:`<div class="vg-lista-ctx"><div>Estes clientes responderam ao disparo, mas a IA (Fernanda) encerrou a conversa e nenhuma pessoa da equipe falou com eles depois. São duas frentes: a Talitha corrige o fluxo no OPA (com o nome do modelo fica fácil acionar o suporte) e uma atendente chama os clientes de volta. Eles saem desta lista sozinhos quando entram numa atividade "chamar de volta", falam com alguém da equipe no OPA, fecham ou recusam.</div>
-       ${semModelo.length?`<div class="cdg-nota">Disparo sem o nome do modelo registrado: ${semModelo.map(e=>`<button type="button" class="cdg-link" onclick="vgIaInformarModelo('${e.lote}')">informar o modelo do disparo de ${e.tipo} de ${cdData(String(e.enviado_em).slice(0,10)).slice(0,5)}</button>`).join(' · ')}</div>`:''}
-       <button type="button" class="btn sm primary" onclick="try{closeDrill()}catch(e){};vgIaGerarAtividade()">Gerar as duas atividades</button></div>`});
+     contextHtml:`<div class="vg-lista-ctx"><div>Responderam ao disparo e a IA encerrou a conversa sem passar para a equipe.</div>
+       ${semModelo.length?`<div class="cdg-nota">${semModelo.map(e=>`<button type="button" class="cdg-link" onclick="vgIaInformarModelo('${e.lote}')">informar o modelo do disparo de ${e.tipo} de ${cdData(String(e.enviado_em).slice(0,10)).slice(0,5)}</button>`).join(' · ')}</div>`:''}
+       <button type="button" class="btn sm primary" onclick="try{closeDrill()}catch(e){};vgIaEscolher()">Gerar atividade</button></div>`});
 }
 async function vgIaInformarModelo(lote){
   const m=(prompt('Nome do modelo (template) do OPA usado neste disparo:')||'').trim(); if(!m) return;
@@ -27302,31 +27302,52 @@ async function vgIaInformarModelo(lote){
   (INI.iaPend||[]).forEach(x=>{ if(x.lote===lote) x.modelo=m; });
   toast('Modelo registrado.','success'); try{ closeDrill(); }catch(e){} vgIaPendentes(); if(STATE.activeMod==='inicio') renderInicio();
 }
-async function vgIaTarefaTalitha(){
+async function vgIaTarefaTalitha(agenda, prazo){
   // tarefa na agenda da Talitha para corrigir o fluxo no OPA (uma por disparo; não repete se já existir aberta)
   const envios=vgIaEnvios(); if(!envios.length) return 0;
   let existentes=[]; try{ const r=await getSB().rpc('radar_agenda_talitha',{p_acao:'listar',p_dados:{}}); existentes=(r.data?.tarefas||[]).filter(t=>t.status!=='concluida'&&!t.arquivada_em).map(t=>t.titulo); }catch(e){}
-  const amanha=new Date(Date.now()+864e5).toISOString().slice(0,10); let n=0;
+  const amanha=prazo||new Date(Date.now()+864e5).toISOString().slice(0,10); let n=0;
   for(const e of envios){
     const titulo=`Corrigir fluxo da IA no OPA: disparo de ${e.tipo} ${cdData(String(e.enviado_em).slice(0,10)).slice(0,5)}`.slice(0,160);
     if(existentes.includes(titulo)) continue;
     const detalhes=`No disparo de ${e.tipo} (oferta ${e.oferta||'-'}) enviado em ${cdData(String(e.enviado_em).slice(0,10))}, modelo do OPA: ${e.modelo||'não informado'}, fluxo usado: ${e.fluxo||'não informado'}.\n${e.fluxoErrado?`Causa provável: o fluxo usado não é o do modelo. Cada fluxo reconhece só os botões do próprio modelo; com o fluxo errado a resposta do cliente não é reconhecida e o atendimento é encerrado na hora. No próximo envio, escolher o fluxo "${e.modelo}" (mesmo nome do modelo).\n`:''}${cdNum(e.n)} clientes responderam e a IA (Fernanda) encerrou a conversa sem passar para a equipe.\nO que fazer: revisar o fluxo desse modelo no OPA. Depois que o cliente responde (mesmo um simples sim ou não), o fluxo precisa transferir a conversa para uma atendente em vez de encerrar. Se não for possível ajustar, abrir chamado no suporte do OPA informando o nome do modelo.`;
-    const r=await getSB().rpc('radar_agenda_talitha',{p_acao:'criar',p_dados:{agenda:'talitha',titulo,detalhes,prazo:amanha}});
+    const r=await getSB().rpc('radar_agenda_talitha',{p_acao:'criar',p_dados:{agenda:agenda||'talitha',titulo,detalhes,prazo:amanha}});
     if(!r.error) n++; else toast('Tarefa da Talitha não criada: '+r.error.message,'warn');
   }
   return n;
 }
+function vgIaEscolher(){
+  if(typeof cdPodeGerenciar==='function' && !cdPodeGerenciar()){ toast('Só a gestão e a liderança geram atividades.','warn'); return; }
+  const envs=vgIaEnvios(), errado=envs.some(e=>e.fluxoErrado), n=(INI.iaPend||[]).length;
+  const amanha=new Date(Date.now()+864e5).toISOString().slice(0,10);
+  let el=document.getElementById('vg-ia-modal'); if(!el){ el=document.createElement('div'); el.id='vg-ia-modal'; el.className='cdg-modal'; document.body.appendChild(el); }
+  el.innerHTML=`<div class="cdg-modal-box" role="dialog" aria-modal="true" aria-labelledby="vg-ia-tit">
+    <h3 id="vg-ia-tit">Gerar atividade</h3>
+    <label class="cd-chk" style="display:flex;gap:8px;margin:6px 0"><input type="checkbox" id="vg-ia-time" checked> Chamar os ${cdNum(n)} clientes de volta <small>(na próxima tela você escolhe a atendente)</small></label>
+    <label class="cd-chk" style="display:flex;gap:8px;margin:10px 0 6px"><input type="checkbox" id="vg-ia-fluxo"${errado?' checked':''}> Corrigir o fluxo do disparo no OPA</label>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-left:24px">
+      <label class="cdg-campo" style="max-width:200px">Para quem<select id="vg-ia-dest"><option value="talitha">Talitha</option><option value="pessoal">Minha agenda</option></select></label>
+      <label class="cdg-campo" style="max-width:170px">Prazo<input id="vg-ia-prazo" type="date" value="${amanha}" min="${cdHoje()}"></label></div>
+    <p class="cdg-nota" style="margin:8px 0 14px">Os detalhes (disparo, modelo, fluxo usado e o que corrigir) vão dentro da atividade.</p>
+    <div class="cdg-modal-acoes"><button type="button" class="btn sm" onclick="document.getElementById('vg-ia-modal').remove()">Cancelar</button>
+      <button type="button" class="btn sm primary" onclick="vgIaGerarAtividade()">Continuar</button></div></div>`;
+}
 async function vgIaGerarAtividade(){
   if(typeof cdPodeGerenciar==='function' && !cdPodeGerenciar()){ toast('Só a gestão e a liderança geram atividades.','warn'); return; }
+  const time=document.getElementById('vg-ia-time')?.checked ?? true, fluxo=document.getElementById('vg-ia-fluxo')?.checked ?? false;
+  const dest=document.getElementById('vg-ia-dest')?.value||'talitha', prazo=document.getElementById('vg-ia-prazo')?.value||'';
+  document.getElementById('vg-ia-modal')?.remove();
+  if(!time && !fluxo){ toast('Nenhuma atividade marcada.','warn'); return; }
+  if(fluxo){ try{ const t=await vgIaTarefaTalitha(dest, prazo); if(t) toast(`Tarefa "corrigir fluxo" criada na ${dest==='talitha'?'agenda da Talitha':'sua agenda'}.`,'success'); else toast('Já existe uma tarefa aberta igual na agenda.','warn'); }catch(e){} }
+  if(!time) return;
   const linhas=(INI.iaPend||[]).map(x=>({id_cliente:x.id_cliente, nome:x.nome, filial:x.filial, telefone:x.telefone}));
   if(!linhas.length){ toast('Ninguém para chamar de volta.','warn'); return; }
-  try{ const t=await vgIaTarefaTalitha(); if(t) toast(`${t===1?'Tarefa criada':t+' tarefas criadas'} na agenda da Talitha para corrigir o fluxo no OPA.`,'success'); }catch(e){}
   if(!CD.atv.usuarios || !CD.atv.usuarios.length) await cdAtvCarregar(true);
   const tipos=[...new Set(vgIaEnvios().map(e=>e.tipo))].join(' e ');
   CD.atv.nova = { tipo:'retorno_oportunidade', preset:'', linhas, titulo:`Chamar de volta (${tipos}): encerrados pela IA `+cdData(cdHoje()).slice(0,5), filtro:'oportunidades', porFilial:false, prazo:cdSlaPadrao('retorno_oportunidade',''), responsavel:'' };
   cdAtvModal();
 }
-Object.assign(window,{vgIaPendentes,vgIaGerarAtividade,vgIaInformarModelo});
+Object.assign(window,{vgIaPendentes,vgIaGerarAtividade,vgIaInformarModelo,vgIaEscolher});
 // ===== Capa da Cobrança do Dia: a manchete do módulo. Mesmos números da Visão geral (mesma fonte pronta no banco). =====
 function cdCapaHTML(){
   const n=v=>Number(v)||0, pct=(v,t)=>t?(v/t*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%':'';
