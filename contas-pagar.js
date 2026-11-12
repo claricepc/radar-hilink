@@ -113,7 +113,7 @@
     h+=`<h3 class="cp-h">Últimos meses (previsto)</h3><div class="cp-table"><table><thead><tr><th>Empresa</th>${meses.map(m=>`<th class="cp-number">${mesTxt(m)}</th>`).join('')}</tr></thead><tbody>${fils.map(f=>`<tr><td>${esc(f)}</td>${meses.map(m=>`<td class="cp-number">${m0(val(m,f))}</td>`).join('')}</tr>`).join('')}<tr class="cp-total"><td>Total</td>${meses.map(m=>`<td class="cp-number">${m0(fils.reduce((t,f)=>t+val(m,f),0))}</td>`).join('')}</tr></tbody></table></div>`;
     b.querySelector('#cp-result').innerHTML=h;
     b.querySelector('#cp-mes').onchange=e=>{state.compMes=e.target.value;load();};
-    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Fonte: planilhas de fluxo de caixa de cada filial, lidas todo dia às 6h. "Pago" é a coluna REALIZADO. "Vencido sem baixa" é o que tem previsto, já venceu e está com o REALIZADO vazio: ou está atrasado, ou foi pago e falta marcar na planilha. "Conferência" compara a soma das linhas com o TOTAL DAS SAÍDAS da própria planilha; quando não confere, a fórmula do total pode não estar pegando todas as linhas.</div>`;
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Fonte: planilhas de fluxo de caixa de cada filial, lidas a cada edição e conferidas todo dia às 6h. A tela se atualiza sozinha. "Pago" é a coluna REALIZADO. "Vencido sem baixa" é o que tem previsto, já venceu e está com o REALIZADO vazio: ou está atrasado, ou foi pago e falta marcar na planilha. "Conferência" compara a soma das linhas com o TOTAL DAS SAÍDAS da própria planilha; quando não confere, a fórmula do total pode não estar pegando todas as linhas.</div>`;
   }
 
   async function loadCaixa(own){
@@ -299,7 +299,7 @@
     if(!itens.length)html+=msg('Nenhum pagamento em aberto neste recorte, ou as planilhas ainda não foram lidas.');
     b.querySelector('#cp-result').innerHTML=html;
     b.querySelectorAll('[data-fil]').forEach(x=>x.onclick=()=>{state.filialAg=x.dataset.fil;paintAgenda(d);});
-    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Fonte: planilhas de fluxo de caixa de cada filial, lidas todo dia às 6h. Entra aqui o que tem valor previsto e está com a coluna REALIZADO vazia, do mês anterior até os próximos 30 dias. Linhas marcadas com "Conferir" dizem que foram pagas por outra filial ou agendadas: confirme e preencha o REALIZADO na planilha.</div>`;
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Fonte: planilhas de fluxo de caixa de cada filial, lidas a cada edição e conferidas todo dia às 6h. A tela se atualiza sozinha. Entra aqui o que tem valor previsto e está com a coluna REALIZADO vazia, do mês anterior até os próximos 30 dias. Linhas marcadas com "Conferir" dizem que foram pagas por outra filial ou agendadas: confirme e preencha o REALIZADO na planilha.</div>`;
     const lt=(d.leituras||[]).map(l=>{const u=l.ultima||{};return {filial:l.filial,lida:l.ultima_ok?new Date(l.ultima_ok).toLocaleString('pt-BR'):'Ainda não lida',alterada:u.modificado_em?new Date(u.modificado_em).toLocaleString('pt-BR'):'',situacao:!l.ativo?'Desativada':!u.em?'Aguardando primeira leitura':u.ok?'OK':'Erro: '+(u.erro||'')};});
     b.querySelector('#cp-coverage').innerHTML=`<details><summary>Leitura das planilhas</summary><div class="cp-table"><table><thead><tr><th>Filial</th><th>Última leitura</th><th>Planilha alterada em</th><th>Situação</th></tr></thead><tbody>${lt.map(r=>`<tr><td>${esc(r.filial)}</td><td>${esc(r.lida)}</td><td>${esc(r.alterada)}</td><td>${esc(r.situacao)}</td></tr>`).join('')}</tbody></table></div></details>`;
   }
@@ -344,4 +344,15 @@
   const sb=getSB();
   if(sb){sb.auth.onAuthStateChange((event,session)=>{if(identity!==session?.user?.id||event==='SIGNED_OUT'){clear();authorized=false;identity=session?.user?.id||null;const nav=document.getElementById('cp-nav');if(nav)nav.hidden=true;}setTimeout(visibility,0);});}
   visibility();
+  // Leitura ao vivo: quando uma planilha é editada, a aba chega ao Radar em segundos; a tela aberta se atualiza sozinha.
+  let ultimaVista=null;
+  setInterval(async()=>{
+    try{
+      if(!authorized||document.hidden||document.body.dataset.activeMod!=='cp'||!NOVAS[state.view]||state.view==='depara')return;
+      const {data,error}=await getSB().rpc('radar_cp_ultima_leitura',{});
+      if(error||!data?.em)return;
+      if(ultimaVista&&data.em!==ultimaVista){load();window.toast?.('Planilha alterada: tela atualizada às '+new Date(data.em).toLocaleTimeString('pt-BR'));}
+      ultimaVista=data.em;
+    }catch(e){/* tenta de novo no próximo ciclo */}
+  },20000);
 })();
