@@ -1,7 +1,7 @@
 /* Read-only financial consultation. No browser financial cache or mutation API. */
 (()=>{
   'use strict';
-  const tabs={pagamentos:'Agenda de pagamentos',resumo:'Resumo',lancamentos:'Lançamentos',dre:'DRE',razao:'Razão',caixa:'Caixa',conciliacao:'Conciliação',auditoria:'Auditoria'};
+  const tabs={pagamentos:'Agenda de pagamentos',mes:'Resumo do mês',resumo:'Resumo (sistema antigo)',lancamentos:'Lançamentos',dre:'DRE',razao:'Razão',caixa:'Caixa',conciliacao:'Conciliação',auditoria:'Auditoria'};
   const now=new Date(),pad=n=>String(n).padStart(2,'0');
   const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   const state={view:'pagamentos',filialAg:'',de:local(new Date(now.getFullYear(),now.getMonth(),1)),ate:local(now),empresa:null,pagina:1,status:'todos',regime:'competencia'};
@@ -72,6 +72,47 @@
 
   const ATRASO=['Atrasados','Vencem hoje','Próximos 7 dias','Depois'];
   const outraFilial=t=>/PAGO\s+(POR|PELA|PELO|NO)\b|AGENDAD/i.test(String(t||''));
+
+  const MESN=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const mesTxt=c=>{const [a,m]=String(c).slice(0,7).split('-');return MESN[+m-1]+'/'+a.slice(2);};
+  const m0=v=>v==null?'-':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  async function loadMes(own){
+    const b=box();if(!b)return;
+    b.querySelector('#cp-form').style.display='none';
+    b.querySelectorAll('[data-view]').forEach(el=>el.setAttribute('aria-selected',String(el.dataset.view===state.view)));
+    b.querySelector('#cp-result').innerHTML=msg('Montando o resumo do mês a partir das planilhas…');b.querySelector('#cp-context').replaceChildren();b.querySelector('#cp-coverage').replaceChildren();
+    const {data,error}=await getSB().rpc('radar_cp_resumo',state.compMes?{p_competencia:state.compMes}:{});
+    if(own!==generation||!box())return;
+    if(error){b.querySelector('#cp-result').innerHTML=msg('Resumo indisponível: '+error.message);return;}
+    paintMes(data);
+  }
+  function paintMes(d){
+    const b=box();if(!b)return;
+    const F=d.filiais||[], G=d.grupos||[], E=d.evolucao||[];
+    const sum=k=>F.reduce((t,f)=>t+Number(f[k]||0),0);
+    const prev=sum('previsto'), pago=sum('pago'), aberto=sum('em_aberto'), atras=sum('atrasado'), atrN=sum('atrasado_itens');
+    const pct=(a,t)=>t?Math.round(a/t*100)+'%':'-';
+    const sel=`<label class="cp-mes-sel">Mês <select id="cp-mes">${(d.meses||[]).map(c=>`<option value="${c}"${String(c).slice(0,7)===String(d.competencia).slice(0,7)?' selected':''}>${mesTxt(c)}</option>`).join('')}</select></label>`;
+    let h=`<div class="cp-mes-top">${sel}</div>
+    <div class="cp-stats">
+      <div class="cp-stat"><span>Previsto no mês</span><strong>${m0(prev)}</strong></div>
+      <div class="cp-stat"><span>Já pago</span><strong>${m0(pago)} · ${pct(pago,prev)}</strong></div>
+      <div class="cp-stat"><span>Em aberto</span><strong>${m0(aberto)}</strong></div>
+      <div class="cp-stat${atras?' cp-alerta':''}"><span>Vencido sem baixa</span><strong>${atrN} · ${m0(atras)}</strong></div>
+    </div>`;
+    h+=`<h3 class="cp-h">Por empresa</h3><div class="cp-table"><table><thead><tr><th>Empresa</th><th class="cp-number">Previsto</th><th class="cp-number">Pago</th><th class="cp-number">Em aberto</th><th class="cp-number">Vencido sem baixa</th><th class="cp-number">Retiradas e reembolsos</th><th>Conferência com a planilha</th></tr></thead><tbody>${F.map(f=>{const c=f.conferencia;const ok=c&&c.confere;const dif=c&&!c.confere?(c.total_previsto!=null&&Math.abs((c.soma_previsto||0)-(c.total_previsto||0))>=.05?`Soma das linhas ${m0(c.soma_previsto)} x TOTAL DAS SAÍDAS ${m0(c.total_previsto)}`:`Pago: soma ${m0(c.soma_realizado)} x total ${m0(c.total_realizado)}`):'';
+      return `<tr><td>${esc(f.filial)}</td><td class="cp-number">${m0(f.previsto)}</td><td class="cp-number">${m0(f.pago)}</td><td class="cp-number">${m0(f.em_aberto)}</td><td class="cp-number">${f.atrasado_itens?`${f.atrasado_itens} · ${m0(f.atrasado)}`:'-'}</td><td class="cp-number">${m0(f.retiradas)}</td><td>${!c?'Sem leitura':ok?'<span class="cp-ok">Confere</span>':`<span class="cp-dif">Não confere</span><br><small>${esc(dif)}</small>`}</td></tr>`;}).join('')}
+      <tr class="cp-total"><td>Total</td><td class="cp-number">${m0(prev)}</td><td class="cp-number">${m0(pago)}</td><td class="cp-number">${m0(aberto)}</td><td class="cp-number">${atrN?`${atrN} · ${m0(atras)}`:'-'}</td><td class="cp-number">${m0(sum('retiradas'))}</td><td></td></tr></tbody></table></div>`;
+    const maxG=Math.max(1,...G.map(g=>Number(g.previsto||0)));
+    h+=`<h3 class="cp-h">Para onde vai o dinheiro</h3><div class="cp-barras">${G.map(g=>`<div class="cp-barra"><div class="cp-barra-rot">${esc(g.grupo)}</div><div class="cp-barra-trilho"><i style="width:${Math.max(1,Number(g.previsto||0)/maxG*100)}%"></i><b style="width:${Math.max(0,Number(g.pago||0)/maxG*100)}%"></b></div><div class="cp-barra-val">${m0(g.previsto)} <small>${pct(g.previsto,prev)} do mês</small></div></div>`).join('')}</div>
+      <p class="cp-legenda"><i class="cp-l-prev"></i> previsto <b class="cp-l-pago"></b> já pago</p>`;
+    const meses=[...new Set(E.map(e=>String(e.competencia).slice(0,10)))].sort(), fils=[...new Set(E.map(e=>e.filial))];
+    const val=(m,f)=>{const e=E.find(x=>String(x.competencia).slice(0,10)===m&&x.filial===f);return e?Number(e.previsto||0):0;};
+    h+=`<h3 class="cp-h">Últimos meses (previsto)</h3><div class="cp-table"><table><thead><tr><th>Empresa</th>${meses.map(m=>`<th class="cp-number">${mesTxt(m)}</th>`).join('')}</tr></thead><tbody>${fils.map(f=>`<tr><td>${esc(f)}</td>${meses.map(m=>`<td class="cp-number">${m0(val(m,f))}</td>`).join('')}</tr>`).join('')}<tr class="cp-total"><td>Total</td>${meses.map(m=>`<td class="cp-number">${m0(fils.reduce((t,f)=>t+val(m,f),0))}</td>`).join('')}</tr></tbody></table></div>`;
+    b.querySelector('#cp-result').innerHTML=h;
+    b.querySelector('#cp-mes').onchange=e=>{state.compMes=e.target.value;load();};
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Fonte: planilhas de fluxo de caixa de cada filial, lidas todo dia às 6h. "Pago" é a coluna REALIZADO. "Vencido sem baixa" é o que tem previsto, já venceu e está com o REALIZADO vazio: ou está atrasado, ou foi pago e falta marcar na planilha. "Conferência" compara a soma das linhas com o TOTAL DAS SAÍDAS da própria planilha; quando não confere, a fórmula do total pode não estar pegando todas as linhas.</div>`;
+  }
   async function loadAgenda(own){
     const b=box();if(!b)return;
     b.querySelector('#cp-form').style.display='none';
@@ -110,6 +151,7 @@
     if(!authorized||document.body.dataset.activeMod!=='cp')return;
     const own=++generation;controller?.abort();controller=new AbortController();
     if(state.view==='pagamentos')return loadAgenda(own);
+    if(state.view==='mes')return loadMes(own);
     b.querySelector('#cp-form').style.display='';
     const active=['resumo','lancamentos','dre'].includes(state.view);
     b.querySelector('#cp-regime').disabled=!active;b.querySelector('#cp-status').disabled=!active;
