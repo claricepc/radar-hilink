@@ -242,33 +242,66 @@
     if(error){b.querySelector('#cp-result').innerHTML=msg('DRE indisponível: '+error.message);return;}
     paintDre(data);
   }
+  // Preferências de visualização (por pessoa, neste navegador)
+  const PREF_KEY='radar_cp_vis';
+  let prefMem=null;
+  function prefs(){if(!prefMem){prefMem={fonte:14,unidade:'real',periodo:'mes',ultimos:0,pct:false,abertos:false};try{Object.assign(prefMem,JSON.parse(localStorage.getItem(PREF_KEY)||'{}'));}catch(e){}}return Object.assign({},prefMem);}
+  function salvarPrefs(p){prefMem=Object.assign({},p);try{localStorage.setItem(PREF_KEY,JSON.stringify(p));}catch(e){}}
+  function aplicarFonte(){const m=document.getElementById('mod-cp');if(m)m.style.setProperty('--cp-fonte',prefs().fonte+'px');}
   function paintDre(d){
     const b=box();if(!b)return;
-    const meses=(d.meses||[]).sort(), L=d.linhas||[], R=d.receita||{};
+    const P=prefs();aplicarFonte();
+    const todos=(d.meses||[]).sort(), L=d.linhas||[], R=d.receita||{};
     const v={}; const put=(k,m,x)=>{(v[k] ||= {})[m]=(v[k][m]||0)+Number(x||0);};
-    meses.forEach(m=>put('REC',m,R[m]||0));
+    todos.forEach(m=>put('REC',m,R[m]||0));
     L.forEach(x=>put(x.linha,x.mes,x.valor));
-    DRE_EST.filter(e=>e.f).forEach(e=>meses.forEach(m=>{let t=0;e.f.forEach(t2=>{const neg=t2.startsWith('-'),k=t2.replace('-','');t+=(neg?-1:1)*((v[k]||{})[m]||0);});put(e.k,m,t);}));
-    const tot=k=>meses.reduce((t,m)=>t+((v[k]||{})[m]||0),0);
+    DRE_EST.filter(e=>e.f).forEach(e=>todos.forEach(m=>{let t=0;e.f.forEach(t2=>{const neg=t2.startsWith('-'),k=t2.replace('-','');t+=(neg?-1:1)*((v[k]||{})[m]||0);});put(e.k,m,t);}));
     const parcial=m=>d.receita_ate&&String(d.receita_ate).slice(0,7)<=m;
+    // colunas conforme a escolha: meses, trimestres ou semestres; opcionalmente só os últimos meses
+    const meses=P.ultimos?todos.slice(-P.ultimos):todos;
+    const grupo=m=>{const n=+m.slice(5,7);return P.periodo==='tri'?Math.ceil(n/3)+'º tri':P.periodo==='sem'?Math.ceil(n/6)+'º sem':m;};
+    const cols=[];meses.forEach(m=>{const g=grupo(m);let c=cols.find(x=>x.g===g);if(!c){c={g,ms:[]};cols.push(c);}c.ms.push(m);});
+    cols.forEach(c=>{c.rot=P.periodo==='mes'?mesTxt(c.g+'-01'):c.g;c.parcial=c.ms.some(parcial);});
+    const sv=(obj,ms)=>ms.reduce((t,m)=>t+((obj||{})[m]||0),0);
+    const fmt=x=>P.unidade==='mil'?(Math.round(x/100)/10).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}):m0(x);
+    const pct=(x,ms)=>{const r=sv(v.REC,ms);return P.pct&&r?`<small class="cp-pct">${(x/r*100).toFixed(1).replace('.',',')}%</small>`:'';};
+    const cel=(x,ms,cls='')=>`<td class="cp-number${x<0?' cp-dif':''}${cls}">${fmt(x)}${pct(x,ms)}</td>`;
     const emp=['','RECIFE','JABOATAO','ITAPISSUMA','IG','MADALENA'];
     const det=k=>{const g={};L.filter(x=>x.linha===k).forEach(x=>{const c=(x.conta_codigo||'')+' '+(x.conta||'Sem conta');(g[c] ||= {})[x.mes]=(g[c][x.mes]||0)+Number(x.valor||0);});return Object.entries(g).sort((a,b2)=>Object.values(b2[1]).reduce((s,n)=>s+n,0)-Object.values(a[1]).reduce((s,n)=>s+n,0));};
-    let h=`<div class="cp-mes-top"><label class="cp-mes-sel">Empresa <select id="cp-dre-emp">${emp.map(e=>`<option value="${e}"${(state.dreEmp||'')===e?' selected':''}>${e||'Consolidado'}</option>`).join('')}</select></label></div>
-    <div class="cp-table"><table class="cp-dre"><thead><tr><th>${d.ano}</th>${meses.map(m=>`<th class="cp-number">${mesTxt(m+'-01')}${parcial(m)?'<br><small>parcial</small>':''}</th>`).join('')}<th class="cp-number">Total</th></tr></thead><tbody>`;
+    const op=(id,val,lista)=>`<select id="${id}">${lista.map(([k,t])=>`<option value="${k}"${String(val)===String(k)?' selected':''}>${t}</option>`).join('')}</select>`;
+    const head=()=>`<thead><tr><th>${d.ano}${P.unidade==='mil'?' <small>(R$ mil)</small>':''}</th>${cols.map(c=>`<th class="cp-number">${c.rot}${c.parcial?'<br><small>parcial</small>':''}</th>`).join('')}<th class="cp-number">Total</th></tr></thead>`;
+    let h=`<div class="cp-vis">
+      <label>Empresa ${op('cp-dre-emp',state.dreEmp||'',emp.map(e=>[e,e||'Consolidado']))}</label>
+      <label>Colunas ${op('cp-v-periodo',P.periodo,[['mes','Por mês'],['tri','Por trimestre'],['sem','Por semestre']])}</label>
+      <label>Meses ${op('cp-v-ultimos',P.ultimos,[[0,'Ano todo'],[6,'Últimos 6'],[3,'Últimos 3']])}</label>
+      <label>Valores ${op('cp-v-unidade',P.unidade,[['real','Em reais'],['mil','Em R$ mil']])}</label>
+      <label class="cp-vis-chk"><input type="checkbox" id="cp-v-pct"${P.pct?' checked':''}> % da receita</label>
+      <label class="cp-vis-chk"><input type="checkbox" id="cp-v-abertos"${P.abertos?' checked':''}> Abrir todas as contas</label>
+      <span class="cp-vis-fonte">Letra <button type="button" class="cp-btn" data-fonte="-1">A-</button><button type="button" class="cp-btn" data-fonte="1">A+</button></span>
+    </div>
+    <div class="cp-table cp-fixa"><table class="cp-dre">${head()}<tbody>`;
     DRE_EST.forEach(e=>{
       const cls=e.tipo==='tot'?'cp-total':e.tipo==='rec'?'cp-rec':'';
       const exp=e.tipo==='desp'&&det(e.k).length;
-      h+=`<tr class="${cls}${exp?' cp-dre-exp':''}" ${exp?`data-dre="${e.k}"`:''}><td>${exp?'<span class="cp-mais">+</span> ':''}${esc(e.t)}</td>${meses.map(m=>`<td class="cp-number${(v[e.k]||{})[m]<0?' cp-dif':''}">${m0((v[e.k]||{})[m]||0)}</td>`).join('')}<td class="cp-number">${m0(tot(e.k))}</td></tr>`;
-      if(exp) det(e.k).forEach(([c,mm])=>{h+=`<tr class="cp-dre-det" data-pai="${e.k}" hidden><td><small>${esc(c)}</small></td>${meses.map(m=>`<td class="cp-number"><small>${mm[m]?m0(mm[m]):''}</small></td>`).join('')}<td class="cp-number"><small>${m0(Object.values(mm).reduce((s,n)=>s+n,0))}</small></td></tr>`;});
-      if(e.k==='=RP') h+=`<tr><td><small>Margem sobre a receita</small></td>${meses.map(m=>{const r=(v.REC||{})[m]||0;return `<td class="cp-number"><small>${r?Math.round(((v['=RP']||{})[m]||0)/r*100)+'%':'-'}</small></td>`;}).join('')}<td class="cp-number"><small>${tot('REC')?Math.round(tot('=RP')/tot('REC')*100)+'%':'-'}</small></td></tr>`;
+      h+=`<tr class="${cls}${exp?' cp-dre-exp':''}" ${exp?`data-dre="${e.k}"`:''}><td>${exp?`<span class="cp-mais">${P.abertos?'-':'+'}</span> `:''}${esc(e.t)}</td>${cols.map(c=>cel(sv(v[e.k],c.ms),c.ms)).join('')}${cel(sv(v[e.k],meses),meses,' cp-col-tot')}</tr>`;
+      if(exp) det(e.k).forEach(([c0,mm])=>{h+=`<tr class="cp-dre-det" data-pai="${e.k}"${P.abertos?'':' hidden'}><td>${esc(c0)}</td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel(x,c.ms):'<td class="cp-number"></td>';}).join('')}${cel(sv(mm,meses),meses,' cp-col-tot')}</tr>`;});
+      if(e.k==='=RP') h+=`<tr class="cp-margem"><td>Margem sobre a receita</td>${[...cols.map(c=>c.ms),meses].map((ms,i)=>{const r=sv(v.REC,ms);return `<td class="cp-number${i===cols.length?' cp-col-tot':''}">${r?(sv(v['=RP'],ms)/r*100).toFixed(1).replace('.',',')+'%':'-'}</td>`;}).join('')}</tr>`;
     });
     h+=`</tbody></table></div>`;
     const fora=[['FORA_ATIVO','Investimentos, compras de empresas, equipamentos e aplicações'],['FORA_PASSIVO','Parcelas de empréstimos e financiamentos, faturas de cartão e acordos com sócios']];
-    h+=`<h3 class="cp-h">Saídas de caixa que não são despesa</h3><div class="cp-table"><table><thead><tr><th></th>${meses.map(m=>`<th class="cp-number">${mesTxt(m+'-01')}</th>`).join('')}<th class="cp-number">Total</th></tr></thead><tbody>${fora.map(([k,t])=>`<tr class="cp-dre-exp" data-dre="${k}"><td><span class="cp-mais">+</span> ${t}</td>${meses.map(m=>`<td class="cp-number">${m0((v[k]||{})[m]||0)}</td>`).join('')}<td class="cp-number">${m0(tot(k))}</td></tr>${det(k).map(([c,mm])=>`<tr class="cp-dre-det" data-pai="${k}" hidden><td><small>${esc(c)}</small></td>${meses.map(m=>`<td class="cp-number"><small>${mm[m]?m0(mm[m]):''}</small></td>`).join('')}<td class="cp-number"><small>${m0(Object.values(mm).reduce((s,n)=>s+n,0))}</small></td></tr>`).join('')}`).join('')}</tbody></table></div>`;
+    const P2=Object.assign({},P,{pct:false});
+    h+=`<h3 class="cp-h">Saídas de caixa que não são despesa</h3><div class="cp-table cp-fixa"><table class="cp-dre">${head()}<tbody>${fora.map(([k,t])=>`<tr class="cp-dre-exp" data-dre="${k}"><td><span class="cp-mais">${P.abertos?'-':'+'}</span> ${t}</td>${cols.map(c=>`<td class="cp-number">${fmt(sv(v[k],c.ms))}</td>`).join('')}<td class="cp-number cp-col-tot">${fmt(sv(v[k],meses))}</td></tr>${det(k).map(([c0,mm])=>`<tr class="cp-dre-det" data-pai="${k}"${P.abertos?'':' hidden'}><td>${esc(c0)}</td>${cols.map(c=>{const x=sv(mm,c.ms);return `<td class="cp-number">${x?fmt(x):''}</td>`;}).join('')}<td class="cp-number cp-col-tot">${fmt(sv(mm,meses))}</td></tr>`).join('')}`).join('')}</tbody></table></div>`;
     b.querySelector('#cp-result').innerHTML=h;
     b.querySelector('#cp-dre-emp').onchange=e=>{state.dreEmp=e.target.value;load();};
+    const muda=(k,val)=>{const p=prefs();p[k]=val;salvarPrefs(p);paintDre(d);};
+    b.querySelector('#cp-v-periodo').onchange=e=>muda('periodo',e.target.value);
+    b.querySelector('#cp-v-ultimos').onchange=e=>muda('ultimos',+e.target.value);
+    b.querySelector('#cp-v-unidade').onchange=e=>muda('unidade',e.target.value);
+    b.querySelector('#cp-v-pct').onchange=e=>muda('pct',e.target.checked);
+    b.querySelector('#cp-v-abertos').onchange=e=>muda('abertos',e.target.checked);
+    b.querySelectorAll('[data-fonte]').forEach(x=>x.onclick=()=>{const p=prefs();p.fonte=Math.max(11,Math.min(18,p.fonte+Number(x.dataset.fonte)));salvarPrefs(p);aplicarFonte();});
     b.querySelectorAll('[data-dre]').forEach(tr=>tr.onclick=()=>{const k=tr.dataset.dre, rows=b.querySelectorAll(`[data-pai="${k}"]`), abrir=rows[0]?.hidden;rows.forEach(r=>r.hidden=!abrir);const s=tr.querySelector('.cp-mais');if(s)s.textContent=abrir?'-':'+';});
-    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês (inclui juros e multas, ainda sem separar), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique numa linha com + para ver as contas.</div>`;
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês (inclui juros e multas, ainda sem separar), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique numa linha com + para ver as contas. As escolhas de visualização ficam guardadas neste navegador.</div>`;
   }
   async function loadAgenda(own){
     const b=box();if(!b)return;
@@ -338,7 +371,7 @@
   window.cpClear=clear;
   window.cpSyncVisibility=visibility;
   window.renderContasPagar=async()=>{
-    shell();cpMarcar();box().querySelector('#cp-result').innerHTML=msg('Conferindo seu acesso…');
+    shell();aplicarFonte();cpMarcar();box().querySelector('#cp-result').innerHTML=msg('Conferindo seu acesso…');
     await visibility();if(authorized){if(!box().querySelector('#cp-result'))shell();load();}
   };
   const sb=getSB();
