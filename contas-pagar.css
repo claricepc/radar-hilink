@@ -82,3 +82,5 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp .cp-mais{display:inline-block;width:14px;font-weight:700;color:#13315c}
 #mod-cp tr.cp-dre-det td{background:#fafbfd;padding-top:4px;padding-bottom:4px}
 #mod-cp tr.cp-dre-det td:first-child{padding-left:28px}
+
+#mod-cp .cp-tabs[hidden]{display:none}

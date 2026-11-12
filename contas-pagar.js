@@ -1,7 +1,8 @@
 /* Read-only financial consultation. No browser financial cache or mutation API. */
 (()=>{
   'use strict';
-  const tabs={pagamentos:'Agenda de pagamentos',mes:'Resumo do mês',caixa30:'Caixa projetado',depara:'De/para (plano de contas)',dre26:'DRE gerencial',resumo:'Resumo (sistema antigo)',lancamentos:'Lançamentos',dre:'DRE (sistema antigo)',razao:'Razão',caixa:'Caixa (sistema antigo)',conciliacao:'Conciliação',auditoria:'Auditoria'};
+  const NOVAS={pagamentos:['Agenda de pagamentos','o que vence, lido das planilhas todo dia'],mes:['Resumo do mês','previsto, pago e vencido sem baixa'],caixa30:['Caixa projetado','próximos 30 dias por empresa'],dre26:['DRE gerencial','resultado por empresa e consolidado'],depara:['De/para (plano de contas)','ligação das descrições às contas']};
+  const tabs={resumo:'Resumo',lancamentos:'Lançamentos',dre:'DRE',razao:'Razão',caixa:'Caixa',conciliacao:'Conciliação',auditoria:'Auditoria'};
   const now=new Date(),pad=n=>String(n).padStart(2,'0');
   const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   const state={view:'pagamentos',filialAg:'',de:local(new Date(now.getFullYear(),now.getMonth(),1)),ate:local(now),empresa:null,pagina:1,status:'todos',regime:'competencia'};
@@ -26,14 +27,15 @@
   }
   function shell(){
     const b=box();if(!b)return;
-    b.innerHTML=`<div class="cp-head"><div><h2>Contas a pagar</h2><p>Consulta ao financeiro existente</p></div><span class="cp-mode">Somente leitura</span></div>
+    const nova=NOVAS[state.view];
+    b.innerHTML=`<div class="cp-head"><div><h2>${nova?nova[0]:'Sistema antigo (até abril/2026)'}</h2><p>${nova?nova[1]:'consulta ao financeiro antigo, somente leitura'}</p></div>${nova?'':'<span class="cp-mode">Somente leitura</span>'}</div>
       <form class="cp-filters" id="cp-form"><label>De<input id="cp-de" type="date" min="2026-01-01" value="${state.de}" required></label>
       <label>Até<input id="cp-ate" type="date" min="2026-01-01" value="${state.ate}" required></label>
       <label>Empresa<select id="cp-empresa"><option value="">Todas autorizadas</option></select></label>
       <label id="cp-regime-label">Período por<select id="cp-regime"><option value="competencia">Competência</option><option value="caixa">Pagamento</option></select></label>
       <label id="cp-status-label">Situação<select id="cp-status"><option value="todos">Todas</option><option value="PAGO">Pago</option><option value="PROVISIONADO">Provisionado</option></select></label>
       <button type="submit">Consultar</button></form>
-      <div class="cp-tabs" role="tablist" aria-label="Consulta financeira">${Object.entries(tabs).map(([id,label])=>`<button type="button" role="tab" data-view="${id}" aria-selected="${id===state.view}">${label}</button>`).join('')}</div>
+      <div class="cp-tabs" role="tablist" aria-label="Sistema antigo"${nova?' hidden':''}>${Object.entries(tabs).map(([id,label])=>`<button type="button" role="tab" data-view="${id}" aria-selected="${id===state.view}">${label}</button>`).join('')}</div>
       <div id="cp-context"></div><div id="cp-result" aria-live="polite"></div><div id="cp-coverage"></div>`;
     b.querySelector('#cp-regime').value=state.regime;b.querySelector('#cp-status').value=state.status;
     b.querySelector('#cp-form').onsubmit=e=>{e.preventDefault();state.de=b.querySelector('#cp-de').value;state.ate=b.querySelector('#cp-ate').value;state.empresa=b.querySelector('#cp-empresa').value||null;state.regime=b.querySelector('#cp-regime').value;state.status=b.querySelector('#cp-status').value;state.pagina=1;load();};
@@ -329,10 +331,14 @@
     }catch(e){if(own===generation&&box())b.querySelector('#cp-result').innerHTML=msg(e.name==='AbortError'?'A consulta excedeu o tempo de espera. Tente novamente.':e.message);}
     finally{clearTimeout(timer);}
   }
+  window.cpTab=v=>{state.view=v;state.pagina=1;if(document.body.dataset.activeMod==='cp'&&box()?.querySelector('#cp-result')){shell();if(authorized)load();cpMarcar();}else{go('cp');}};
+  function cpMarcar(){document.querySelectorAll('#cp-nav .nav-sub').forEach(n=>n.classList.toggle('active',n.dataset.cp===(NOVAS[state.view]?state.view:'antigo')));}
+  window.cpMarcar=cpMarcar;
+  window.cpSubAtual=()=>NOVAS[state.view]?state.view:'antigo';
   window.cpClear=clear;
   window.cpSyncVisibility=visibility;
   window.renderContasPagar=async()=>{
-    shell();box().querySelector('#cp-result').innerHTML=msg('Conferindo seu acesso…');
+    shell();cpMarcar();box().querySelector('#cp-result').innerHTML=msg('Conferindo seu acesso…');
     await visibility();if(authorized){if(!box().querySelector('#cp-result'))shell();load();}
   };
   const sb=getSB();
