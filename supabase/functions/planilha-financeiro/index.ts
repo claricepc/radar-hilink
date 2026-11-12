@@ -38,6 +38,9 @@ type Linha = Record<string, unknown>;
 type Total = { prev: number | null; real: number | null };
 function parseAba(filial: string, nome: string, comp: string, rows: string[][], total: Total): Linha[] {
   const out: Linha[] = [];
+  // algumas abas antigas lancam as saidas com sinal negativo: o sinal do TOTAL DAS SAIDAS decide a aba inteira
+  const linhaTotal = rows.find((r) => up(r?.[0]).startsWith("TOTAL DAS SAIDAS"));
+  const sinal = (dinheiro(linhaTotal?.[2]) ?? dinheiro(linhaTotal?.[3]) ?? 0) < 0 ? -1 : 1;
   let bloco: "saida" | "retirada" | null = null, secao: string | null = null, viuCabecalho = false;
   rows.forEach((r, i) => {
     const c = [0, 1, 2, 3, 4].map((k) => String(r[k] ?? "").trim());
@@ -50,8 +53,7 @@ function parseAba(filial: string, nome: string, comp: string, rows: string[][], 
     if (bloco === "retirada" && (a.startsWith("DEBITO/CREDITO") || a.startsWith("TOTAL DEBITO") || a.startsWith("RESULTADO") || a.startsWith("SALDO A PAGAR") || a.startsWith("BATIMENTO"))) { bloco = null; return; }
     if (!bloco || !c[0]) return;
     const dia = /^\d{1,2}$/.test(c[1]) && +c[1] >= 1 && +c[1] <= 31 ? +c[1] : null;
-    // saidas: algumas abas antigas guardam o valor com sinal negativo; aqui vale o valor absoluto
-    const abs = (n: number | null) => (n === null || bloco === "retirada" ? n : Math.abs(n));
+    const abs = (n: number | null) => (n === null || bloco === "retirada" ? n : n * sinal);
     const prev = abs(dinheiro(c[2])), real = abs(dinheiro(c[3]));
     if (dia === null && prev === null && real === null && !c[2] && !c[3]) { secao = c[0]; return; }
     if (bloco === "saida" && dia === null && dinheiro(c[1]) !== null && !c[2] && !c[3]) { secao = c[0]; return; }
