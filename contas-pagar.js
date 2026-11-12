@@ -1,7 +1,7 @@
 /* Read-only financial consultation. No browser financial cache or mutation API. */
 (()=>{
   'use strict';
-  const tabs={pagamentos:'Agenda de pagamentos',mes:'Resumo do mês',resumo:'Resumo (sistema antigo)',lancamentos:'Lançamentos',dre:'DRE',razao:'Razão',caixa:'Caixa',conciliacao:'Conciliação',auditoria:'Auditoria'};
+  const tabs={pagamentos:'Agenda de pagamentos',mes:'Resumo do mês',caixa30:'Caixa projetado',resumo:'Resumo (sistema antigo)',lancamentos:'Lançamentos',dre:'DRE',razao:'Razão',caixa:'Caixa (sistema antigo)',conciliacao:'Conciliação',auditoria:'Auditoria'};
   const now=new Date(),pad=n=>String(n).padStart(2,'0');
   const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   const state={view:'pagamentos',filialAg:'',de:local(new Date(now.getFullYear(),now.getMonth(),1)),ate:local(now),empresa:null,pagina:1,status:'todos',regime:'competencia'};
@@ -113,6 +113,62 @@
     b.querySelector('#cp-mes').onchange=e=>{state.compMes=e.target.value;load();};
     b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Fonte: planilhas de fluxo de caixa de cada filial, lidas todo dia às 6h. "Pago" é a coluna REALIZADO. "Vencido sem baixa" é o que tem previsto, já venceu e está com o REALIZADO vazio: ou está atrasado, ou foi pago e falta marcar na planilha. "Conferência" compara a soma das linhas com o TOTAL DAS SAÍDAS da própria planilha; quando não confere, a fórmula do total pode não estar pegando todas as linhas.</div>`;
   }
+
+  async function loadCaixa(own){
+    const b=box();if(!b)return;
+    b.querySelector('#cp-form').style.display='none';
+    b.querySelectorAll('[data-view]').forEach(el=>el.setAttribute('aria-selected',String(el.dataset.view===state.view)));
+    b.querySelector('#cp-result').innerHTML=msg('Projetando o caixa dos próximos 30 dias…');b.querySelector('#cp-context').replaceChildren();b.querySelector('#cp-coverage').replaceChildren();
+    const {data,error}=await getSB().rpc('radar_cp_caixa',{p_dias:30});
+    if(own!==generation||!box())return;
+    if(error){b.querySelector('#cp-result').innerHTML=msg('Caixa indisponível: '+error.message);return;}
+    paintCaixa(data);
+  }
+  function caixaGrafico(F){
+    const dias=(F[0]?.serie||[]).map(x=>x.dia); if(!dias.length) return '';
+    const tot=dias.map((_,i)=>F.reduce((t,f)=>t+Number(f.serie?.[i]?.saldo||0),0));
+    const W=900,H=200,P=36, mn=Math.min(0,...tot), mx=Math.max(...tot,1);
+    const X=i=>P+i*(W-2*P)/Math.max(1,dias.length-1), Y=v=>H-P-(v-mn)/(mx-mn||1)*(H-2*P);
+    const pts=tot.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+    const z=Y(0), iMin=tot.indexOf(Math.min(...tot));
+    return `<svg class="cp-graf" viewBox="0 0 ${W} ${H}" role="img" aria-label="Saldo projetado somando as cinco empresas">
+      <line x1="${P}" x2="${W-P}" y1="${z}" y2="${z}" class="cp-g-zero"/>
+      <polyline points="${pts}" class="cp-g-linha"/>
+      <circle cx="${X(iMin)}" cy="${Y(tot[iMin])}" r="5" class="${tot[iMin]<0?'cp-g-neg':'cp-g-pt'}"/>
+      <text x="${X(iMin)}" y="${Y(tot[iMin])-10}" text-anchor="middle" class="cp-g-txt">menor: ${m0(tot[iMin])} em ${date(dias[iMin]).slice(0,5)}</text>
+      <text x="${P}" y="${H-8}" class="cp-g-txt">${date(dias[0]).slice(0,5)}</text><text x="${W-P}" y="${H-8}" text-anchor="end" class="cp-g-txt">${date(dias[dias.length-1]).slice(0,5)}</text>
+      <text x="${W-P}" y="${Y(tot[tot.length-1])-8}" text-anchor="end" class="cp-g-txt">${m0(tot[tot.length-1])}</text></svg>`;
+  }
+  function paintCaixa(d){
+    const b=box();if(!b)return;
+    const F=d.filiais||[], hoje=d.hoje;
+    const velho=F.some(f=>!f.saldo_data||f.saldo_data<hoje);
+    const minDe=f=>{let m=null;(f.serie||[]).forEach(x=>{if(m===null||Number(x.saldo)<Number(m.saldo))m=x;});return m||{};};
+    let h='';
+    if(velho)h+=`<div class="cp-notice cp-antigo"><b>Atenção:</b> o saldo de partida é o último que o Radar conhece (veja a data em cada empresa). Pagamentos e recebimentos entre essa data e hoje não entram na conta. Informe o saldo de hoje abaixo para a projeção ficar certa.</div>`;
+    h+=`<div class="cp-graf-box"><h3 class="cp-h" style="margin-top:4px">Saldo projetado, somando as cinco empresas</h3>${caixaGrafico(F)}</div>`;
+    h+=`<h3 class="cp-h">Por empresa, próximos 30 dias</h3><div class="cp-table"><table><thead><tr><th>Empresa</th><th>Saldo de partida</th><th class="cp-number">Entradas prováveis</th><th class="cp-number">Saídas</th><th class="cp-number">Saldo em 30 dias</th><th>Menor saldo</th><th>Informar saldo de hoje</th></tr></thead><tbody>${F.map(f=>{const mn=minDe(f), fim=(f.serie||[]).slice(-1)[0]||{};
+      return `<tr><td><b>${esc(f.filial)}</b><br><small>${f.vencido_n?`${f.vencido_n} vencidos sem baixa: ${m0(f.vencido_valor)}`:''}</small></td>
+      <td>${m0(f.saldo)}<br><small class="${f.saldo_data<hoje?'cp-dif':''}">em ${date(f.saldo_data)}</small></td>
+      <td class="cp-number">${m0(f.entradas)}<br><small>${m0(f.entradas_bruto)} a vencer × ${String(f.taxa).replace('.',',')}% pagos no mês passado</small></td>
+      <td class="cp-number">${m0(f.saidas)}${Number(f.saidas_estimadas)?`<br><small>${m0(f.saidas_estimadas)} estimados pelo mês anterior</small>`:''}</td>
+      <td class="cp-number"><b class="${Number(fim.saldo)<0?'cp-dif':''}">${m0(fim.saldo)}</b></td>
+      <td class="${Number(mn.saldo)<0?'cp-dif':''}">${m0(mn.saldo)}<br><small>em ${date(mn.dia)}</small></td>
+      <td><div class="cp-saldo-in"><input type="text" inputmode="decimal" placeholder="0,00" data-saldo="${esc(f.filial)}" aria-label="Saldo de hoje ${esc(f.filial)}"><button type="button" class="cp-btn" data-salvar="${esc(f.filial)}">Salvar</button></div></td></tr>`;}).join('')}</tbody></table></div>`;
+    const neg=F.flatMap(f=>(f.serie||[]).filter(x=>Number(x.saldo)<0).slice(0,1).map(x=>({f:f.filial,...x})));
+    if(neg.length)h+=`<div class="cp-notice" style="border-color:#d9534f;background:#fff4f4;color:#7a1c19"><b>Risco de caixa negativo:</b> ${neg.map(n=>`${esc(n.f)} a partir de ${date(n.dia)} (${m0(n.saldo)})`).join('; ')}. Antecipe recebimentos, transfira entre empresas ou renegocie o vencimento antes dessa data.</div>`;
+    b.querySelector('#cp-result').innerHTML=h;
+    b.querySelectorAll('[data-salvar]').forEach(bt=>bt.onclick=async()=>{
+      const fil=bt.dataset.salvar, inp=b.querySelector(`[data-saldo="${fil}"]`);
+      const v=Number(String(inp.value).replace(/\./g,'').replace(',','.').replace(/[^0-9.-]/g,''));
+      if(!inp.value.trim()||!isFinite(v)){inp.focus();return;}
+      bt.disabled=true;bt.textContent='Salvando…';
+      const {error}=await getSB().rpc('radar_cp_saldo_informar',{p_filial:fil,p_data:hoje,p_saldo:v});
+      if(error){bt.disabled=false;bt.textContent='Salvar';alert('Não salvou: '+error.message);return;}
+      load();
+    });
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Como a conta é feita: saldo de partida + boletos do IXC a vencer em cada dia (pela carteira de cada empresa), multiplicados pelo percentual que foi pago no mês passado, menos as saídas da planilha ainda sem REALIZADO. Para os meses que ainda não têm aba na planilha, as saídas são estimadas repetindo as contas do mês anterior no mesmo dia. Os vencidos sem baixa não entram na projeção: confira se já foram pagos.</div>`;
+  }
   async function loadAgenda(own){
     const b=box();if(!b)return;
     b.querySelector('#cp-form').style.display='none';
@@ -152,6 +208,7 @@
     const own=++generation;controller?.abort();controller=new AbortController();
     if(state.view==='pagamentos')return loadAgenda(own);
     if(state.view==='mes')return loadMes(own);
+    if(state.view==='caixa30')return loadCaixa(own);
     b.querySelector('#cp-form').style.display='';
     const active=['resumo','lancamentos','dre'].includes(state.view);
     b.querySelector('#cp-regime').disabled=!active;b.querySelector('#cp-status').disabled=!active;

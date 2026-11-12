@@ -63,3 +63,14 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp .cp-legenda i,#mod-cp .cp-legenda b{display:inline-block;width:14px;height:10px;border-radius:3px}
 #mod-cp .cp-l-prev{background:#9db7de}#mod-cp .cp-l-pago{background:#13315c;margin-left:10px}
 @media (max-width:700px){#mod-cp .cp-barra{grid-template-columns:1fr}}
+
+#mod-cp .cp-graf-box{border:1px solid #e1e7f0;border-radius:10px;background:#fff;padding:10px 14px;margin:10px 0}
+#mod-cp .cp-graf{width:100%;height:auto;display:block}
+#mod-cp .cp-g-linha{fill:none;stroke:#13315c;stroke-width:2.5}
+#mod-cp .cp-g-zero{stroke:#d9534f;stroke-dasharray:4 4;stroke-width:1}
+#mod-cp .cp-g-pt{fill:#13315c}#mod-cp .cp-g-neg{fill:#d9534f}
+#mod-cp .cp-g-txt{font-size:12px;fill:#51607a}
+#mod-cp .cp-saldo-in{display:flex;gap:6px}
+#mod-cp .cp-saldo-in input{width:110px;padding:5px 8px;border:1px solid #c9d3e3;border-radius:6px}
+#mod-cp .cp-btn{border:1px solid #13315c;background:#13315c;color:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px}
+#mod-cp .cp-btn:disabled{opacity:.6}
