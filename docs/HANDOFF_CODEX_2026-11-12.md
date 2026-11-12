@@ -49,8 +49,14 @@ Menu lateral: Contas a pagar com subpastas (`cpTab('...')` em `contas-pagar.js`)
 - Botão fixo de dados: "Carregar dados de HH:MM" só quando os dados prontos têm menos de 30 min; senão mostra "Atualizar todos os dados".
 - Git local: o remote só buscava `main`; foi adicionado o refspec `+refs/heads/claude/*:refs/remotes/origin/claude/*`.
 
+## 7. Auditoria semanal das planilhas (ativa)
+- Função `fin.auditoria_semanal()` (security definer, sem acesso para anon/authenticated). Cron `fin-auditoria-semanal`, `0 11 * * 1` (segunda 8h de Brasília).
+- Testes: vencido sem baixa (mês anterior em diante), total da aba x soma das linhas (última leitura de cada filial), descrição sem conta no de/para, "pago por/pela <filial>" sem lançamento pago com a mesma descrição na filial pagadora, planilha sem leitura há mais de 2 dias.
+- Grava em `fin.auditoria_achados` (fonte `auditoria semanal`, refaz a rodada do dia se rodar de novo) e cria tarefa na agenda da Clarice (`radar_agenda.tarefas`, prazo +2 dias).
+- O teste "pago por outra filial" compara pela descrição normalizada; se a filial pagadora lançar com outro nome, aparece como achado para conferir.
+
 ## Pendências (ordem combinada)
-1. Auditoria semanal automática (segunda 8h): vencidos sem baixa, totais que não conferem, descrições novas sem conta, "pago por outra filial" sem baixa na filial pagadora. Registrar em `fin.auditoria_achados` e criar tarefa na agenda da Clarice. Aguardando ok final.
+1. Mostrar os achados da auditoria numa subpasta de Contas a pagar.
 2. Transferências entre filiais e bloco de reembolsos/retiradas (inclui retiradas da Madalena nas colunas laterais).
 3. Detalhamento das faturas de cartão (hoje só o pagamento da fatura, fora da DRE).
 4. Script de extratos no Drive (`scripts/radar-drive-apps-script.gs`) para o saldo entrar sozinho no Caixa.
