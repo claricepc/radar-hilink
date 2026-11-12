@@ -1,7 +1,7 @@
 /* Read-only financial consultation. No browser financial cache or mutation API. */
 (()=>{
   'use strict';
-  const tabs={pagamentos:'Agenda de pagamentos',resumo:'Resumo',lancamentos:'Lançamentos',agenda:'Agenda',dre:'DRE',razao:'Razão',caixa:'Caixa',conciliacao:'Conciliação',auditoria:'Auditoria'};
+  const tabs={pagamentos:'Agenda de pagamentos',resumo:'Resumo',lancamentos:'Lançamentos',dre:'DRE',razao:'Razão',caixa:'Caixa',conciliacao:'Conciliação',auditoria:'Auditoria'};
   const now=new Date(),pad=n=>String(n).padStart(2,'0');
   const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   const state={view:'pagamentos',filialAg:'',de:local(new Date(now.getFullYear(),now.getMonth(),1)),ate:local(now),empresa:null,pagina:1,status:'todos',regime:'competencia'};
@@ -63,7 +63,7 @@
     const prev=b.querySelector('#cp-prev'),next=b.querySelector('#cp-next');
     if(prev)prev.onclick=()=>{state.pagina--;load();};if(next)next.onclick=()=>{state.pagina++;load();};
     const notes={agenda:'Agenda por vencimento, apenas despesas provisionadas. Registros sem vencimento não aparecem nesta lista.',dre:'DRE parcial: somente despesas classificadas. Não representa lucro, fechamento aprovado ou DRE completa.',razao:'Razão dos lançamentos efetivados na fonte. Não representa fechamento aprovado.',caixa:'Movimentos do extrato. Saldo bancário validado indisponível: não foi calculado por soma destas linhas.',conciliacao:'Exibe a conciliação registrada na fonte. Esta tela não concilia, corrige nem confirma diferenças.',auditoria:'Candidatos à revisão, não erros confirmados. Localize o identificador e o arquivo de origem no financeiro e confira o comprovante, a classificação e a data antes de decidir.'};
-    b.querySelector('#cp-context').innerHTML=`<p>Fonte: ${esc(data.fonte)} · Consulta: ${esc(new Date(data.consultado_em).toLocaleString('pt-BR'))} · ${date(state.de)} a ${date(state.ate)} · ${state.view==='agenda'?'Vencimento':['razao','caixa','conciliacao','auditoria'].includes(state.view)?'Data própria da aba':state.regime==='caixa'?'Pagamento':'Competência'}</p>${notes[state.view]?`<div class="cp-notice">${notes[state.view]}</div>`:''}`;
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice cp-antigo"><b>Sistema financeiro antigo:</b> dados importados até abril/2026 (extratos da Madalena até 14/09/2026). Não é atualizado. Para o que vence agora, use a aba Agenda de pagamentos.</div><p>Fonte: ${esc(data.fonte)} · Consulta: ${esc(new Date(data.consultado_em).toLocaleString('pt-BR'))} · ${date(state.de)} a ${date(state.ate)} · ${state.view==='agenda'?'Vencimento':['razao','caixa','conciliacao','auditoria'].includes(state.view)?'Data própria da aba':state.regime==='caixa'?'Pagamento':'Competência'}</p>${notes[state.view]?`<div class="cp-notice">${notes[state.view]}</div>`:''}`;
     const coverage=(data.empresas||[]).filter(e=>!state.empresa||e.id===state.empresa);
     const coverageRows=coverage.map(e=>({filial:e.codigo,data_transacao:e.extrato_ate,alerta:!e.extrato_ate?'Sem extrato desde 2026':String(e.extrato_ate).slice(0,10)<state.ate?'Extrato não cobre todo o período solicitado':'Conferir abrangência dos arquivos de origem'}));
     b.querySelector('#cp-coverage').innerHTML=`<details><summary>Cobertura da fonte por empresa</summary><p>Última competência pode incluir previsão futura. Ela não comprova atualização bancária.</p>${table(coverageRows)}</details>`;

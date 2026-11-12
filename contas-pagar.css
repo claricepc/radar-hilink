@@ -42,3 +42,5 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp .cp-grupo summary{padding:10px 14px;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;gap:12px}
 #mod-cp .cp-grupo summary span{font-weight:500;color:#51607a}
 #mod-cp .cp-grupo td small{color:#6b7891}
+
+#mod-cp .cp-notice.cp-antigo{border-color:#e0a800;background:#fff8e1;color:#5c4400}
