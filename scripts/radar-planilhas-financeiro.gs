@@ -147,3 +147,95 @@ function converterMadalena() {
   props.setProperty('MADALENA_SHEETS_ID', novoId);
   Logger.log('Nova planilha da Madalena: ' + novo.getUrl());
 }
+
+/* ======================================================================================
+ * Extratos e francesinhas do banco (13/11/2026)
+ *  - "lerBanco": 1) grava no Drive os arquivos enviados pelo Radar (nome padrao, pasta da filial);
+ *                2) procura no Drive extratos (OFX/Excel) e francesinhas (COBST_..._FRA.TXT) de 2026
+ *                   que o Radar ainda nao leu e manda para leitura. So le os arquivos; nao altera nem apaga.
+ *  - "instalarGatilhoBanco": roda o lerBanco a cada 15 minutos. Rode uma vez.
+ * ====================================================================================== */
+var FUNCAO_BANCO = 'https://mdhexsdnavzforuahgxn.supabase.co/functions/v1/banco-arquivos';
+var PASTA_DOCUMENTOS = '1qGM7UDxgUnqkuJ0a_kwsUxXpdsV-geOo'; // HILINK - Documentos / {FILIAL} / EXTRATO|FRANCESINHA / {ANO}
+var BANCO_NOME_OK = /(^COBST_.*_FRA\.TXT$)|(^FRANCESINHA_)|(EXTRATO)/i;
+var BANCO_NOME_FORA = /PGDASD|NEOENERGIA|FRONTEIRA|RETROATIVO|\.pdf$|\.png$|\.jpe?g$/i;
+var BANCO_MAX_BYTES = 8 * 1024 * 1024;
+
+function banco(corpo) {
+  corpo.token = ScriptApp.getOAuthToken();
+  var r = UrlFetchApp.fetch(FUNCAO_BANCO, { method: 'post', contentType: 'application/json', payload: JSON.stringify(corpo), muteHttpExceptions: true });
+  var t = r.getContentText();
+  try { return JSON.parse(t); } catch (e) { return { ok: false, erro: 'HTTP ' + r.getResponseCode() + ' ' + t.slice(0, 200) }; }
+}
+
+function pastaFilha(pai, nome) {
+  var it = pai.getFoldersByName(nome);
+  return it.hasNext() ? it.next() : pai.createFolder(nome);
+}
+
+function lerBanco() {
+  var inicio = Date.now();
+  var trava = LockService.getScriptLock();
+  if (!trava.tryLock(10000)) return;
+  try {
+    // 1) fila do Radar -> Drive
+    for (var volta = 0; volta < 5; volta++) {
+      var p = banco({ acao: 'pendentes' });
+      if (!p.ok) { Logger.log('pendentes: ' + p.erro); break; }
+      if (!p.pendentes.length) break;
+      var feitos = p.pendentes.map(function (u) {
+        try {
+          var pasta = pastaFilha(pastaFilha(pastaFilha(DriveApp.getFolderById(PASTA_DOCUMENTOS), u.drive_nome), u.tipo === 'francesinha' ? 'FRANCESINHA' : 'EXTRATO'), String(u.ano));
+          var velhos = pasta.getFilesByName(u.nome_drive);
+          while (velhos.hasNext()) velhos.next().setTrashed(true);
+          var f = pasta.createFile(Utilities.newBlob(Utilities.base64Decode(u.base64), u.mime || 'application/octet-stream', u.nome_drive));
+          return { id: u.id, drive_id: f.getId(), url: f.getUrl() };
+        } catch (e) { return { id: u.id, erro: String(e).slice(0, 300) }; }
+      });
+      banco({ acao: 'feito', feitos: feitos });
+      Logger.log('Gravados no Drive: ' + feitos.length);
+    }
+    // 2) Drive -> Radar
+    var q = 'modifiedDate > "2026-01-01T00:00:00" and trashed = false and (title contains "EXTRATO" or title contains "extrato" or title contains "COBST_" or title contains "FRANCESINHA")';
+    var it = DriveApp.searchFiles(q), lista = [], arqs = {};
+    while (it.hasNext()) {
+      var f = it.next(), nome = f.getName(), mime = f.getMimeType();
+      if (!BANCO_NOME_OK.test(nome) || BANCO_NOME_FORA.test(nome)) continue;
+      if (mime.indexOf('application/vnd.google-apps') === 0 || f.getSize() > BANCO_MAX_BYTES) continue;
+      lista.push({ id: f.getId(), nome: nome, modificado: f.getLastUpdated().toISOString() });
+      arqs[f.getId()] = f;
+    }
+    var faltam = [];
+    for (var i = 0; i < lista.length; i += 300) {
+      var r = banco({ acao: 'quais', arquivos: lista.slice(i, i + 300) });
+      if (!r.ok) { Logger.log('quais: ' + r.erro); return; }
+      faltam = faltam.concat(r.faltam);
+    }
+    Logger.log('Arquivos do banco no Drive: ' + lista.length + ' | ainda nao lidos: ' + faltam.length);
+    var lote = [], bytes = 0, enviados = 0;
+    var mandar = function () {
+      if (!lote.length) return;
+      var r = banco({ acao: 'gravar', arquivos: lote });
+      if (!r.ok) Logger.log('gravar: ' + r.erro);
+      else r.arquivos.forEach(function (x) { Logger.log((x.ok ? 'ok  ' : 'ERRO') + ' ' + x.nome + (x.erro ? ' - ' + x.erro : '')); });
+      enviados += lote.length; lote = []; bytes = 0;
+    };
+    for (var j = 0; j < faltam.length; j++) {
+      if (Date.now() - inicio > 270000) { Logger.log('Tempo esgotado; continua na proxima rodada.'); break; }
+      var arq = arqs[faltam[j]], blob = arq.getBlob(), b = blob.getBytes();
+      if (bytes + b.length > 4 * 1024 * 1024 || lote.length >= 8) mandar();
+      lote.push({ id: arq.getId(), nome: arq.getName(), modificado: arq.getLastUpdated().toISOString(), mime: blob.getContentType(), base64: Utilities.base64Encode(b) });
+      bytes += b.length;
+    }
+    mandar();
+    Logger.log('Enviados para leitura: ' + enviados);
+  } finally {
+    trava.releaseLock();
+  }
+}
+
+function instalarGatilhoBanco() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'lerBanco') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('lerBanco').timeBased().everyMinutes(15).create();
+  Logger.log('Leitura de extratos e francesinhas a cada 15 minutos.');
+}
