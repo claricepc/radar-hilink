@@ -55,23 +55,27 @@ begin
   perform fin.exigir_acesso();
   return (
   with recf as (
-    select to_date(r.mes||'-01','YYYY-MM-DD') comp, r.recebido, r.mensalidades, r.juros_multa, r.descontos
+    select to_date(r.mes||'-01','YYYY-MM-DD') comp, f.empresa, r.recebido, r.mensalidades, r.juros_multa, r.descontos
     from ixc.receita_mensal r join fin.filial_ixc_empresa f on f.filial_ixc = r.filial
     where left(r.mes,4)::int = v_ano and (f.desde is null or to_date(r.mes||'-01','YYYY-MM-DD') >= f.desde)
       and (p_empresa is null or f.empresa = p_empresa)),
   rec as (select comp, sum(recebido) valor, sum(mensalidades) mens, sum(juros_multa) juros, sum(descontos) descs from recf group by 1),
-  des as (
-    select c.competencia comp, coalesce(p.dre_linha,
+  desf as (
+    select c.competencia comp, c.filial, coalesce(p.dre_linha,
              case when c.conta_codigo is null then 'A_CLASSIFICAR' when p.tipo in ('ATIVO','PASSIVO') then 'FORA_'||p.tipo else 'OUTRAS_DESP' end) linha,
            c.conta_codigo, p.descricao conta, sum(c.previsto) valor
     from fin.planilha_classificada c left join fin.plano_contas p on p.codigo = c.conta_codigo
     where c.bloco='saida' and c.previsto is not null and extract(year from c.competencia) = v_ano
       and (p_empresa is null or c.filial = p_empresa) and c.filial <> 'CAMARAGIBE'
-    group by 1,2,3,4)
+    group by 1,2,3,4,5),
+  des as (select comp, linha, conta_codigo, conta, sum(valor) valor from desf group by 1,2,3,4)
   select jsonb_build_object('ano', v_ano, 'empresa', coalesce(p_empresa,'CONSOLIDADO'),
     'meses', (select coalesce(jsonb_agg(distinct to_char(comp,'YYYY-MM')), '[]'::jsonb) from (select comp from rec union select comp from des) m),
     'receita', (select coalesce(jsonb_object_agg(to_char(comp,'YYYY-MM'), round(valor,2)), '{}'::jsonb) from rec),
     'receita_det', (select coalesce(jsonb_object_agg(to_char(comp,'YYYY-MM'), jsonb_build_object('mens', round(mens,2), 'juros', round(juros,2), 'desc', round(descs,2))), '{}'::jsonb) from rec where mens is not null),
+    'receita_filial', (select coalesce(jsonb_agg(jsonb_build_object('filial', empresa, 'mes', to_char(comp,'YYYY-MM'), 'valor', round(v,2), 'mens', round(mens,2), 'juros', round(juros,2), 'desc', round(descs,2))), '[]'::jsonb)
+       from (select comp, empresa, sum(recebido) v, sum(mensalidades) mens, sum(juros_multa) juros, sum(descontos) descs from recf group by 1,2) x),
+    'linhas_filial', (select coalesce(jsonb_agg(jsonb_build_object('linha', linha, 'conta_codigo', conta_codigo, 'filial', filial, 'mes', to_char(comp,'YYYY-MM'), 'valor', round(valor,2))), '[]'::jsonb) from desf),
     'linhas', (select coalesce(jsonb_agg(jsonb_build_object('linha', linha, 'conta_codigo', conta_codigo, 'conta', conta, 'mes', to_char(comp,'YYYY-MM'), 'valor', round(valor,2))), '[]'::jsonb) from des),
     'leitura_receita', (select atualizado_em from ixc.receita_meta where id=1),
     'receita_ate', (select ate from ixc.receita_meta where id=1)));

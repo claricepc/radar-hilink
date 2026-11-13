@@ -220,9 +220,6 @@
 
   const DRE_EST=[
     {k:'REC',t:'Receita recebida (IXC)',tipo:'rec'},
-    {k:'REC_MENS',t:'Mensalidades e serviços (valor dos boletos)',tipo:'recd'},
-    {k:'REC_DESC',t:'(-) Descontos dados no pagamento',tipo:'recd',neg:true},
-    {k:'REC_JUROS',t:'(+) Juros e multas pagos pelos clientes em atraso',tipo:'recd'},
     {k:'DESP_TRIB',t:'(-) Simples Nacional sobre a receita',tipo:'desp'},
     {k:'=RL',t:'Receita líquida',tipo:'tot',f:['REC','-DESP_TRIB']},
     {k:'CSP',t:'(-) Custos dos serviços (link, sistemas, energia, materiais)',tipo:'desp'},
@@ -459,8 +456,12 @@
     const todos=(d.meses||[]).sort(), L=d.linhas||[], R=d.receita||{};
     const v={}; const put=(k,m,x)=>{(v[k] ||= {})[m]=(v[k][m]||0)+Number(x||0);};
     todos.forEach(m=>put('REC',m,R[m]||0));
-    const RD=d.receita_det||{}, temRD=Object.keys(RD).length>0;
+    const RD=d.receita_det||{}, temRD=Object.keys(RD).length>0, RF=d.receita_filial||[], LF=d.linhas_filial||[], cons=!state.dreEmp;
     todos.forEach(m=>{const x=RD[m];if(x){put('REC_MENS',m,x.mens);put('REC_DESC',m,Number(x.desc||0));put('REC_JUROS',m,x.juros);}});
+    const FILN={RECIFE:'Recife',JABOATAO:'Jaboatão',ITAPISSUMA:'Itapissuma',IG:'IG',MADALENA:'Madalena'};
+    // valores por filial de uma conta (ou de uma linha inteira), mês a mês
+    const porFilial=(conta,linha)=>{const g={};LF.filter(x=>(conta==null||x.conta_codigo===conta)&&(!linha||x.linha===linha)).forEach(x=>{(g[x.filial] ||= {})[x.mes]=(g[x.filial][x.mes]||0)+Number(x.valor||0);});
+      return Object.entries(g).map(([f,mm])=>({f,mm,tot:sv(mm,meses)})).filter(x=>x.tot).sort((a,b2)=>b2.tot-a.tot);};
     L.forEach(x=>put(x.linha,x.mes,x.valor));
     DRE_EST.filter(e=>e.f).forEach(e=>todos.forEach(m=>{let t=0;e.f.forEach(t2=>{const neg=t2.startsWith('-'),k=t2.replace('-','');t+=(neg?-1:1)*((v[k]||{})[m]||0);});put(e.k,m,t);}));
     const parcial=m=>d.receita_ate&&String(d.receita_ate).slice(0,7)<=m;
@@ -492,19 +493,39 @@
       <span class="cp-vis-fonte">Letra <button type="button" class="cp-btn" data-fonte="-1">A-</button><button type="button" class="cp-btn" data-fonte="1">A+</button></span>
     </div>
     <div class="cp-table cp-fixa"><table class="cp-dre">${head()}<tbody>`;
+    const linhaVal=(mm,cls,dt,filtro)=>cols.map(c=>{const x=sv(mm,c.ms);return x?celF(x,c.ms,'',dt,filtro):'<td class="cp-number"></td>';}).join('')+celF(sv(mm,meses),meses,' cp-col-tot',dt,filtro);
+    const celF=(x,ms,cls,dt,filtro)=>dt&&x?`<td class="cp-number${x<0?' cp-dif':''}${cls} cp-clicavel" data-det="${dt}" data-ms="${ms.join(',')}"${filtro?` data-filtro="${esc(filtro)}"`:''} title="Ver os lançamentos que formam este valor">${fmt(x)}${pct(x,ms)}</td>`:`<td class="cp-number${x<0?' cp-dif':''}${cls}">${fmt(x)}${pct(x,ms)}</td>`;
+    // linhas de filial: attrs define a quem pertencem (data-pai para abrir com a linha, data-subf para abrir com a conta)
+    const filRows=(F,attrs,dt,oculta,recuo)=>F.map(x=>`<tr class="cp-dre-det cp-dre-fil" ${attrs}${oculta?' hidden':''}><td><span class="cp-fil${recuo?' cp-fil2':''}">${esc(FILN[x.f]||x.f)}</span></td>${linhaVal(x.mm,'',dt,dt?x.f:'')}</tr>`).join('');
     DRE_EST.forEach(e=>{
-      if(e.tipo==='recd'&&!temRD)return;
-      const cls=e.tipo==='tot'?'cp-total':e.tipo==='rec'?'cp-rec':e.tipo==='recd'?'cp-rec-det':'';
-      const exp=e.tipo==='desp'&&det(e.k).length;
+      const cls=e.tipo==='tot'?'cp-total':e.tipo==='rec'?'cp-rec':'';
+      const contas=e.tipo==='desp'?det(e.k):[];
+      // receita: + abre por filial e a composição (boletos, descontos, juros e multas)
+      if(e.tipo==='rec'){
+        const RFm={};RF.forEach(x=>{(RFm[x.filial] ||= {})[x.mes]=(RFm[x.filial][x.mes]||0)+Number(x.valor||0);});
+        const FR=cons?Object.entries(RFm).map(([f,mm])=>({f,mm,tot:sv(mm,meses)})).filter(x=>x.tot).sort((a,b2)=>b2.tot-a.tot):[];
+        const comp=temRD?[['REC_MENS','Valor dos boletos'],['REC_DESC','(-) Descontos dados no pagamento'],['REC_JUROS','(+) Juros e multas de atraso']].filter(([k])=>sv(v[k],meses)):[];
+        const exp=FR.length>1||comp.length;
+        h+=`<tr class="${cls}${exp?' cp-dre-exp':''}" ${exp?`data-dre="${e.k}"`:''}><td>${exp?`<span class="cp-mais">${P.abertos?'-':'+'}</span> `:''}${esc(e.t)}</td>${cols.map(c=>cel(sv(v[e.k],c.ms),c.ms)).join('')}${cel(sv(v[e.k],meses),meses,' cp-col-tot')}</tr>`;
+        if(FR.length>1)h+=filRows(FR,`data-pai="${e.k}"`,'',!P.abertos);
+        if(comp.length)h+=comp.map(([k,t],i)=>`<tr class="cp-dre-det cp-rec-det${i===0?' cp-rec-det1':''}" data-pai="${e.k}"${P.abertos?'':' hidden'}><td>${esc(t)}</td>${linhaVal(v[k]||{},'','')}</tr>`).join('');
+        return;
+      }
+      // conta única na linha e consolidado: a linha abre direto por filial (sem repetir a conta)
+      const umaConta=contas.length===1&&cons?contas[0][0].split(' ')[0]:null, FU=umaConta?porFilial(umaConta,e.k):[];
+      const direto=FU.length>1;
+      const exp=e.tipo==='desp'&&contas.length;
       const dl=e.tipo==='desp'?'linha:'+e.k:'';
-      h+=`<tr class="${cls}${exp?' cp-dre-exp':''}" ${exp?`data-dre="${e.k}"`:''}><td>${exp?`<span class="cp-mais">${P.abertos?'-':'+'}</span> `:''}${esc(e.t)}${dl?tags(dl):''}</td>${cols.map(c=>cel(sv(v[e.k],c.ms),c.ms,'',dl)).join('')}${cel(sv(v[e.k],meses),meses,' cp-col-tot',dl)}</tr>`;
-      if(exp) det(e.k).forEach(([c0,mm])=>{const dc='conta:'+c0.split(' ')[0];h+=`<tr class="cp-dre-det cp-conta-link" data-pai="${e.k}" data-conta="${esc(c0.split(' ')[0])}" title="Abrir as descrições que formam esta conta"${P.abertos?'':' hidden'}><td><span class="cp-mais">+</span> ${esc(c0)}${tags(dc)}</td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel(x,c.ms,'',dc):'<td class="cp-number"></td>';}).join('')}${cel(sv(mm,meses),meses,' cp-col-tot',dc)}</tr>`;});
+      h+=`<tr class="${cls}${exp?' cp-dre-exp':''}" ${exp?`data-dre="${e.k}"`:''}><td>${exp?`<span class="cp-mais">${P.abertos?'-':'+'}</span> `:''}${esc(e.t)}${direto?` <small class="cp-conta-unica">conta ${esc(contas[0][0])}</small>`:''}${dl?tags(dl):''}</td>${cols.map(c=>cel(sv(v[e.k],c.ms),c.ms,'',dl)).join('')}${cel(sv(v[e.k],meses),meses,' cp-col-tot',dl)}</tr>`;
+      if(direto){h+=filRows(FU,`data-pai="${e.k}"`,'conta:'+umaConta,!P.abertos);}
+      else if(exp) contas.forEach(([c0,mm])=>{const cod=c0.split(' ')[0],dc='conta:'+cod, FC=cons?porFilial(cod,e.k):[];h+=`<tr class="cp-dre-det cp-conta-link" data-pai="${e.k}" data-conta="${esc(cod)}"${FC.length>1?' data-fil="1"':''} title="${FC.length>1?'Abrir por filial':'Abrir as descrições que formam esta conta'}"${P.abertos?'':' hidden'}><td><span class="cp-mais">+</span> ${esc(c0)}${tags(dc)}</td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel(x,c.ms,'',dc):'<td class="cp-number"></td>';}).join('')}${cel(sv(mm,meses),meses,' cp-col-tot',dc)}</tr>`;
+        if(FC.length>1)h+=filRows(FC,`data-subf="${esc(cod)}"`,dc,true,true);});
       if(e.k==='=RP') h+=`<tr class="cp-margem"><td>Margem sobre a receita</td>${[...cols.map(c=>c.ms),meses].map((ms,i)=>{const r=sv(v.REC,ms);return `<td class="cp-number${i===cols.length?' cp-col-tot':''}">${r?(sv(v['=RP'],ms)/r*100).toFixed(1).replace('.',',')+'%':'-'}</td>`;}).join('')}</tr>`;
     });
     h+=`</tbody></table></div>`;
     const fora=[['FORA_ATIVO','Investimentos, compras de empresas, equipamentos e aplicações'],['FORA_PASSIVO','Parcelas de empréstimos e financiamentos, faturas de cartão e acordos com sócios']];
     const cel2=(x,ms,cls,dt)=>`<td class="cp-number${cls}${x?' cp-clicavel':''}"${x?` data-det="${dt}" data-ms="${ms.join(',')}" title="Ver os lançamentos que formam este valor"`:''}>${fmt(x)}</td>`;
-    h+=`<h3 class="cp-h">Saídas de caixa que não são despesa</h3><div class="cp-table cp-fixa"><table class="cp-dre">${head()}<tbody>${fora.map(([k,t])=>`<tr class="cp-dre-exp" data-dre="${k}"><td><span class="cp-mais">${P.abertos?'-':'+'}</span> ${t}${tags('linha:'+k)}</td>${cols.map(c=>cel2(sv(v[k],c.ms),c.ms,'','linha:'+k)).join('')}${cel2(sv(v[k],meses),meses,' cp-col-tot','linha:'+k)}</tr>${det(k).map(([c0,mm])=>`<tr class="cp-dre-det cp-conta-link" data-pai="${k}" data-conta="${esc(c0.split(' ')[0])}" title="Abrir as descrições que formam esta conta"${P.abertos?'':' hidden'}><td><span class="cp-mais">+</span> ${esc(c0)}${tags('conta:'+c0.split(' ')[0])}</td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel2(x,c.ms,'','conta:'+c0.split(' ')[0]):'<td class="cp-number"></td>';}).join('')}${cel2(sv(mm,meses),meses,' cp-col-tot','conta:'+c0.split(' ')[0])}</tr>`).join('')}`).join('')}</tbody></table></div>`;
+    h+=`<h3 class="cp-h">Saídas de caixa que não são despesa</h3><div class="cp-table cp-fixa"><table class="cp-dre">${head()}<tbody>${fora.map(([k,t])=>`<tr class="cp-dre-exp" data-dre="${k}"><td><span class="cp-mais">${P.abertos?'-':'+'}</span> ${t}${tags('linha:'+k)}</td>${cols.map(c=>cel2(sv(v[k],c.ms),c.ms,'','linha:'+k)).join('')}${cel2(sv(v[k],meses),meses,' cp-col-tot','linha:'+k)}</tr>${det(k).map(([c0,mm])=>{const FC=cons?porFilial(c0.split(' ')[0],k):[];return `<tr class="cp-dre-det cp-conta-link" data-pai="${k}" data-conta="${esc(c0.split(' ')[0])}"${FC.length>1?' data-fil="1"':''} title="${FC.length>1?'Abrir por filial':'Abrir as descrições que formam esta conta'}"${P.abertos?'':' hidden'}><td><span class="cp-mais">+</span> ${esc(c0)}${tags('conta:'+c0.split(' ')[0])}</td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel2(x,c.ms,'','conta:'+c0.split(' ')[0]):'<td class="cp-number"></td>';}).join('')}${cel2(sv(mm,meses),meses,' cp-col-tot','conta:'+c0.split(' ')[0])}</tr>${FC.length>1?filRows(FC,`data-subf="${esc(c0.split(' ')[0])}"`,'conta:'+c0.split(' ')[0],true,true):''}`;}).join('')}`).join('')}</tbody></table></div>`;
     b.querySelector('#cp-result').innerHTML=h;
     b.querySelector('#cp-dre-emp').onchange=e=>{state.dreEmp=e.target.value;load();};
     const muda=(k,val)=>{const p=prefs();p[k]=val;salvarPrefs(p);paintDre(d);};
@@ -526,6 +547,7 @@
     state.dreSub=state.dreSub||{};
     b.querySelectorAll('[data-conta]').forEach(tr=>tr.onclick=async ev=>{ev.stopPropagation();
       const conta=tr.dataset.conta, mais=tr.querySelector('.cp-mais');
+      if(tr.dataset.fil==='1'){const ab=tr.dataset.aberto!=='1';tr.dataset.aberto=ab?'1':'';if(mais)mais.textContent=ab?'-':'+';b.querySelectorAll(`tr[data-subf="${CSS.escape(conta)}"]`).forEach(r=>r.hidden=!ab);return;}
       if(tr.dataset.aberto==='1'){b.querySelectorAll(`tr[data-sub="${CSS.escape(conta)}"]`).forEach(r=>r.remove());tr.dataset.aberto='';if(mais)mais.textContent='+';return;}
       tr.dataset.aberto='1';if(mais)mais.textContent='-';
       const chave=(state.dreEmp||'')+'|'+d.ano+'|'+conta;
@@ -542,7 +564,7 @@
       b.querySelectorAll(`tr[data-sub="${CSS.escape(conta)}"] td[data-det]`).forEach(td=>td.onclick=e2=>{e2.stopPropagation();abreDet(td);});
     });
     b.querySelectorAll('[data-dre]').forEach(tr=>tr.onclick=()=>{const k=tr.dataset.dre, rows=b.querySelectorAll(`[data-pai="${k}"]`), abrir=rows[0]?.hidden;rows.forEach(r=>{r.hidden=!abrir;if(!abrir&&r.dataset.aberto==='1')r.click();});const s=tr.querySelector('.cp-mais');if(s)s.textContent=abrir?'-':'+';});
-    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês, separado em valor dos boletos, descontos dados no pagamento e juros e multas de atraso (o IXC lança juros e multa juntos, por isso ficam numa linha só), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique no + de uma linha para ver as contas e no + de uma conta para ver as descrições das planilhas que formam o valor, mês a mês. Clique em qualquer valor para ver os lançamentos daquele número (e trocar a conta, se estiver errada). As escolhas de visualização ficam guardadas neste navegador.</div>`;
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês, separado em valor dos boletos, descontos dados no pagamento e juros e multas de atraso (o IXC lança juros e multa juntos, por isso ficam numa linha só), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique no + de uma linha para ver as contas e no + de uma conta para ver o valor de cada filial (quando a linha tem uma conta só, ela já abre por filial). Escolhendo uma empresa, o + da conta mostra as descrições das planilhas. Clique em qualquer valor para ver os lançamentos daquele número (e trocar a conta, se estiver errada). As escolhas de visualização ficam guardadas neste navegador.</div>`;
   }
 
   // ---------- Extratos do banco: envio (OFX, Excel ou francesinha do Santander), período coberto e buracos ----------
