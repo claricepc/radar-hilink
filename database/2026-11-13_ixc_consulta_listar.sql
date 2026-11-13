@@ -16,3 +16,9 @@ revoke all on function ixc.consulta_listar(text,text,text,text,int) from public,
 create table if not exists ixc.auditoria_consulta (id bigint generated always as identity primary key, motivo text, id_cliente text, req_id bigint, em timestamptz default now());
 alter table ixc.auditoria_consulta enable row level security;
 -- Observacao: vd_saida (vendas) nao esta liberado para o usuario da API (grupo 26).
+
+-- Classificacao diaria dos titulos nao liberados (cron 4h40 pede ao IXC, 4h50 classifica):
+-- duplicado de titulo pago (mesmo valor, ate 10 dias), sobra de 2a via com juros (original pago), verificar.
+-- Funcoes: ixc.nao_liberados_pedir(), ixc.nao_liberados_classificar(), ixc.dt(text); tabela ixc.titulo_nao_liberado_analise.
+-- A coluna "problema" de ixc.v_titulos_suspeitos passa a trazer a classificacao, o titulo par e a venda.
+-- (aplicado no Supabase pelas migrations nao_liberados_analise, nao_liberados_datas e suspeitos_com_classificacao em 13/11/2026)
