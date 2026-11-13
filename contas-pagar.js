@@ -1,7 +1,7 @@
 /* Read-only financial consultation. No browser financial cache or mutation API. */
 (()=>{
   'use strict';
-  const NOVAS={pagamentos:['Agenda de pagamentos','o que vence, lido das planilhas todo dia'],mes:['Resumo do mês','previsto, pago e vencido sem baixa'],caixa30:['Caixa projetado','próximos 30 dias por empresa'],dre26:['DRE gerencial','resultado por empresa e consolidado'],depara:['De/para (plano de contas)','ligação das descrições às contas']};
+  const NOVAS={pagamentos:['Agenda de pagamentos','o que vence, lido das planilhas todo dia'],mes:['Resumo do mês','previsto, pago e vencido sem baixa'],caixa30:['Caixa projetado','próximos 30 dias por empresa'],dre26:['DRE gerencial','resultado por empresa e consolidado'],depara:['De/para (plano de contas)','ligação das descrições às contas'],extratos:['Extratos do banco','envio e período coberto por conta']};
   const tabs={resumo:'Resumo',lancamentos:'Lançamentos',dre:'DRE',razao:'Razão',caixa:'Caixa',conciliacao:'Conciliação',auditoria:'Auditoria'};
   const now=new Date(),pad=n=>String(n).padStart(2,'0');
   const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -335,6 +335,89 @@
     b.querySelectorAll('[data-dre]').forEach(tr=>tr.onclick=()=>{const k=tr.dataset.dre, rows=b.querySelectorAll(`[data-pai="${k}"]`), abrir=rows[0]?.hidden;rows.forEach(r=>r.hidden=!abrir);const s=tr.querySelector('.cp-mais');if(s)s.textContent=abrir?'-':'+';});
     b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês (inclui juros e multas, ainda sem separar), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique numa linha com + para ver as contas; clique numa conta para ver as descrições que caíram nela e corrigir. As escolhas de visualização ficam guardadas neste navegador.</div>`;
   }
+
+  // ---------- Extratos do banco: envio (OFX ou Excel do Santander), período coberto e buracos ----------
+  async function loadExtratos(own){
+    const b=box();if(!b)return;
+    b.querySelector('#cp-form').style.display='none';
+    b.querySelector('#cp-result').innerHTML=msg('Lendo os extratos…');b.querySelector('#cp-context').replaceChildren();b.querySelector('#cp-coverage').replaceChildren();
+    const {data,error}=await getSB().rpc('radar_cp_extratos');
+    if(own!==generation||!box())return;
+    if(error){b.querySelector('#cp-result').innerHTML=msg('Extratos indisponíveis: '+error.message);return;}
+    state.ext=data;paintExtratos();
+  }
+  const fmtPer=(a,b2)=>a===b2?date(a):`${date(a)} a ${date(b2)}`;
+  function paintExtratos(){
+    const b=box(), d=state.ext;if(!b||!d)return;
+    const C=d.contas||[];
+    let h=`<div class="cp-ext-envio"><h3 class="cp-h">Enviar extrato</h3>
+      <div class="cp-vis"><label>Conta ${`<select id="cp-ext-conta"><option value="">Escolha a conta</option>${C.map(c=>`<option value="${esc(c.conta)}">${esc(c.filial)} · ${esc(c.descricao||'')} · ${esc(c.conta)}</option>`).join('')}</select>`}</label>
+      <label>Arquivo (OFX ou Excel do Santander) <input type="file" id="cp-ext-arq" accept=".ofx,.OFX,.xls,.xlsx,.csv"></label></div>
+      <div id="cp-ext-previa"></div></div>
+      <h3 class="cp-h">Período coberto por conta</h3>
+      <div class="cp-table"><table><thead><tr><th>Filial</th><th>Conta</th><th>Extrato até</th><th>Períodos sem extrato desde 01/01/2026</th><th>Últimos envios</th></tr></thead><tbody>${C.map(c=>{
+        const bur=c.buracos||[];
+        return `<tr><td><b>${esc(c.filial)}</b><br><small>${esc(c.descricao||'')}</small></td><td>${esc(c.banco)} ${esc(c.conta)}</td>
+        <td>${c.ate?date(c.ate):'<span class="cp-dif">Nenhum</span>'}</td>
+        <td>${bur.length?bur.map(x=>`<span class="cp-buraco">${fmtPer(x.de,x.ate)}</span>`).join(' '):'<b class="cp-ok">Completo</b>'}</td>
+        <td><small>${(c.arquivos||[]).slice(0,3).map(a=>`${esc(fmtPer(a.de,a.ate))} · ${a.novos} novos${a.por?' · '+esc(String(a.por).split('@')[0]):''}`).join('<br>')||'-'}</small></td></tr>`;}).join('')}</tbody></table></div>`;
+    b.querySelector('#cp-result').innerHTML=h;
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Envie o extrato de cada conta em OFX (de preferência) ou Excel, como o Santander gera. O Radar lê o período, mostra uma prévia e só grava depois que você confirma. Movimento repetido não entra duas vezes, então pode enviar períodos que se sobrepõem. Os períodos em vermelho ainda não têm extrato: sem eles, a coluna "No banco" da Agenda não consegue conferir os pagamentos.</div>`;
+    const arq=b.querySelector('#cp-ext-arq'), sel=b.querySelector('#cp-ext-conta');
+    arq.onchange=()=>lerExtrato(arq.files[0],sel);
+    sel.onchange=()=>{if(arq.files[0])lerExtrato(arq.files[0],sel);};
+  }
+  function ofxData(v){const m=String(v||'').match(/(\d{4})(\d{2})(\d{2})/);return m?`${m[1]}-${m[2]}-${m[3]}`:null;}
+  function lerOFX(txt){
+    const tag=(blk,t)=>{const m=blk.match(new RegExp('<'+t+'>([^<\\r\\n]*)','i'));return m?m[1].trim():'';};
+    const movs=[...txt.matchAll(/<STMTTRN>([\s\S]*?)(<\/STMTTRN>|(?=<STMTTRN>)|<\/BANKTRANLIST>)/gi)].map(m=>{const k=m[1];
+      return {data:ofxData(tag(k,'DTPOSTED')),valor:Number(tag(k,'TRNAMT').replace(',','.')),historico:[tag(k,'MEMO'),tag(k,'NAME')].filter(Boolean).join(' '),fit_id:tag(k,'FITID')||null};}).filter(m=>m.data&&isFinite(m.valor));
+    return {movs,inicio:ofxData(tag(txt,'DTSTART')),fim:ofxData(tag(txt,'DTEND')),conta:[tag(txt,'BRANCHID'),tag(txt,'ACCTID')].filter(Boolean).join('/')};
+  }
+  function numBR(v){if(typeof v==='number')return v;let t=String(v??'').trim().replace(/R\$|\s/g,'');if(!t)return NaN;const neg=/^-|^\(|-$|D$/i.test(t);t=t.replace(/[^0-9.,]/g,'');if(t.includes(',')){t=t.replace(/\./g,'').replace(',','.');}return (neg?-1:1)*Number(t);}
+  function dataBR(v){if(v instanceof Date)return local(v);if(typeof v==='number'){const d=new Date(Math.round((v-25569)*864e5));return d.toISOString().slice(0,10);}const m=String(v||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);return m?`${m[3]}-${m[2]}-${m[1]}`:null;}
+  async function lerPlanilhaExtrato(file){
+    if(!window.XLSX)await new Promise((ok,err)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';sc.onload=ok;sc.onerror=()=>err(new Error('não carregou o leitor de Excel'));document.head.appendChild(sc);});
+    const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:''});
+    const norm=x=>String(x).normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().trim();
+    const hi=rows.findIndex(r=>r.some(c=>norm(c)==='DATA')&&r.some(c=>/VALOR|CREDITO|DEBITO/.test(norm(c))));
+    if(hi<0)throw new Error('Não achei o cabeçalho com "Data" e "Valor" no Excel.');
+    const H=rows[hi].map(norm), ix=k=>H.findIndex(c=>c.startsWith(k));
+    const cD=ix('DATA'), cH=[ix('HISTORICO'),ix('DESCRICAO'),ix('LANCAMENTO')].find(i=>i>=0), cDoc=ix('DOCUMENTO'), cV=H.findIndex(c=>c.startsWith('VALOR')), cC=ix('CREDITO'), cDb=ix('DEBITO');
+    const movs=[];
+    rows.slice(hi+1).forEach(r=>{const dt=dataBR(r[cD]);if(!dt)return;
+      let v=cV>=0?numBR(r[cV]):((cC>=0?numBR(r[cC])||0:0)-Math.abs(cDb>=0?numBR(r[cDb])||0:0));
+      const hist=[cH>=0?r[cH]:'',cDoc>=0?r[cDoc]:''].filter(Boolean).join(' ').trim();
+      if(!isFinite(v)||!v||/SALDO/i.test(hist))return; movs.push({data:dt,valor:Math.round(v*100)/100,historico:hist,fit_id:null});});
+    const ds=movs.map(m=>m.data).sort();
+    return {movs,inicio:ds[0],fim:ds[ds.length-1],conta:''};
+  }
+  async function lerExtrato(file,sel){
+    const b=box(), pv=b?.querySelector('#cp-ext-previa');if(!pv||!file)return;
+    pv.innerHTML=msg('Lendo o arquivo…');
+    let r;
+    try{ r=/\.ofx$/i.test(file.name)?lerOFX(await file.text()):await lerPlanilhaExtrato(file); }
+    catch(e){pv.innerHTML=msg('Não consegui ler: '+e.message);return;}
+    if(!r.movs.length){pv.innerHTML=msg('Nenhum movimento encontrado no arquivo.');return;}
+    const C=state.ext.contas||[];
+    if(r.conta&&!sel.value){const a=r.conta.replace(/\D/g,'');const c=C.find(x=>a.endsWith(x.conta.split('/')[1])||a.includes(x.conta.replace(/\D/g,'')));if(c)sel.value=c.conta;}
+    const ds=r.movs.map(m=>m.data).sort();r.inicio=r.inicio&&r.inicio<=ds[0]?r.inicio:ds[0];r.fim=r.fim&&r.fim>=ds[ds.length-1]?r.fim:ds[ds.length-1];
+    if(r.inicio<'2026-01-01'){r.movs=r.movs.filter(m=>m.data>='2026-01-01');r.inicio='2026-01-01';}
+    const deb=r.movs.filter(m=>m.valor<0), cre=r.movs.filter(m=>m.valor>0), s=a=>a.reduce((t,m)=>t+m.valor,0);
+    const conta=C.find(c=>c.conta===sel.value);
+    pv.innerHTML=`<div class="cp-stats"><div class="cp-stat"><span>Período do arquivo</span><strong>${fmtPer(r.inicio,r.fim)}</strong></div>
+      <div class="cp-stat"><span>Movimentos</span><strong>${r.movs.length}</strong></div><div class="cp-stat"><span>Saídas</span><strong>${money(Math.abs(s(deb)))}</strong></div><div class="cp-stat"><span>Entradas</span><strong>${money(s(cre))}</strong></div></div>
+      ${!conta?'<p class="cp-dif">Escolha a conta acima antes de gravar.</p>':`<p>Conta: <b>${esc(conta.filial)} · ${esc(conta.conta)}</b>${r.conta&&!r.conta.replace(/\D/g,'').includes(conta.conta.split('/')[1])?' <span class="cp-dif">Atenção: o arquivo diz conta '+esc(r.conta)+'</span>':''}</p>`}
+      <button type="button" class="cp-btn" id="cp-ext-gravar"${conta?'':' disabled'}>Gravar extrato</button> <span id="cp-ext-res"></span>`;
+    const bt=pv.querySelector('#cp-ext-gravar');
+    if(bt)bt.onclick=async()=>{bt.disabled=true;bt.textContent='Gravando…';
+      const {data,error}=await getSB().rpc('radar_cp_extrato_importar',{p_conta:sel.value,p_nome:file.name,p_formato:/\.ofx$/i.test(file.name)?'OFX':'Excel',p_inicio:r.inicio,p_fim:r.fim,p_movs:r.movs});
+      if(error){bt.disabled=false;bt.textContent='Gravar extrato';pv.querySelector('#cp-ext-res').textContent='Não gravou: '+error.message;return;}
+      window.toast?.(`Extrato gravado: ${data.novos} movimentos novos, ${data.repetidos} já existiam.`);
+      const {data:d2}=await getSB().rpc('radar_cp_extratos');if(d2){state.ext=d2;paintExtratos();}
+    };
+  }
   async function loadAgenda(own){
     const b=box();if(!b)return;
     b.querySelector('#cp-form').style.display='none';
@@ -386,6 +469,7 @@
     if(state.view==='caixa30')return loadCaixa(own);
     if(state.view==='depara')return loadDepara(own);
     if(state.view==='dre26')return loadDre(own);
+    if(state.view==='extratos')return loadExtratos(own);
     b.querySelector('#cp-form').style.display='';
     const active=['resumo','lancamentos','dre'].includes(state.view);
     b.querySelector('#cp-regime').disabled=!active;b.querySelector('#cp-status').disabled=!active;
