@@ -282,9 +282,10 @@
     const m=box();if(!m)return;
     let ov=m.querySelector('#cp-corrigir');if(ov)ov.remove();
     ov=document.createElement('div');ov.id='cp-corrigir';ov.className='cp-modal cp-gaveta';
-    ov.innerHTML=`<div class="cp-modal-box"><div class="cp-modal-top"><b></b><button type="button" class="cp-btn" data-fechar>Fechar</button></div><div id="cp-notas-area"></div><h4 class="cp-h">Composição</h4><div class="cp-modal-corpo">${msg('Carregando…')}</div></div>`;
+    ov.innerHTML=`<div class="cp-modal-box"><div class="cp-modal-top"><b></b><button type="button" class="cp-btn" data-fechar>Fechar</button></div><div id="cp-notas-area"></div><div id="cp-tarifas-area"></div><h4 class="cp-h">Composição</h4><div class="cp-modal-corpo">${msg('Carregando…')}</div></div>`;
     ov.querySelector('b').textContent=titulo+(empresa?' — '+empresa:'');
     cpNotasPintar(ov.querySelector('#cp-notas-area'),dt,ano,empresa,()=>{mudou=true;});
+    if(ehTarifa(dt))cpTarifasPintar(ov.querySelector('#cp-tarifas-area'),ano,empresa,meses);
     m.appendChild(ov);
     let mudou=false;
     const fechar=()=>{ov.remove();if(mudou&&aoSalvar)aoSalvar();};
@@ -343,6 +344,66 @@
   }
   window.cpDetalhe=cpDetalhe;
 
+  // Tarifas bancárias lidas do extrato, separadas por tipo, e conferência com o acordo do Santander
+  const ehTarifa=dt=>dt==='linha:DESP_FINANC'||/^conta:6\.1\.2/.test(dt||'');
+  const m2=v=>v==null?'-':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const ACORDO_NOME={liquidacao:'Liquidação',baixa:'Baixa',registro:'Registro de boleto',pix:'Boleto pago por PIX',manutencao_vencido:'Manutenção de título vencido'};
+  async function cpTarifasPintar(area,ano,empresa,meses){
+    if(!area)return;
+    area.innerHTML=`<h4 class="cp-h">Tarifas no extrato do banco</h4>${msg('Lendo o extrato…')}`;
+    const {data,error}=await getSB().rpc('radar_cp_tarifas',{p_ano:ano,p_empresa:empresa||null});
+    if(error){area.innerHTML=`<h4 class="cp-h">Tarifas no extrato do banco</h4>${msg('Não carregou: '+error.message)}`;return;}
+    const D=data||{}, sel=Array.isArray(meses)&&meses.length?new Set(meses):null, noPer=x=>!sel||sel.has(x.mes);
+    const E=(D.extrato||[]).filter(noPer), A=(D.acima||[]).filter(noPer), S=(D.suspeitas||[]).filter(noPer);
+    const T=D.tipos||[], nomeT=k=>(T.find(t=>t.tipo===k)||{}).nome||k;
+    const soma=(a,f)=>a.reduce((t,x)=>t+Number(x[f]||0),0);
+    const ms=[...new Set(E.map(x=>x.mes))].sort();
+    let modo='tipo';
+    const pinta=()=>{
+      let t=`<h4 class="cp-h">Tarifas no extrato do banco</h4>
+        <p class="cp-legenda">Lido do extrato de cada conta e separado pelo tipo de tarifa. A conferência com o acordo usa a francesinha, título a título. Valores da planilha continuam na composição abaixo.</p>
+        <div class="cp-tar-resumo"><span>Cobrado no extrato<b>${m2(soma(E,'cobrado'))}</b></span>
+          <span class="${soma(A,'excesso')>0.5?'cp-tar-ruim':''}">Acima do acordo<b>${m2(soma(A,'excesso'))}</b></span>
+          <span>Estornado pelo banco<b>${m2(soma(E,'estornado'))}</b></span>
+          ${S.length?`<span class="cp-tar-ruim">A conferir<b>${S.length} item(ns)</b></span>`:''}</div>
+        <div class="cp-vis"><span class="cp-vis-fonte"><button type="button" class="cp-btn${modo==='tipo'?' cp-ativo':''}" data-tm="tipo">Por tipo e mês</button><button type="button" class="cp-btn${modo==='acima'?' cp-ativo':''}" data-tm="acima">Acima do acordo</button><button type="button" class="cp-btn${modo==='acordo'?' cp-ativo':''}" data-tm="acordo">Acordo e cobertura</button></span></div>`;
+      if(modo==='tipo'){
+        if(!E.length)t+=msg('Nenhuma tarifa no extrato para o período.');
+        else{
+          const tipos=T.map(x=>x.tipo).filter(k=>E.some(x=>x.tipo===k));
+          const v=(k,m,f='cobrado')=>soma(E.filter(x=>(!k||x.tipo===k)&&(!m||x.mes===m)),f);
+          t+=`<div class="cp-table"><table><thead><tr><th>Tipo de tarifa</th>${ms.map(m=>`<th class="cp-number">${esc(mesTxt(m+'-01'))}</th>`).join('')}<th class="cp-number">Total</th></tr></thead><tbody>
+            ${tipos.map(k=>{const ti=T.find(x=>x.tipo===k)||{};return `<tr><td>${esc(ti.nome||k)}${ti.conta_plano?`<br><small>conta ${esc(ti.conta_plano)}</small>`:''}</td>${ms.map(m=>{const x=v(k,m);return `<td class="cp-number">${x?m2(x):''}</td>`;}).join('')}<td class="cp-number"><b>${m2(v(k,null))}</b></td></tr>`;}).join('')}
+            ${soma(E,'estornado')>0?`<tr><td><i>Estornos do banco</i></td>${ms.map(m=>{const x=v(null,m,'estornado');return `<td class="cp-number">${x?'-'+m2(x):''}</td>`;}).join('')}<td class="cp-number"><b>-${m2(soma(E,'estornado'))}</b></td></tr>`:''}
+            <tr class="cp-total"><td>Total</td>${ms.map(m=>`<td class="cp-number">${m2(v(null,m)-v(null,m,'estornado'))}</td>`).join('')}<td class="cp-number">${m2(soma(E,'cobrado')-soma(E,'estornado'))}</td></tr></tbody></table></div>`;
+        }
+      }else if(modo==='acima'){
+        if(!A.length&&!S.length)t+=msg('Nenhuma tarifa acima do acordo no período.');
+        if(A.length){
+          const g={};A.forEach(x=>{const k=x.mes+'|'+x.acordo_tipo;(g[k] ||= {mes:x.mes,tipo:x.acordo_tipo,n:0,c:0,a:0,e:0,precos:new Set(),fil:{}});const r=g[k];r.n+=+x.n;r.c+=+x.cobrado;r.a+=+x.acordado;r.e+=+x.excesso;String(x.precos||'').split(' / ').forEach(p=>p&&r.precos.add(p));r.fil[x.filial||x.conta]=(r.fil[x.filial||x.conta]||0)+Number(x.excesso);});
+          const G=Object.values(g).sort((a,b2)=>a.mes<b2.mes?-1:a.mes>b2.mes?1:b2.e-a.e);
+          t+=`<p class="cp-legenda">Títulos da francesinha cobrados acima do preço acordado. O excesso é o valor a pedir de estorno.</p>
+            <div class="cp-table"><table><thead><tr><th>Mês</th><th>Tipo</th><th class="cp-number">Títulos</th><th>Preço cobrado</th><th class="cp-number">Cobrado</th><th class="cp-number">Pelo acordo</th><th class="cp-number">Excesso</th><th>Por filial</th></tr></thead><tbody>
+            ${G.map(r=>`<tr><td>${esc(mesTxt(r.mes+'-01'))}</td><td>${esc(ACORDO_NOME[r.tipo]||r.tipo)}</td><td class="cp-number">${r.n.toLocaleString('pt-BR')}</td><td><small>R$ ${esc([...r.precos].sort().join(' / ').replace(/\./g,','))}</small></td><td class="cp-number">${m2(r.c)}</td><td class="cp-number">${m2(r.a)}</td><td class="cp-number"><b>${m2(r.e)}</b></td><td><small>${Object.entries(r.fil).sort((a,b2)=>b2[1]-a[1]).map(([f,v])=>esc(f)+' '+m0(v)).join(', ')}</small></td></tr>`).join('')}
+            <tr class="cp-total"><td colspan="4">Total</td><td class="cp-number">${m2(soma(A,'cobrado'))}</td><td class="cp-number">${m2(soma(A,'acordado'))}</td><td class="cp-number">${m2(soma(A,'excesso'))}</td><td></td></tr></tbody></table></div>`;
+        }
+        if(S.length){
+          t+=`<h4 class="cp-h">A conferir</h4><p class="cp-legenda">Conta sem francesinha no mês: o valor do extrato não fecha com o preço acordado, mas sem a francesinha não dá para saber quantos títulos foram cobrados. Peça a francesinha da conta para calcular o excesso.</p>
+            <div class="cp-table"><table><thead><tr><th>Mês</th><th>Conta</th><th>Tipo</th><th class="cp-number">Cobrado</th><th class="cp-number">Preço acordado</th></tr></thead><tbody>
+            ${S.slice().sort((a,b2)=>a.mes<b2.mes?-1:a.mes>b2.mes?1:b2.cobrado-a.cobrado).map(x=>`<tr><td>${esc(mesTxt(x.mes+'-01'))}</td><td>${esc(x.conta_nome||x.conta)}</td><td>${esc(x.nome)}</td><td class="cp-number">${m2(x.cobrado)}</td><td class="cp-number">${m2(x.acordado)}</td></tr>`).join('')}</tbody></table></div>`;
+        }
+      }else{
+        t+=`<div class="cp-table"><table><thead><tr><th>Tipo</th><th class="cp-number">Preço acordado</th><th>Desde</th><th>Fonte</th></tr></thead><tbody>${(D.acordo||[]).map(a=>`<tr><td>${esc(ACORDO_NOME[a.tipo]||a.tipo)}</td><td class="cp-number">${m2(a.valor)}</td><td>${date(a.desde)}</td><td><small>${esc(a.fonte||'')}</small></td></tr>`).join('')}</tbody></table></div>
+          <h4 class="cp-h">Até quando cada conta foi lida</h4>
+          <div class="cp-table"><table><thead><tr><th>Conta</th><th>Extrato até</th><th>Francesinha até</th></tr></thead><tbody>${(D.cobertura||[]).map(c=>`<tr><td>${esc(c.descricao||c.conta)}<br><small>${esc(c.conta)}</small></td><td>${c.extrato_ate?date(c.extrato_ate):'<b>sem extrato</b>'}</td><td>${c.francesinha_ate?date(c.francesinha_ate):'<b>sem francesinha</b>'}</td></tr>`).join('')}</tbody></table></div>
+          <p class="cp-legenda">Para mudar um preço acordado, fale com a Clarice: a tabela do acordo fica no banco do Radar.</p>`;
+      }
+      area.innerHTML=t;
+      area.querySelectorAll('[data-tm]').forEach(b=>b.onclick=()=>{modo=b.dataset.tm;pinta();});
+    };
+    pinta();
+  }
+
   // Notas explicativas e pendências da DRE (por linha ou conta; opcionalmente por mês)
   const quemTxt=e=>e?String(e).split('@')[0]:'';
   async function cpNotasPintar(area,dt,ano,empresa,aoMudar){
@@ -353,7 +414,7 @@
     const item=n=>{const aberta=n.pendencia&&!n.resolvida_em;
       return `<div class="cp-nota${aberta?' cp-nota-pend':''}${n.pendencia&&n.resolvida_em?' cp-nota-ok':''}">
         <div class="cp-nota-cab">${n.pendencia?(aberta?'<b class="cp-tag-pend">Pendente</b>':'<b class="cp-tag-ok">Resolvida</b>'):'<b class="cp-tag-nota">Nota</b>'}
-          <small>${n.mes?esc(mesTxt(n.mes+'-01'))+' · ':''}${n.empresa?esc(n.empresa)+' · ':''}${esc(quemTxt(n.autor))} em ${date(String(n.criada_em).slice(0,10))}${n.pendencia&&n.responsavel?' · responsável: '+esc(quemTxt(n.responsavel)):''}${n.prazo&&aberta?' · prazo '+date(n.prazo):''}</small></div>
+          <small>${n.mes?esc(mesTxt(n.mes+'-01'))+' · ':''}${n.empresa?esc(n.empresa)+' · ':''}${n.autor==='radar'?'Radar (alerta automático)':esc(quemTxt(n.autor))} em ${date(String(n.criada_em).slice(0,10))}${n.pendencia&&n.responsavel?' · responsável: '+esc(quemTxt(n.responsavel)):''}${n.prazo&&aberta?' · prazo '+date(n.prazo):''}</small></div>
         <div class="cp-nota-txt">${esc(n.texto)}</div>
         ${n.pendencia&&n.resolvida_em?`<small>Resolvida em ${date(String(n.resolvida_em).slice(0,10))}${n.resolvida_por?' por '+esc(quemTxt(n.resolvida_por)):''}${n.resolucao?': '+esc(n.resolucao):''}</small>`:''}
         <div class="cp-nota-acoes">${aberta?`<input type="text" data-resol="${n.id}" placeholder="Como foi resolvido (opcional)"> <button type="button" class="cp-btn" data-resolver="${n.id}">Marcar como resolvida</button>`:''}${n.pendencia&&n.resolvida_em?`<button type="button" class="cp-btn cp-btn-claro" data-reabrir="${n.id}">Reabrir</button>`:''} <button type="button" class="cp-btn cp-btn-claro" data-apagar="${n.id}">Apagar</button></div></div>`;};

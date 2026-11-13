@@ -129,7 +129,7 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp td.cp-clicavel:hover{background:#e8f0fb;text-decoration:underline}
 #mod-cp .cp-btn.cp-ativo{background:#123a6b;color:#fff}
 #mod-cp #cp-corrigir .cp-modal-box{width:min(1280px,96vw)}
-#mod-cp [data-modo]:not(.cp-ativo){background:#fff;color:#123a6b;border:1px solid #123a6b}
+#mod-cp [data-modo]:not(.cp-ativo),#mod-cp [data-tm]:not(.cp-ativo){background:#fff;color:#123a6b;border:1px solid #123a6b}
 #mod-cp tr.cp-dre-sub td{font-size:.92em;background:#f7f9fc}
 #mod-cp tr.cp-dre-sub td:first-child{padding-left:56px}
 #mod-cp tr.cp-dre-sub .cp-sub-desc{color:#182b3a}
@@ -152,3 +152,8 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp .cp-nota-nova textarea{width:100%;box-sizing:border-box;margin:8px 0;padding:8px;border:1px solid #c9d4e0;border-radius:6px;font:inherit}
 #mod-cp .cp-nota-nova summary{cursor:pointer;font-weight:700;color:#123a6b;margin-top:6px}
 #mod-cp .cp-btn.cp-btn-claro{background:#fff;color:#123a6b;border:1px solid #9fb3c8}
+#mod-cp .cp-tar-resumo{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+#mod-cp .cp-tar-resumo span{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border:1px solid #d5dfea;border-radius:8px;background:#f7fafc;font-size:.85em;color:#4a5b6e;min-width:150px}
+#mod-cp .cp-tar-resumo span b{font-size:1.25em;color:#123a6b}
+#mod-cp .cp-tar-resumo span.cp-tar-ruim{border-color:#e7a3a3;background:#fff4f4}
+#mod-cp .cp-tar-resumo span.cp-tar-ruim b{color:#a11d1d}
