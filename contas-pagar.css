@@ -130,3 +130,7 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp .cp-btn.cp-ativo{background:#123a6b;color:#fff}
 #mod-cp #cp-corrigir .cp-modal-box{width:min(1280px,96vw)}
 #mod-cp [data-modo]:not(.cp-ativo){background:#fff;color:#123a6b;border:1px solid #123a6b}
+#mod-cp tr.cp-dre-sub td{font-size:.92em;background:#f7f9fc}
+#mod-cp tr.cp-dre-sub td:first-child{padding-left:56px}
+#mod-cp tr.cp-dre-sub .cp-sub-desc{color:#182b3a}
+#mod-cp tr.cp-dre-sub small{color:#5b6b7a}
