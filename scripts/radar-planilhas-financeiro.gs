@@ -206,6 +206,8 @@ function lerBanco() {
       var jl = JSON.parse(rl.getContentText());
       (jl.files || []).forEach(function (f) {
         if (!BANCO_NOME_OK.test(f.name) || BANCO_NOME_FORA.test(f.name)) return;
+        var fr = f.name.match(/^COBST_\w+_\d+_\d{4}(\d{2})P_FRA/i); if (fr && fr[1] !== '26') return; // francesinha de outro ano
+        if (!fr && /(^|\D)20(1\d|2[0-5])(\D|$)/.test(f.name) && !/2026/.test(f.name)) return; // extrato de ano anterior
         if (f.mimeType.indexOf('application/vnd.google-apps') === 0 || +f.size > BANCO_MAX_BYTES) return;
         lista.push({ id: f.id, nome: f.name, modificado: f.modifiedTime });
       });
