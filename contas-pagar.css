@@ -164,3 +164,5 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp .cp-dre .cp-fil.cp-fil2{padding-left:44px}
 #mod-cp .cp-dre tr.cp-rec-det1 td{border-top:1px dashed #c9d4e0}
 #mod-cp .cp-conta-unica{color:#6b7c8f;font-weight:400}
+#mod-cp tr.cp-dre-sub td:first-child:has(.cp-sub-desc:not(.cp-sub-recuo)){padding-left:34px}
+#mod-cp tr.cp-dre-sub .cp-sub-fil{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;background:#e6eef7;color:#123a6b;font-size:.85em;font-weight:600}
