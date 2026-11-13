@@ -354,19 +354,28 @@
     const soma=a=>a.reduce((t,i)=>t+Number(i.previsto||0),0);
     const filiais=[...new Set((d.leituras||[]).map(l=>l.filial))];
     const dias=v=>Math.round((new Date(hoje+'T12:00:00')-new Date(v+'T12:00:00'))/864e5);
+    const extAte={};(d.leituras||[]).forEach(l=>extAte[l.filial]=l.extrato_ate||null);
+    const banco=i=>{
+      if(i.data_banco)return `<b class="cp-ok">Saiu em ${date(i.data_banco)}</b><br><small>${money(Math.abs(i.valor_banco))} · ${esc((i.banco_historico||'').replace(/\s+/g,' ').slice(0,40))}${i.banco_candidatos>1?' · conferir: há outro igual':''}</small><br><small class="cp-acao">Falta marcar o REALIZADO na planilha</small>`;
+      const ate=extAte[i.filial];
+      if(!ate||i.data_vencimento>ate)return `<small>Sem extrato deste período${ate?' (extrato até '+date(ate)+')':''}</small>`;
+      return `<small class="cp-dif">Não achei no extrato com o mesmo valor</small>`;
+    };
+    const pagosBanco=itens.filter(i=>i.data_banco);
     const prazo=i=>{const n=dias(i.data_vencimento);return n>0?`Venceu há ${n} dia${n>1?'s':''}`:n===0?'Vence hoje':n===-1?'Vence amanhã':`Vence em ${-n} dias`;};
     let html=`<div class="cp-stats">${ATRASO.map((t,k)=>`<div class="cp-stat${k===0&&g[0].length?' cp-alerta':''}"><span>${t}</span><strong>${g[k].length} · ${money(soma(g[k]))}</strong></div>`).join('')}</div>
+      ${pagosBanco.length?`<div class="cp-notice cp-notice-ok"><b>${pagosBanco.length} pagamento${pagosBanco.length>1?'s':''} (${money(soma(pagosBanco))}) já saíram do banco e continuam sem REALIZADO na planilha.</b> Estão marcados em verde na lista: é só confirmar e preencher na planilha.</div>`:''}
       <div class="cp-chips"><button type="button" data-fil="" aria-pressed="${!state.filialAg}">Todas</button>${filiais.map(f=>`<button type="button" data-fil="${esc(f)}" aria-pressed="${state.filialAg===f}">${esc(f)}</button>`).join('')}</div>`;
     g.forEach((lista,k)=>{
       if(!lista.length)return;
-      html+=`<details class="cp-grupo"${k<3?' open':''}><summary>${ATRASO[k]} <span>${lista.length} · ${money(soma(lista))}</span></summary><div class="cp-table"><table><thead><tr><th>Vencimento</th><th>Empresa</th><th>Despesa</th><th>Grupo</th><th class="cp-number">Previsto</th><th>Observação</th></tr></thead><tbody>${lista.map(i=>`<tr><td>${date(i.data_vencimento)}<br><small>${prazo(i)}</small></td><td>${esc(i.filial)}</td><td>${esc(i.descricao)}</td><td>${esc(i.secao||'')}</td><td class="cp-number">${money(i.previsto)}</td><td>${outraFilial(i.info)?'<b>Conferir: </b>':''}${esc(i.info||'')}</td></tr>`).join('')}</tbody></table></div></details>`;
+      html+=`<details class="cp-grupo"${k<3?' open':''}><summary>${ATRASO[k]} <span>${lista.length} · ${money(soma(lista))}</span></summary><div class="cp-table"><table><thead><tr><th>Vencimento</th><th>Empresa</th><th>Despesa</th><th>Grupo</th><th class="cp-number">Previsto</th><th>No banco (extrato)</th><th>Observação</th></tr></thead><tbody>${lista.map(i=>`<tr${i.data_banco?' class="cp-pago-banco"':''}><td>${date(i.data_vencimento)}<br><small>${prazo(i)}</small></td><td>${esc(i.filial)}</td><td>${esc(i.descricao)}</td><td>${esc(i.secao||'')}</td><td class="cp-number">${money(i.previsto)}</td><td>${banco(i)}</td><td>${outraFilial(i.info)?'<b>Conferir: </b>':''}${esc(i.info||'')}</td></tr>`).join('')}</tbody></table></div></details>`;
     });
     if(!itens.length)html+=msg('Nenhum pagamento em aberto neste recorte, ou as planilhas ainda não foram lidas.');
     b.querySelector('#cp-result').innerHTML=html;
     b.querySelectorAll('[data-fil]').forEach(x=>x.onclick=()=>{state.filialAg=x.dataset.fil;paintAgenda(d);});
-    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Fonte: planilhas de fluxo de caixa de cada filial, lidas a cada edição e conferidas todo dia às 6h. A tela se atualiza sozinha. Entra aqui o que tem valor previsto e está com a coluna REALIZADO vazia, do mês anterior até os próximos 30 dias. Linhas marcadas com "Conferir" dizem que foram pagas por outra filial ou agendadas: confirme e preencha o REALIZADO na planilha.</div>`;
-    const lt=(d.leituras||[]).map(l=>{const u=l.ultima||{};return {filial:l.filial,lida:l.ultima_ok?new Date(l.ultima_ok).toLocaleString('pt-BR'):'Ainda não lida',alterada:u.modificado_em?new Date(u.modificado_em).toLocaleString('pt-BR'):'',situacao:!l.ativo?'Desativada':!u.em?'Aguardando primeira leitura':u.ok?'OK':'Erro: '+(u.erro||'')};});
-    b.querySelector('#cp-coverage').innerHTML=`<details><summary>Leitura das planilhas</summary><div class="cp-table"><table><thead><tr><th>Filial</th><th>Última leitura</th><th>Planilha alterada em</th><th>Situação</th></tr></thead><tbody>${lt.map(r=>`<tr><td>${esc(r.filial)}</td><td>${esc(r.lida)}</td><td>${esc(r.alterada)}</td><td>${esc(r.situacao)}</td></tr>`).join('')}</tbody></table></div></details>`;
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Fonte: planilhas de fluxo de caixa de cada filial, lidas a cada edição e conferidas todo dia às 6h. A tela se atualiza sozinha. Entra aqui o que tem valor previsto e está com a coluna REALIZADO vazia, do mês anterior até os próximos 30 dias. Linhas marcadas com "Conferir" dizem que foram pagas por outra filial ou agendadas: confirme e preencha o REALIZADO na planilha. A coluna "No banco" procura no extrato da filial uma saída com o mesmo valor, de 10 dias antes a 20 dias depois do vencimento.</div>`;
+    const lt=(d.leituras||[]).map(l=>{const u=l.ultima||{};return {filial:l.filial,lida:l.ultima_ok?new Date(l.ultima_ok).toLocaleString('pt-BR'):'Ainda não lida',alterada:u.modificado_em?new Date(u.modificado_em).toLocaleString('pt-BR'):'',extrato:l.extrato_ate?date(l.extrato_ate):'Sem extrato',situacao:!l.ativo?'Desativada':!u.em?'Aguardando primeira leitura':u.ok?'OK':'Erro: '+(u.erro||'')};});
+    b.querySelector('#cp-coverage').innerHTML=`<details><summary>Leitura das planilhas</summary><div class="cp-table"><table><thead><tr><th>Filial</th><th>Última leitura</th><th>Planilha alterada em</th><th>Extrato do banco até</th><th>Situação</th></tr></thead><tbody>${lt.map(r=>`<tr><td>${esc(r.filial)}</td><td>${esc(r.lida)}</td><td>${esc(r.alterada)}</td><td>${esc(r.extrato)}</td><td>${esc(r.situacao)}</td></tr>`).join('')}</tbody></table></div></details>`;
   }
   async function load(){
     const b=box();if(!b)return;

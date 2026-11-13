@@ -114,3 +114,9 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp .cp-modal{position:fixed;inset:0;background:rgba(10,20,35,.45);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
 #mod-cp .cp-modal-box{background:var(--bg-card,#fff);color:var(--text-primary,#182b3a);border-radius:8px;width:min(1100px,100%);padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
 #mod-cp .cp-modal-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
+
+/* Agenda: pagamento ja encontrado no extrato */
+#mod-cp tr.cp-pago-banco td{background:#eefaf2!important;color:#173b2a!important}
+#mod-cp .cp-ok{color:#13794a}
+#mod-cp .cp-acao{color:#9a5b00;font-weight:600}
+#mod-cp .cp-notice-ok{border-left-color:#13794a;background:#eefaf2}
