@@ -157,3 +157,5 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp .cp-tar-resumo span b{font-size:1.25em;color:#123a6b}
 #mod-cp .cp-tar-resumo span.cp-tar-ruim{border-color:#e7a3a3;background:#fff4f4}
 #mod-cp .cp-tar-resumo span.cp-tar-ruim b{color:#a11d1d}
+#mod-cp .cp-dre tr.cp-rec-det td{font-size:.92em;color:#4a5b6e}
+#mod-cp .cp-dre tr.cp-rec-det td:first-child{padding-left:28px}

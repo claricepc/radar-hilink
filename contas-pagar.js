@@ -220,6 +220,9 @@
 
   const DRE_EST=[
     {k:'REC',t:'Receita recebida (IXC)',tipo:'rec'},
+    {k:'REC_MENS',t:'Mensalidades e serviços (valor dos boletos)',tipo:'recd'},
+    {k:'REC_DESC',t:'(-) Descontos dados no pagamento',tipo:'recd',neg:true},
+    {k:'REC_JUROS',t:'(+) Juros e multas pagos pelos clientes em atraso',tipo:'recd'},
     {k:'DESP_TRIB',t:'(-) Simples Nacional sobre a receita',tipo:'desp'},
     {k:'=RL',t:'Receita líquida',tipo:'tot',f:['REC','-DESP_TRIB']},
     {k:'CSP',t:'(-) Custos dos serviços (link, sistemas, energia, materiais)',tipo:'desp'},
@@ -456,6 +459,8 @@
     const todos=(d.meses||[]).sort(), L=d.linhas||[], R=d.receita||{};
     const v={}; const put=(k,m,x)=>{(v[k] ||= {})[m]=(v[k][m]||0)+Number(x||0);};
     todos.forEach(m=>put('REC',m,R[m]||0));
+    const RD=d.receita_det||{}, temRD=Object.keys(RD).length>0;
+    todos.forEach(m=>{const x=RD[m];if(x){put('REC_MENS',m,x.mens);put('REC_DESC',m,Number(x.desc||0));put('REC_JUROS',m,x.juros);}});
     L.forEach(x=>put(x.linha,x.mes,x.valor));
     DRE_EST.filter(e=>e.f).forEach(e=>todos.forEach(m=>{let t=0;e.f.forEach(t2=>{const neg=t2.startsWith('-'),k=t2.replace('-','');t+=(neg?-1:1)*((v[k]||{})[m]||0);});put(e.k,m,t);}));
     const parcial=m=>d.receita_ate&&String(d.receita_ate).slice(0,7)<=m;
@@ -488,7 +493,8 @@
     </div>
     <div class="cp-table cp-fixa"><table class="cp-dre">${head()}<tbody>`;
     DRE_EST.forEach(e=>{
-      const cls=e.tipo==='tot'?'cp-total':e.tipo==='rec'?'cp-rec':'';
+      if(e.tipo==='recd'&&!temRD)return;
+      const cls=e.tipo==='tot'?'cp-total':e.tipo==='rec'?'cp-rec':e.tipo==='recd'?'cp-rec-det':'';
       const exp=e.tipo==='desp'&&det(e.k).length;
       const dl=e.tipo==='desp'?'linha:'+e.k:'';
       h+=`<tr class="${cls}${exp?' cp-dre-exp':''}" ${exp?`data-dre="${e.k}"`:''}><td>${exp?`<span class="cp-mais">${P.abertos?'-':'+'}</span> `:''}${esc(e.t)}${dl?tags(dl):''}</td>${cols.map(c=>cel(sv(v[e.k],c.ms),c.ms,'',dl)).join('')}${cel(sv(v[e.k],meses),meses,' cp-col-tot',dl)}</tr>`;
@@ -536,7 +542,7 @@
       b.querySelectorAll(`tr[data-sub="${CSS.escape(conta)}"] td[data-det]`).forEach(td=>td.onclick=e2=>{e2.stopPropagation();abreDet(td);});
     });
     b.querySelectorAll('[data-dre]').forEach(tr=>tr.onclick=()=>{const k=tr.dataset.dre, rows=b.querySelectorAll(`[data-pai="${k}"]`), abrir=rows[0]?.hidden;rows.forEach(r=>{r.hidden=!abrir;if(!abrir&&r.dataset.aberto==='1')r.click();});const s=tr.querySelector('.cp-mais');if(s)s.textContent=abrir?'-':'+';});
-    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês (inclui juros e multas, ainda sem separar), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique no + de uma linha para ver as contas e no + de uma conta para ver as descrições das planilhas que formam o valor, mês a mês. Clique em qualquer valor para ver os lançamentos daquele número (e trocar a conta, se estiver errada). As escolhas de visualização ficam guardadas neste navegador.</div>`;
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês, separado em valor dos boletos, descontos dados no pagamento e juros e multas de atraso (o IXC lança juros e multa juntos, por isso ficam numa linha só), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique no + de uma linha para ver as contas e no + de uma conta para ver as descrições das planilhas que formam o valor, mês a mês. Clique em qualquer valor para ver os lançamentos daquele número (e trocar a conta, se estiver errada). As escolhas de visualização ficam guardadas neste navegador.</div>`;
   }
 
   // ---------- Extratos do banco: envio (OFX, Excel ou francesinha do Santander), período coberto e buracos ----------
