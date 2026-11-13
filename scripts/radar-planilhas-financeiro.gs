@@ -195,7 +195,7 @@ function driveLista(q, campos) {
 function pastasDoBanco() {
   var todas = PASTAS_BANCO.slice(), fila = PASTAS_BANCO.slice();
   while (fila.length) {
-    var lote = fila.splice(0, 40);
+    var lote = fila.splice(0, 10);
     var dentro = lote.map(function (id) { return "'" + id + "' in parents"; }).join(' or ');
     driveLista("trashed = false and mimeType = 'application/vnd.google-apps.folder' and (" + dentro + ")", 'files(id,name)').forEach(function (f) {
       if (/(^|\D)20(1\d|2[0-5])(\D|$)/.test(f.name)) return; // pasta de ano anterior
@@ -229,8 +229,8 @@ function lerBanco() {
     }
     // 2) Drive -> Radar: so as pastas onde a Caroline guarda os arquivos (e a pasta do Radar), sem varrer o Drive todo
     var pastas = pastasDoBanco(), lista = [];
-    for (var k = 0; k < pastas.length; k += 40) {
-      var dentro = pastas.slice(k, k + 40).map(function (id) { return "'" + id + "' in parents"; }).join(' or ');
+    for (var k = 0; k < pastas.length; k += 10) {
+      var dentro = pastas.slice(k, k + 10).map(function (id) { return "'" + id + "' in parents"; }).join(' or ');
       driveLista("trashed = false and modifiedTime > '2026-01-01T00:00:00' and mimeType != 'application/vnd.google-apps.folder' and (" + dentro + ")",
         'files(id,name,mimeType,size,modifiedTime)').forEach(function (f) {
         if (!BANCO_NOME_OK.test(f.name) || BANCO_NOME_FORA.test(f.name)) return;
