@@ -220,6 +220,10 @@ function lerBanco() {
       if (!r.ok) { Logger.log('quais: ' + r.erro); return; }
       faltam = faltam.concat(r.faltam);
     }
+    faltam.sort(function (a, b) { // extratos primeiro, depois francesinhas; mais novos antes
+      var fa = /^COBST_/i.test(meta[a].nome) ? 1 : 0, fb = /^COBST_/i.test(meta[b].nome) ? 1 : 0;
+      return fa - fb || String(meta[b].modificado).localeCompare(String(meta[a].modificado));
+    });
     Logger.log('Arquivos do banco no Drive: ' + lista.length + ' | ainda nao lidos: ' + faltam.length);
     var lote = [], bytes = 0, enviados = 0;
     var mandar = function () {
