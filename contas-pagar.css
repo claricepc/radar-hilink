@@ -120,3 +120,7 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp .cp-ok{color:#13794a}
 #mod-cp .cp-acao{color:#9a5b00;font-weight:600}
 #mod-cp .cp-notice-ok{border-left-color:#13794a;background:#eefaf2}
+
+/* Extratos */
+#mod-cp .cp-buraco{display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border-radius:10px;background:#fdecec;color:#a01f1f;font-size:.85em;white-space:nowrap}
+#mod-cp .cp-ext-envio input[type=file]{min-height:34px}

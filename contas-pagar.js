@@ -1,7 +1,7 @@
 /* Read-only financial consultation. No browser financial cache or mutation API. */
 (()=>{
   'use strict';
-  const NOVAS={pagamentos:['Agenda de pagamentos','o que vence, lido das planilhas todo dia'],mes:['Resumo do mês','previsto, pago e vencido sem baixa'],caixa30:['Caixa projetado','próximos 30 dias por empresa'],dre26:['DRE gerencial','resultado por empresa e consolidado'],depara:['De/para (plano de contas)','ligação das descrições às contas']};
+  const NOVAS={pagamentos:['Agenda de pagamentos','o que vence, lido das planilhas todo dia'],mes:['Resumo do mês','previsto, pago e vencido sem baixa'],caixa30:['Caixa projetado','próximos 30 dias por empresa'],dre26:['DRE gerencial','resultado por empresa e consolidado'],depara:['De/para (plano de contas)','ligação das descrições às contas'],extratos:['Extratos do banco','extratos e francesinhas: envio e período coberto']};
   const tabs={resumo:'Resumo',lancamentos:'Lançamentos',dre:'DRE',razao:'Razão',caixa:'Caixa',conciliacao:'Conciliação',auditoria:'Auditoria'};
   const now=new Date(),pad=n=>String(n).padStart(2,'0');
   const local=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -335,6 +335,69 @@
     b.querySelectorAll('[data-dre]').forEach(tr=>tr.onclick=()=>{const k=tr.dataset.dre, rows=b.querySelectorAll(`[data-pai="${k}"]`), abrir=rows[0]?.hidden;rows.forEach(r=>r.hidden=!abrir);const s=tr.querySelector('.cp-mais');if(s)s.textContent=abrir?'-':'+';});
     b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês (inclui juros e multas, ainda sem separar), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique numa linha com + para ver as contas; clique numa conta para ver as descrições que caíram nela e corrigir. As escolhas de visualização ficam guardadas neste navegador.</div>`;
   }
+
+  // ---------- Extratos do banco: envio (OFX, Excel ou francesinha do Santander), período coberto e buracos ----------
+  async function loadExtratos(own){
+    const b=box();if(!b)return;
+    b.querySelector('#cp-form').style.display='none';
+    b.querySelector('#cp-result').innerHTML=msg('Lendo os extratos…');b.querySelector('#cp-context').replaceChildren();b.querySelector('#cp-coverage').replaceChildren();
+    const {data,error}=await getSB().rpc('radar_cp_extratos');
+    if(own!==generation||!box())return;
+    if(error){b.querySelector('#cp-result').innerHTML=msg('Extratos indisponíveis: '+error.message);return;}
+    state.ext=data;paintExtratos();
+  }
+  const fmtPer=(a,b2)=>a===b2?date(a):`${date(a)} a ${date(b2)}`;
+  function diasUteisAtras(iso){if(!iso)return 99;let d=new Date(iso+'T12:00:00'),h=new Date(),n=0;h.setHours(12,0,0,0);while(d<h){d.setDate(d.getDate()+1);if(d.getDay()%6)n++;}return n;}
+  function paintExtratos(){
+    const b=box(), d=state.ext;if(!b||!d)return;
+    const C=d.contas||[];
+    const atraso=(iso,lim)=>{const n=diasUteisAtras(iso);return n>lim?` <span class="cp-dif">(${n} dias úteis)</span>`:'';};
+    let h=`<div class="cp-ext-envio"><h3 class="cp-h">Enviar extrato ou francesinha</h3>
+      <div class="cp-vis"><label>Arquivos do Santander: extrato OFX ou Excel, francesinha (COBST_..._FRA.TXT). Pode escolher vários de uma vez.
+      <input type="file" id="cp-ext-arq" multiple accept=".ofx,.OFX,.xls,.xlsx,.xlsm,.csv,.txt,.TXT"></label></div>
+      <button type="button" class="cp-btn" id="cp-ext-enviar" disabled>Enviar</button> <span id="cp-ext-res"></span>
+      <div id="cp-ext-previa"></div></div>
+      <h3 class="cp-h">Período coberto por conta</h3>
+      <div class="cp-table"><table><thead><tr><th>Filial</th><th>Conta</th><th>Extrato até</th><th>Francesinha até</th><th>Períodos sem extrato desde 01/01/2026</th><th>Últimos envios</th></tr></thead><tbody>${C.map(c=>{
+        const bur=c.buracos||[];
+        return `<tr><td><b>${esc(c.filial)}</b><br><small>${esc(c.descricao||'')}</small></td><td>${esc(c.banco)} ${esc(c.conta)}</td>
+        <td>${c.ate?date(c.ate)+atraso(c.ate,1):'<span class="cp-dif">Nenhum</span>'}</td>
+        <td>${c.francesinha_ate?date(c.francesinha_ate)+atraso(c.francesinha_ate,2):'<small>-</small>'}</td>
+        <td>${bur.length?bur.map(x=>`<span class="cp-buraco">${fmtPer(x.de,x.ate)}</span>`).join(' '):'<b class="cp-ok">Completo</b>'}</td>
+        <td><small>${(c.arquivos||[]).slice(0,3).map(a=>`${esc(fmtPer(a.de,a.ate))} · ${a.origem==='drive'?'lido do Drive':a.origem==='radar'?'enviado no Radar':a.origem==='sistema antigo'||!a.origem?'sistema antigo':esc(a.origem)}${a.por?' · '+esc(String(a.por).split('@')[0]):''}`).join('<br>')||'-'}</small></td></tr>`;}).join('')}</tbody></table></div>`;
+    b.querySelector('#cp-result').innerHTML=h;
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">Envie aqui o extrato (OFX de preferência, ou Excel) e a francesinha de cada conta, como o Santander gera. O Radar reconhece a conta pelo próprio arquivo, grava e guarda uma cópia no Drive com nome padrão (HILINK - Documentos / filial / EXTRATO ou FRANCESINHA / ano). Arquivos salvos direto nas pastas do Drive também são lidos sozinhos a cada 15 minutos. Se um dia chegar de novo mais completo, o Radar troca aquele dia; nada entra em dobro. Quando o extrato de uma conta atrasa mais de 1 dia útil, a Caroline recebe uma tarefa na agenda, que se fecha sozinha quando o arquivo chega.${d.uploads_pendentes?` <b>${d.uploads_pendentes} arquivo(s) aguardando cópia para o Drive.</b>`:''}</div>`;
+    const arq=b.querySelector('#cp-ext-arq'), bt=b.querySelector('#cp-ext-enviar');
+    arq.onchange=()=>{bt.disabled=!arq.files.length;b.querySelector('#cp-ext-previa').innerHTML=arq.files.length?`<small>${[...arq.files].map(f=>esc(f.name)).join('<br>')}</small>`:'';};
+    bt.onclick=()=>enviarArquivosBanco([...arq.files],bt);
+  }
+  const b64Arquivo=f=>new Promise((ok,err)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]||'');r.onerror=()=>err(new Error('não consegui ler '+f.name));r.readAsDataURL(f);});
+  async function enviarArquivosBanco(files,bt){
+    const b=box(), pv=b?.querySelector('#cp-ext-previa');if(!pv||!files.length)return;
+    if(files.some(f=>f.size>8*1024*1024)){pv.innerHTML=msg('Arquivo maior que 8 MB: envie um período menor.');return;}
+    bt.disabled=true;bt.textContent='Enviando…';
+    const {data:ses}=await getSB().auth.getSession();
+    const linhas=[];
+    for(let i=0;i<files.length;i+=5){
+      const lote=await Promise.all(files.slice(i,i+5).map(async f=>({nome:f.name,mime:f.type||null,base64:await b64Arquivo(f)})));
+      try{
+        const r=await fetch(SUPABASE_URL+'/functions/v1/banco-arquivos',{method:'POST',headers:{Authorization:'Bearer '+ses?.session?.access_token,apikey:SUPABASE_ANON,'Content-Type':'application/json'},body:JSON.stringify({acao:'gravar',arquivos:lote})});
+        const j=await r.json();
+        if(!j.ok)lote.forEach(f=>linhas.push({nome:f.nome,ok:false,erro:j.erro||('HTTP '+r.status)}));else linhas.push(...j.arquivos);
+      }catch(e){lote.forEach(f=>linhas.push({nome:f.nome,ok:false,erro:e.message}));}
+    }
+    const txt=x=>{
+      if(!x.ok)return `<span class="cp-dif">Não entrou: ${esc(x.erro||'')}</span>`;
+      if(x.tipo==='extrato')return `Extrato ${esc(x.conta)} · ${fmtPer(x.inicio,x.fim)} · ${x.movimentos} movimentos · ${x.dias_novos} dia(s) novo(s), ${x.dias_trocados} atualizado(s), ${x.dias_ja_tinha} já tinha`;
+      const av=(x.avisos||[]).filter(a=>a&&a.ok);
+      return `Francesinha ${esc(x.conta||'')} · ${av.map(a=>date(a.data_movimento)+' (aviso '+esc(a.aviso)+', '+a.titulos+' títulos)').join(', ')}`;};
+    pv.innerHTML=`<div class="cp-table"><table><thead><tr><th>Arquivo</th><th>Resultado</th><th>Nome no Drive</th></tr></thead><tbody>${linhas.map(x=>`<tr><td>${esc(x.nome||'')}</td><td>${txt(x)}</td><td><small>${esc(x.drive_nome||'')}</small></td></tr>`).join('')}</tbody></table></div>`;
+    const ok=linhas.filter(x=>x.ok).length;
+    window.toast?.(`${ok} de ${linhas.length} arquivo(s) gravado(s).`);
+    bt.textContent='Enviar';
+    const {data:d2}=await getSB().rpc('radar_cp_extratos');
+    if(d2&&box()){state.ext=d2;const guarda=pv.innerHTML;paintExtratos();const p2=box()?.querySelector('#cp-ext-previa');if(p2)p2.innerHTML=guarda;}
+  }
   async function loadAgenda(own){
     const b=box();if(!b)return;
     b.querySelector('#cp-form').style.display='none';
@@ -386,6 +449,7 @@
     if(state.view==='caixa30')return loadCaixa(own);
     if(state.view==='depara')return loadDepara(own);
     if(state.view==='dre26')return loadDre(own);
+    if(state.view==='extratos')return loadExtratos(own);
     b.querySelector('#cp-form').style.display='';
     const active=['resumo','lancamentos','dre'].includes(state.view);
     b.querySelector('#cp-regime').disabled=!active;b.querySelector('#cp-status').disabled=!active;

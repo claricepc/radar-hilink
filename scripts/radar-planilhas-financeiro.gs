@@ -147,3 +147,135 @@ function converterMadalena() {
   props.setProperty('MADALENA_SHEETS_ID', novoId);
   Logger.log('Nova planilha da Madalena: ' + novo.getUrl());
 }
+
+/* ======================================================================================
+ * Extratos e francesinhas do banco (13/11/2026)
+ *  - "lerBanco": 1) grava no Drive os arquivos enviados pelo Radar (nome padrao, pasta da filial);
+ *                2) procura nas pastas fixas da Caroline (PASTAS_BANCO) extratos (OFX/Excel) e francesinhas
+ *                   (COBST_..._FRA.TXT) de 2026 que o Radar ainda nao leu e manda para leitura. So le; nao altera nem apaga.
+ *  - "instalarGatilhoBanco": roda o lerBanco a cada 15 minutos. Rode uma vez.
+ * ====================================================================================== */
+var FUNCAO_BANCO = 'https://mdhexsdnavzforuahgxn.supabase.co/functions/v1/banco-arquivos';
+var PASTA_DOCUMENTOS = '1qGM7UDxgUnqkuJ0a_kwsUxXpdsV-geOo'; // HILINK - Documentos / {FILIAL} / EXTRATO|FRANCESINHA / {ANO}
+var BANCO_NOME_OK = /(^COBST_.*_FRA\.TXT$)|(^FRANCESINHA_)|(EXTRATO)/i;
+var BANCO_NOME_FORA = /PGDASD|NEOENERGIA|FRONTEIRA|RETROATIVO|\.pdf$|\.png$|\.jpe?g$/i;
+var BANCO_MAX_BYTES = 8 * 1024 * 1024;
+
+function banco(corpo) {
+  corpo.token = ScriptApp.getOAuthToken();
+  var r = UrlFetchApp.fetch(FUNCAO_BANCO, { method: 'post', contentType: 'application/json', payload: JSON.stringify(corpo), muteHttpExceptions: true });
+  var t = r.getContentText();
+  try { return JSON.parse(t); } catch (e) { return { ok: false, erro: 'HTTP ' + r.getResponseCode() + ' ' + t.slice(0, 200) }; }
+}
+
+function pastaFilha(pai, nome) {
+  var it = pai.getFoldersByName(nome);
+  return it.hasNext() ? it.next() : pai.createFolder(nome);
+}
+
+// Pastas fixas dos arquivos do banco (Caroline):
+//  01 - MOVIMENTACAO FINANCEIRA (extratos e OFX, por ano/mes), 02 - FRANCESINHAS (por ano/filial) e HILINK - Documentos (copias do Radar).
+// Entra tudo que estiver em subpastas delas, menos pastas de anos anteriores (2025, 2024...).
+var PASTAS_BANCO = ['1vnW632w8g1bNOq4ubgEb-L8xqlR6hPHQ', '12qnm83WEIAcniK4g3d1Ye38bJyt_Bh9-', PASTA_DOCUMENTOS];
+
+function driveLista(q, campos) {
+  var out = [], pagina = '';
+  do {
+    var url = 'https://www.googleapis.com/drive/v3/files?pageSize=1000&includeItemsFromAllDrives=true&supportsAllDrives=true' +
+      '&fields=' + encodeURIComponent('nextPageToken,' + campos) + '&q=' + encodeURIComponent(q) + (pagina ? '&pageToken=' + pagina : '');
+    var r = UrlFetchApp.fetch(url, { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true });
+    if (r.getResponseCode() >= 300) throw new Error('lista do Drive: ' + r.getContentText().slice(0, 300));
+    var j = JSON.parse(r.getContentText());
+    out = out.concat(j.files || []);
+    pagina = j.nextPageToken || '';
+  } while (pagina);
+  return out;
+}
+
+function pastasDoBanco() {
+  var todas = PASTAS_BANCO.slice(), fila = PASTAS_BANCO.slice();
+  while (fila.length) {
+    var lote = fila.splice(0, 10);
+    var dentro = lote.map(function (id) { return "'" + id + "' in parents"; }).join(' or ');
+    driveLista("trashed = false and mimeType = 'application/vnd.google-apps.folder' and (" + dentro + ")", 'files(id,name)').forEach(function (f) {
+      if (/(^|\D)20(1\d|2[0-5])(\D|$)/.test(f.name)) return; // pasta de ano anterior
+      todas.push(f.id); fila.push(f.id);
+    });
+  }
+  return todas;
+}
+
+function lerBanco() {
+  var inicio = Date.now();
+  var trava = LockService.getScriptLock();
+  if (!trava.tryLock(10000)) { Logger.log('Outra leitura em andamento; tenta na proxima rodada.'); return; }
+  try {
+    // 1) fila do Radar -> Drive
+    for (var volta = 0; volta < 5; volta++) {
+      var p = banco({ acao: 'pendentes' });
+      if (!p.ok) { Logger.log('pendentes: ' + p.erro); break; }
+      if (!p.pendentes.length) break;
+      var feitos = p.pendentes.map(function (u) {
+        try {
+          var pasta = pastaFilha(pastaFilha(pastaFilha(DriveApp.getFolderById(PASTA_DOCUMENTOS), u.drive_nome), u.tipo === 'francesinha' ? 'FRANCESINHA' : 'EXTRATO'), String(u.ano));
+          var velhos = pasta.getFilesByName(u.nome_drive);
+          while (velhos.hasNext()) velhos.next().setTrashed(true);
+          var f = pasta.createFile(Utilities.newBlob(Utilities.base64Decode(u.base64), u.mime || 'application/octet-stream', u.nome_drive));
+          return { id: u.id, drive_id: f.getId(), url: f.getUrl() };
+        } catch (e) { return { id: u.id, erro: String(e).slice(0, 300) }; }
+      });
+      banco({ acao: 'feito', feitos: feitos });
+      Logger.log('Gravados no Drive: ' + feitos.length);
+    }
+    // 2) Drive -> Radar: so as pastas onde a Caroline guarda os arquivos (e a pasta do Radar), sem varrer o Drive todo
+    var pastas = pastasDoBanco(), lista = [];
+    for (var k = 0; k < pastas.length; k += 10) {
+      var dentro = pastas.slice(k, k + 10).map(function (id) { return "'" + id + "' in parents"; }).join(' or ');
+      driveLista("trashed = false and modifiedTime > '2026-01-01T00:00:00' and mimeType != 'application/vnd.google-apps.folder' and (" + dentro + ")",
+        'files(id,name,mimeType,size,modifiedTime)').forEach(function (f) {
+        if (!BANCO_NOME_OK.test(f.name) || BANCO_NOME_FORA.test(f.name)) return;
+        var fr = f.name.match(/^COBST_\w+_\d+_\d{4}(\d{2})P_FRA/i); if (fr && fr[1] !== '26') return; // francesinha de outro ano
+        if (!fr && /(^|\D)20(1\d|2[0-5])(\D|$)/.test(f.name) && !/2026/.test(f.name)) return; // extrato de ano anterior
+        if (f.mimeType.indexOf('application/vnd.google-apps') === 0 || +f.size > BANCO_MAX_BYTES) return;
+        lista.push({ id: f.id, nome: f.name, modificado: f.modifiedTime });
+      });
+    }
+    var meta = {}; lista.forEach(function (x) { meta[x.id] = x; });
+    var faltam = [];
+    for (var i = 0; i < lista.length; i += 300) {
+      var r = banco({ acao: 'quais', arquivos: lista.slice(i, i + 300) });
+      if (!r.ok) { Logger.log('quais: ' + r.erro); return; }
+      faltam = faltam.concat(r.faltam);
+    }
+    faltam.sort(function (a, b) { // extratos primeiro, depois francesinhas; mais novos antes
+      var fa = /^COBST_/i.test(meta[a].nome) ? 1 : 0, fb = /^COBST_/i.test(meta[b].nome) ? 1 : 0;
+      return fa - fb || String(meta[b].modificado).localeCompare(String(meta[a].modificado));
+    });
+    Logger.log('Arquivos do banco no Drive: ' + lista.length + ' | ainda nao lidos: ' + faltam.length);
+    var lote = [], bytes = 0, enviados = 0;
+    var mandar = function () {
+      if (!lote.length) return;
+      var r = banco({ acao: 'gravar', arquivos: lote });
+      if (!r.ok) Logger.log('gravar: ' + r.erro);
+      else r.arquivos.forEach(function (x) { Logger.log((x.ok ? 'ok  ' : 'ERRO') + ' ' + x.nome + (x.erro ? ' - ' + x.erro : '')); });
+      enviados += lote.length; lote = []; bytes = 0;
+    };
+    for (var j = 0; j < faltam.length; j++) {
+      if (Date.now() - inicio > 270000) { Logger.log('Tempo esgotado; continua na proxima rodada.'); break; }
+      var m = meta[faltam[j]], blob = DriveApp.getFileById(m.id).getBlob(), b = blob.getBytes();
+      if (bytes + b.length > 4 * 1024 * 1024 || lote.length >= 8) mandar();
+      lote.push({ id: m.id, nome: m.nome, modificado: m.modificado, mime: blob.getContentType(), base64: Utilities.base64Encode(b) });
+      bytes += b.length;
+    }
+    mandar();
+    Logger.log('Enviados para leitura: ' + enviados);
+  } finally {
+    trava.releaseLock();
+  }
+}
+
+function instalarGatilhoBanco() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'lerBanco') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('lerBanco').timeBased().everyMinutes(15).create();
+  Logger.log('Leitura de extratos e francesinhas a cada 15 minutos.');
+}
