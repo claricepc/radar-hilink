@@ -242,6 +242,37 @@
     if(error){b.querySelector('#cp-result').innerHTML=msg('DRE indisponível: '+error.message);return;}
     paintDre(data);
   }
+
+  // Corrigir a conta direto do relatório: lista as descrições da planilha que caíram na conta e permite trocar (vale para todas as filiais e para os próximos meses).
+  async function cpCorrigirConta(conta,empresa,aoSalvar){
+    const m=box();if(!m)return;
+    let ov=m.querySelector('#cp-corrigir');if(ov)ov.remove();
+    ov=document.createElement('div');ov.id='cp-corrigir';ov.className='cp-modal';
+    ov.innerHTML=`<div class="cp-modal-box"><div class="cp-modal-top"><b>Lançamentos na conta ${esc(conta)}</b><button type="button" class="cp-btn" data-fechar>Fechar</button></div><div class="cp-modal-corpo">${msg('Carregando…')}</div></div>`;
+    m.appendChild(ov);
+    let mudou=false;
+    const fechar=()=>{ov.remove();if(mudou&&aoSalvar)aoSalvar();};
+    ov.querySelector('[data-fechar]').onclick=fechar; ov.onclick=e=>{if(e.target===ov)fechar();};
+    if(!state.dp){const {data,error}=await getSB().rpc('radar_cp_depara_lista');if(error){ov.querySelector('.cp-modal-corpo').innerHTML=msg('Não carregou: '+error.message);return;}state.dp=data;}
+    const C=state.dp.contas||[], nome=C.find(x=>x.codigo===conta);
+    const it=(state.dp.itens||[]).filter(x=>x.conta_codigo===conta&&(!empresa||String(x.filiais||'').split(/,\s*/).includes(empresa))).sort((a,b2)=>Number(b2.valor||0)-Number(a.valor||0));
+    const opts=sel=>C.map(c=>`<option value="${esc(c.codigo)}"${c.codigo===sel?' selected':''}>${esc(c.codigo+' '+c.descricao)}</option>`).join('');
+    ov.querySelector('b').textContent=`${conta} ${nome?nome.descricao:''}${empresa?' — '+empresa:''}`;
+    ov.querySelector('.cp-modal-corpo').innerHTML=!it.length?msg('Nenhuma descrição encontrada nesta conta.'):`<p class="cp-legenda">A troca vale para a descrição em todas as filiais e para os próximos meses. Depois de salvar, a DRE é recalculada.</p>
+      <div class="cp-table"><table><thead><tr><th>Descrição na planilha</th><th>Empresas</th><th class="cp-number">Valor 2026</th><th>Conta</th><th></th></tr></thead><tbody>${it.map((x,i)=>`<tr>
+      <td><b>${esc(x.exemplo||x.desc_norm)}</b><br><small>${esc(x.secao||'')} · ${esc(ORIG[x.origem]||'')}</small></td><td><small>${esc(x.filiais||'')}</small></td>
+      <td class="cp-number">${m0(x.valor)}</td><td><select data-cs="${i}" style="max-width:320px">${opts(x.conta_codigo)}</select></td>
+      <td><button type="button" class="cp-btn" data-cb="${i}">Salvar</button></td></tr>`).join('')}</tbody></table></div>`;
+    ov.querySelectorAll('[data-cb]').forEach(bt=>bt.onclick=async()=>{
+      const x=it[+bt.dataset.cb], nova=ov.querySelector(`[data-cs="${bt.dataset.cb}"]`).value;
+      if(!nova||nova===x.conta_codigo){bt.textContent='Sem mudança';return;}
+      bt.disabled=true;bt.textContent='Salvando…';
+      const {error}=await getSB().rpc('radar_cp_depara_definir',{p_desc_norm:x.desc_norm,p_conta:nova});
+      if(error){bt.disabled=false;bt.textContent='Salvar';window.toast?.('Não salvou: '+error.message);return;}
+      x.conta_codigo=nova;x.origem='manual';mudou=true;bt.textContent='Salvo';
+    });
+  }
+  window.cpCorrigirConta=cpCorrigirConta;
   // Preferências de visualização (por pessoa, neste navegador)
   const PREF_KEY='radar_cp_vis';
   let prefMem=null;
@@ -284,13 +315,13 @@
       const cls=e.tipo==='tot'?'cp-total':e.tipo==='rec'?'cp-rec':'';
       const exp=e.tipo==='desp'&&det(e.k).length;
       h+=`<tr class="${cls}${exp?' cp-dre-exp':''}" ${exp?`data-dre="${e.k}"`:''}><td>${exp?`<span class="cp-mais">${P.abertos?'-':'+'}</span> `:''}${esc(e.t)}</td>${cols.map(c=>cel(sv(v[e.k],c.ms),c.ms)).join('')}${cel(sv(v[e.k],meses),meses,' cp-col-tot')}</tr>`;
-      if(exp) det(e.k).forEach(([c0,mm])=>{h+=`<tr class="cp-dre-det" data-pai="${e.k}"${P.abertos?'':' hidden'}><td>${esc(c0)}</td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel(x,c.ms):'<td class="cp-number"></td>';}).join('')}${cel(sv(mm,meses),meses,' cp-col-tot')}</tr>`;});
+      if(exp) det(e.k).forEach(([c0,mm])=>{h+=`<tr class="cp-dre-det cp-conta-link" data-pai="${e.k}" data-conta="${esc(c0.split(' ')[0])}" title="Ver e corrigir os lançamentos desta conta"${P.abertos?'':' hidden'}><td>${esc(c0)} <span class="cp-editar">corrigir</span></td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel(x,c.ms):'<td class="cp-number"></td>';}).join('')}${cel(sv(mm,meses),meses,' cp-col-tot')}</tr>`;});
       if(e.k==='=RP') h+=`<tr class="cp-margem"><td>Margem sobre a receita</td>${[...cols.map(c=>c.ms),meses].map((ms,i)=>{const r=sv(v.REC,ms);return `<td class="cp-number${i===cols.length?' cp-col-tot':''}">${r?(sv(v['=RP'],ms)/r*100).toFixed(1).replace('.',',')+'%':'-'}</td>`;}).join('')}</tr>`;
     });
     h+=`</tbody></table></div>`;
     const fora=[['FORA_ATIVO','Investimentos, compras de empresas, equipamentos e aplicações'],['FORA_PASSIVO','Parcelas de empréstimos e financiamentos, faturas de cartão e acordos com sócios']];
     const P2=Object.assign({},P,{pct:false});
-    h+=`<h3 class="cp-h">Saídas de caixa que não são despesa</h3><div class="cp-table cp-fixa"><table class="cp-dre">${head()}<tbody>${fora.map(([k,t])=>`<tr class="cp-dre-exp" data-dre="${k}"><td><span class="cp-mais">${P.abertos?'-':'+'}</span> ${t}</td>${cols.map(c=>`<td class="cp-number">${fmt(sv(v[k],c.ms))}</td>`).join('')}<td class="cp-number cp-col-tot">${fmt(sv(v[k],meses))}</td></tr>${det(k).map(([c0,mm])=>`<tr class="cp-dre-det" data-pai="${k}"${P.abertos?'':' hidden'}><td>${esc(c0)}</td>${cols.map(c=>{const x=sv(mm,c.ms);return `<td class="cp-number">${x?fmt(x):''}</td>`;}).join('')}<td class="cp-number cp-col-tot">${fmt(sv(mm,meses))}</td></tr>`).join('')}`).join('')}</tbody></table></div>`;
+    h+=`<h3 class="cp-h">Saídas de caixa que não são despesa</h3><div class="cp-table cp-fixa"><table class="cp-dre">${head()}<tbody>${fora.map(([k,t])=>`<tr class="cp-dre-exp" data-dre="${k}"><td><span class="cp-mais">${P.abertos?'-':'+'}</span> ${t}</td>${cols.map(c=>`<td class="cp-number">${fmt(sv(v[k],c.ms))}</td>`).join('')}<td class="cp-number cp-col-tot">${fmt(sv(v[k],meses))}</td></tr>${det(k).map(([c0,mm])=>`<tr class="cp-dre-det cp-conta-link" data-pai="${k}" data-conta="${esc(c0.split(' ')[0])}" title="Ver e corrigir os lançamentos desta conta"${P.abertos?'':' hidden'}><td>${esc(c0)} <span class="cp-editar">corrigir</span></td>${cols.map(c=>{const x=sv(mm,c.ms);return `<td class="cp-number">${x?fmt(x):''}</td>`;}).join('')}<td class="cp-number cp-col-tot">${fmt(sv(mm,meses))}</td></tr>`).join('')}`).join('')}</tbody></table></div>`;
     b.querySelector('#cp-result').innerHTML=h;
     b.querySelector('#cp-dre-emp').onchange=e=>{state.dreEmp=e.target.value;load();};
     const muda=(k,val)=>{const p=prefs();p[k]=val;salvarPrefs(p);paintDre(d);};
@@ -300,8 +331,9 @@
     b.querySelector('#cp-v-pct').onchange=e=>muda('pct',e.target.checked);
     b.querySelector('#cp-v-abertos').onchange=e=>muda('abertos',e.target.checked);
     b.querySelectorAll('[data-fonte]').forEach(x=>x.onclick=()=>{const p=prefs();p.fonte=Math.max(11,Math.min(18,p.fonte+Number(x.dataset.fonte)));salvarPrefs(p);aplicarFonte();});
+    b.querySelectorAll('[data-conta]').forEach(tr=>tr.onclick=ev=>{ev.stopPropagation();cpCorrigirConta(tr.dataset.conta,state.dreEmp||'',()=>load());});
     b.querySelectorAll('[data-dre]').forEach(tr=>tr.onclick=()=>{const k=tr.dataset.dre, rows=b.querySelectorAll(`[data-pai="${k}"]`), abrir=rows[0]?.hidden;rows.forEach(r=>r.hidden=!abrir);const s=tr.querySelector('.cp-mais');if(s)s.textContent=abrir?'-':'+';});
-    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês (inclui juros e multas, ainda sem separar), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique numa linha com + para ver as contas. As escolhas de visualização ficam guardadas neste navegador.</div>`;
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês (inclui juros e multas, ainda sem separar), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique numa linha com + para ver as contas; clique numa conta para ver as descrições que caíram nela e corrigir. As escolhas de visualização ficam guardadas neste navegador.</div>`;
   }
   async function loadAgenda(own){
     const b=box();if(!b)return;

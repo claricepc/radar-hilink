@@ -105,3 +105,12 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp table.cp-dre tr.cp-dre-det td{font-size:.92em;color:var(--cp-muted)!important}
 #mod-cp table.cp-dre tr.cp-margem td{font-style:italic;color:var(--cp-muted)!important}
 #mod-cp .cp-pct{display:block;font-size:.8em;color:var(--cp-muted);font-weight:400}
+
+/* Corrigir conta a partir do relatorio */
+#mod-cp tr.cp-conta-link{cursor:pointer}
+#mod-cp tr.cp-conta-link:hover td{background:#eef4fb!important}
+#mod-cp .cp-editar{font-size:.8em;color:#0f6ab4;text-decoration:underline;margin-left:6px;opacity:0;transition:opacity .15s}
+#mod-cp tr.cp-conta-link:hover .cp-editar{opacity:1}
+#mod-cp .cp-modal{position:fixed;inset:0;background:rgba(10,20,35,.45);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+#mod-cp .cp-modal-box{background:var(--bg-card,#fff);color:var(--text-primary,#182b3a);border-radius:8px;width:min(1100px,100%);padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+#mod-cp .cp-modal-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
