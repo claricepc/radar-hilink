@@ -2495,9 +2495,34 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .vg-card.inf-card:hover{box-shadow:none}
 .inf .vg-card.inf-destaque{border-top-color:var(--azul);background:var(--azul-suave)}
 .inf .vg-card.inf-destaque .vg-v{color:var(--azul-forte)}
+.inf .inf-planos{display:flex;flex-wrap:wrap;gap:20px 12px;padding-top:8px}
+.inf .inf-planos .inf-card{position:relative;overflow:visible;flex:1 1 max(300px,calc((100% - 24px)/3));min-width:0;display:flex;flex-wrap:wrap;align-content:center;align-items:start;gap:12px 16px;padding:16px;border-radius:8px}
+.inf .inf-planos .inf-selo{position:absolute;top:0;left:50%;transform:translate(-50%,-55%);margin:0;white-space:nowrap}
+.inf .inf-plano-preco{flex:0 1 198px;min-width:0}
+.inf .inf-plano-inclusos{flex:1 1 140px;min-width:0;margin:0;padding-inline-start:16px;font-size:12px;line-height:1.4;color:var(--texto)}
+.inf .inf-plano-inclusos li+li{margin-top:3px}
+.inf .inf-plano-inclusos small{display:block;font-size:11px;color:var(--texto-2)}
+.inf .inf-plano-inclusos .inf-plano-regional{color:var(--atencao)}
+.inf .inf-planos .vg-l{font-size:15px;letter-spacing:0;overflow-wrap:anywhere}
+.inf .inf-planos .vg-v{margin:5px 0 9px;font-size:32px;line-height:1.15;letter-spacing:0;overflow-wrap:anywhere}
+.inf .inf-planos .vg-x{margin-top:auto}
+.inf .inf-planos .vg-link{padding:5px 9px;border:1px solid var(--linha);border-radius:6px;background:var(--superficie);color:var(--azul-forte);text-decoration:none}
+.inf .inf-planos .vg-link:hover{border-color:var(--azul)}
 .inf .inf-selo{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--azul);color:var(--sobre-azul);font-size:10px;letter-spacing:.04em;vertical-align:1px}
 .inf .inf-baixo .vg-s{margin-top:4px}
 .inf .inf-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.inf .inf-app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:10px;margin-top:10px}
+.inf .inf-app-card{display:block;width:100%;height:150px;padding:0;border:0;border-radius:8px;background:transparent;perspective:700px;color:var(--texto);cursor:pointer;text-align:center;font:inherit}
+.inf .inf-app-card:focus-visible{outline:2px solid #2d9cff;outline-offset:3px}
+.inf .inf-app-flip{position:relative;display:block;width:100%;height:100%;transform-style:preserve-3d;transition:transform .32s ease}
+.inf .inf-app-card[aria-pressed="true"] .inf-app-flip{transform:rotateY(180deg)}
+@media(hover:hover) and (pointer:fine){.inf .inf-app-card:hover .inf-app-flip{transform:rotateY(180deg)}}
+@media(prefers-reduced-motion:reduce){.inf .inf-app-flip{transition:none}}
+.inf .inf-app-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;border:1px solid var(--borda,#8099b5);border-radius:8px;backface-visibility:hidden;overflow-wrap:anywhere;font-size:12px;line-height:1.35}
+.inf .inf-app-front img{display:block;width:126px;max-width:100%;height:126px;object-fit:contain;border-radius:8px}
+.inf .inf-app-front img[hidden]{display:none}
+.inf .inf-app-front img:not([hidden])+strong{display:none}
+.inf .inf-app-back{transform:rotateY(180deg);background:#214485;color:#fff;border-color:#214485}
 .inf .inf-chip{padding:4px 10px;border-radius:999px;border:1px solid var(--linha);background:var(--azul-suave);color:var(--azul-forte);font-size:12px;font-weight:600}
 .inf .inf-chip-video{display:inline-flex;align-items:center;gap:6px;border-color:var(--azul);padding-right:4px}
 .inf .inf-chip-video a{color:var(--azul-forte);text-decoration:underline dotted;text-underline-offset:3px}
@@ -2509,6 +2534,7 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .inf-linha span{display:block;font-size:12px;color:var(--texto-3)}
 .inf .inf-valor{font:800 15px var(--font-titulo);color:var(--texto);white-space:nowrap;font-variant-numeric:tabular-nums}
 .inf .inf-subtitulo{font-size:13px;margin:18px 0 8px;color:var(--texto);font-weight:700;letter-spacing:0}
+.inf .inf-subtitulo.inf-beneficio-titulo{font:700 14px var(--font-titulo)}
 .inf .inf-vencimentos{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
 .inf .inf-dia{display:inline-grid;place-items:center;width:40px;height:36px;border:1px solid var(--linha);border-radius:4px;color:var(--azul-forte);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
 .inf .inf-pagamento-faixa{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
@@ -2527,8 +2553,9 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .vg-card.inf-regional{border-left:4px solid var(--atencao);background:var(--atencao-suave);color:var(--texto);margin:0;line-height:1.5}
 .inf .inf-regional strong{display:block;font-size:13px;color:var(--atencao);margin-top:5px}
 .inf .inf-regional p{margin:5px 0 0;font-size:12px}
-.inf .inf-orientacao{font-size:13px;line-height:1.6;color:var(--texto-2);margin:14px 0 0}
+.inf .inf-orientacao{font-size:13px;line-height:1.6;color:var(--texto);margin:14px 0 0;padding:12px 16px;border:1px solid var(--linha);border-inline-start:4px solid var(--ok);border-radius:8px;background:var(--ok-suave)}
 .inf .inf-orientacao h4{margin:0 0 6px;font-size:13px;color:var(--texto)}
+.inf .inf-orientacao p{margin:0 0 6px}
 .inf .inf-orientacao ol{margin:0;padding-left:20px}
 .inf .inf-campos{display:grid;gap:6px;margin-top:8px}
 .inf .inf-campo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--texto)}
@@ -26785,9 +26812,49 @@ async function infCarregar(){
   if(STATE.activeMod==='informacoes') renderInformacoes();
 }
 function infBenNome(x){ return typeof x==='string' ? x : ((x&&x.nome)||''); }
+const INF_APP_CATALOG = {
+  deezer:['Deezer-App-Icon-150x150.png','Ouça músicas e podcasts, baixe faixas para ouvir offline, receba sugestões pelo seu gosto, importe playlists e identifique a música que está tocando.'],
+  sky:['App-Icon_sky-150x150.png','Canais de TV ao vivo, esportes, filmes e séries.'],
+  looke:['Looke-App-Icon-150x150.png','Streaming de filmes, séries e conteúdo infantil.'],
+  playkids:['PlayKids-Learning_App-Icon-300x279.png','Desenhos, livros, jogos e atividades interativas para o desenvolvimento de crianças de até 6 anos.'],
+  ubook:['2025/07/ICONE_UBOOK_@4-150x150.png','Audiolivros, livros digitais e podcasts.'],
+  leitura360:['App-Icon_Leitura-360-150x150.png','Revistas digitais sobre diferentes assuntos.'],
+  estuda:['Estuda_App-Icon-150x150.png','Materiais de estudo e preparação para o Enem.'],
+  pequenosleitores:['icon-pequenos-leitores-1-150x150.png','Histórias infantis para ler e ouvir.'],
+  jornalista:['App-Icon_O-Jornalista-150x150.png','Notícias e publicações em texto e áudio.'],
+  revistaria:['revistaria-icone-1-150x150.png','Revistas digitais de temas como economia, tecnologia e entretenimento.'],
+  kiddlepass:['Kiddle-Pass-App-Icon-150x150.png','Aulas ao vivo, vídeos e atividades de artes, robótica e esportes para crianças de 3 a 12 anos, com controle parental.'],
+  hubvantagens:['App-Icon_Hub-Vantagens-150x150.png','Clube de descontos e cashback em lojas parceiras.'],
+  kaspersky:['Kaspersky_App-Icon-150x150.png','Antivírus e proteção digital para os dispositivos.'],
+  exitlag:['ExitLag_App-Icon-150x150.png','Ajuda a reduzir atrasos na conexão em jogos online.'],
+  qnutri:['https://www.lcitelecom.com.br/site/resources/site/images/apps-acessos/qnutri.png','Orientações de nutricionistas em vídeo, planos alimentares e livros digitais de receitas, sem foco em dietas restritivas.'],
+  playlist:['Playlist_App-Icon-150x150.png','Seleções musicais de vários gêneros, feitas por especialistas, e rádio online com músicas, notícias e entrevistas.'],
+  curtaon:['CurtaOn_App-Icon-150x150.png','Documentários sobre cultura, história e sociedade.'],
+  fluid:['Fluid_App-Icon-150x150.png','Meditações guiadas, yoga, exercícios de respiração e sons para relaxar.'],
+  docway:['Docway_App-Icon_1-150x150.png','Consultas médicas por vídeo pelo aplicativo, disponíveis 24 horas por dia, sem necessidade de convênio.'],
+  ubooknews:['https://www.lcitelecom.com.br/site/resources/site/images/apps-acessos/ubook-news.png','Notícias em formato digital.']
+};
+function infAppCard(x){
+  const nome=infBenNome(x);
+  const key=infChave(nome).replace(/[^a-z0-9]/g,'');
+  const app=INF_APP_CATALOG[key] || INF_APP_CATALOG[({deezerpremium:'deezer',playkidslearning:'playkids',ojornalista:'jornalista',kasperskystandard3licencas:'kaspersky',kasperskystandard:'kaspersky'})[key]];
+  const [logo,descricao]=app || ['', 'Descrição ainda não cadastrada.'];
+  const src=logo.startsWith('https://')?logo:logo && `https://www.playhub.net.br/wp-content/uploads/${logo.includes('/')?logo:'2024/09/'+logo}`;
+  return `<button type="button" class="inf-app-card" aria-label="${infEsc(nome)}" aria-description="${infEsc(descricao)}" aria-pressed="false" data-inf-busca="${infChave('beneficio aplicativo playhub',nome,descricao)}" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')==='false')">
+    <span class="inf-app-flip"><span class="inf-app-face inf-app-front">${src?`<img src="${infEsc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true">`:''}<strong>${infEsc(nome)}</strong></span>
+    <span class="inf-app-face inf-app-back" aria-hidden="true"><span>${infEsc(descricao)}</span></span></span></button>`;
+}
+function infInstalacaoRegional(x,regional){
+  return regional && /^instalacao\b/.test(infChave(x))
+    ? `Itamaracá (filial 5): ${infValor(regional.valor)} + pré-pago do plano.` : '';
+}
 function infCopiarPlano(i){
   const d = INF.dados||{}, p = infLista(d.planos)[i]; if(!p) return;
-  const txt = `Plano ${p.nome}: ${infValor(p.preco)} por mês.\n`+infLista(d.inclusos).map(x=>'- '+x).join('\n')+(infLista(d.beneficios).length?`\n- Benefício digital incluso, à escolha: ${infLista(d.beneficios).map(infBenNome).join(', ')}.`:'');
+  const regional=infLista(d.taxas).find(x=>x.id==='instalacao_itamaraca_filial5');
+  const txt = `Plano ${p.nome}: ${infValor(p.preco)} por mês.\n`+infLista(d.inclusos).map(x=>{
+    const excecao=infInstalacaoRegional(x,regional);
+    return excecao ? `- Instalação gratuita\n  ${excecao}` : '- '+x;
+  }).join('\n')+(infLista(d.beneficios).length?`\n- Benefício digital incluso, à escolha: ${infLista(d.beneficios).map(infBenNome).join(', ')}.`:'');
   navigator.clipboard.writeText(txt).then(()=>toast('Texto do plano copiado. É só colar na conversa com o cliente.','success'),()=>toast('Não consegui copiar. Selecione o texto e copie manualmente.','warn'));
 }
 function infCopiar(txt, msg){
@@ -26826,25 +26893,29 @@ function renderInformacoes(){
     </div>
     ${String(d.observacoes||'').trim()?`<div class="vg-base-nota inf-aviso">${infEsc(d.observacoes).replace(/\n/g,'<br>')}</div>`:''}`;
 
-  const planos = infLista(d.planos).map((p,i)=>`<div class="vg-card inf-card ${p.destaque?'inf-destaque':''}" data-inf-busca="${infChave('plano',p.nome,p.preco,p.selo)}">
-      <div class="vg-l">Plano ${infEsc(p.nome)}${p.selo?` <span class="inf-selo">${infEsc(p.selo)}</span>`:''}</div>
-      <div class="vg-v">${preco(p.preco)}<small> /mês</small></div>
-      <div class="vg-x"><button type="button" class="vg-link" onclick="infCopiarPlano(${i})">Copiar texto para o cliente</button></div>
-    </div>`).join('');
-
   const regional=infLista(d.taxas).find(x=>x.id==='instalacao_itamaraca_filial5');
   const inclusos = infLista(d.inclusos).map(x=>{
-    if(regional && /^instalacao\b/.test(String(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())){
-      return `<div class="vg-card inf-card inf-baixo inf-regional" role="note" data-inf-busca="${infChave(x,'instalacao gratuita excecao itamaraca igarassu filial 5',regional.detalhe)}"><div class="vg-l">Instalação</div><strong>Gratuita, exceto em Itamaracá</strong><p>Mediante permanência contratual. Em Itamaracá, na filial 5 (Hilink Igarassu): <b>${preco(regional.valor)}</b> de instalação + valor do pré-pago do plano contratado.</p></div>`;
+    const chave=infChave(x);
+    const excecao=infInstalacaoRegional(x,regional);
+    if(excecao){
+      return `<li><strong>Instalação gratuita</strong><small class="inf-plano-regional">${infEsc(excecao)}</small></li>`;
     }
-    const k = String(x).indexOf(':'), t = k>0 ? x.slice(0,k) : x, s = k>0 ? x.slice(k+1).trim() : '';
-    return `<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave(x)}"><div class="vg-l">${infEsc(t)}</div>${s?`<div class="vg-s">${infEsc(s)}</div>`:''}</div>`;
+    const titulo=/^wi-fi\b/.test(chave)?'Wi-Fi incluso':/^atendimento 24 horas\b/.test(chave)?'Atendimento 24 horas':String(x).split(':')[0];
+    return `<li>${infEsc(titulo)}</li>`;
   }).join('');
+  const listaInclusos=inclusos?`<ul class="inf-plano-inclusos" aria-label="Benefícios do plano">${inclusos}</ul>`:'';
+  const planos = infLista(d.planos).map((p,i)=>`<div class="vg-card inf-card ${p.destaque?'inf-destaque':''}" data-inf-busca="${infChave('plano',p.nome,p.preco,p.selo,...infLista(d.inclusos),regional?.nome)}">
+      ${p.selo?`<span class="inf-selo">${infEsc(p.selo)}</span>`:''}
+      <div class="inf-plano-preco"><div class="vg-l">Plano ${infEsc(p.nome)}</div>
+      <div class="vg-v">${preco(p.preco)}<small> /mês</small></div>
+      <div class="vg-x"><button type="button" class="vg-link" onclick="infCopiarPlano(${i})">Copiar texto para o cliente</button></div></div>
+      ${listaInclusos}
+    </div>`).join('');
 
   const benef = infLista(d.beneficios).length ? `<div class="vg-card inf-card inf-baixo">
       ${d.beneficios_texto?`<div class="vg-s">${infEsc(d.beneficios_texto)}</div>`:''}
-      <div class="inf-chips">${infLista(d.beneficios).map(x=>`<span class="inf-chip" data-inf-busca="${infChave('beneficio',infBenNome(x))}">${infEsc(infBenNome(x))}</span>`).join('')}</div></div>
-      ${infLista(d.beneficios_orientacao_opa).length?`<div class="inf-orientacao" data-inf-busca="${infChave('videos mensagens rapidas opa playhub',...d.beneficios_orientacao_opa)}"><h4>Vídeos de orientação · Mensagens rápidas do Opa!</h4><ol>${d.beneficios_orientacao_opa.map(x=>`<li>${infEsc(x)}</li>`).join('')}</ol></div>`:''}` : '';
+      <div class="inf-app-grid">${infLista(d.beneficios).map(infAppCard).join('')}</div></div>
+      ${infLista(d.beneficios_orientacao_opa).length?`<div class="inf-orientacao" data-inf-busca="${infChave('videos instalacao aplicativos mensagens rapidas opa playhub',...d.beneficios_orientacao_opa)}"><h4>Vídeos: como instalar os aplicativos da PlayHub</h4><p>Ajude o cliente a instalar o aplicativo que ele escolheu como benefício do plano. Envie o vídeo correspondente pelas <strong>Mensagens rápidas do Opa!</strong>.</p><ol>${d.beneficios_orientacao_opa.map(x=>`<li>${infEsc(x)}</li>`).join('')}</ol></div>`:''}` : '';
 
   const lista = (linhas) => linhas.length ? `<div class="vg-card inf-card inf-baixo inf-lista-card">${linhas.map(l=>`<div class="inf-linha" data-inf-busca="${infChave(l.nome,l.detalhe,l.valor,l.unidade)}">
       <div><b>${infEsc(l.nome)}</b>${l.detalhe?`<span>${infEsc(l.detalhe)}</span>`:''}</div><div class="inf-valor">${preco(l.valor)}${l.unidade?`<small>${infEsc(l.unidade)}</small>`:''}</div></div>`).join('')}</div>` : '';
@@ -26886,8 +26957,8 @@ function renderInformacoes(){
     <div class="inf-precos-col"><h4 class="inf-subtitulo">Produtos</h4>${tab('materiais')}</div>
     </div>`:'';
   box.innerHTML = `<div class="vg inf">${topo}
-      ${infSec('1. Planos e benefícios','valores mensais e o que está incluído',
-        (planos?`<div class="vg-cards">${planos}</div>`:'')+(inclusos?`<h4 class="inf-subtitulo">Todo plano inclui</h4><div class="vg-cards inf-inclusos">${inclusos}</div>`:'')+(benef?`<h4 class="inf-subtitulo">Benefício digital incluso</h4>${benef}`:''), 'planos')}
+      ${infSec('Planos e benefícios','valores mensais e o que está incluído',
+        (planos?`<div class="inf-planos">${planos}</div>`:listaInclusos)+(benef?`<h4 class="inf-subtitulo inf-beneficio-titulo">Benefício digital incluso</h4>${benef}`:''), 'planos')}
       ${infSec('2. Taxas e serviços','instalação, adicionais e materiais', taxasServicos, 'taxas')}
       ${infSec('3. Vencimentos e pagamento','dia contratado e ajuste para dia útil', pagamento, 'cobranca')}
       ${infSec('4. Aplicativo e canais do cliente','primeiro acesso e links oficiais', (linksCards||acCard)?`<div class="vg-cards">${acCard}${linksCards}</div>`:'', 'app')}
