@@ -151,8 +151,8 @@ function converterMadalena() {
 /* ======================================================================================
  * Extratos e francesinhas do banco (13/11/2026)
  *  - "lerBanco": 1) grava no Drive os arquivos enviados pelo Radar (nome padrao, pasta da filial);
- *                2) procura no Drive extratos (OFX/Excel) e francesinhas (COBST_..._FRA.TXT) de 2026
- *                   que o Radar ainda nao leu e manda para leitura. So le os arquivos; nao altera nem apaga.
+ *                2) procura nas pastas fixas da Caroline (PASTAS_BANCO) extratos (OFX/Excel) e francesinhas
+ *                   (COBST_..._FRA.TXT) de 2026 que o Radar ainda nao leu e manda para leitura. So le; nao altera nem apaga.
  *  - "instalarGatilhoBanco": roda o lerBanco a cada 15 minutos. Rode uma vez.
  * ====================================================================================== */
 var FUNCAO_BANCO = 'https://mdhexsdnavzforuahgxn.supabase.co/functions/v1/banco-arquivos';
@@ -173,10 +173,42 @@ function pastaFilha(pai, nome) {
   return it.hasNext() ? it.next() : pai.createFolder(nome);
 }
 
+// Pastas fixas dos arquivos do banco (Caroline):
+//  01 - MOVIMENTACAO FINANCEIRA (extratos e OFX, por ano/mes), 02 - FRANCESINHAS (por ano/filial) e HILINK - Documentos (copias do Radar).
+// Entra tudo que estiver em subpastas delas, menos pastas de anos anteriores (2025, 2024...).
+var PASTAS_BANCO = ['1vnW632w8g1bNOq4ubgEb-L8xqlR6hPHQ', '12qnm83WEIAcniK4g3d1Ye38bJyt_Bh9-', PASTA_DOCUMENTOS];
+
+function driveLista(q, campos) {
+  var out = [], pagina = '';
+  do {
+    var url = 'https://www.googleapis.com/drive/v3/files?pageSize=1000&includeItemsFromAllDrives=true&supportsAllDrives=true' +
+      '&fields=' + encodeURIComponent('nextPageToken,' + campos) + '&q=' + encodeURIComponent(q) + (pagina ? '&pageToken=' + pagina : '');
+    var r = UrlFetchApp.fetch(url, { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true });
+    if (r.getResponseCode() >= 300) throw new Error('lista do Drive: ' + r.getContentText().slice(0, 300));
+    var j = JSON.parse(r.getContentText());
+    out = out.concat(j.files || []);
+    pagina = j.nextPageToken || '';
+  } while (pagina);
+  return out;
+}
+
+function pastasDoBanco() {
+  var todas = PASTAS_BANCO.slice(), fila = PASTAS_BANCO.slice();
+  while (fila.length) {
+    var lote = fila.splice(0, 40);
+    var dentro = lote.map(function (id) { return "'" + id + "' in parents"; }).join(' or ');
+    driveLista("trashed = false and mimeType = 'application/vnd.google-apps.folder' and (" + dentro + ")", 'files(id,name)').forEach(function (f) {
+      if (/(^|\D)20(1\d|2[0-5])(\D|$)/.test(f.name)) return; // pasta de ano anterior
+      todas.push(f.id); fila.push(f.id);
+    });
+  }
+  return todas;
+}
+
 function lerBanco() {
   var inicio = Date.now();
   var trava = LockService.getScriptLock();
-  if (!trava.tryLock(10000)) return;
+  if (!trava.tryLock(10000)) { Logger.log('Outra leitura em andamento; tenta na proxima rodada.'); return; }
   try {
     // 1) fila do Radar -> Drive
     for (var volta = 0; volta < 5; volta++) {
@@ -195,24 +227,19 @@ function lerBanco() {
       banco({ acao: 'feito', feitos: feitos });
       Logger.log('Gravados no Drive: ' + feitos.length);
     }
-    // 2) Drive -> Radar (lista pela API do Drive: uma chamada traz nome, tipo e tamanho de tudo)
-    var q = "modifiedTime > '2026-01-01T00:00:00' and trashed = false and (name contains 'EXTRATO' or name contains 'extrato' or name contains 'COBST_' or name contains 'FRANCESINHA')";
-    var lista = [], pagina = '';
-    do {
-      var url = 'https://www.googleapis.com/drive/v3/files?pageSize=1000&includeItemsFromAllDrives=true&supportsAllDrives=true' +
-        '&fields=' + encodeURIComponent('nextPageToken,files(id,name,mimeType,size,modifiedTime)') + '&q=' + encodeURIComponent(q) + (pagina ? '&pageToken=' + pagina : '');
-      var rl = UrlFetchApp.fetch(url, { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true });
-      if (rl.getResponseCode() >= 300) { Logger.log('lista do Drive: ' + rl.getContentText().slice(0, 300)); return; }
-      var jl = JSON.parse(rl.getContentText());
-      (jl.files || []).forEach(function (f) {
+    // 2) Drive -> Radar: so as pastas onde a Caroline guarda os arquivos (e a pasta do Radar), sem varrer o Drive todo
+    var pastas = pastasDoBanco(), lista = [];
+    for (var k = 0; k < pastas.length; k += 40) {
+      var dentro = pastas.slice(k, k + 40).map(function (id) { return "'" + id + "' in parents"; }).join(' or ');
+      driveLista("trashed = false and modifiedTime > '2026-01-01T00:00:00' and mimeType != 'application/vnd.google-apps.folder' and (" + dentro + ")",
+        'files(id,name,mimeType,size,modifiedTime)').forEach(function (f) {
         if (!BANCO_NOME_OK.test(f.name) || BANCO_NOME_FORA.test(f.name)) return;
         var fr = f.name.match(/^COBST_\w+_\d+_\d{4}(\d{2})P_FRA/i); if (fr && fr[1] !== '26') return; // francesinha de outro ano
         if (!fr && /(^|\D)20(1\d|2[0-5])(\D|$)/.test(f.name) && !/2026/.test(f.name)) return; // extrato de ano anterior
         if (f.mimeType.indexOf('application/vnd.google-apps') === 0 || +f.size > BANCO_MAX_BYTES) return;
         lista.push({ id: f.id, nome: f.name, modificado: f.modifiedTime });
       });
-      pagina = jl.nextPageToken || '';
-    } while (pagina);
+    }
     var meta = {}; lista.forEach(function (x) { meta[x.id] = x; });
     var faltam = [];
     for (var i = 0; i < lista.length; i += 300) {
