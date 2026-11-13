@@ -24080,7 +24080,7 @@ const CD_ABAS = {
   quebra:           { titulo:'Quebra financeira',    fonte:'quebra',            desc:'Boleto antigo em aberto, mas o contrato já está pago até uma data posterior: o cliente pagou a fatura mais nova. Cliente recente: trocar a fatura no IXC (já sai da lista de cobrança). Contrato antigo: segue para a cobrança normal.' },
   avencer:          { titulo:'Lembrar vencimento',   fonte:'avencer',           desc:'Clientes com boleto vencendo nos próximos 6 dias (sem Filial 10). O lembrete antes do vencimento é só por e-mail: não fazemos pré-cobrança por WhatsApp por causa do custo da Meta. "Exportar e-mails" leva só quem tem e-mail útil.' },
   sem_email:        { titulo:'Cadastrar e-mail',     fonte:'sem_email',         desc:'Clientes ativos sem e-mail ou com e-mail falso/genérico. Lista para a campanha de cadastro de e-mail, que permite mandar o boleto sem custo.' },
-  suspeitos:        { titulo:'Corrigir no IXC',      fonte:'suspeitos',         desc:'Títulos em aberto com valor zerado, muito alto, acumulando mensalidades ou não liberados (o cliente não vê o boleto). Corrigir no IXC antes de cobrar: liberar, ajustar ou cancelar.' },
+  suspeitos:        { titulo:'Corrigir no IXC',      fonte:'suspeitos',         desc:'Títulos em aberto no IXC que precisam de correção antes de cobrar. Boleto não liberado: o título foi criado no IXC, mas ninguém liberou, então ele fica escondido do cliente (não aparece na Central do Assinante e não é enviado). Se a cobrança vale, liberar o título no IXC; se não vale mais, cancelar. Valor zerado: está em aberto com R$ 0, cancelar ou baixar. Valor muito alto: acima de R$ 1.500, provável erro de digitação. Acúmulo: mais de 3 vezes a mensalidade do cliente, conferir se há boleto duplicado.' },
   gerados_vencidos: { titulo:'Boleto gerado vencido', fonte:'gerados_vencidos', desc:'Boletos emitidos no dia do vencimento ou depois dele, nos últimos 90 dias (sem Filial 10). O cliente não teve prazo para pagar: conferir o cadastro, a ativação ou o faturamento e ajustar o vencimento no IXC antes de cobrar.' }
 };
 const cdMoeda = v => (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -24678,7 +24678,7 @@ function cdGuiaHTML(){
       como:'Ligar ou mandar mensagem oferecendo o desbloqueio com o pagamento.', acao:['Abrir lista',"cdIrLista('cobrar','d6_30')"], atv:g.d6_30.clientes?['cobrar','d6_30']:null})
   ].join('');
 
-  const spPartes = [[g.sp.vazio,'sem valor na carga'],[g.sp.zerado,'zerados'],[g.sp.alto,'acima de R$ 1.500'],[g.sp.acumulo,'com acúmulo'],[g.sp.naolib,'boletos não liberados (o cliente não vê; liberar ou cancelar)']].filter(x=>x[0]).map(x=>cdNum(x[0])+' '+x[1]).join(', ');
+  const spPartes = [[g.sp.vazio,'sem valor na carga'],[g.sp.zerado,'zerados'],[g.sp.alto,'acima de R$ 1.500'],[g.sp.acumulo,'com acúmulo'],[g.sp.naolib,'boletos não liberados no IXC (escondidos do cliente: liberar se a cobrança vale, cancelar se não vale)']].filter(x=>x[0]).map(x=>cdNum(x[0])+' '+x[1]).join(', ');
   const corrigir = [
     cdItem({tom:'corrigir', titulo:'Trocar fatura de cliente recente', numero:cdNum(g.qb.recentes), unid:'contratos, '+cdMoeda(g.qb.recentesValor), vazio:!g.qb.recentes,
       porque:'O cliente pagou a fatura nova e a antiga ficou aberta. Não deve ser cobrado: já está fora da lista de cobrança.',
