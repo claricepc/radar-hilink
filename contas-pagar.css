@@ -157,3 +157,10 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp .cp-tar-resumo span b{font-size:1.25em;color:#123a6b}
 #mod-cp .cp-tar-resumo span.cp-tar-ruim{border-color:#e7a3a3;background:#fff4f4}
 #mod-cp .cp-tar-resumo span.cp-tar-ruim b{color:#a11d1d}
+#mod-cp .cp-dre tr.cp-rec-det td{font-size:.92em;color:#4a5b6e}
+#mod-cp .cp-dre tr.cp-rec-det td:first-child{padding-left:28px}
+#mod-cp .cp-dre tr.cp-dre-fil td{font-size:.92em;color:#3b4b5e}
+#mod-cp .cp-dre .cp-fil{padding-left:22px;display:inline-block}
+#mod-cp .cp-dre .cp-fil.cp-fil2{padding-left:44px}
+#mod-cp .cp-dre tr.cp-rec-det1 td{border-top:1px dashed #c9d4e0}
+#mod-cp .cp-conta-unica{color:#6b7c8f;font-weight:400}
