@@ -124,3 +124,9 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 /* Extratos */
 #mod-cp .cp-buraco{display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border-radius:10px;background:#fdecec;color:#a01f1f;font-size:.85em;white-space:nowrap}
 #mod-cp .cp-ext-envio input[type=file]{min-height:34px}
+/* DRE: valores clicaveis abrem os lancamentos */
+#mod-cp td.cp-clicavel{cursor:pointer}
+#mod-cp td.cp-clicavel:hover{background:#e8f0fb;text-decoration:underline}
+#mod-cp .cp-btn.cp-ativo{background:#123a6b;color:#fff}
+#mod-cp #cp-corrigir .cp-modal-box{width:min(1280px,96vw)}
+#mod-cp [data-modo]:not(.cp-ativo){background:#fff;color:#123a6b;border:1px solid #123a6b}

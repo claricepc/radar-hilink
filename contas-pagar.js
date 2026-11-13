@@ -273,6 +273,67 @@
     });
   }
   window.cpCorrigirConta=cpCorrigirConta;
+
+  // Detalhe de um valor da DRE: os lançamentos das planilhas que formam o número, com troca de conta na hora.
+  async function cpDetalhe(dt,meses,titulo,empresa,ano,aoSalvar){
+    const m=box();if(!m)return;
+    let ov=m.querySelector('#cp-corrigir');if(ov)ov.remove();
+    ov=document.createElement('div');ov.id='cp-corrigir';ov.className='cp-modal';
+    ov.innerHTML=`<div class="cp-modal-box"><div class="cp-modal-top"><b></b><button type="button" class="cp-btn" data-fechar>Fechar</button></div><div class="cp-modal-corpo">${msg('Carregando…')}</div></div>`;
+    ov.querySelector('b').textContent=titulo+(empresa?' — '+empresa:'');
+    m.appendChild(ov);
+    let mudou=false;
+    const fechar=()=>{ov.remove();if(mudou&&aoSalvar)aoSalvar();};
+    ov.querySelector('[data-fechar]').onclick=fechar; ov.onclick=e=>{if(e.target===ov)fechar();};
+    const [tipo,chave]=dt.split(':');
+    const [r1,r2]=await Promise.all([
+      getSB().rpc('radar_cp_dre_lancamentos',{p_ano:ano,p_empresa:empresa||null,p_conta:tipo==='conta'?(chave==='Sem'?'':chave):null,p_linha:tipo==='linha'?chave:null,p_meses:meses}),
+      state.dp?Promise.resolve({data:state.dp}):getSB().rpc('radar_cp_depara_lista')]);
+    const corpo=ov.querySelector('.cp-modal-corpo');
+    if(r1.error){corpo.innerHTML=msg('Não carregou: '+r1.error.message);return;}
+    if(r2.data)state.dp=r2.data;
+    const C=(state.dp&&state.dp.contas)||[], L=r1.data||[];
+    const soma=a=>a.reduce((t,x)=>t+Number(x.previsto||0),0);
+    let modo='lanc', filtro='';
+    const opts=sel=>C.map(c=>`<option value="${esc(c.codigo)}"${c.codigo===sel?' selected':''}>${esc(c.codigo+' '+c.descricao)}</option>`).join('');
+    const pinta=()=>{
+      const f=filtro.trim().toUpperCase();
+      const V=f?L.filter(x=>(x.descricao+' '+(x.secao||'')+' '+(x.info||'')+' '+x.filial).toUpperCase().includes(f)):L;
+      let t=`<div class="cp-vis"><label>Procurar <input type="search" id="cp-det-f" value="${esc(filtro)}" placeholder="descrição, seção, filial"></label>
+        <span class="cp-vis-fonte"><button type="button" class="cp-btn${modo==='lanc'?' cp-ativo':''}" data-modo="lanc">Lançamentos</button><button type="button" class="cp-btn${modo==='desc'?' cp-ativo':''}" data-modo="desc">Somar por descrição</button></span>
+        <span><b>${V.length}</b> lançamento(s) · <b>${m0(soma(V))}</b> previsto${f?` (de ${m0(soma(L))})`:''}</span></div>`;
+      if(!V.length){corpo.innerHTML=t+msg('Nenhum lançamento.');ligar();return;}
+      if(modo==='desc'){
+        const g={};V.forEach(x=>{const k=x.desc_norm||x.descricao;(g[k] ||= {desc_norm:x.desc_norm,descricao:x.descricao,secao:x.secao,conta_codigo:x.conta_codigo,filiais:new Set(),n:0,v:0});g[k].n++;g[k].v+=Number(x.previsto||0);g[k].filiais.add(x.filial);});
+        const G=Object.values(g).sort((a,b2)=>b2.v-a.v);
+        t+=`<div class="cp-table"><table><thead><tr><th>Descrição</th><th>Empresas</th><th class="cp-number">Lanç.</th><th class="cp-number">Previsto</th><th>Conta</th><th></th></tr></thead><tbody>${G.map(x=>`<tr><td><b>${esc(x.descricao)}</b><br><small>${esc(x.secao||'')}</small></td><td><small>${esc([...x.filiais].join(', '))}</small></td><td class="cp-number">${x.n}</td><td class="cp-number">${m0(x.v)}</td><td><select data-dn="${esc(x.desc_norm||'')}" style="max-width:300px">${opts(x.conta_codigo)}</select></td><td><button type="button" class="cp-btn" data-salva="${esc(x.desc_norm||'')}">Salvar</button></td></tr>`).join('')}</tbody></table></div>`;
+      }else{
+        t+=`<div class="cp-table"><table><thead><tr><th>Mês</th><th>Empresa</th><th>Vencimento</th><th>Descrição na planilha</th><th class="cp-number">Previsto</th><th class="cp-number">Realizado</th><th>Observação</th><th>Conta</th><th></th></tr></thead><tbody>${V.map(x=>`<tr><td>${esc(mesTxt(x.competencia+'-01'))}</td><td>${esc(x.filial)}</td><td>${x.vencimento?date(x.vencimento):''}</td>
+          <td><b>${esc(x.descricao)}</b><br><small>${esc(x.secao||'')} · aba ${esc(x.aba||'')}, linha ${x.linha}${x.origem?' · '+esc(ORIG[x.origem]||x.origem):''}</small></td>
+          <td class="cp-number">${m0(x.previsto)}</td><td class="cp-number">${x.realizado!=null?m0(x.realizado):'<small>-</small>'}</td><td><small>${esc(x.info||'')}</small></td>
+          <td><select data-dn="${esc(x.desc_norm||'')}" style="max-width:260px">${opts(x.conta_codigo)}</select></td><td><button type="button" class="cp-btn" data-salva="${esc(x.desc_norm||'')}">Salvar</button></td></tr>`).join('')}</tbody></table></div>`;
+      }
+      t+=`<p class="cp-legenda">Trocar a conta vale para a mesma descrição em todas as filiais e nos próximos meses. Ao fechar, a DRE é recalculada.</p>`;
+      corpo.innerHTML=t;ligar();
+    };
+    const ligar=()=>{
+      const inp=corpo.querySelector('#cp-det-f');if(inp){inp.oninput=()=>{filtro=inp.value;const pos=inp.selectionStart;pinta();const n=corpo.querySelector('#cp-det-f');n.focus();n.setSelectionRange(pos,pos);};}
+      corpo.querySelectorAll('[data-modo]').forEach(bt=>bt.onclick=()=>{modo=bt.dataset.modo;pinta();});
+      corpo.querySelectorAll('[data-salva]').forEach(bt=>bt.onclick=async()=>{
+        const dn=bt.dataset.salva, nova=bt.closest('tr').querySelector('select').value;
+        if(!dn){bt.textContent='Sem descrição';return;}
+        const atual=(L.find(x=>x.desc_norm===dn)||{}).conta_codigo;
+        if(!nova||nova===atual){bt.textContent='Sem mudança';return;}
+        bt.disabled=true;bt.textContent='Salvando…';
+        const {error}=await getSB().rpc('radar_cp_depara_definir',{p_desc_norm:dn,p_conta:nova});
+        if(error){bt.disabled=false;bt.textContent='Salvar';window.toast?.('Não salvou: '+error.message);return;}
+        L.forEach(x=>{if(x.desc_norm===dn){x.conta_codigo=nova;x.origem='manual';}});mudou=true;
+        window.toast?.('Conta trocada. A DRE será recalculada ao fechar.');pinta();
+      });
+    };
+    pinta();
+  }
+  window.cpDetalhe=cpDetalhe;
   // Preferências de visualização (por pessoa, neste navegador)
   const PREF_KEY='radar_cp_vis';
   let prefMem=null;
@@ -296,7 +357,7 @@
     const sv=(obj,ms)=>ms.reduce((t,m)=>t+((obj||{})[m]||0),0);
     const fmt=x=>P.unidade==='mil'?(Math.round(x/100)/10).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}):m0(x);
     const pct=(x,ms)=>{const r=sv(v.REC,ms);return P.pct&&r?`<small class="cp-pct">${(x/r*100).toFixed(1).replace('.',',')}%</small>`:'';};
-    const cel=(x,ms,cls='')=>`<td class="cp-number${x<0?' cp-dif':''}${cls}">${fmt(x)}${pct(x,ms)}</td>`;
+    const cel=(x,ms,cls='',dt='')=>`<td class="cp-number${x<0?' cp-dif':''}${cls}${dt&&x?' cp-clicavel':''}"${dt&&x?` data-det="${dt}" data-ms="${ms.join(',')}" title="Ver os lançamentos que formam este valor"`:''}>${fmt(x)}${pct(x,ms)}</td>`;
     const emp=['','RECIFE','JABOATAO','ITAPISSUMA','IG','MADALENA'];
     const det=k=>{const g={};L.filter(x=>x.linha===k).forEach(x=>{const c=(x.conta_codigo||'')+' '+(x.conta||'Sem conta');(g[c] ||= {})[x.mes]=(g[c][x.mes]||0)+Number(x.valor||0);});return Object.entries(g).sort((a,b2)=>Object.values(b2[1]).reduce((s,n)=>s+n,0)-Object.values(a[1]).reduce((s,n)=>s+n,0));};
     const op=(id,val,lista)=>`<select id="${id}">${lista.map(([k,t])=>`<option value="${k}"${String(val)===String(k)?' selected':''}>${t}</option>`).join('')}</select>`;
@@ -314,14 +375,15 @@
     DRE_EST.forEach(e=>{
       const cls=e.tipo==='tot'?'cp-total':e.tipo==='rec'?'cp-rec':'';
       const exp=e.tipo==='desp'&&det(e.k).length;
-      h+=`<tr class="${cls}${exp?' cp-dre-exp':''}" ${exp?`data-dre="${e.k}"`:''}><td>${exp?`<span class="cp-mais">${P.abertos?'-':'+'}</span> `:''}${esc(e.t)}</td>${cols.map(c=>cel(sv(v[e.k],c.ms),c.ms)).join('')}${cel(sv(v[e.k],meses),meses,' cp-col-tot')}</tr>`;
-      if(exp) det(e.k).forEach(([c0,mm])=>{h+=`<tr class="cp-dre-det cp-conta-link" data-pai="${e.k}" data-conta="${esc(c0.split(' ')[0])}" title="Ver e corrigir os lançamentos desta conta"${P.abertos?'':' hidden'}><td>${esc(c0)} <span class="cp-editar">corrigir</span></td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel(x,c.ms):'<td class="cp-number"></td>';}).join('')}${cel(sv(mm,meses),meses,' cp-col-tot')}</tr>`;});
+      const dl=e.tipo==='desp'?'linha:'+e.k:'';
+      h+=`<tr class="${cls}${exp?' cp-dre-exp':''}" ${exp?`data-dre="${e.k}"`:''}><td>${exp?`<span class="cp-mais">${P.abertos?'-':'+'}</span> `:''}${esc(e.t)}</td>${cols.map(c=>cel(sv(v[e.k],c.ms),c.ms,'',dl)).join('')}${cel(sv(v[e.k],meses),meses,' cp-col-tot',dl)}</tr>`;
+      if(exp) det(e.k).forEach(([c0,mm])=>{const dc='conta:'+c0.split(' ')[0];h+=`<tr class="cp-dre-det cp-conta-link" data-pai="${e.k}" data-conta="${esc(c0.split(' ')[0])}" title="Ver os lançamentos desta conta no período"${P.abertos?'':' hidden'}><td>${esc(c0)} <span class="cp-editar">detalhar</span></td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel(x,c.ms,'',dc):'<td class="cp-number"></td>';}).join('')}${cel(sv(mm,meses),meses,' cp-col-tot',dc)}</tr>`;});
       if(e.k==='=RP') h+=`<tr class="cp-margem"><td>Margem sobre a receita</td>${[...cols.map(c=>c.ms),meses].map((ms,i)=>{const r=sv(v.REC,ms);return `<td class="cp-number${i===cols.length?' cp-col-tot':''}">${r?(sv(v['=RP'],ms)/r*100).toFixed(1).replace('.',',')+'%':'-'}</td>`;}).join('')}</tr>`;
     });
     h+=`</tbody></table></div>`;
     const fora=[['FORA_ATIVO','Investimentos, compras de empresas, equipamentos e aplicações'],['FORA_PASSIVO','Parcelas de empréstimos e financiamentos, faturas de cartão e acordos com sócios']];
-    const P2=Object.assign({},P,{pct:false});
-    h+=`<h3 class="cp-h">Saídas de caixa que não são despesa</h3><div class="cp-table cp-fixa"><table class="cp-dre">${head()}<tbody>${fora.map(([k,t])=>`<tr class="cp-dre-exp" data-dre="${k}"><td><span class="cp-mais">${P.abertos?'-':'+'}</span> ${t}</td>${cols.map(c=>`<td class="cp-number">${fmt(sv(v[k],c.ms))}</td>`).join('')}<td class="cp-number cp-col-tot">${fmt(sv(v[k],meses))}</td></tr>${det(k).map(([c0,mm])=>`<tr class="cp-dre-det cp-conta-link" data-pai="${k}" data-conta="${esc(c0.split(' ')[0])}" title="Ver e corrigir os lançamentos desta conta"${P.abertos?'':' hidden'}><td>${esc(c0)} <span class="cp-editar">corrigir</span></td>${cols.map(c=>{const x=sv(mm,c.ms);return `<td class="cp-number">${x?fmt(x):''}</td>`;}).join('')}<td class="cp-number cp-col-tot">${fmt(sv(mm,meses))}</td></tr>`).join('')}`).join('')}</tbody></table></div>`;
+    const cel2=(x,ms,cls,dt)=>`<td class="cp-number${cls}${x?' cp-clicavel':''}"${x?` data-det="${dt}" data-ms="${ms.join(',')}" title="Ver os lançamentos que formam este valor"`:''}>${fmt(x)}</td>`;
+    h+=`<h3 class="cp-h">Saídas de caixa que não são despesa</h3><div class="cp-table cp-fixa"><table class="cp-dre">${head()}<tbody>${fora.map(([k,t])=>`<tr class="cp-dre-exp" data-dre="${k}"><td><span class="cp-mais">${P.abertos?'-':'+'}</span> ${t}</td>${cols.map(c=>cel2(sv(v[k],c.ms),c.ms,'','linha:'+k)).join('')}${cel2(sv(v[k],meses),meses,' cp-col-tot','linha:'+k)}</tr>${det(k).map(([c0,mm])=>`<tr class="cp-dre-det cp-conta-link" data-pai="${k}" data-conta="${esc(c0.split(' ')[0])}" title="Ver os lançamentos desta conta no período"${P.abertos?'':' hidden'}><td>${esc(c0)} <span class="cp-editar">detalhar</span></td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel2(x,c.ms,'','conta:'+c0.split(' ')[0]):'<td class="cp-number"></td>';}).join('')}${cel2(sv(mm,meses),meses,' cp-col-tot','conta:'+c0.split(' ')[0])}</tr>`).join('')}`).join('')}</tbody></table></div>`;
     b.querySelector('#cp-result').innerHTML=h;
     b.querySelector('#cp-dre-emp').onchange=e=>{state.dreEmp=e.target.value;load();};
     const muda=(k,val)=>{const p=prefs();p[k]=val;salvarPrefs(p);paintDre(d);};
@@ -331,9 +393,12 @@
     b.querySelector('#cp-v-pct').onchange=e=>muda('pct',e.target.checked);
     b.querySelector('#cp-v-abertos').onchange=e=>muda('abertos',e.target.checked);
     b.querySelectorAll('[data-fonte]').forEach(x=>x.onclick=()=>{const p=prefs();p.fonte=Math.max(11,Math.min(18,p.fonte+Number(x.dataset.fonte)));salvarPrefs(p);aplicarFonte();});
-    b.querySelectorAll('[data-conta]').forEach(tr=>tr.onclick=ev=>{ev.stopPropagation();cpCorrigirConta(tr.dataset.conta,state.dreEmp||'',()=>load());});
+    const rotulo=dt=>{const [t,k]=dt.split(':');if(t==='linha')return (DRE_EST.find(e=>e.k===k)||{}).t||fora.find(f=>f[0]===k)?.[1]||k;const l=L.find(x=>x.conta_codigo===k);return k+' '+(l?.conta||'Sem conta');};
+    const perTxt=ms=>ms.length===1?mesTxt(ms[0]+'-01'):`${mesTxt(ms[0]+'-01')} a ${mesTxt(ms[ms.length-1]+'-01')}`;
+    b.querySelectorAll('td[data-det]').forEach(td=>td.onclick=ev=>{ev.stopPropagation();const ms=td.dataset.ms.split(',');cpDetalhe(td.dataset.det,ms,rotulo(td.dataset.det)+' · '+perTxt(ms),state.dreEmp||'',d.ano,()=>load());});
+    b.querySelectorAll('[data-conta]').forEach(tr=>tr.onclick=ev=>{ev.stopPropagation();const dt='conta:'+tr.dataset.conta;cpDetalhe(dt,meses,rotulo(dt)+' · '+perTxt(meses),state.dreEmp||'',d.ano,()=>load());});
     b.querySelectorAll('[data-dre]').forEach(tr=>tr.onclick=()=>{const k=tr.dataset.dre, rows=b.querySelectorAll(`[data-pai="${k}"]`), abrir=rows[0]?.hidden;rows.forEach(r=>r.hidden=!abrir);const s=tr.querySelector('.cp-mais');if(s)s.textContent=abrir?'-':'+';});
-    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês (inclui juros e multas, ainda sem separar), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique numa linha com + para ver as contas; clique numa conta para ver as descrições que caíram nela e corrigir. As escolhas de visualização ficam guardadas neste navegador.</div>`;
+    b.querySelector('#cp-context').innerHTML=`<div class="cp-notice">DRE gerencial. Receita: valor recebido no IXC em cada mês (inclui juros e multas, ainda sem separar), leitura até ${date(d.receita_ate)}; NandoNet e Pablom contam a partir de setembro e entram na Madalena. Despesas: saídas das planilhas pelo mês da aba (valor previsto), classificadas pelo de/para. Não tem depreciação nem o detalhe das compras no cartão. Camaragibe fica fora. Clique numa linha com + para ver as contas. Clique em qualquer valor para ver os lançamentos das planilhas que formam aquele número (e trocar a conta, se estiver errada); clique no nome da conta para ver o período todo. As escolhas de visualização ficam guardadas neste navegador.</div>`;
   }
 
   // ---------- Extratos do banco: envio (OFX, Excel ou francesinha do Santander), período coberto e buracos ----------
