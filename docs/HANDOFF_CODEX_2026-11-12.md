@@ -62,3 +62,13 @@ Menu lateral: Contas a pagar com subpastas (`cpTab('...')` em `contas-pagar.js`)
 4. Script de extratos no Drive (`scripts/radar-drive-apps-script.gs`) para o saldo entrar sozinho no Caixa.
 5. Separar juros/multa na receita da DRE; depreciação.
 6. Pauta pausada: descontos indevidos do Inmap (precisa permissão de listar `vd_saida_produtos` e `su_oss_assunto`).
+
+## 8. Extratos e francesinhas (13/11, branch `claude/cp-extratos`)
+- Tela "Extratos do banco" (Contas a pagar): envio de vários arquivos de uma vez (OFX, Excel do internet banking, planilha conciliada da Caroline, francesinha `COBST_..._FRA.TXT`). A conta sai do próprio arquivo; não há seleção manual.
+- Edge function `banco-arquivos` (verify_jwt false; autentica o usuário do Radar por `fin.acesso` ou o script do Google por token OAuth + `fin.planilha_remetente`). Leitura em `parse.ts` (testável com tsx + xlsx 0.18.5).
+  - `acao: gravar` lê e grava; quando vem do Radar, coloca o arquivo em `fin.banco_upload` com nome padrão `EXTRATO_{FILIAL}_{ag-conta}_{dd-mm-aaaa}_a_{dd-mm-aaaa}.ext` ou `FRANCESINHA_{FILIAL}_{ag-conta}_{dd-mm-aaaa}_aviso{n}.txt`.
+  - `quais`, `pendentes`, `feito`: usados pelo script do Google.
+- Banco: `fin.extrato_gravar` troca o DIA inteiro quando o arquivo novo tem mais movimentos que o Radar naquele dia (OFX e Excel do mesmo dia não duplicam). `radar_cp_extrato_importar` usa essa função. `fin.francesinha` + `fin.francesinha_titulo` (liquidações com juros, baixas, entradas; troca o aviso inteiro se chegar de novo). `fin.banco_arquivo` = arquivos do Drive já lidos. `fin.conta_bancaria.drive_nome` (IG = COHAB no Drive).
+- Script do Google (`scripts/radar-planilhas-financeiro.gs`, projeto "Projeto sem título"): `lerBanco` grava no Drive a fila do Radar (HILINK - Documentos / {FILIAL} / EXTRATO|FRANCESINHA / {ANO}) e procura no Drive (API v3, nome com EXTRATO/COBST_/FRANCESINHA, modificado em 2026) o que ainda não foi lido. `instalarGatilhoBanco` = a cada 15 min.
+- Alertas: `fin.alerta_extratos()`, cron `fin-alerta-extratos` (`0 12 * * 1-5`, 9h). Uma tarefa por conta na agenda da Caroline quando o extrato não cobre até o dia útil anterior (ou a francesinha atrasa 2 dias úteis, só para contas que já têm francesinha). Atualiza a mesma tarefa enquanto aberta e fecha sozinha quando o arquivo chega.
+- Próximo uso da francesinha: separar juros/multa da receita da DRE (`francesinha_titulo.juros`, `seu_numero` = id do boleto no IXC) e conferir o crédito "COB BLOQ COMP" do extrato com a soma das liquidações.

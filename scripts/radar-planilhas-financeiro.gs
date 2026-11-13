@@ -195,16 +195,23 @@ function lerBanco() {
       banco({ acao: 'feito', feitos: feitos });
       Logger.log('Gravados no Drive: ' + feitos.length);
     }
-    // 2) Drive -> Radar
-    var q = 'modifiedDate > "2026-01-01T00:00:00" and trashed = false and (title contains "EXTRATO" or title contains "extrato" or title contains "COBST_" or title contains "FRANCESINHA")';
-    var it = DriveApp.searchFiles(q), lista = [], arqs = {};
-    while (it.hasNext()) {
-      var f = it.next(), nome = f.getName(), mime = f.getMimeType();
-      if (!BANCO_NOME_OK.test(nome) || BANCO_NOME_FORA.test(nome)) continue;
-      if (mime.indexOf('application/vnd.google-apps') === 0 || f.getSize() > BANCO_MAX_BYTES) continue;
-      lista.push({ id: f.getId(), nome: nome, modificado: f.getLastUpdated().toISOString() });
-      arqs[f.getId()] = f;
-    }
+    // 2) Drive -> Radar (lista pela API do Drive: uma chamada traz nome, tipo e tamanho de tudo)
+    var q = "modifiedTime > '2026-01-01T00:00:00' and trashed = false and (name contains 'EXTRATO' or name contains 'extrato' or name contains 'COBST_' or name contains 'FRANCESINHA')";
+    var lista = [], pagina = '';
+    do {
+      var url = 'https://www.googleapis.com/drive/v3/files?pageSize=1000&includeItemsFromAllDrives=true&supportsAllDrives=true' +
+        '&fields=' + encodeURIComponent('nextPageToken,files(id,name,mimeType,size,modifiedTime)') + '&q=' + encodeURIComponent(q) + (pagina ? '&pageToken=' + pagina : '');
+      var rl = UrlFetchApp.fetch(url, { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true });
+      if (rl.getResponseCode() >= 300) { Logger.log('lista do Drive: ' + rl.getContentText().slice(0, 300)); return; }
+      var jl = JSON.parse(rl.getContentText());
+      (jl.files || []).forEach(function (f) {
+        if (!BANCO_NOME_OK.test(f.name) || BANCO_NOME_FORA.test(f.name)) return;
+        if (f.mimeType.indexOf('application/vnd.google-apps') === 0 || +f.size > BANCO_MAX_BYTES) return;
+        lista.push({ id: f.id, nome: f.name, modificado: f.modifiedTime });
+      });
+      pagina = jl.nextPageToken || '';
+    } while (pagina);
+    var meta = {}; lista.forEach(function (x) { meta[x.id] = x; });
     var faltam = [];
     for (var i = 0; i < lista.length; i += 300) {
       var r = banco({ acao: 'quais', arquivos: lista.slice(i, i + 300) });
@@ -222,9 +229,9 @@ function lerBanco() {
     };
     for (var j = 0; j < faltam.length; j++) {
       if (Date.now() - inicio > 270000) { Logger.log('Tempo esgotado; continua na proxima rodada.'); break; }
-      var arq = arqs[faltam[j]], blob = arq.getBlob(), b = blob.getBytes();
+      var m = meta[faltam[j]], blob = DriveApp.getFileById(m.id).getBlob(), b = blob.getBytes();
       if (bytes + b.length > 4 * 1024 * 1024 || lote.length >= 8) mandar();
-      lote.push({ id: arq.getId(), nome: arq.getName(), modificado: arq.getLastUpdated().toISOString(), mime: blob.getContentType(), base64: Utilities.base64Encode(b) });
+      lote.push({ id: m.id, nome: m.nome, modificado: m.modificado, mime: blob.getContentType(), base64: Utilities.base64Encode(b) });
       bytes += b.length;
     }
     mandar();

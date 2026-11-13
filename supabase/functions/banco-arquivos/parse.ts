@@ -183,6 +183,7 @@ export function ler(XLSX: any, bytes: Uint8Array, nome: string): Resultado {
 export function contaPeloNome(nome: string): string | null {
   const n = sem(nome);
   const m = n.match(/(\d{4})-(\d{9})/); if (m) return m[2];
+  if (/CARTAO|FATURA|CREDIT|VISA|MASTER|ELO\b/.test(n)) return null; // fatura de cartao nao e extrato da conta
   if (/NANDONET/.test(n)) return "130041763";
   if (/RECIFE/.test(n)) return "130021175";
   if (/JOABOATAO|JABOATAO/.test(n)) return "130011846";
