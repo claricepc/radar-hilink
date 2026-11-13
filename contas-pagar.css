@@ -134,3 +134,21 @@ body.dark #mod-cp,body[data-theme=dark] #mod-cp{--cp-line:#284454;--cp-muted:#9b
 #mod-cp tr.cp-dre-sub td:first-child{padding-left:56px}
 #mod-cp tr.cp-dre-sub .cp-sub-desc{color:#182b3a}
 #mod-cp tr.cp-dre-sub small{color:#5b6b7a}
+/* Gaveta lateral da DRE (composicao, lancamentos e notas) */
+#mod-cp .cp-modal.cp-gaveta{justify-content:flex-end;align-items:stretch;padding:0}
+#mod-cp .cp-modal.cp-gaveta .cp-modal-box{width:min(960px,100vw);max-width:100vw;height:100vh;overflow:auto;border-radius:0;box-shadow:-8px 0 30px rgba(0,0,0,.3)}
+#mod-cp .cp-tag-pend{display:inline-block;background:#fde2e2;color:#a4161a;border:1px solid #f1a7a7;border-radius:10px;padding:0 8px;font-size:.78em;font-weight:700}
+#mod-cp .cp-tag-nota{display:inline-block;background:#e6f0fb;color:#123a6b;border:1px solid #b5cdea;border-radius:10px;padding:0 8px;font-size:.78em;font-weight:700}
+#mod-cp .cp-tag-ok{display:inline-block;background:#e3f4e8;color:#1e6b34;border:1px solid #a9d8b6;border-radius:10px;padding:0 8px;font-size:.78em;font-weight:700}
+#mod-cp .cp-abrir{color:#0b5cad;text-decoration:underline;cursor:pointer;font-size:.8em;margin-left:6px}
+#mod-cp .cp-pend-aviso{border-left-color:#c62828;background:#fff1f1}
+#mod-cp .cp-nota{border:1px solid #d9e2ec;border-radius:8px;padding:10px 12px;margin:8px 0;background:#fff}
+#mod-cp .cp-nota.cp-nota-pend{border-color:#f1a7a7;background:#fff7f7}
+#mod-cp .cp-nota.cp-nota-ok{opacity:.8}
+#mod-cp .cp-nota-cab{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#mod-cp .cp-nota-txt{margin:6px 0;white-space:pre-wrap}
+#mod-cp .cp-nota-acoes{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px}
+#mod-cp .cp-nota-acoes input{min-width:240px;padding:6px 8px;border:1px solid #c9d4e0;border-radius:6px}
+#mod-cp .cp-nota-nova textarea{width:100%;box-sizing:border-box;margin:8px 0;padding:8px;border:1px solid #c9d4e0;border-radius:6px;font:inherit}
+#mod-cp .cp-nota-nova summary{cursor:pointer;font-weight:700;color:#123a6b;margin-top:6px}
+#mod-cp .cp-btn.cp-btn-claro{background:#fff;color:#123a6b;border:1px solid #9fb3c8}

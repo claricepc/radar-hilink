@@ -240,6 +240,9 @@
     const {data,error}=await getSB().rpc('radar_cp_dre',{p_ano:null,p_empresa:state.dreEmp||null});
     if(own!==generation||!box())return;
     if(error){b.querySelector('#cp-result').innerHTML=msg('DRE indisponível: '+error.message);return;}
+    const rn=await getSB().rpc('radar_cp_dre_notas',{p_ano:data.ano});
+    state.dreNotas=rn.data||[];state.dreMeses=(data.meses||[]).slice().sort();
+    if(own!==generation||!box())return;
     paintDre(data);
   }
 
@@ -278,9 +281,10 @@
   async function cpDetalhe(dt,meses,titulo,empresa,ano,aoSalvar,filtroIni){
     const m=box();if(!m)return;
     let ov=m.querySelector('#cp-corrigir');if(ov)ov.remove();
-    ov=document.createElement('div');ov.id='cp-corrigir';ov.className='cp-modal';
-    ov.innerHTML=`<div class="cp-modal-box"><div class="cp-modal-top"><b></b><button type="button" class="cp-btn" data-fechar>Fechar</button></div><div class="cp-modal-corpo">${msg('Carregando…')}</div></div>`;
+    ov=document.createElement('div');ov.id='cp-corrigir';ov.className='cp-modal cp-gaveta';
+    ov.innerHTML=`<div class="cp-modal-box"><div class="cp-modal-top"><b></b><button type="button" class="cp-btn" data-fechar>Fechar</button></div><div id="cp-notas-area"></div><h4 class="cp-h">Composição</h4><div class="cp-modal-corpo">${msg('Carregando…')}</div></div>`;
     ov.querySelector('b').textContent=titulo+(empresa?' — '+empresa:'');
+    cpNotasPintar(ov.querySelector('#cp-notas-area'),dt,ano,empresa,()=>{mudou=true;});
     m.appendChild(ov);
     let mudou=false;
     const fechar=()=>{ov.remove();if(mudou&&aoSalvar)aoSalvar();};
@@ -300,10 +304,14 @@
       const f=filtro.trim().toUpperCase();
       const V=f?L.filter(x=>(x.descricao+' '+(x.secao||'')+' '+(x.info||'')+' '+x.filial).toUpperCase().includes(f)):L;
       let t=`<div class="cp-vis"><label>Procurar <input type="search" id="cp-det-f" value="${esc(filtro)}" placeholder="descrição, seção, filial"></label>
-        <span class="cp-vis-fonte"><button type="button" class="cp-btn${modo==='lanc'?' cp-ativo':''}" data-modo="lanc">Lançamentos</button><button type="button" class="cp-btn${modo==='desc'?' cp-ativo':''}" data-modo="desc">Somar por descrição</button></span>
+        <span class="cp-vis-fonte"><button type="button" class="cp-btn${modo==='lanc'?' cp-ativo':''}" data-modo="lanc">Lançamentos</button><button type="button" class="cp-btn${modo==='desc'?' cp-ativo':''}" data-modo="desc">Somar por descrição</button><button type="button" class="cp-btn${modo==='emp'?' cp-ativo':''}" data-modo="emp">Por empresa e mês</button></span>
         <span><b>${V.length}</b> lançamento(s) · <b>${m0(soma(V))}</b> previsto${f?` (de ${m0(soma(L))})`:''}</span></div>`;
       if(!V.length){corpo.innerHTML=t+msg('Nenhum lançamento.');ligar();return;}
-      if(modo==='desc'){
+      if(modo==='emp'){
+        const ms=[...new Set(V.map(x=>x.competencia))].sort(), fs=[...new Set(V.map(x=>x.filial))].sort();
+        const sm=(f,m)=>V.filter(x=>(!f||x.filial===f)&&(!m||x.competencia===m)).reduce((t,x)=>t+Number(x.previsto||0),0);
+        t+=`<div class="cp-table"><table><thead><tr><th>Empresa</th>${ms.map(m=>`<th class="cp-number">${esc(mesTxt(m+'-01'))}</th>`).join('')}<th class="cp-number">Total</th></tr></thead><tbody>${fs.map(f=>`<tr><td>${esc(f)}</td>${ms.map(m=>{const x=sm(f,m);return `<td class="cp-number">${x?m0(x):''}</td>`;}).join('')}<td class="cp-number"><b>${m0(sm(f,null))}</b></td></tr>`).join('')}<tr class="cp-total"><td>Total</td>${ms.map(m=>`<td class="cp-number">${m0(sm(null,m))}</td>`).join('')}<td class="cp-number">${m0(sm(null,null))}</td></tr></tbody></table></div>`;
+      }else if(modo==='desc'){
         const g={};V.forEach(x=>{const k=x.desc_norm||x.descricao;(g[k] ||= {desc_norm:x.desc_norm,descricao:x.descricao,secao:x.secao,conta_codigo:x.conta_codigo,filiais:new Set(),n:0,v:0});g[k].n++;g[k].v+=Number(x.previsto||0);g[k].filiais.add(x.filial);});
         const G=Object.values(g).sort((a,b2)=>b2.v-a.v);
         t+=`<div class="cp-table"><table><thead><tr><th>Descrição</th><th>Empresas</th><th class="cp-number">Lanç.</th><th class="cp-number">Previsto</th><th>Conta</th><th></th></tr></thead><tbody>${G.map(x=>`<tr><td><b>${esc(x.descricao)}</b><br><small>${esc(x.secao||'')}</small></td><td><small>${esc([...x.filiais].join(', '))}</small></td><td class="cp-number">${x.n}</td><td class="cp-number">${m0(x.v)}</td><td><select data-dn="${esc(x.desc_norm||'')}" style="max-width:300px">${opts(x.conta_codigo)}</select></td><td><button type="button" class="cp-btn" data-salva="${esc(x.desc_norm||'')}">Salvar</button></td></tr>`).join('')}</tbody></table></div>`;
@@ -334,6 +342,47 @@
     pinta();
   }
   window.cpDetalhe=cpDetalhe;
+
+  // Notas explicativas e pendências da DRE (por linha ou conta; opcionalmente por mês)
+  const quemTxt=e=>e?String(e).split('@')[0]:'';
+  async function cpNotasPintar(area,dt,ano,empresa,aoMudar){
+    if(!area)return;
+    if(!state.pessoas){const {data}=await getSB().rpc('radar_cp_pessoas');state.pessoas=data||[];}
+    const N=(state.dreNotas||[]).filter(n=>n.chave===dt&&n.ano===ano&&(!empresa||!n.empresa||n.empresa===empresa));
+    const meses=state.dreMeses||[];
+    const item=n=>{const aberta=n.pendencia&&!n.resolvida_em;
+      return `<div class="cp-nota${aberta?' cp-nota-pend':''}${n.pendencia&&n.resolvida_em?' cp-nota-ok':''}">
+        <div class="cp-nota-cab">${n.pendencia?(aberta?'<b class="cp-tag-pend">Pendente</b>':'<b class="cp-tag-ok">Resolvida</b>'):'<b class="cp-tag-nota">Nota</b>'}
+          <small>${n.mes?esc(mesTxt(n.mes+'-01'))+' · ':''}${n.empresa?esc(n.empresa)+' · ':''}${esc(quemTxt(n.autor))} em ${date(String(n.criada_em).slice(0,10))}${n.pendencia&&n.responsavel?' · responsável: '+esc(quemTxt(n.responsavel)):''}${n.prazo&&aberta?' · prazo '+date(n.prazo):''}</small></div>
+        <div class="cp-nota-txt">${esc(n.texto)}</div>
+        ${n.pendencia&&n.resolvida_em?`<small>Resolvida em ${date(String(n.resolvida_em).slice(0,10))}${n.resolvida_por?' por '+esc(quemTxt(n.resolvida_por)):''}${n.resolucao?': '+esc(n.resolucao):''}</small>`:''}
+        <div class="cp-nota-acoes">${aberta?`<input type="text" data-resol="${n.id}" placeholder="Como foi resolvido (opcional)"> <button type="button" class="cp-btn" data-resolver="${n.id}">Marcar como resolvida</button>`:''}${n.pendencia&&n.resolvida_em?`<button type="button" class="cp-btn cp-btn-claro" data-reabrir="${n.id}">Reabrir</button>`:''} <button type="button" class="cp-btn cp-btn-claro" data-apagar="${n.id}">Apagar</button></div></div>`;};
+    area.innerHTML=`<h4 class="cp-h">Notas explicativas e pendências</h4>${N.length?N.map(item).join(''):'<p class="cp-legenda">Nenhuma nota ainda. Use para explicar uma variação (ex.: a tarifa caiu depois do acordo com o banco) ou registrar algo a cobrar.</p>'}
+      <details class="cp-nota-nova"${N.length?'':' open'}><summary>Escrever nota</summary>
+        <textarea id="cp-nota-txt" rows="3" placeholder="Ex.: A partir de 10/2026 o Santander passou a cumprir o acordo de tarifas. Falta cobrar o estorno das tarifas cobradas indevidamente."></textarea>
+        <div class="cp-vis"><label>Mês <select id="cp-nota-mes"><option value="">Todos / geral</option>${meses.map(m=>`<option value="${m}">${esc(mesTxt(m+'-01'))}</option>`).join('')}</select></label>
+          <label class="cp-vis-chk"><input type="checkbox" id="cp-nota-pend"> É uma pendência (algo a cobrar ou resolver)</label>
+          <label class="cp-nota-pendcampo" hidden>Responsável <select id="cp-nota-resp">${(state.pessoas||[]).map(p=>`<option value="${esc(p.email)}">${esc(p.nome)}</option>`).join('')}</select></label>
+          <label class="cp-nota-pendcampo" hidden>Prazo <input type="date" id="cp-nota-prazo"></label></div>
+        <button type="button" class="cp-btn" id="cp-nota-salvar">Salvar nota</button> <small id="cp-nota-msg"></small>
+        <p class="cp-legenda">Pendência fica sinalizada na DRE e vira tarefa na agenda do responsável. Quando for resolvida (aqui ou concluindo a tarefa), a sinalização sai.</p></details>`;
+    const recarregar=async()=>{const {data}=await getSB().rpc('radar_cp_dre_notas',{p_ano:ano});state.dreNotas=data||[];aoMudar&&aoMudar();cpNotasPintar(area,dt,ano,empresa,aoMudar);};
+    const ck=area.querySelector('#cp-nota-pend');
+    if(ck)ck.onchange=()=>area.querySelectorAll('.cp-nota-pendcampo').forEach(x=>x.hidden=!ck.checked);
+    const bt=area.querySelector('#cp-nota-salvar');
+    if(bt)bt.onclick=async()=>{const txt=area.querySelector('#cp-nota-txt').value.trim();if(!txt){area.querySelector('#cp-nota-msg').textContent='Escreva a nota.';return;}
+      bt.disabled=true;bt.textContent='Salvando…';
+      const {error}=await getSB().rpc('radar_cp_dre_nota_salvar',{p_ano:ano,p_empresa:empresa||null,p_chave:dt,p_mes:area.querySelector('#cp-nota-mes').value||null,p_texto:txt,
+        p_pendencia:ck.checked,p_responsavel:ck.checked?area.querySelector('#cp-nota-resp').value:null,p_prazo:ck.checked?(area.querySelector('#cp-nota-prazo').value||null):null});
+      if(error){bt.disabled=false;bt.textContent='Salvar nota';area.querySelector('#cp-nota-msg').textContent='Não salvou: '+error.message;return;}
+      window.toast?.(ck.checked?'Pendência registrada e enviada para a agenda.':'Nota salva.');recarregar();};
+    area.querySelectorAll('[data-resolver]').forEach(b=>b.onclick=async()=>{const id=+b.dataset.resolver;b.disabled=true;
+      const {error}=await getSB().rpc('radar_cp_dre_nota_resolver',{p_id:id,p_resolvida:true,p_resolucao:area.querySelector(`[data-resol="${id}"]`)?.value||null});
+      if(error){b.disabled=false;window.toast?.('Não salvou: '+error.message);return;}recarregar();});
+    area.querySelectorAll('[data-reabrir]').forEach(b=>b.onclick=async()=>{const {error}=await getSB().rpc('radar_cp_dre_nota_resolver',{p_id:+b.dataset.reabrir,p_resolvida:false});if(error){window.toast?.(error.message);return;}recarregar();});
+    area.querySelectorAll('[data-apagar]').forEach(b=>b.onclick=async()=>{if(b.dataset.certeza!=='1'){b.dataset.certeza='1';b.textContent='Clique de novo para apagar';return;}
+      const {error}=await getSB().rpc('radar_cp_dre_nota_apagar',{p_id:+b.dataset.apagar});if(error){window.toast?.(error.message);return;}recarregar();});
+  }
   // Preferências de visualização (por pessoa, neste navegador)
   const PREF_KEY='radar_cp_vis';
   let prefMem=null;
@@ -360,6 +409,11 @@
     const cel=(x,ms,cls='',dt='')=>`<td class="cp-number${x<0?' cp-dif':''}${cls}${dt&&x?' cp-clicavel':''}"${dt&&x?` data-det="${dt}" data-ms="${ms.join(',')}" title="Ver os lançamentos que formam este valor"`:''}>${fmt(x)}${pct(x,ms)}</td>`;
     const emp=['','RECIFE','JABOATAO','ITAPISSUMA','IG','MADALENA'];
     const det=k=>{const g={};L.filter(x=>x.linha===k).forEach(x=>{const c=(x.conta_codigo||'')+' '+(x.conta||'Sem conta');(g[c] ||= {})[x.mes]=(g[c][x.mes]||0)+Number(x.valor||0);});return Object.entries(g).sort((a,b2)=>Object.values(b2[1]).reduce((s,n)=>s+n,0)-Object.values(a[1]).reduce((s,n)=>s+n,0));};
+    const NT=(state.dreNotas||[]).filter(n=>!state.dreEmp||!n.empresa||n.empresa===state.dreEmp);
+    const contaLinha={};L.forEach(x=>{if(x.conta_codigo)contaLinha[x.conta_codigo]=x.linha;});
+    const pendDe=ch=>NT.filter(n=>n.pendencia&&!n.resolvida_em&&(n.chave===ch||(ch.startsWith('linha:')&&n.chave.startsWith('conta:')&&contaLinha[n.chave.slice(6)]===ch.slice(6))));
+    const tags=ch=>{const p=pendDe(ch).length, nn=NT.filter(n=>n.chave===ch&&!(n.pendencia&&!n.resolvida_em)).length;
+      return `${p?` <span class="cp-tag-pend" title="Pendência aberta">${p} pendente${p>1?'s':''}</span>`:''}${nn?` <span class="cp-tag-nota" title="Tem nota explicativa">nota</span>`:''} <span class="cp-abrir" data-abrir="${ch}" title="Abrir composição, lançamentos e notas">detalhes</span>`;};
     const op=(id,val,lista)=>`<select id="${id}">${lista.map(([k,t])=>`<option value="${k}"${String(val)===String(k)?' selected':''}>${t}</option>`).join('')}</select>`;
     const head=()=>`<thead><tr><th>${d.ano}${P.unidade==='mil'?' <small>(R$ mil)</small>':''}</th>${cols.map(c=>`<th class="cp-number">${c.rot}${c.parcial?'<br><small>parcial</small>':''}</th>`).join('')}<th class="cp-number">Total</th></tr></thead>`;
     let h=`<div class="cp-vis">
@@ -376,14 +430,14 @@
       const cls=e.tipo==='tot'?'cp-total':e.tipo==='rec'?'cp-rec':'';
       const exp=e.tipo==='desp'&&det(e.k).length;
       const dl=e.tipo==='desp'?'linha:'+e.k:'';
-      h+=`<tr class="${cls}${exp?' cp-dre-exp':''}" ${exp?`data-dre="${e.k}"`:''}><td>${exp?`<span class="cp-mais">${P.abertos?'-':'+'}</span> `:''}${esc(e.t)}</td>${cols.map(c=>cel(sv(v[e.k],c.ms),c.ms,'',dl)).join('')}${cel(sv(v[e.k],meses),meses,' cp-col-tot',dl)}</tr>`;
-      if(exp) det(e.k).forEach(([c0,mm])=>{const dc='conta:'+c0.split(' ')[0];h+=`<tr class="cp-dre-det cp-conta-link" data-pai="${e.k}" data-conta="${esc(c0.split(' ')[0])}" title="Abrir as descrições que formam esta conta"${P.abertos?'':' hidden'}><td><span class="cp-mais">+</span> ${esc(c0)}</td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel(x,c.ms,'',dc):'<td class="cp-number"></td>';}).join('')}${cel(sv(mm,meses),meses,' cp-col-tot',dc)}</tr>`;});
+      h+=`<tr class="${cls}${exp?' cp-dre-exp':''}" ${exp?`data-dre="${e.k}"`:''}><td>${exp?`<span class="cp-mais">${P.abertos?'-':'+'}</span> `:''}${esc(e.t)}${dl?tags(dl):''}</td>${cols.map(c=>cel(sv(v[e.k],c.ms),c.ms,'',dl)).join('')}${cel(sv(v[e.k],meses),meses,' cp-col-tot',dl)}</tr>`;
+      if(exp) det(e.k).forEach(([c0,mm])=>{const dc='conta:'+c0.split(' ')[0];h+=`<tr class="cp-dre-det cp-conta-link" data-pai="${e.k}" data-conta="${esc(c0.split(' ')[0])}" title="Abrir as descrições que formam esta conta"${P.abertos?'':' hidden'}><td><span class="cp-mais">+</span> ${esc(c0)}${tags(dc)}</td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel(x,c.ms,'',dc):'<td class="cp-number"></td>';}).join('')}${cel(sv(mm,meses),meses,' cp-col-tot',dc)}</tr>`;});
       if(e.k==='=RP') h+=`<tr class="cp-margem"><td>Margem sobre a receita</td>${[...cols.map(c=>c.ms),meses].map((ms,i)=>{const r=sv(v.REC,ms);return `<td class="cp-number${i===cols.length?' cp-col-tot':''}">${r?(sv(v['=RP'],ms)/r*100).toFixed(1).replace('.',',')+'%':'-'}</td>`;}).join('')}</tr>`;
     });
     h+=`</tbody></table></div>`;
     const fora=[['FORA_ATIVO','Investimentos, compras de empresas, equipamentos e aplicações'],['FORA_PASSIVO','Parcelas de empréstimos e financiamentos, faturas de cartão e acordos com sócios']];
     const cel2=(x,ms,cls,dt)=>`<td class="cp-number${cls}${x?' cp-clicavel':''}"${x?` data-det="${dt}" data-ms="${ms.join(',')}" title="Ver os lançamentos que formam este valor"`:''}>${fmt(x)}</td>`;
-    h+=`<h3 class="cp-h">Saídas de caixa que não são despesa</h3><div class="cp-table cp-fixa"><table class="cp-dre">${head()}<tbody>${fora.map(([k,t])=>`<tr class="cp-dre-exp" data-dre="${k}"><td><span class="cp-mais">${P.abertos?'-':'+'}</span> ${t}</td>${cols.map(c=>cel2(sv(v[k],c.ms),c.ms,'','linha:'+k)).join('')}${cel2(sv(v[k],meses),meses,' cp-col-tot','linha:'+k)}</tr>${det(k).map(([c0,mm])=>`<tr class="cp-dre-det cp-conta-link" data-pai="${k}" data-conta="${esc(c0.split(' ')[0])}" title="Abrir as descrições que formam esta conta"${P.abertos?'':' hidden'}><td><span class="cp-mais">+</span> ${esc(c0)}</td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel2(x,c.ms,'','conta:'+c0.split(' ')[0]):'<td class="cp-number"></td>';}).join('')}${cel2(sv(mm,meses),meses,' cp-col-tot','conta:'+c0.split(' ')[0])}</tr>`).join('')}`).join('')}</tbody></table></div>`;
+    h+=`<h3 class="cp-h">Saídas de caixa que não são despesa</h3><div class="cp-table cp-fixa"><table class="cp-dre">${head()}<tbody>${fora.map(([k,t])=>`<tr class="cp-dre-exp" data-dre="${k}"><td><span class="cp-mais">${P.abertos?'-':'+'}</span> ${t}${tags('linha:'+k)}</td>${cols.map(c=>cel2(sv(v[k],c.ms),c.ms,'','linha:'+k)).join('')}${cel2(sv(v[k],meses),meses,' cp-col-tot','linha:'+k)}</tr>${det(k).map(([c0,mm])=>`<tr class="cp-dre-det cp-conta-link" data-pai="${k}" data-conta="${esc(c0.split(' ')[0])}" title="Abrir as descrições que formam esta conta"${P.abertos?'':' hidden'}><td><span class="cp-mais">+</span> ${esc(c0)}${tags('conta:'+c0.split(' ')[0])}</td>${cols.map(c=>{const x=sv(mm,c.ms);return x?cel2(x,c.ms,'','conta:'+c0.split(' ')[0]):'<td class="cp-number"></td>';}).join('')}${cel2(sv(mm,meses),meses,' cp-col-tot','conta:'+c0.split(' ')[0])}</tr>`).join('')}`).join('')}</tbody></table></div>`;
     b.querySelector('#cp-result').innerHTML=h;
     b.querySelector('#cp-dre-emp').onchange=e=>{state.dreEmp=e.target.value;load();};
     const muda=(k,val)=>{const p=prefs();p[k]=val;salvarPrefs(p);paintDre(d);};
@@ -395,6 +449,10 @@
     b.querySelectorAll('[data-fonte]').forEach(x=>x.onclick=()=>{const p=prefs();p.fonte=Math.max(11,Math.min(18,p.fonte+Number(x.dataset.fonte)));salvarPrefs(p);aplicarFonte();});
     const rotulo=dt=>{const [t,k]=dt.split(':');if(t==='linha')return (DRE_EST.find(e=>e.k===k)||{}).t||fora.find(f=>f[0]===k)?.[1]||k;const l=L.find(x=>x.conta_codigo===k);return k+' '+(l?.conta||'Sem conta');};
     const perTxt=ms=>ms.length===1?mesTxt(ms[0]+'-01'):`${mesTxt(ms[0]+'-01')} a ${mesTxt(ms[ms.length-1]+'-01')}`;
+    b.querySelectorAll('[data-abrir]').forEach(sp=>sp.onclick=ev=>{ev.stopPropagation();const dt=sp.dataset.abrir;cpDetalhe(dt,meses,rotulo(dt)+' · '+perTxt(meses),state.dreEmp||'',d.ano,()=>{state.dreSub={};load();});});
+    const abertas=NT.filter(n=>n.pendencia&&!n.resolvida_em);
+    if(abertas.length)b.querySelector('#cp-result').insertAdjacentHTML('afterbegin',`<div class="cp-notice cp-pend-aviso"><b>${abertas.length} pendência${abertas.length>1?'s':''} aberta${abertas.length>1?'s':''} na DRE:</b> ${abertas.map(n=>`<span class="cp-abrir" data-abrir2="${esc(n.chave)}">${esc(rotulo(n.chave))}${n.mes?' ('+esc(mesTxt(n.mes+'-01'))+')':''}: ${esc(n.texto.slice(0,80))}${n.texto.length>80?'…':''}</span>`).join(' · ')}</div>`);
+    b.querySelectorAll('[data-abrir2]').forEach(sp=>sp.onclick=()=>{const dt=sp.dataset.abrir2;cpDetalhe(dt,meses,rotulo(dt)+' · '+perTxt(meses),state.dreEmp||'',d.ano,()=>{state.dreSub={};load();});});
     const abreDet=td=>{const ms=td.dataset.ms.split(',');cpDetalhe(td.dataset.det,ms,rotulo(td.dataset.det)+' · '+perTxt(ms)+(td.dataset.filtro?' · '+td.dataset.filtro:''),state.dreEmp||'',d.ano,()=>{state.dreSub={};load();},td.dataset.filtro||'');};
     b.querySelectorAll('td[data-det]').forEach(td=>td.onclick=ev=>{ev.stopPropagation();abreDet(td);});
     // + na conta: abre logo abaixo as descrições das planilhas que formam a conta, mês a mês
