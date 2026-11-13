@@ -8,6 +8,8 @@ const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!, { prepare: false, max: 1 
 const MESES: Record<string, number> = { JANEIRO: 1, FEVEREIRO: 2, MARCO: 3, ABRIL: 4, MAIO: 5, JUNHO: 6, JULHO: 7, AGOSTO: 8, SETEMBRO: 9, OUTUBRO: 10, NOVEMBRO: 11, DEZEMBRO: 12 };
 const norm = (s: unknown) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
 const up = (s: unknown) => norm(s).toUpperCase();
+// nunca guardar senha que esteja escrita na observacao da planilha
+const semSenha = (s: string) => s.replace(/\b(senha|password|pwd)\b\s*[:=\-]?\s*\S+/gi, "$1: ***");
 
 function competencia(aba: string): string | null {
   const m = up(aba).replace(/[^A-Z0-9/ ]/g, "").trim().match(/^([A-Z]+)\s*\/?\s*(2026|26)$/);
@@ -61,8 +63,8 @@ function parseAba(filial: string, nome: string, comp: string, rows: string[][], 
       filial, competencia: comp, linha: i + 1, aba: nome, bloco, secao, descricao: c[0].replace(/\s+/g, " "),
       venc_dia: dia, data_vencimento: dataVenc(comp, dia), previsto: prev, realizado: bloco === "retirada" ? null : real,
       previsto_txt: prev === null && c[2] ? c[2].slice(0, 60) : null,
-      realizado_txt: real === null && c[3] ? c[3].slice(0, 200) : null,
-      info: (bloco === "retirada" ? c[3] : c[4]).slice(0, 500) || null,
+      realizado_txt: real === null && c[3] ? semSenha(c[3]).slice(0, 200) : null,
+      info: semSenha(bloco === "retirada" ? c[3] : c[4]).slice(0, 500) || null,
     });
   });
   return out;
