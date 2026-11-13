@@ -2533,14 +2533,15 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .inf-linha:last-child{border-bottom:0}
 .inf .inf-linha span{display:block;font-size:12px;color:var(--texto-3)}
 .inf .inf-valor{font:800 15px var(--font-titulo);color:var(--texto);white-space:nowrap;font-variant-numeric:tabular-nums}
-.inf .inf-subtitulo{font-size:13px;margin:18px 0 8px;color:var(--texto);font-weight:700;letter-spacing:0}
-.inf .inf-subtitulo.inf-beneficio-titulo{font:700 14px var(--font-titulo)}
+.inf .inf-subtitulo{font:700 14px var(--font-titulo);margin:18px 0 8px;color:var(--texto);letter-spacing:0}
 .inf .inf-vencimentos{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
 .inf .inf-dia{display:inline-grid;place-items:center;width:40px;height:36px;border:1px solid var(--linha);border-radius:4px;color:var(--azul-forte);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
-.inf .inf-pagamento-faixa{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
+.inf .inf-orientacoes-grid{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+.inf .inf-orientacoes-grid>*{flex:1 1 320px;min-width:0}
+.inf .inf-pagamento-faixa{display:flex;flex-direction:column;align-items:flex-start;gap:9px;padding:12px 16px;border:1px solid var(--linha);border-inline-start:4px solid var(--azul);border-radius:8px;background:var(--azul-suave)}
 .inf .inf-pagamento-faixa .inf-vencimentos{margin:0;flex:0 0 auto}
 .inf .inf-pagamento-faixa .inf-dia{width:32px;height:32px;font-size:14px}
-.inf .inf-venc-nota{flex:1 1 460px;margin:0;font-size:12px;line-height:1.5;color:var(--texto-2);min-width:0}
+.inf .inf-venc-nota{margin:0;font-size:12px;line-height:1.5;color:var(--texto-2)}
 .inf .inf-pagamento-faixa>button{flex:0 0 auto}
 .inf .inf-precos-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
 .inf .inf-precos-grid .inf-subtitulo{margin:0 0 8px}
@@ -2554,13 +2555,28 @@ body.radar-modo-atendente .nav-area[data-area="equipe"] .nav-group-items{display
 .inf .inf-regional strong{display:block;font-size:13px;color:var(--atencao);margin-top:5px}
 .inf .inf-regional p{margin:5px 0 0;font-size:12px}
 .inf .inf-orientacao{font-size:13px;line-height:1.6;color:var(--texto);margin:14px 0 0;padding:12px 16px;border:1px solid var(--linha);border-inline-start:4px solid var(--ok);border-radius:8px;background:var(--ok-suave)}
-.inf .inf-orientacao h4{margin:0 0 6px;font-size:13px;color:var(--texto)}
 .inf .inf-orientacao p{margin:0 0 6px}
 .inf .inf-orientacao ol{margin:0;padding-left:20px}
+.inf .inf-orientacoes-grid .inf-orientacao{margin:0}
+.inf .inf-orientacoes-grid h4{margin:0 0 6px;font:700 14px var(--font-titulo);color:var(--texto);letter-spacing:0}
+.inf .inf-orientacoes-grid .inf-pagamento-faixa h4{margin:0}
 .inf .inf-campos{display:grid;gap:6px;margin-top:8px}
 .inf .inf-campo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--texto)}
 .inf .inf-campo>span{flex:0 0 74px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--texto-3)}
 .inf .inf-campo a{color:var(--azul-forte);overflow-wrap:anywhere}
+.inf .inf-canais{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
+.inf .inf-canais .inf-primeiro-acesso{background:var(--azul-suave);border-top-color:var(--azul)}
+.inf .inf-primeiro-acesso .vg-l{color:var(--azul-forte)}
+.inf .inf-login-nota{margin:0;color:var(--texto-2);font-size:12px}
+.inf .inf-canal-item{padding:9px 0}
+.inf .inf-canal-item+.inf-canal-item{border-top:1px solid var(--linha)}
+.inf .inf-canal-nome{display:flex;align-items:center;gap:7px;font-weight:700}
+.inf .inf-canal-nome img{width:16px;height:16px;object-fit:contain}
+.inf .inf-canal-link{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+.inf .inf-canal-link>a,.inf .inf-canal-link>button{display:inline-flex;align-items:center;min-height:30px;padding:4px 9px;border:1px solid var(--linha);border-radius:6px;color:var(--azul-forte);font-size:12px;font-weight:700;text-decoration:none}
+.inf .inf-canal-link>a{background:var(--azul-suave)}
+.inf .inf-canal-link>button{background:var(--superficie);cursor:pointer}
+.inf .inf-canal-link>a:hover,.inf .inf-canal-link>button:hover{border-color:var(--azul)}
 .inf .inf-senha{font-family:ui-monospace,Consolas,monospace;font-size:14px;letter-spacing:.4px}
 .inf .vg-fazer li b{color:var(--texto)}
 .inf-ed{display:grid;gap:8px;margin:10px 0}
@@ -26914,8 +26930,8 @@ function renderInformacoes(){
 
   const benef = infLista(d.beneficios).length ? `<div class="vg-card inf-card inf-baixo">
       ${d.beneficios_texto?`<div class="vg-s">${infEsc(d.beneficios_texto)}</div>`:''}
-      <div class="inf-app-grid">${infLista(d.beneficios).map(infAppCard).join('')}</div></div>
-      ${infLista(d.beneficios_orientacao_opa).length?`<div class="inf-orientacao" data-inf-busca="${infChave('videos instalacao aplicativos mensagens rapidas opa playhub',...d.beneficios_orientacao_opa)}"><h4>Vídeos: como instalar os aplicativos da PlayHub</h4><p>Ajude o cliente a instalar o aplicativo que ele escolheu como benefício do plano. Envie o vídeo correspondente pelas <strong>Mensagens rápidas do Opa!</strong>.</p><ol>${d.beneficios_orientacao_opa.map(x=>`<li>${infEsc(x)}</li>`).join('')}</ol></div>`:''}` : '';
+      <div class="inf-app-grid">${infLista(d.beneficios).map(infAppCard).join('')}</div></div>` : '';
+  const videos = infLista(d.beneficios_orientacao_opa).length?`<div class="inf-orientacao" data-inf-busca="${infChave('videos instalacao aplicativos mensagens rapidas opa playhub',...d.beneficios_orientacao_opa)}"><h4>Vídeos: como instalar os aplicativos da PlayHub</h4><p>Ajude o cliente a instalar o aplicativo que ele escolheu como benefício do plano. Envie o vídeo correspondente pelas <strong>Mensagens rápidas do Opa!</strong>.</p><ol>${d.beneficios_orientacao_opa.map(x=>`<li>${infEsc(x)}</li>`).join('')}</ol></div>`:'';
 
   const lista = (linhas) => linhas.length ? `<div class="vg-card inf-card inf-baixo inf-lista-card">${linhas.map(l=>`<div class="inf-linha" data-inf-busca="${infChave(l.nome,l.detalhe,l.valor,l.unidade)}">
       <div><b>${infEsc(l.nome)}</b>${l.detalhe?`<span>${infEsc(l.detalhe)}</span>`:''}</div><div class="inf-valor">${preco(l.valor)}${l.unidade?`<small>${infEsc(l.unidade)}</small>`:''}</div></div>`).join('')}</div>` : '';
@@ -26935,18 +26951,47 @@ function renderInformacoes(){
     </div>`).join('');
 
   const ac = d.acesso_cliente || {};
-  const linksCards = infLista(d.links).map((l,i)=>`<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave('app aplicativo link central',l.titulo,l.detalhe,l.url)}">
-      <div class="vg-l">${infEsc(l.titulo)}</div>
+  const links = infLista(d.links).map(l=>
+    /^central do assinante\b/.test(infChave(l.titulo)) && /^https?:\/\/(?:www\.)?hilink\.com\.br\/links\/?$/i.test(String(l.url||'').trim())
+      ? {...l,url:'https://ixc.hilink.com.br/central_assinante_web/login'} : l);
+  for(const link of [
+    {titulo:'Teste de velocidade',url:'https://www.speedtest.net/server/16779'},
+    {titulo:'Facebook Hilink',url:'https://www.facebook.com/hilinktelecom'}
+  ]){
+    if(!links.some(l=>String(l.url||'').trim().replace(/\/$/,'')===link.url)) links.push(link);
+  }
+  const grupos = new Map();
+  for(const l of links){
+    let host='';
+    try{host=new URL(l.url).hostname.toLowerCase().replace(/^www\./,'');}catch{}
+    const plataforma={
+      'apps.apple.com':['Apps Hilink','apple','596579'],
+      'play.google.com':['Apps Hilink','googleplay','168052'],
+      'hilink.com.br':['Site e Central do Assinante'],
+      'ixc.hilink.com.br':['Site e Central do Assinante'],
+      'facebook.com':['Redes sociais','facebook','1877F2'],
+      'instagram.com':['Redes sociais','instagram','D62976']
+    }[host];
+    const [grupo,icone,cor]=plataforma||[l.titulo];
+    if(!grupos.has(grupo)) grupos.set(grupo,[]);
+    grupos.get(grupo).push({l,icone,cor});
+  }
+  const linksCards = [...grupos].map(([grupo,itens])=>`<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave(grupo,...itens.flatMap(({l})=>[l.titulo,l.detalhe,l.url]))}">
+      <div class="vg-l">${infEsc(grupo)}</div>
+      ${itens.map(({l,icone,cor})=>`<div class="inf-canal-item">
+      ${grupo!==l.titulo?`<div class="inf-canal-nome">${icone?`<img src="https://cdn.simpleicons.org/${icone}/${cor}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:''}${infEsc(l.titulo)}</div>`:''}
       ${l.detalhe?`<div class="vg-x">${infEsc(l.detalhe)}</div>`:''}
-      <div class="inf-campos"><div class="inf-campo"><span>Link</span><a href="${/^https?:\/\//i.test(l.url||'')?infEsc(l.url):'#'}" target="_blank" rel="noopener noreferrer">${infEsc(l.url)}</a><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.links[${i}].url,'Link copiado. É só colar para o cliente.')">copiar</button></div></div>
+      <div class="inf-canal-link"><a href="${/^https?:\/\//i.test(l.url||'')?infEsc(l.url):'#'}" target="_blank" rel="noopener noreferrer">Abrir link</a><button type="button" data-url="${infEsc(l.url)}" onclick="infCopiar(this.dataset.url,'Link copiado. É só colar para o cliente.')">Copiar link</button></div>
+      </div>`).join('')}
     </div>`).join('');
-  const acCard = (ac.login||ac.senha) ? `<div class="vg-card inf-card inf-baixo" data-inf-busca="${infChave('login senha cliente app central primeiro acesso',ac.login)}">
+  const acCard = (ac.login||ac.senha) ? `<div class="vg-card inf-card inf-baixo inf-primeiro-acesso" data-inf-busca="${infChave('login senha cliente app central primeiro acesso',ac.login)}">
       <div class="vg-l">Primeiro acesso do cliente</div>
-      <div class="inf-campos">${ac.login?`<div class="inf-campo"><span>Login</span><b>${infEsc(ac.login)}</b></div>`:''}${ac.senha?`<div class="inf-campo"><span>Senha padrão</span><b class="inf-senha">${infEsc(ac.senha)}</b><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.acesso_cliente.senha,'Senha copiada.')">copiar</button></div>`:''}</div>
+      <div class="inf-campos">${ac.login?`<div class="inf-campo"><span>Login</span><b>CPF do titular</b></div><p class="inf-login-nota">Só números, sem pontos nem traço. Ex.: 00000000000.</p>`:''}${ac.senha?`<div class="inf-campo"><span>Senha padrão</span><b class="inf-senha">${infEsc(ac.senha)}</b><button type="button" class="cdg-mini" onclick="infCopiar(INF.dados.acesso_cliente.senha,'Senha copiada.')">copiar</button></div>`:''}</div>
     </div>` : '';
   const tab = k => lista(infLista(d[k]));
   const cobranca=d.cobranca||{};
   const pagamento=infLista(cobranca.vencimentos).length?`<div class="inf-pagamento-faixa" data-inf-busca="${infChave('cobranca pagamento vencimentos dias uteis feriados',cobranca.regra_dia_nao_util,cobranca.texto_cliente)}">
+      <h4>Vencimentos e pagamento</h4>
       <div class="inf-vencimentos" aria-label="Dias de vencimento">${infLista(cobranca.vencimentos).map(dia=>`<span class="inf-dia">${infEsc(dia)}</span>`).join('')}</div>
       <p class="inf-venc-nota">${infEsc(cobranca.regra_dia_nao_util||'')}</p>
       ${cobranca.texto_cliente?`<button type="button" class="btn sm" onclick="infCopiarVencimentos()">Copiar mensagem</button>`:''}
@@ -26958,11 +27003,10 @@ function renderInformacoes(){
     </div>`:'';
   box.innerHTML = `<div class="vg inf">${topo}
       ${infSec('Planos e benefícios','valores mensais e o que está incluído',
-        (planos?`<div class="inf-planos">${planos}</div>`:listaInclusos)+(benef?`<h4 class="inf-subtitulo inf-beneficio-titulo">Benefício digital incluso</h4>${benef}`:''), 'planos')}
-      ${infSec('2. Taxas e serviços','instalação, adicionais e materiais', taxasServicos, 'taxas')}
-      ${infSec('3. Vencimentos e pagamento','dia contratado e ajuste para dia útil', pagamento, 'cobranca')}
-      ${infSec('4. Aplicativo e canais do cliente','primeiro acesso e links oficiais', (linksCards||acCard)?`<div class="vg-cards">${acCard}${linksCards}</div>`:'', 'app')}
-      ${infSec('5. Procedimentos e padrões','rotinas de atendimento e suporte', procs, 'procs')}
+        (planos?`<div class="inf-planos">${planos}</div>`:listaInclusos)+(benef?`<h4 class="inf-subtitulo inf-beneficio-titulo">Benefício digital incluso</h4>${benef}`:'')+(videos||pagamento?`<div class="inf-orientacoes-grid">${videos}${pagamento}</div>`:''), 'planos')}
+      ${infSec('Taxas e serviços','instalação, adicionais e materiais', taxasServicos, 'taxas')}
+      ${infSec('Aplicativo e canais do cliente','primeiro acesso e links oficiais', (linksCards||acCard)?`<div class="inf-canais">${acCard}${linksCards}</div>`:'', 'app')}
+      ${infSec('Procedimentos e padrões','rotinas de atendimento e suporte', procs, 'procs')}
       ${infSec('6. Acessos técnicos', d.acessos_visivel==='lideranca'?'visível só para a liderança':'roteadores e plataformas', acessos?`<div class="vg-cards">${acessos}</div>`:'', 'acessos')}
     </div>`;
   if(INF.busca) infBuscar(INF.busca);
