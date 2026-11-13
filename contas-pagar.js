@@ -220,7 +220,7 @@
 
   const DRE_EST=[
     {k:'REC',t:'Receita recebida (IXC)',tipo:'rec'},
-    {k:'DESP_TRIB',t:'(-) Impostos (Simples e tributos)',tipo:'desp'},
+    {k:'DESP_TRIB',t:'(-) Simples Nacional sobre a receita',tipo:'desp'},
     {k:'=RL',t:'Receita líquida',tipo:'tot',f:['REC','-DESP_TRIB']},
     {k:'CSP',t:'(-) Custos dos serviços (link, sistemas, energia, materiais)',tipo:'desp'},
     {k:'=LB',t:'Lucro bruto',tipo:'tot',f:['=RL','-CSP']},
